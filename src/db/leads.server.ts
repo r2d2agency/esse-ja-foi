@@ -206,7 +206,7 @@ export async function converterLeadEmCliente(leadId: string) {
 
   const clientes = (await d.execute(sql`
     INSERT INTO clientes (nome, documento, tipo_pessoa, whatsapp, telefone, cidade, observacoes)
-    VALUES (${lead['nome'] as string}, ${""}, ${"PF"}, ${lead['whatsapp'] as string}, ${lead['whatsapp'] as string},
+    VALUES (${lead['nome'] as string}, ${`L${String(leadId).replace(/-/g, "").slice(0, 14)}`}, ${"PF"}, ${lead['whatsapp'] as string}, ${lead['whatsapp'] as string},
             ${lead['cidade'] ?? null}, ${`Convertido do lead ${leadId}`})
     RETURNING *;
   `)) as unknown as Array<Row>;
