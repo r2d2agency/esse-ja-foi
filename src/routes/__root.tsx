@@ -19,7 +19,7 @@ function RootLayout() {
     return (
       <div className="flex flex-col h-screen items-center justify-center p-6 text-center">
         <p className="max-w-md font-sans text-sm text-muted-foreground">
-          ja esta aaparecendo assim quero que o sisttema funcione o que houve pq nao tem mais nada.  ?
+          mas pq o serviço nao funciona. continua com erro no easypanel  ?
         </p>
       </div>
     );
