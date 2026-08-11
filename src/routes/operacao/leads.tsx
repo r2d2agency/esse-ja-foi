@@ -93,7 +93,10 @@ function LeadsPage() {
   const handleAddNote = async () => {
     if (!note.trim() || !selectedLead) return;
     const res = await registrar({ data: { id: String(selectedLead['id']), acao: note.trim() } });
-    if (!res.ok) return toast.error(res.message);
+    if (!res.ok) {
+      toast.error(res.message);
+      return;
+    }
     toast.success("Interação registrada.");
     setNote("");
     recarregar();
@@ -102,7 +105,10 @@ function LeadsPage() {
   const handleResponsavel = async (responsavel: string) => {
     if (!selectedLead) return;
     const res = await atualizar({ data: { id: String(selectedLead['id']), responsavel } });
-    if (!res.ok) return toast.error(res.message);
+    if (!res.ok) {
+      toast.error(res.message);
+      return;
+    }
     setSelectedLead({ ...selectedLead, responsavel });
     toast.success("Responsável atribuído.");
     recarregar();
@@ -111,7 +117,10 @@ function LeadsPage() {
   const handleStatus = async (status: string) => {
     if (!selectedLead) return;
     const res = await atualizar({ data: { id: String(selectedLead['id']), status } });
-    if (!res.ok) return toast.error(res.message);
+    if (!res.ok) {
+      toast.error(res.message);
+      return;
+    }
     setSelectedLead({ ...selectedLead, status });
     recarregar();
   };
@@ -119,7 +128,10 @@ function LeadsPage() {
   const handleConvert = async () => {
     if (!selectedLead) return;
     const res = await converter({ data: { id: String(selectedLead['id']) } });
-    if (!res.ok) return toast.error(res.message);
+    if (!res.ok) {
+      toast.error(res.message);
+      return;
+    }
     toast.success("Lead convertido em cliente.");
     setIsSheetOpen(false);
     recarregar();
