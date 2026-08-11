@@ -91,11 +91,17 @@ function Index() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Apenas no cliente para evitar erros de SSR com domínios externos no build
+    if (typeof window === 'undefined') return;
+    
     const apiUrl = import.meta.env['VITE_API_URL'];
     if (apiUrl) {
       setLoading(true);
       fetch(`${apiUrl}/auctions/active`)
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error("API Indisponível");
+          return res.json();
+        })
         .then(data => {
           if (Array.isArray(data)) setDbLotes(data);
         })
