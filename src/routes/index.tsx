@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Gavel, ShieldCheck, FileSearch, Timer, ArrowRight } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { getActiveAuctions } from "@/db/queries.functions";
 import heroImg from "@/assets/hero-auction.jpg";
 import lote1 from "@/assets/lote-1.jpg";
 import lote2 from "@/assets/lote-2.jpg";
@@ -87,6 +89,13 @@ function Countdown() {
 }
 
 function Index() {
+  const fetchAuctions = useServerFn(getActiveAuctions);
+  const [dbLotes, setDbLotes] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchAuctions().then(setDbLotes).catch(console.error);
+  }, [fetchAuctions]);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
