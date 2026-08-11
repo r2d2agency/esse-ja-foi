@@ -128,16 +128,20 @@ function PreencherLaudo() {
 
   const enviar = async () => {
     setEnviando(true);
+    const check = await pendenciasLaudoFn({ data: { laudoId } });
+    if (check.ok && check.data.length > 0) {
+      setPendencias(check.data);
+      setEnviando(false);
+      toast.error("Existem pendências no laudo.");
+      return;
+    }
     const res = await enviarLaudoFn({ data: { laudoId, vistoriadorId: user?.id ?? null } });
     setEnviando(false);
     if (!res.ok) {
-      setPendencias(res.pendencias ?? []);
       toast.error(res.message);
       return;
     }
-    setPendencias([]);
-    toast.success(`Laudo enviado. Protocolo ${(res.data as Row)?.['protocolo']}`);
-    void navigate({ to: "/vistoria" });
+    setSucesso({ protocolo: (res.data as Row)?.['protocolo'], data: new Date().toLocaleString() });
   };
 
   if (carregando) return <p className="text-sm text-slate-500">Carregando laudo...</p>;
