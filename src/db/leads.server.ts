@@ -69,15 +69,15 @@ export async function ensureLeadsSchema() {
 export type LeadPublicoInput = {
   nome: string;
   whatsapp: string;
-  cidade?: string | null;
-  marca?: string | null;
-  modelo?: string | null;
-  ano?: string | null;
-  mensagem?: string | null;
-  origem?: string | null;
-  utmSource?: string | null;
-  utmMedium?: string | null;
-  utmCampaign?: string | null;
+  cidade?: string | null | undefined;
+  marca?: string | null | undefined;
+  modelo?: string | null | undefined;
+  ano?: string | null | undefined;
+  mensagem?: string | null | undefined;
+  origem?: string | null | undefined;
+  utmSource?: string | null | undefined;
+  utmMedium?: string | null | undefined;
+  utmCampaign?: string | null | undefined;
 };
 
 export async function criarLeadPublico(input: LeadPublicoInput) {
@@ -104,11 +104,11 @@ export async function criarLeadPublico(input: LeadPublicoInput) {
 }
 
 export async function listarLeads(filtros: {
-  status?: string | null;
-  origem?: string | null;
-  cidade?: string | null;
-  responsavel?: string | null;
-  data?: string | null;
+  status?: string | null | undefined;
+  origem?: string | null | undefined;
+  cidade?: string | null | undefined;
+  responsavel?: string | null | undefined;
+  data?: string | null | undefined;
 } = {}) {
   await ensureLeadsSchema();
   const d = requireDb();
@@ -179,7 +179,7 @@ export async function registrarInteracao(leadId: string, acao: string, usuario?:
   return historicoLead(leadId);
 }
 
-export async function atualizarLead(leadId: string, patch: { status?: string | null; responsavel?: string | null }) {
+export async function atualizarLead(leadId: string, patch: { status?: string | null | undefined; responsavel?: string | null | undefined }) {
   await ensureLeadsSchema();
   const d = requireDb();
   const rows = (await d.execute(sql`
