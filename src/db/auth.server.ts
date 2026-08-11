@@ -14,8 +14,10 @@ function toHex(buf: ArrayBuffer) {
 }
 
 async function pbkdf2(password: string, saltHex: string, iterations = 120_000) {
+  const saltParts = saltHex.match(/.{2}/g);
+  if (!saltParts) return "";
   const salt = Uint8Array.from(
-    saltHex.match(/.{2}/g)!.map((h) => parseInt(h, 16)),
+    saltParts.map((h) => parseInt(h, 16)),
   );
   const key = await crypto.subtle.importKey(
     "raw",
@@ -52,10 +54,29 @@ export async function verifyPassword(password: string, stored: string) {
 /** Cria as colunas de senha/proteção, o gatilho anti-exclusão e o superadmin. Idempotente. */
 export async function ensureSuperAdmin() {
   if (!db) {
-    console.error("❌ ensureSuperAdmin: DATABASE_URL ausente.");
-    return;
+    throw new Error("DATABASE_URL ausente.");
   }
 
+  // Garante que uma instalação nova consiga autenticar mesmo antes de qualquer
+  // acesso à aplicação. Todas as operações são idempotentes.
+  await db.execute(sql`
+    DO $$ BEGIN
+      CREATE TYPE app_role AS ENUM ('admin', 'operacao', 'vistoriador', 'comprador');
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END $$;
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS profiles (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      nome text,
+      telefone text,
+      whatsapp text,
+      email text NOT NULL UNIQUE,
+      role app_role NOT NULL DEFAULT 'comprador',
+      ativo boolean NOT NULL DEFAULT true,
+      criado_em timestamp NOT NULL DEFAULT now()
+    );
+  `);
   await db.execute(sql`
     ALTER TABLE profiles ADD COLUMN IF NOT EXISTS senha_hash text;
   `);
@@ -108,6 +129,7 @@ export async function ensureSuperAdmin() {
 
 export async function authenticate(email: string, password: string) {
   if (!db) throw new Error("Banco de dados indisponível.");
+  await ensureSuperAdmin();
   const rows: any = await db.execute(sql`
     SELECT id, nome, email, role, ativo, senha_hash
     FROM profiles WHERE lower(email) = lower(${email}) LIMIT 1
