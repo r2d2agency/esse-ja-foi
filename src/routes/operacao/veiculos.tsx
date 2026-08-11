@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { AlertTriangle, CalendarPlus, MapPin, Pencil, Trash2 } from "lucide-react";
+import { AlertTriangle, CalendarPlus, ChevronDown, History, MapPin, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   TIPOS_EXPECTATIVA,
@@ -39,6 +39,8 @@ import {
   listarParceirosFn,
   listarVistoriadoresFn,
 } from "@/lib/agendamentos.functions";
+import { calcularDepreciacaoFn, obterHistoricoDepreciacaoFn, sobrescreverAjusteFn } from "@/lib/depreciacao.functions";
+import { useAuth } from "@/hooks/use-auth";
 
 const Mapa = lazy(() => import("@/components/shared/MapaLocalizacao"));
 
@@ -698,7 +700,11 @@ function VeiculosPage() {
               )}
             </TabsContent>
 
-            {["vistoria", "depreciacao", "anuncio", "leilao", "venda"].map((t) => (
+            <TabsContent value="depreciacao" className="pt-4">
+              <AbaDepreciacao veiculoId={String(form.id)} valorFipe={fipe} valorInteresse={interesse} />
+            </TabsContent>
+
+            {["vistoria", "anuncio", "leilao", "venda"].map((t) => (
               <TabsContent key={t} value={t} className="pt-4">
                 <p className="text-sm text-slate-500">Este módulo será liberado nas próximas etapas.</p>
               </TabsContent>

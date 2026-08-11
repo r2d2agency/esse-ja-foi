@@ -18,6 +18,7 @@ import { Route as OperacaoRouteImport } from './routes/operacao'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as VistoriaRouteImport } from './routes/vistoria'
 import { Route as AdminChecklistRouteImport } from './routes/admin/checklist'
+import { Route as AdminDepreciacaoRouteImport } from './routes/admin/depreciacao'
 import { Route as OperacaoAgendaRouteImport } from './routes/operacao/agenda'
 import { Route as OperacaoClientesRouteImport } from './routes/operacao/clientes'
 import { Route as OperacaoLaudosRouteImport } from './routes/operacao/laudos'
@@ -72,6 +73,11 @@ const AdminChecklistRoute = AdminChecklistRouteImport.update({
   path: '/checklist',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminDepreciacaoRoute = AdminDepreciacaoRouteImport.update({
+  id: '/depreciacao',
+  path: '/depreciacao',
+  getParentRoute: () => AdminRoute,
+} as any)
 const OperacaoAgendaRoute = OperacaoAgendaRouteImport.update({
   id: '/agenda',
   path: '/agenda',
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/vistoria': typeof VistoriaRouteWithChildren
   '/admin/checklist': typeof AdminChecklistRoute
+  '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
   '/operacao/laudos': typeof OperacaoLaudosRoute
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/operacao': typeof OperacaoRouteWithChildren
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/admin/checklist': typeof AdminChecklistRoute
+  '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
   '/operacao/laudos': typeof OperacaoLaudosRoute
@@ -161,6 +169,7 @@ export interface FileRoutesById {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/vistoria': typeof VistoriaRouteWithChildren
   '/admin/checklist': typeof AdminChecklistRoute
+  '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
   '/operacao/laudos': typeof OperacaoLaudosRoute
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/vistoria'
     | '/admin/checklist'
+    | '/admin/depreciacao'
     | '/operacao/agenda'
     | '/operacao/clientes'
     | '/operacao/laudos'
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/operacao'
     | '/redefinir-senha'
     | '/admin/checklist'
+    | '/admin/depreciacao'
     | '/operacao/agenda'
     | '/operacao/clientes'
     | '/operacao/laudos'
@@ -219,6 +230,7 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/vistoria'
     | '/admin/checklist'
+    | '/admin/depreciacao'
     | '/operacao/agenda'
     | '/operacao/clientes'
     | '/operacao/laudos'
@@ -305,6 +317,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminChecklistRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/depreciacao': {
+      id: '/admin/depreciacao'
+      path: '/depreciacao'
+      fullPath: '/admin/depreciacao'
+      preLoaderRoute: typeof AdminDepreciacaoRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/operacao/agenda': {
       id: '/operacao/agenda'
       path: '/agenda'
@@ -366,10 +385,12 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminChecklistRoute: typeof AdminChecklistRoute
+  AdminDepreciacaoRoute: typeof AdminDepreciacaoRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminChecklistRoute: AdminChecklistRoute,
+  AdminDepreciacaoRoute: AdminDepreciacaoRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
@@ -423,13 +444,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

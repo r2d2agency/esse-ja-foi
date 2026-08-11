@@ -128,7 +128,7 @@ export async function calcularDepreciacao(veiculoId: string, usuarioId?: string 
   // Gravar cálculo
   const rows = (await d.execute(sql`
     INSERT INTO depreciacao_calculos (laudo_id, veiculo_id, usuario_id, valor_fipe, valor_final, detalhamento, fora_da_curva)
-    VALUES (${laudoId}, ${veiculoId}, ${usuarioId ?? null}, ${valorFipe}, ${valorSugerido}, ${JSON.stringify(detalhamento)}, ${foraDaCurva})
+    VALUES (${laudoId}, ${veiculoId}, ${usuarioId ?? null}, ${valorFipe}, ${valorSugerido}, ${JSON.stringify(detalhamento)}::jsonb, ${foraDaCurva})
     RETURNING *;
   `)) as unknown as Array<Row>;
 

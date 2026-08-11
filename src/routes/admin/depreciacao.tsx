@@ -134,7 +134,7 @@ function DepreciacaoAdminPage() {
 
           <DataTable<Rule>
             data={regras}
-            loading={loading}
+            emptyMessage={loading ? "Carregando..." : "Nenhuma regra cadastrada."}
             columns={[
               { 
                 header: "Item do Checklist", 
