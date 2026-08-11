@@ -9,8 +9,11 @@ import {
   salvarAcessoriosLaudoFn,
   salvarFotoFn,
   salvarRespostaFn,
+  pendenciasLaudoFn,
 } from "@/lib/laudos.functions";
-import { ArrowLeft, Camera, Check, CloudOff, Loader2, Send } from "lucide-react";
+import { ArrowLeft, Camera, Check, CloudOff, Loader2, Send, ChevronRight, AlertCircle } from "lucide-react";
+import { ProgressBar } from "@/components/vistoria/ProgressBar";
+import { RoteiroFotos } from "@/components/vistoria/RoteiroFotos";
 
 export const Route = createFileRoute("/vistoria/laudo/$laudoId")({
   component: PreencherLaudo,
