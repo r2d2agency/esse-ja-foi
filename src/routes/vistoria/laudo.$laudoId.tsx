@@ -177,7 +177,7 @@ function PreencherLaudo() {
 
   return (
     <div className="space-y-4 pb-24">
-      <div className="sticky top-[57px] z-10 -mx-4 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2">
+      <div className="sticky top-[57px] z-20 -mx-4 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2">
         <button
           onClick={() => void navigate({ to: "/vistoria" })}
           className="flex min-h-12 items-center gap-2 font-semibold text-slate-700"
@@ -194,7 +194,8 @@ function PreencherLaudo() {
         </h1>
       </div>
 
-      <div className="flex gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-1">
+      <div className="sticky top-[114px] z-20 -mx-4 bg-white px-4 pb-2">
+        <div className="flex gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-1">
         {["checklist", "acessorios", "fotos", "resumo"].map((tab) => (
           <button
             key={tab}
@@ -206,6 +207,7 @@ function PreencherLaudo() {
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
         ))}
+        </div>
       </div>
 
       {abaAtiva === "checklist" && (
