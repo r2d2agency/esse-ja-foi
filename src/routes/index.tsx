@@ -24,7 +24,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatPhone } from "@/lib/utils";
 import { toast } from "sonner";
-import { api } from "@/lib/api";
+import { useServerFn } from "@tanstack/react-start";
+import { criarLeadPublicoFn } from "@/lib/leads.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -33,8 +34,12 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "A plataforma que organiza toda a venda do seu carro. Vistoria no local e propostas reais.",
+          "A plataforma que organiza toda a venda do seu carro. Vistoria no local, laudo completo e propostas reais de compradores verificados.",
       },
+      { property: "og:title", content: "ESSE JÁ FOI — Venda seu carro com agilidade e segurança" },
+      { property: "og:description", content: "Vistoria no local, laudo completo e propostas reais para o seu carro." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Index,
@@ -51,6 +56,7 @@ function Index() {
     mensagem: "",
   });
   const [loading, setLoading] = useState(false);
+  const enviarLead = useServerFn(criarLeadPublicoFn);
 
   // Capturar UTMs
   useEffect(() => {
@@ -78,13 +84,21 @@ function Index() {
 
     setLoading(true);
     try {
-      const utmData = JSON.parse(localStorage.getItem("utm_data") || "{}");
-      await api.post("/leads/publico", {
-        ...formData,
-        origem: origin,
-        ...utmData
+      const utmData = JSON.parse(localStorage.getItem("utm_data") || "{}") as Record<string, string>;
+      const res = await enviarLead({
+        data: {
+          ...formData,
+          origem: origin,
+          utmSource: utmData['utm_source'] || null,
+          utmMedium: utmData['utm_medium'] || null,
+          utmCampaign: utmData['utm_campaign'] || null,
+        },
       });
-      
+      if (!res.ok) {
+        toast.error(res.message);
+        return;
+      }
+
       toast.success("Recebemos seu contato! Em breve falaremos com você.");
       setFormData({
         nome: "",
@@ -97,7 +111,7 @@ function Index() {
       });
     } catch (error) {
       console.error("Erro ao enviar lead:", error);
-      toast.error("Ocorreu um erro de conexão, mas seus dados foram mantidos. Tente novamente.");
+      toast.error("Não foi possível enviar agora. Tente novamente em instantes.");
     } finally {
       setLoading(false);
     }
