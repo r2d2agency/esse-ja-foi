@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as AuthenticatedCompradorRouteRouteImport } from './routes/_authenticated/comprador/route'
@@ -21,33 +22,37 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
-  id: '/_authenticated/admin',
+  id: '/admin',
   path: '/admin',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedCompradorRouteRoute =
   AuthenticatedCompradorRouteRouteImport.update({
-    id: '/_authenticated/comprador',
+    id: '/comprador',
     path: '/comprador',
-    getParentRoute: () => rootRouteImport,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedOperacaoRouteRoute =
   AuthenticatedOperacaoRouteRouteImport.update({
-    id: '/_authenticated/operacao',
+    id: '/operacao',
     path: '/operacao',
-    getParentRoute: () => rootRouteImport,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedVistoriaRouteRoute =
   AuthenticatedVistoriaRouteRouteImport.update({
-    id: '/_authenticated/vistoria',
+    id: '/vistoria',
     path: '/vistoria',
-    getParentRoute: () => rootRouteImport,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -69,6 +74,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRoute
   '/_authenticated/comprador': typeof AuthenticatedCompradorRouteRoute
@@ -83,6 +89,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/auth'
     | '/_authenticated/admin'
     | '/_authenticated/comprador'
@@ -92,11 +99,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
-  AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRoute
-  AuthenticatedCompradorRouteRoute: typeof AuthenticatedCompradorRouteRoute
-  AuthenticatedOperacaoRouteRoute: typeof AuthenticatedOperacaoRouteRoute
-  AuthenticatedVistoriaRouteRoute: typeof AuthenticatedVistoriaRouteRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -106,6 +110,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -120,50 +131,55 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/comprador': {
       id: '/_authenticated/comprador'
       path: '/comprador'
       fullPath: '/comprador'
       preLoaderRoute: typeof AuthenticatedCompradorRouteRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/operacao': {
       id: '/_authenticated/operacao'
       path: '/operacao'
       fullPath: '/operacao'
       preLoaderRoute: typeof AuthenticatedOperacaoRouteRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/vistoria': {
       id: '/_authenticated/vistoria'
       path: '/vistoria'
       fullPath: '/vistoria'
       preLoaderRoute: typeof AuthenticatedVistoriaRouteRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
   }
 }
 
-const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AuthRoute: AuthRoute,
+interface AuthenticatedRouteChildren {
+  AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRoute
+  AuthenticatedCompradorRouteRoute: typeof AuthenticatedCompradorRouteRoute
+  AuthenticatedOperacaoRouteRoute: typeof AuthenticatedOperacaoRouteRoute
+  AuthenticatedVistoriaRouteRoute: typeof AuthenticatedVistoriaRouteRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRoute,
   AuthenticatedCompradorRouteRoute: AuthenticatedCompradorRouteRoute,
   AuthenticatedOperacaoRouteRoute: AuthenticatedOperacaoRouteRoute,
   AuthenticatedVistoriaRouteRoute: AuthenticatedVistoriaRouteRoute,
 }
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AuthRoute: AuthRoute,
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
