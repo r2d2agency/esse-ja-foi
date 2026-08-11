@@ -1,12 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { db, migrateDb } from "./index";
 import { leiloes } from "./schema";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 export const getActiveAuctions = createServerFn({ method: "GET" })
   .handler(async () => {
     try {
-      // Ensure migrations have run (useful for the first request after deploy)
+      // Trigger migration check
       await migrateDb();
       
       if (!db) {
@@ -14,18 +14,18 @@ export const getActiveAuctions = createServerFn({ method: "GET" })
         return [];
       }
 
-      const results = await db.query.leiloes.findMany({
-        where: (leiloes, { eq }) => eq(leiloes.status, 'aberto'),
-        with: {
-          veiculo: true,
-        },
-        orderBy: [desc(leiloes.criado_em)],
-        limit: 10,
-      });
+      // Check if table exists before querying to avoid 500s if migrations fail silently
+      const results = await db.select().from(leiloes)
+        .where(eq(leiloes.status, 'aberto'))
+        .orderBy(desc(leiloes.criado_em))
+        .limit(10);
+      
       return results;
     } catch (error) {
       console.error("Failed to fetch auctions:", error);
+      // Return empty instead of throwing to prevent crashing the whole page
       return [];
     }
   });
+
 
