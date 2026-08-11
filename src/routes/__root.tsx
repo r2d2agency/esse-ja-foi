@@ -22,7 +22,14 @@ function RootLayout() {
   }, [setLoading]);
 
   if (isLoading) {
-    return <div className="flex h-screen items-center justify-center">Carregando...</div>;
+    return (
+      <div className="flex flex-col h-screen items-center justify-center p-6 text-center">
+        <p className="max-w-md break-all font-mono text-sm text-muted-foreground">
+          GET https://desenvolvimento-r2d2-essejafoi-front.ckilhl.easypanel.host/ 502 (Bad Gateway)<br />
+          favicon.ico:1  GET https://desenvolvimento-r2d2-essejafoi-front.ckilhl.easypanel.host/favicon.ico 502 (Bad Gateway)
+        </p>
+      </div>
+    );
   }
 
   return (
