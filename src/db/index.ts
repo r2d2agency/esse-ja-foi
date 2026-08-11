@@ -7,34 +7,42 @@ import path from 'path';
 const connectionString = process.env['DATABASE_URL'];
 
 if (!connectionString) {
-  throw new Error('DATABASE_URL environment variable is not set');
+  console.warn('⚠️ DATABASE_URL não definida. O banco de dados não será conectado até que a variável seja configurada.');
 }
 
-const client = postgres(connectionString, { 
-  max: 1,
-  ssl: connectionString.includes('sslmode=disable') ? false : 'require',
-  connect_timeout: 10,
-});
-export const db = drizzle(client, { schema });
+// Criamos o cliente apenas se a string existir, para evitar erro de inicialização fatal
+const client = connectionString 
+  ? postgres(connectionString, { 
+      max: 1,
+      ssl: connectionString.includes('sslmode=disable') ? false : 'require',
+      connect_timeout: 15, // Aumentado para 15s
+    }) 
+  : null;
 
-// Auto-migration on initialization
+export const db = client ? drizzle(client, { schema }) : null;
+
 export const migrateDb = async () => {
+  if (!db) {
+    console.error('❌ Migração impossível: DATABASE_URL ausente.');
+    return;
+  }
+  
   if (process.env['SKIP_MIGRATIONS'] === 'true') return;
-  console.log('Running migrations...');
+  
+  console.log('🚀 Iniciando migrações...');
   try {
-    // Usamos um diretório relativo ao diretório de execução para migrations
     const migrationsPath = path.join(process.cwd(), 'drizzle');
-    console.log('Looking for migrations in:', migrationsPath);
     await migrate(db, { migrationsFolder: migrationsPath });
-    console.log('Migrations completed successfully.');
+    console.log('✅ Migrações concluídas.');
   } catch (error) {
-    console.error('Migration failed:', error);
-    // Não travamos o boot se a migração falhar (ex: tabela já existe)
+    console.error('❌ Falha na migração:', error);
   }
 };
 
-// In production, we trigger migrations when the module loads
-if (process.env['NODE_ENV'] === 'production') {
-  migrateDb().catch(console.error);
-}
+// Log de inicialização para debug no Easypanel
+console.log('🌐 Servidor iniciando...');
+console.log('📍 NODE_ENV:', process.env['NODE_ENV']);
+console.log('📍 PORT:', process.env['PORT']);
+console.log('📍 DATABASE_URL presente:', !!connectionString);
+
 
