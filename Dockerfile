@@ -17,6 +17,8 @@ COPY --from=build /app/.output/public /usr/share/nginx/html
 # Configuração para fallback de SPA (redireciona tudo para index.html)
 RUN echo 'server { \
     listen 80; \
+    listen 3000; \
+    server_name localhost; \
     location / { \
         root /usr/share/nginx/html; \
         index index.html index.htm; \
