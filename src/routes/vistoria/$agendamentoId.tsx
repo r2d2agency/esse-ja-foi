@@ -8,7 +8,7 @@ import {
   registrarDivergenciaFn,
   validarPlacaFn,
 } from "@/lib/laudos.functions";
-import { formatPlaca } from "@/lib/brasil";
+import { maskPlaca } from "@/lib/brasil";
 import { ArrowLeft, Copy, MapPin, Phone, ShieldAlert, ClipboardCheck } from "lucide-react";
 
 export const Route = createFileRoute("/vistoria/$agendamentoId")({
@@ -175,7 +175,7 @@ function DetalheVistoria() {
           <p className="text-sm text-slate-600">Digite a placa do veículo que está na sua frente.</p>
           <input
             value={placa}
-            onChange={(e) => setPlaca(formatPlaca(e.target.value))}
+            onChange={(e) => setPlaca(maskPlaca(e.target.value))}
             placeholder="ABC1D23"
             inputMode="text"
             autoCapitalize="characters"
