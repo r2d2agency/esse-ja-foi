@@ -1,11 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const credentials = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
-});
-
 export const seedSuperAdmin = createServerFn({ method: "POST" }).handler(async () => {
   const { ensureSuperAdmin, SUPERADMIN_EMAIL } = await import("@/db/auth.server");
   try {
@@ -18,15 +13,20 @@ export const seedSuperAdmin = createServerFn({ method: "POST" }).handler(async (
 });
 
 export const loginWithPassword = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => credentials.parse(data))
+  .inputValidator((data: unknown) =>
+    z.object({ email: z.string().email(), password: z.string().min(1) }).parse(data),
+  )
   .handler(async ({ data }) => {
-    const { authenticate, issueToken, ensureSuperAdmin } = await import("@/db/auth.server");
+    const { authenticate, issueToken } = await import("@/db/auth.server");
     try {
-      await ensureSuperAdmin();
+      const user = await authenticate(data.email, data.password);
+      if (!user) return { ok: false as const, message: "E-mail ou senha inválidos." };
+      return { ok: true as const, user, accessToken: await issueToken(user.id) };
     } catch (error) {
-      console.error("ensureSuperAdmin:", error);
+      console.error("Falha na autenticação:", error);
+      return {
+        ok: false as const,
+        message: "Não foi possível acessar o banco de dados. Verifique a DATABASE_URL e tente novamente.",
+      };
     }
-    const user = await authenticate(data.email, data.password);
-    if (!user) return { ok: false as const, message: "E-mail ou senha inválidos." };
-    return { ok: true as const, user, accessToken: await issueToken(user.id) };
   });

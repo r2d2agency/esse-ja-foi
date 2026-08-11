@@ -21,6 +21,7 @@ FROM node:22-slim AS release
 WORKDIR /app
 # Copia o build do Nitro (.output contém server e public)
 COPY --from=build /app/.output ./.output
+COPY --from=build /app/drizzle ./drizzle
 
 # Variaveis de ambiente para o Nitro/Node server
 ENV NODE_ENV=production
