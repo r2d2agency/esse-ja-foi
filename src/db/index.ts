@@ -35,6 +35,9 @@ export const migrateDb = async () => {
     const migrationsPath = path.join(process.cwd(), 'drizzle');
     await migrate(db, { migrationsFolder: migrationsPath });
     console.log('✅ Migrações concluídas.');
+
+    const { ensureSuperAdmin } = await import('./auth.server');
+    await ensureSuperAdmin();
   } catch (error) {
     console.error('❌ Falha na migração:', error);
   }
