@@ -64,7 +64,8 @@ export const ativarModeloFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const m = await import("@/db/checklist.server");
     try {
-      return { ok: true as const, ...(await m.ativarModelo(data.id)) };
+      await m.ativarModelo(data.id);
+      return { ok: true as const };
     } catch (e) {
       return falha(e);
     }
@@ -75,7 +76,8 @@ export const excluirModeloFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const m = await import("@/db/checklist.server");
     try {
-      return { ok: true as const, ...(await m.excluirModelo(data.id)) };
+      await m.excluirModelo(data.id);
+      return { ok: true as const };
     } catch (e) {
       return falha(e);
     }
@@ -106,7 +108,8 @@ export const excluirAcessorioFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const m = await import("@/db/checklist.server");
     try {
-      return { ok: true as const, ...(await m.excluirAcessorio(data.id)) };
+      await m.excluirAcessorio(data.id);
+      return { ok: true as const };
     } catch (e) {
       return falha(e);
     }
