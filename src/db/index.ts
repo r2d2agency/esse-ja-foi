@@ -10,7 +10,11 @@ if (!connectionString) {
   throw new Error('DATABASE_URL environment variable is not set');
 }
 
-const client = postgres(connectionString, { max: 1 });
+const client = postgres(connectionString, { 
+  max: 1,
+  ssl: connectionString.includes('sslmode=disable') ? false : 'require',
+  connect_timeout: 10,
+});
 export const db = drizzle(client, { schema });
 
 // Auto-migration on initialization
