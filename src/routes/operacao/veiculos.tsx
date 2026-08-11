@@ -952,11 +952,11 @@ function AbaDepreciacao({ veiculoId, valorFipe, valorInteresse }: { veiculoId: s
         title="Detalhamento do Cálculo"
         data={d}
         columns={[
-          { header: "Item/Motivo", accessor: (it) => <span className="font-medium">{it.titulo}</span> },
-          { header: "Informação", accessor: (it) => <span className="text-xs text-slate-500">{it.info || "—"}</span> },
+          { header: "Item/Motivo", accessor: (it: any) => <span className="font-medium">{it.titulo}</span> },
+          { header: "Informação", accessor: (it: any) => <span className="text-xs text-slate-500">{it.info || "—"}</span> },
           { 
             header: "Valor", 
-            accessor: (it) => (
+            accessor: (it: any) => (
               <span className={`font-bold ${it.tipo === 'DESCONTO' ? "text-red-600" : it.tipo === 'ACRESCIMO' ? "text-emerald-600" : "text-slate-500"}`}>
                 {it.tipo === 'DESCONTO' ? "-" : ""}{formatCurrency(it.valor)}
                 {it.sobrescrito && <Badge className="ml-2 bg-amber-100 text-amber-700 text-[8px]">AJUSTADO</Badge>}
@@ -965,7 +965,7 @@ function AbaDepreciacao({ veiculoId, valorFipe, valorInteresse }: { veiculoId: s
           },
           {
             header: "Ações",
-            accessor: (it) => (it.tipo === 'DESCONTO' || it.tipo === 'ACRESCIMO') ? (
+            accessor: (it: any) => (it.tipo === 'DESCONTO' || it.tipo === 'ACRESCIMO') ? (
               <Button size="icon" variant="ghost" onClick={() => setModalSobrescrever({ open: true, item: it, novoValor: String(it.valor), justificativa: it.justificativa || "" })}>
                 <Pencil className="h-4 w-4" />
               </Button>
