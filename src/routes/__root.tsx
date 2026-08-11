@@ -24,9 +24,8 @@ function RootLayout() {
   if (isLoading) {
     return (
       <div className="flex flex-col h-screen items-center justify-center p-6 text-center">
-        <p className="max-w-md font-sans text-sm text-muted-foreground whitespace-pre-wrap">
-          Service is not reachable
-          Make sure the service is running and healthy.
+        <p className="max-w-md font-sans text-sm text-muted-foreground">
+          ja esta aaparecendo assim quero que o sisttema funcione o que houve pq nao tem mais nada.  ?
         </p>
       </div>
     );
