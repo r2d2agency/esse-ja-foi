@@ -9,6 +9,11 @@ export const getActiveAuctions = createServerFn({ method: "GET" })
       // Ensure migrations have run (useful for the first request after deploy)
       await migrateDb();
       
+      if (!db) {
+        console.error("Database connection not initialized. Check DATABASE_URL.");
+        return [];
+      }
+
       const results = await db.query.leiloes.findMany({
         where: (leiloes, { eq }) => eq(leiloes.status, 'aberto'),
         with: {
