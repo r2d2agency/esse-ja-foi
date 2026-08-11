@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Gavel, ShieldCheck, FileSearch, Timer, ArrowRight } from "lucide-react";
 import heroImg from "@/assets/hero-auction.jpg";
 import lote1 from "@/assets/lote-1.jpg";
@@ -106,6 +106,11 @@ function Index() {
     }
   }, []);
 
+  const displayLotes = useMemo(() => {
+    if (dbLotes.length > 0) return dbLotes;
+    return lotes;
+  }, [dbLotes]);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
@@ -177,7 +182,7 @@ function Index() {
           <span className="text-sm text-muted-foreground">Atualizado agora</span>
         </div>
         <div className="mt-10 grid gap-6 md:grid-cols-3">
-          {lotes.map((l) => (
+          {displayLotes.map((l: any) => (
             <article key={l.nome} className="card-lot overflow-hidden rounded-lg">
               <div className="relative">
                 <img
