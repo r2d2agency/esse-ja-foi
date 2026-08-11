@@ -17,6 +17,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as OperacaoRouteImport } from './routes/operacao'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as VistoriaRouteImport } from './routes/vistoria'
+import { Route as OperacaoAgendaRouteImport } from './routes/operacao/agenda'
 import { Route as OperacaoClientesRouteImport } from './routes/operacao/clientes'
 import { Route as OperacaoLeadsRouteImport } from './routes/operacao/leads'
 import { Route as OperacaoVeiculosRouteImport } from './routes/operacao/veiculos'
@@ -61,6 +62,11 @@ const VistoriaRoute = VistoriaRouteImport.update({
   path: '/vistoria',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OperacaoAgendaRoute = OperacaoAgendaRouteImport.update({
+  id: '/agenda',
+  path: '/agenda',
+  getParentRoute: () => OperacaoRoute,
+} as any)
 const OperacaoClientesRoute = OperacaoClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/operacao': typeof OperacaoRouteWithChildren
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/vistoria': typeof VistoriaRoute
+  '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
   '/operacao/leads': typeof OperacaoLeadsRoute
   '/operacao/veiculos': typeof OperacaoVeiculosRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/operacao': typeof OperacaoRouteWithChildren
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/vistoria': typeof VistoriaRoute
+  '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
   '/operacao/leads': typeof OperacaoLeadsRoute
   '/operacao/veiculos': typeof OperacaoVeiculosRoute
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/operacao': typeof OperacaoRouteWithChildren
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/vistoria': typeof VistoriaRoute
+  '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
   '/operacao/leads': typeof OperacaoLeadsRoute
   '/operacao/veiculos': typeof OperacaoVeiculosRoute
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
     | '/operacao'
     | '/redefinir-senha'
     | '/vistoria'
+    | '/operacao/agenda'
     | '/operacao/clientes'
     | '/operacao/leads'
     | '/operacao/veiculos'
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
     | '/operacao'
     | '/redefinir-senha'
     | '/vistoria'
+    | '/operacao/agenda'
     | '/operacao/clientes'
     | '/operacao/leads'
     | '/operacao/veiculos'
@@ -154,6 +165,7 @@ export interface FileRouteTypes {
     | '/operacao'
     | '/redefinir-senha'
     | '/vistoria'
+    | '/operacao/agenda'
     | '/operacao/clientes'
     | '/operacao/leads'
     | '/operacao/veiculos'
@@ -228,6 +240,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VistoriaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/operacao/agenda': {
+      id: '/operacao/agenda'
+      path: '/agenda'
+      fullPath: '/operacao/agenda'
+      preLoaderRoute: typeof OperacaoAgendaRouteImport
+      parentRoute: typeof OperacaoRoute
+    }
     '/operacao/clientes': {
       id: '/operacao/clientes'
       path: '/clientes'
@@ -253,12 +272,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface OperacaoRouteChildren {
+  OperacaoAgendaRoute: typeof OperacaoAgendaRoute
   OperacaoClientesRoute: typeof OperacaoClientesRoute
   OperacaoLeadsRoute: typeof OperacaoLeadsRoute
   OperacaoVeiculosRoute: typeof OperacaoVeiculosRoute
 }
 
 const OperacaoRouteChildren: OperacaoRouteChildren = {
+  OperacaoAgendaRoute: OperacaoAgendaRoute,
   OperacaoClientesRoute: OperacaoClientesRoute,
   OperacaoLeadsRoute: OperacaoLeadsRoute,
   OperacaoVeiculosRoute: OperacaoVeiculosRoute,
