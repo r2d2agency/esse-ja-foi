@@ -9,16 +9,16 @@ import lote3 from "@/assets/lote-3.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "LeilãoMotor — Leilão de Veículos Online ao Vivo" },
+      { title: "ESSE JÁ FOI — Plataforma de Leilão de Veículos" },
       {
         name: "description",
         content:
-          "Participe de leilões de carros, motos e utilitários com lances ao vivo, laudo cautelar e documentação verificada. Cadastre-se e dê seu lance.",
+          "Plataforma de gestão de veículos, vistorias e leilões de veículos usados.",
       },
-      { property: "og:title", content: "LeilãoMotor — Leilão de Veículos Online ao Vivo" },
+      { property: "og:title", content: "ESSE JÁ FOI — Plataforma de Leilão de Veículos" },
       {
         property: "og:description",
-        content: "Lances ao vivo em carros, motos e utilitários com laudo e documentação verificada.",
+        content: "Plataforma de gestão de veículos, vistorias e leilões de veículos usados.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -93,7 +93,7 @@ function Index() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             <Gavel className="h-5 w-5 text-ember" />
-            <span className="font-display text-2xl tracking-wide">LEILÃOMOTOR</span>
+            <span className="font-display text-2xl tracking-wide">ESSE JÁ FOI</span>
           </div>
           <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
             <a href="#lotes" className="transition-colors hover:text-foreground">Lotes</a>
@@ -250,7 +250,7 @@ function Index() {
 
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-8 text-sm text-muted-foreground">
-          <span className="font-display text-xl tracking-wide text-foreground">LEILÃOMOTOR</span>
+          <span className="font-display text-xl tracking-wide text-foreground">ESSE JÁ FOI</span>
           <span>© 2026 LeilãoMotor · Leiloeiro Oficial JUCESP 1234</span>
         </div>
       </footer>
