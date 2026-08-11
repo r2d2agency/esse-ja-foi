@@ -3,7 +3,7 @@ import { z } from "zod";
 import { 
   calcularDepreciacao, 
   obterHistoricoDepreciacao 
-} from "./depreciacao.server";
+} from "../db/depreciacao.server";
 
 export const calcularDepreciacaoFn = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ 
