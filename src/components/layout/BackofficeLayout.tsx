@@ -1,4 +1,4 @@
-import { Outlet, Navigate } from "@tanstack/react-router";
+import { Link, Outlet, Navigate } from "@tanstack/react-router";
 import { useAuthStore } from "@/hooks/use-auth";
 import { ReactNode } from "react";
 
