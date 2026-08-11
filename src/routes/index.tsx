@@ -89,12 +89,26 @@ function Countdown() {
 }
 
 function Index() {
-  const fetchAuctions = useServerFn(getActiveAuctions);
   const [dbLotes, setDbLotes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchAuctions().then(setDbLotes).catch(console.error);
-  }, [fetchAuctions]);
+    // In a decoupled frontend, we should fetch from the external API
+    // For now, we'll use the static 'lotes' defined above or fetch if VITE_API_URL is set
+    const apiUrl = import.meta.env.VITE_API_URL;
+    if (apiUrl) {
+      setLoading(true);
+      fetch(`${apiUrl}/auctions/active`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) setDbLotes(data);
+        })
+        .catch(err => {
+          console.error("Erro ao buscar leilões da API:", err);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
