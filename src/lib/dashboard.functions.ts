@@ -4,8 +4,13 @@ import type { Row } from "@/db/dashboard.server";
 
 export const dashboardAdminFn = createServerFn({ method: "GET" }).handler(async () => {
   const m = await import("@/db/dashboard.server");
-  const [indicadores, recentes] = await Promise.all([m.indicadoresAdmin(), m.veiculosRecentes(10)]);
-  return { indicadores, recentes };
+  const [indicadores, recentes, leads, leadsTotais] = await Promise.all([
+    m.indicadoresAdmin(),
+    m.veiculosRecentes(10),
+    m.leadsRecentes(10),
+    m.totaisLeads(),
+  ]);
+  return { indicadores, recentes, leads, leadsTotais, bancoOk: m.bancoDisponivel() };
 });
 
 export const dashboardOperacaoFn = createServerFn({ method: "GET" }).handler(async () => {
