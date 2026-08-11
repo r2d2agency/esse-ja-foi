@@ -17,6 +17,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as OperacaoRouteImport } from './routes/operacao'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as VistoriaRouteImport } from './routes/vistoria'
+import { Route as OperacaoLeadsRouteImport } from './routes/operacao/leads'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -58,6 +59,11 @@ const VistoriaRoute = VistoriaRouteImport.update({
   path: '/vistoria',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OperacaoLeadsRoute = OperacaoLeadsRouteImport.update({
+  id: '/leads',
+  path: '/leads',
+  getParentRoute: () => OperacaoRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -65,9 +71,10 @@ export interface FileRoutesByFullPath {
   '/comprador': typeof CompradorRoute
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
   '/login': typeof LoginRoute
-  '/operacao': typeof OperacaoRoute
+  '/operacao': typeof OperacaoRouteWithChildren
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/vistoria': typeof VistoriaRoute
+  '/operacao/leads': typeof OperacaoLeadsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -75,9 +82,10 @@ export interface FileRoutesByTo {
   '/comprador': typeof CompradorRoute
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
   '/login': typeof LoginRoute
-  '/operacao': typeof OperacaoRoute
+  '/operacao': typeof OperacaoRouteWithChildren
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/vistoria': typeof VistoriaRoute
+  '/operacao/leads': typeof OperacaoLeadsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,9 +94,10 @@ export interface FileRoutesById {
   '/comprador': typeof CompradorRoute
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
   '/login': typeof LoginRoute
-  '/operacao': typeof OperacaoRoute
+  '/operacao': typeof OperacaoRouteWithChildren
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/vistoria': typeof VistoriaRoute
+  '/operacao/leads': typeof OperacaoLeadsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
     | '/operacao'
     | '/redefinir-senha'
     | '/vistoria'
+    | '/operacao/leads'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/operacao'
     | '/redefinir-senha'
     | '/vistoria'
+    | '/operacao/leads'
   id:
     | '__root__'
     | '/'
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '/operacao'
     | '/redefinir-senha'
     | '/vistoria'
+    | '/operacao/leads'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -129,7 +141,7 @@ export interface RootRouteChildren {
   CompradorRoute: typeof CompradorRoute
   EsqueciMinhaSenhaRoute: typeof EsqueciMinhaSenhaRoute
   LoginRoute: typeof LoginRoute
-  OperacaoRoute: typeof OperacaoRoute
+  OperacaoRoute: typeof OperacaoRouteWithChildren
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   VistoriaRoute: typeof VistoriaRoute
 }
@@ -192,8 +204,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VistoriaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/operacao/leads': {
+      id: '/operacao/leads'
+      path: '/leads'
+      fullPath: '/operacao/leads'
+      preLoaderRoute: typeof OperacaoLeadsRouteImport
+      parentRoute: typeof OperacaoRoute
+    }
   }
 }
+
+interface OperacaoRouteChildren {
+  OperacaoLeadsRoute: typeof OperacaoLeadsRoute
+}
+
+const OperacaoRouteChildren: OperacaoRouteChildren = {
+  OperacaoLeadsRoute: OperacaoLeadsRoute,
+}
+
+const OperacaoRouteWithChildren = OperacaoRoute._addFileChildren(
+  OperacaoRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -201,7 +232,7 @@ const rootRouteChildren: RootRouteChildren = {
   CompradorRoute: CompradorRoute,
   EsqueciMinhaSenhaRoute: EsqueciMinhaSenhaRoute,
   LoginRoute: LoginRoute,
-  OperacaoRoute: OperacaoRoute,
+  OperacaoRoute: OperacaoRouteWithChildren,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   VistoriaRoute: VistoriaRoute,
 }

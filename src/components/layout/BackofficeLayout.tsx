@@ -1,4 +1,4 @@
-import { Outlet, Navigate } from "@tanstack/react-router";
+import { Link, Outlet, Navigate } from "@tanstack/react-router";
 import { useAuthStore } from "@/hooks/use-auth";
 import { ReactNode } from "react";
 
@@ -17,9 +17,10 @@ export function BackofficeLayout({ children }: BackofficeLayoutProps) {
       <aside className="w-64 border-r border-slate-200 bg-white p-4">
         <div className="mb-8 font-bold text-teal-900 text-xl">ESSE JÁ FOI</div>
         <nav className="space-y-1">
-          <a href="/admin" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded">Dashboard</a>
-          <a href="/admin/leiloes" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded">Leilões</a>
-          <a href="/admin/vistoria" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded">Vistorias</a>
+          <Link to="/admin" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Dashboard</Link>
+          <Link to="/operacao/leads" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Leads</Link>
+          <Link to="/admin/leiloes" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Leilões</Link>
+          <Link to="/admin/vistoria" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Vistorias</Link>
         </nav>
       </aside>
       
