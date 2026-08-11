@@ -15,9 +15,6 @@ FROM node:22-slim AS release
 RUN corepack enable
 WORKDIR /app
 
-# O Nitro/TanStack Start precisa do node_modules para as server functions
-# e para as dependências que não foram inlined no bundle.
-COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/.output ./.output
 COPY --from=build /app/drizzle ./drizzle
 COPY --from=build /app/package.json ./package.json
