@@ -25,7 +25,7 @@ function RootLayout() {
     return (
       <div className="flex flex-col h-screen items-center justify-center p-6 text-center">
         <p className="max-w-md break-all font-mono text-sm text-muted-foreground">
-          nao carrega apagina landing page ou paginas internas.
+          ja temos uma area de login e senha para area administrativa ? preciso de um usuario superadmin que nao pode ser apagado via banco de dados.. usuario tnicodemos@gmail.com senha @N3tw0rk$
         </p>
       </div>
     );
