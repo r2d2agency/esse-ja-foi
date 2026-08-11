@@ -1,11 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
-import { db } from "./index";
+import { db, migrateDb } from "./index";
 import { leiloes } from "./schema";
 import { desc } from "drizzle-orm";
 
 export const getActiveAuctions = createServerFn({ method: "GET" })
   .handler(async () => {
     try {
+      // Ensure migrations have run (useful for the first request after deploy)
+      await migrateDb();
+      
       const results = await db.query.leiloes.findMany({
         where: (leiloes, { eq }) => eq(leiloes.status, 'aberto'),
         with: {
@@ -20,3 +23,4 @@ export const getActiveAuctions = createServerFn({ method: "GET" })
       return [];
     }
   });
+
