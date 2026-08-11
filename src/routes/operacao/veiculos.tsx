@@ -40,7 +40,7 @@ import {
   listarVistoriadoresFn,
 } from "@/lib/agendamentos.functions";
 import { calcularDepreciacaoFn, obterHistoricoDepreciacaoFn, sobrescreverAjusteFn } from "@/lib/depreciacao.functions";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuthStore } from "@/hooks/use-auth";
 
 const Mapa = lazy(() => import("@/components/shared/MapaLocalizacao"));
 
@@ -812,5 +812,195 @@ function VeiculosPage() {
         </SheetContent>
       </Sheet>
     </BackofficeLayout>
+  );
+}
+
+function AbaDepreciacao({ veiculoId, valorFipe, valorInteresse }: { veiculoId: string; valorFipe: number; valorInteresse: number }) {
+  const { user } = useAuthStore();
+  const [historico, setHistorico] = useState<any[]>([]);
+  const [calculoAtivo, setCalculoAtivo] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [modalSobrescrever, setModalSobrescrever] = useState<{ open: boolean; item: any; novoValor: string; justificativa: string }>({
+    open: false,
+    item: null,
+    novoValor: "",
+    justificativa: ""
+  });
+
+  const carregar = useCallback(async () => {
+    setLoading(true);
+    const res = await obterHistoricoDepreciacaoFn({ data: { veiculoId } });
+    if (res.ok && res.data) {
+      setHistorico(res.data);
+      if (!calculoAtivo) setCalculoAtivo(res.data[0]);
+    }
+    setLoading(false);
+  }, [veiculoId, calculoAtivo]);
+
+  useEffect(() => { void carregar(); }, [carregar]);
+
+  const recalcular = async () => {
+    if (!confirm("Deseja gerar uma nova versão do cálculo de depreciação?")) return;
+    setLoading(true);
+    const res = await calcularDepreciacaoFn({ data: { veiculoId, usuarioId: user?.id } });
+    if (res.ok) {
+      toast.success("Depreciação recalculada");
+      setCalculoAtivo(res.data);
+      void carregar();
+    } else {
+      toast.error(res.message);
+    }
+    setLoading(false);
+  };
+
+  const salvarSobrescrita = async () => {
+    const res = await sobrescreverAjusteFn({
+      data: {
+        calculoId: calculoAtivo.id,
+        titulo: modalSobrescrever.item.titulo,
+        novoValor: Number(modalSobrescrever.novoValor),
+        justificativa: modalSobrescrever.justificativa
+      }
+    });
+    if (res.ok) {
+      toast.success("Ajuste atualizado");
+      setModalSobrescrever({ open: false, item: null, novoValor: "", justificativa: "" });
+      void carregar();
+    } else {
+      toast.error(res.message);
+    }
+  };
+
+  if (!calculoAtivo && !loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <p className="text-slate-500">Nenhum cálculo de depreciação disponível para este veículo.</p>
+        <Button className="mt-4 bg-teal-900" onClick={recalcular}>Gerar Primeiro Cálculo</Button>
+      </div>
+    );
+  }
+
+  const d = calculoAtivo?.detalhamento || [];
+  const totalDescontos = d.filter((it: any) => it.tipo === 'DESCONTO').reduce((a: number, b: any) => a + Number(b.valor), 0);
+  const totalValorizacoes = d.filter((it: any) => it.tipo === 'ACRESCIMO').reduce((a: number, b: any) => a + Number(b.valor), 0);
+  const valorSugerido = Number(calculoAtivo?.valor_final || 0);
+  const gap = valorSugerido - valorInteresse;
+  const gapPercent = (gap / valorSugerido) * 100;
+  const viavel = gap >= 0;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Select value={calculoAtivo?.id} onValueChange={id => setCalculoAtivo(historico.find(h => h.id === id))}>
+            <SelectTrigger className="w-[240px]">
+              <History className="mr-2 h-4 w-4 text-slate-400" />
+              <SelectValue placeholder="Versão do cálculo" />
+            </SelectTrigger>
+            <SelectContent>
+              {historico.map(h => (
+                <SelectItem key={h.id} value={h.id}>
+                  {formatDate(h.criado_em)} {h.usuario_nome ? `(${h.usuario_nome})` : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button variant="outline" size="sm" onClick={recalcular} disabled={loading}>
+          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Recalcular
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {[
+          { label: "Valor FIPE", val: valorFipe, color: "text-slate-900" },
+          { label: "Ajuste KM", val: d.find((it: any) => it.titulo.includes("KM"))?.valor || 0, color: "text-slate-600" },
+          { label: "Descontos", val: totalDescontos, color: "text-red-600" },
+          { label: "Valorizações", val: totalValorizacoes, color: "text-emerald-600" },
+        ].map(card => (
+          <div key={card.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-[10px] font-bold uppercase text-slate-500">{card.label}</p>
+            <p className={`mt-1 text-lg font-bold ${card.color}`}>{formatCurrency(card.val)}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className={`rounded-2xl border-2 p-6 text-center ${viavel ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"}`}>
+        <p className="text-xs font-bold uppercase text-slate-500">Valor sugerido de compra</p>
+        <p className={`text-4xl font-black ${viavel ? "text-emerald-900" : "text-red-900"}`}>
+          {formatCurrency(valorSugerido)}
+        </p>
+        <div className="mt-4 flex items-center justify-center gap-8 border-t border-white/50 pt-4">
+          <div>
+            <p className="text-[10px] uppercase text-slate-500">Interesse Cliente</p>
+            <p className="font-bold text-slate-700">{formatCurrency(valorInteresse)}</p>
+          </div>
+          <div className="h-8 w-px bg-slate-300" />
+          <div>
+            <p className="text-[10px] uppercase text-slate-500">Gap Negócio</p>
+            <p className={`text-xl font-bold ${viavel ? "text-emerald-600" : "text-red-600"}`}>
+              {gap > 0 ? "+" : ""}{formatCurrency(gap)} ({gapPercent.toFixed(1)}%)
+            </p>
+          </div>
+        </div>
+        <p className={`mt-4 text-sm font-bold uppercase ${viavel ? "text-emerald-700" : "text-red-700"}`}>
+          {viavel ? "Negócio Viável" : "Negócio Inviável / Margem Estreita"}
+        </p>
+      </div>
+
+      <DataTable
+        title="Detalhamento do Cálculo"
+        data={d}
+        columns={[
+          { header: "Item/Motivo", accessor: (it) => <span className="font-medium">{it.titulo}</span> },
+          { header: "Informação", accessor: (it) => <span className="text-xs text-slate-500">{it.info || "—"}</span> },
+          { 
+            header: "Valor", 
+            accessor: (it) => (
+              <span className={`font-bold ${it.tipo === 'DESCONTO' ? "text-red-600" : it.tipo === 'ACRESCIMO' ? "text-emerald-600" : "text-slate-500"}`}>
+                {it.tipo === 'DESCONTO' ? "-" : ""}{formatCurrency(it.valor)}
+                {it.sobrescrito && <Badge className="ml-2 bg-amber-100 text-amber-700 text-[8px]">AJUSTADO</Badge>}
+              </span>
+            )
+          },
+          {
+            header: "Ações",
+            accessor: (it) => (it.tipo === 'DESCONTO' || it.tipo === 'ACRESCIMO') ? (
+              <Button size="icon" variant="ghost" onClick={() => setModalSobrescrever({ open: true, item: it, novoValor: String(it.valor), justificativa: it.justificativa || "" })}>
+                <Pencil className="h-4 w-4" />
+              </Button>
+            ) : null
+          }
+        ]}
+      />
+
+      <Sheet open={modalSobrescrever.open} onOpenChange={open => !open && setModalSobrescrever(s => ({ ...s, open: false }))}>
+        <SheetContent className="sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Sobrescrever Ajuste</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6 space-y-4">
+            <p className="text-sm text-slate-500">Item: <span className="font-bold text-slate-900">{modalSobrescrever.item?.titulo}</span></p>
+            <div>
+              <Label>Novo Valor (R$)</Label>
+              <Input type="number" value={modalSobrescrever.novoValor} onChange={e => setModalSobrescrever(s => ({ ...s, novoValor: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Justificativa Obrigatória</Label>
+              <Textarea 
+                value={modalSobrescrever.justificativa} 
+                onChange={e => setModalSobrescrever(s => ({ ...s, justificativa: e.target.value }))}
+                placeholder="Explique o motivo do ajuste manual..."
+                rows={4}
+              />
+            </div>
+          </div>
+          <SheetFooter className="mt-8">
+            <Button variant="outline" onClick={() => setModalSobrescrever(s => ({ ...s, open: false }))}>Cancelar</Button>
+            <Button className="bg-teal-900" onClick={salvarSobrescrita} disabled={!modalSobrescrever.justificativa.trim()}>Salvar Ajuste</Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+    </div>
   );
 }
