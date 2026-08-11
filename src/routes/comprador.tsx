@@ -1,18 +1,38 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { BackofficeLayout } from "@/components/layout/BackofficeLayout";
 import { DataTable } from "@/components/shared/DataTable";
-import { formatCurrency } from "@/lib/utils";
+import { dashboardCompradorFn } from "@/lib/dashboard.functions";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import { useAuthStore } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/comprador")({
+  head: () => ({
+    meta: [
+      { title: "Minha conta | ESSE JÁ FOI" },
+      { name: "description", content: "Acompanhe seus lances e os leilões abertos de veículos na plataforma ESSE JÁ FOI." },
+      { property: "og:title", content: "Minha conta | ESSE JÁ FOI" },
+      { property: "og:description", content: "Lances em aberto, leilões ativos e veículos arrematados." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: CompradorDashboard,
 });
 
-const mockLances = [
-  { id: 1, lote: "Lote 042 - Corolla XEI", seuLance: 95000, lanceAtual: 96500, status: "Superado" },
-  { id: 2, lote: "Lote 115 - Honda Civic", seuLance: 82000, lanceAtual: 82000, status: "Vencendo" },
-];
-
 function CompradorDashboard() {
+  const user = useAuthStore((s) => s.user);
+  const email = user?.email ?? "";
+  const carregar = useServerFn(dashboardCompradorFn);
+  const { data, isLoading } = useQuery({
+    queryKey: ["dashboard-comprador", email],
+    queryFn: () => carregar({ data: { email } }),
+  });
+
+  const lances = (data?.lances ?? []) as Array<Record<string, any>>;
+  const abertos = (data?.abertos ?? []) as Array<Record<string, any>>;
+
   return (
     <BackofficeLayout>
       <div className="space-y-8">
@@ -21,58 +41,53 @@ function CompradorDashboard() {
             <h1 className="text-2xl font-bold text-slate-900">Minha Conta</h1>
             <p className="text-slate-500">Acompanhe seus lances e veículos arrematados.</p>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-white px-4 py-2 shadow-sm flex items-center gap-3">
-            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-sm font-bold text-slate-700 uppercase tracking-wider">Habilitado</span>
-          </div>
         </div>
-        
+
         <div className="grid gap-6 md:grid-cols-3">
           {[
-            ["Lances Ativos", "2", "text-amber-600"],
-            ["Arrematados", "0", "text-teal-600"],
-            ["Crédito Disponível", "R$ 250k", "text-slate-600"],
+            ["Lances ativos", String(lances.length), "text-amber-600"],
+            ["Leilões abertos", String(abertos.length), "text-teal-600"],
+            [
+              "Maior lance seu",
+              lances.length ? formatCurrency(Math.max(...lances.map((l) => Number(l['meu_lance'] ?? 0)))) : "—",
+              "text-slate-600",
+            ],
           ].map(([label, val, color]) => (
             <div key={label} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
               <p className="text-sm font-medium text-slate-500">{label}</p>
-              <p className={`mt-2 text-3xl font-bold ${color}`}>{val}</p>
+              <p className={`mt-2 text-3xl font-bold ${color}`}>{isLoading ? "—" : val}</p>
             </div>
           ))}
         </div>
 
-        <DataTable 
-          title="Meus Lances em Aberto"
-          data={mockLances}
+        <DataTable
+          title="Meus lances em aberto"
+          data={lances}
+          emptyMessage={isLoading ? "Carregando..." : "Você ainda não deu lances."}
           columns={[
-            { header: "Lote / Veículo", accessor: "lote" },
-            { 
-              header: "Seu Lance", 
-              accessor: (row) => formatCurrency(row.seuLance) 
-            },
-            { 
-              header: "Lance Atual", 
-              accessor: (row) => (
-                <span className={row.seuLance === row.lanceAtual ? "text-teal-600 font-bold" : "text-amber-600 font-bold"}>
-                  {formatCurrency(row.lanceAtual)}
-                </span>
-              )
-            },
-            { 
-              header: "Status", 
-              accessor: (row) => (
-                <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
-                  row.status === "Vencendo" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
-                }`}>
-                  {row.status}
-                </span>
-              )
-            },
+            { header: "Veículo", accessor: (row) => `${row['placa']} — ${row['marca'] ?? ""} ${row['modelo'] ?? ""}`.trim() },
+            { header: "Seu lance", accessor: (row) => formatCurrency(Number(row['meu_lance'] ?? 0)) },
             {
-              header: "Ação",
-              accessor: () => (
-                <button className="bg-teal-900 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-teal-950">Cobrir Lance</button>
-              )
-            }
+              header: "Lance atual",
+              accessor: (row) => (
+                <span className={Number(row['meu_lance']) >= Number(row['lance_atual']) ? "text-teal-600 font-bold" : "text-amber-600 font-bold"}>
+                  {formatCurrency(Number(row['lance_atual'] ?? 0))}
+                </span>
+              ),
+            },
+            { header: "Situação", accessor: (row) => (Number(row['meu_lance']) >= Number(row['lance_atual']) ? "Vencendo" : "Superado") },
+          ]}
+        />
+
+        <DataTable
+          title="Leilões abertos"
+          data={abertos}
+          emptyMessage={isLoading ? "Carregando..." : "Nenhum leilão aberto no momento."}
+          columns={[
+            { header: "Veículo", accessor: (row) => `${row['placa']} — ${row['marca'] ?? ""} ${row['modelo'] ?? ""}`.trim() },
+            { header: "Lance inicial", accessor: (row) => formatCurrency(Number(row['lance_inicial'] ?? 0)) },
+            { header: "Maior lance", accessor: (row) => (row['maior_lance'] ? formatCurrency(Number(row['maior_lance'])) : "—") },
+            { header: "Encerra em", accessor: (row) => (row['fim_em'] ? formatDate(row['fim_em']) : "—") },
           ]}
         />
       </div>
