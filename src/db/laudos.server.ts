@@ -79,7 +79,81 @@ export async function ensureLaudoSchema() {
   `);
   await d.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS laudo_acessorios_uidx ON laudo_acessorios (laudo_id, acessorio_id);`);
 
+  await d.execute(sql`
+    CREATE TABLE IF NOT EXISTS depreciacao_regras (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      item_id uuid, -- liga ao checklist_itens.id
+      resposta text, -- 'OK', 'AVARIA', 'NA' ou nulo para regra de km/geral
+      tipo_desconto text NOT NULL DEFAULT 'PERCENTUAL', -- 'PERCENTUAL' ou 'VALOR'
+      valor numeric(14,2) NOT NULL DEFAULT 0,
+      fator_leve numeric(14,2) DEFAULT 0.6,
+      fator_media numeric(14,2) DEFAULT 1.0,
+      fator_grave numeric(14,2) DEFAULT 1.8,
+      ativo boolean NOT NULL DEFAULT true,
+      criado_em timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+
+  await d.execute(sql`
+    CREATE TABLE IF NOT EXISTS depreciacao_calculos (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      laudo_id uuid NOT NULL REFERENCES laudos(id) ON DELETE CASCADE,
+      veiculo_id uuid NOT NULL,
+      usuario_id uuid,
+      valor_fipe numeric(14,2) NOT NULL,
+      valor_final numeric(14,2) NOT NULL,
+      detalhamento jsonb NOT NULL, -- array de ajustes [{titulo, tipo, valor, justificativa}]
+      fora_da_curva boolean DEFAULT false,
+      criado_em timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await d.execute(sql`CREATE INDEX IF NOT EXISTS depreciacao_calculos_veiculo_idx ON depreciacao_calculos (veiculo_id);`);
+
+  await d.execute(sql`
+    CREATE TABLE IF NOT EXISTS configuracoes (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      chave text UNIQUE NOT NULL,
+      valor text,
+      descricao text,
+      atualizado_em timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+
   prepared = true;
+}
+
+export async function seedConfiguracoes() {
+  const d = requireDb();
+  const configs = [
+    { chave: 'km_media_anual', valor: '12000', descricao: 'Kilometragem média anual esperada' },
+    { chave: 'margem_alvo', valor: '8', descricao: 'Margem alvo de lucro (%)' },
+    { chave: 'teto_global_depreciacao', valor: '45', descricao: 'Teto global de depreciação (%)' },
+  ];
+  for (const c of configs) {
+    await d.execute(sql`
+      INSERT INTO configuracoes (chave, valor, descricao)
+      VALUES (${c.chave}, ${c.valor}, ${c.descricao})
+      ON CONFLICT (chave) DO NOTHING;
+    `);
+  }
+}
+
+export async function seedDepreciacaoRegras() {
+  const d = requireDb();
+  // Regras base sugeridas
+  const regras = [
+    { item: 'Pneu', resposta: 'AVARIA', tipo: 'VALOR', valor: 550, fator_leve: 0.54, fator_media: 1.0, fator_grave: 1.0 }, // Meia vida vs No limite
+    { item: 'Amassado', resposta: 'AVARIA', tipo: 'PERCENTUAL', valor: 1.5, fator_leve: 0.53, fator_media: 1.0, fator_grave: 1.66 },
+    { item: 'Vidro Trincado', resposta: 'AVARIA', tipo: 'VALOR', valor: 400, fator_leve: 1.0, fator_media: 1.0, fator_grave: 1.0 },
+    { item: 'Farol Quebrado', resposta: 'AVARIA', tipo: 'VALOR', valor: 350, fator_leve: 1.0, fator_media: 1.0, fator_grave: 1.0 },
+    { item: 'Ar-condicionado Inoperante', resposta: 'AVARIA', tipo: 'VALOR', valor: 1800, fator_leve: 1.0, fator_media: 1.0, fator_grave: 1.0 },
+    { item: 'Câmbio com Ruído', resposta: 'AVARIA', tipo: 'PERCENTUAL', valor: 3.0, fator_leve: 1.0, fator_media: 1.0, fator_grave: 1.0 },
+    { item: 'Motor com Ruído/Fumaça', resposta: 'AVARIA', tipo: 'PERCENTUAL', valor: 6.0, fator_leve: 1.0, fator_media: 1.0, fator_grave: 1.0 },
+    { item: 'Reparo Estrutural Longarina', resposta: 'AVARIA', tipo: 'PERCENTUAL', valor: 25.0, fator_leve: 1.0, fator_media: 1.0, fator_grave: 1.0 },
+    { item: 'Sinistro ou Leilão', resposta: 'AVARIA', tipo: 'PERCENTUAL', valor: 30.0, fator_leve: 1.0, fator_media: 1.0, fator_grave: 1.0 },
+  ];
+  // Note: No sistema real, buscaríamos os IDs reais dos itens do checklist PADRAO. 
+  // Por enquanto, faremos match por título se o item_id for nulo ou usaremos regras genéricas.
 }
 
 async function carregarLaudoBruto(id: string) {
