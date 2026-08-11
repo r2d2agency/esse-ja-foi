@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from "react";
 import { BackofficeLayout } from "@/components/layout/BackofficeLayout";
 import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { AlertTriangle, History, Pencil, Trash2 } from "lucide-react";
+import { AlertTriangle, CalendarPlus, MapPin, Pencil, Trash2 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   TIPOS_EXPECTATIVA,
@@ -21,7 +22,9 @@ import {
   formatPlaca,
   isValidPlaca,
   normalizePlaca,
+  onlyDigits,
 } from "@/lib/validators";
+import { buscarCep, geocodificar, maskCep, maskPlaca } from "@/lib/brasil";
 import {
   alterarStatusVeiculoFn,
   listarClientesFn,
@@ -30,6 +33,14 @@ import {
   salvarVeiculoFn,
   timelineVeiculoFn,
 } from "@/lib/cadastro.functions";
+import {
+  criarAgendamentoFn,
+  horariosOcupadosFn,
+  listarParceirosFn,
+  listarVistoriadoresFn,
+} from "@/lib/agendamentos.functions";
+
+const Mapa = lazy(() => import("@/components/shared/MapaLocalizacao"));
 
 export const Route = createFileRoute("/operacao/veiculos")({
   component: VeiculosPage,
@@ -38,7 +49,7 @@ export const Route = createFileRoute("/operacao/veiculos")({
       { title: "Veículos | ESSE JÁ FOI" },
       {
         name: "description",
-        content: "Cadastro de veículos com validação de placa, expectativa de preço e fluxo de status.",
+        content: "Cadastro de veículos com placa validada, expectativa de preço, mapa da vistoria e fluxo de status.",
       },
       { property: "og:title", content: "Veículos | ESSE JÁ FOI" },
       { property: "og:description", content: "Controle completo do ciclo do veículo, da captação ao leilão." },
@@ -53,15 +64,16 @@ type Row = Record<string, any>;
 const vazio = {
   id: undefined as string | undefined,
   placa: "",
+  renavam: "",
   marca: "",
   modelo: "",
   versao: "",
-  cor: "",
-  km: "",
   anoFabricacao: "",
   anoModelo: "",
-  combustivel: "",
+  km: "",
+  cor: "",
   cambio: "",
+  combustivel: "",
   clienteId: "",
   valorFipe: "",
   valorInteresseCliente: "",
@@ -69,43 +81,52 @@ const vazio = {
   cienteExpectativa: false,
   cep: "",
   endereco: "",
+  numero: "",
+  complemento: "",
   cidade: "",
   uf: "",
-  latitude: "",
-  longitude: "",
+  latitude: null as number | null,
+  longitude: null as number | null,
   observacoes: "",
 };
 
-const num = (v: string) => {
-  const n = Number(String(v).replace(/\./g, "").replace(",", "."));
-  return Number.isFinite(n) && n !== 0 ? n : null;
-};
+const TRILHA = ["CADASTRADO", "AGENDADO", "EM_VISTORIA", "EM_AVALIACAO", "APROVADO", "EM_LEILAO", "ENCERRADO", "VENDIDO"];
+
+function statusCor(status: string) {
+  if (status === "RECUSADO") return "bg-red-100 text-red-800";
+  if (status === "VENDIDO") return "bg-emerald-100 text-emerald-800";
+  if (status === "EM_LEILAO") return "bg-amber-100 text-amber-900";
+  return "bg-slate-100 text-slate-700";
+}
 
 function VeiculosPage() {
   const [veiculos, setVeiculos] = useState<Row[]>([]);
   const [clientes, setClientes] = useState<Row[]>([]);
+  const [vistoriadores, setVistoriadores] = useState<Row[]>([]);
+  const [parceiros, setParceiros] = useState<Row[]>([]);
   const [busca, setBusca] = useState("");
-  const [status, setStatus] = useState("TODOS");
-  const [cidade, setCidade] = useState("");
-  const [clienteFiltro, setClienteFiltro] = useState("TODOS");
+  const [filtroStatus, setFiltroStatus] = useState("");
+  const [filtroCidade, setFiltroCidade] = useState("");
+  const [erroDb, setErroDb] = useState<string | null>(null);
+
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(vazio);
   const [salvando, setSalvando] = useState(false);
-  const [erroDb, setErroDb] = useState<string | null>(null);
-  const [timeline, setTimeline] = useState<{ veiculo: Row; itens: Row[] } | null>(null);
+  const [aba, setAba] = useState("dados");
+  const [timeline, setTimeline] = useState<Row[]>([]);
+
+  const [agendarOpen, setAgendarOpen] = useState(false);
+  const [agVeiculo, setAgVeiculo] = useState<Row | null>(null);
+  const [ag, setAg] = useState({ vistoriadorId: "", parceiroId: "", unidade: "", data: "", hora: "09:00", observacao: "", responsavel: "" });
+  const [ocupados, setOcupados] = useState<Row[]>([]);
 
   const carregar = useCallback(async () => {
     const res = await listarVeiculosFn({
-      data: {
-        busca,
-        cidade,
-        status: status === "TODOS" ? null : status,
-        clienteId: clienteFiltro === "TODOS" ? null : clienteFiltro,
-      },
+      data: { busca, status: filtroStatus || null, cidade: filtroCidade || null },
     });
     setVeiculos(res.data ?? []);
-    setErroDb(res.ok ? null : res.message);
-  }, [busca, cidade, status, clienteFiltro]);
+    setErroDb(res.ok ? null : (res as { message: string }).message);
+  }, [busca, filtroStatus, filtroCidade]);
 
   useEffect(() => {
     const t = setTimeout(() => void carregar(), 300);
@@ -113,22 +134,112 @@ function VeiculosPage() {
   }, [carregar]);
 
   useEffect(() => {
-    void listarClientesFn({ data: {} }).then((r) => setClientes(r.data ?? []));
+    void (async () => {
+      const [c, v, p] = await Promise.all([
+        listarClientesFn({ data: {} }),
+        listarVistoriadoresFn(),
+        listarParceirosFn(),
+      ]);
+      setClientes(c.data ?? []);
+      setVistoriadores(v.data ?? []);
+      setParceiros(p.data ?? []);
+    })();
   }, []);
 
-  const set = (k: keyof typeof vazio, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
+  const set = <K extends keyof typeof vazio>(k: K, v: (typeof vazio)[K]) => setForm((f) => ({ ...f, [k]: v }));
 
-  const fipe = num(form.valorFipe);
-  const interesse = num(form.valorInteresseCliente);
-  const percentual = fipe && interesse ? calcPercentualSobreFipe(fipe, interesse) : null;
+  const fipe = Number(form.valorFipe.replace(/\./g, "").replace(",", ".")) || 0;
+  const interesse = Number(form.valorInteresseCliente.replace(/\./g, "").replace(",", ".")) || 0;
+  const percentual = fipe > 0 && interesse > 0 ? calcPercentualSobreFipe(fipe, interesse) : null;
   const alerta = percentual !== null && percentual >= 15;
+  const placaValida = isValidPlaca(form.placa);
+
+  const abrirNovo = () => {
+    setForm(vazio);
+    setTimeline([]);
+    setAba("dados");
+    setOpen(true);
+  };
+
+  const editar = async (v: Row) => {
+    setForm({
+      ...vazio,
+      id: v['id'],
+      placa: maskPlaca(String(v['placa'] ?? "")),
+      renavam: v['renavam'] ?? "",
+      marca: v['marca'] ?? "",
+      modelo: v['modelo'] ?? "",
+      versao: v['versao'] ?? "",
+      anoFabricacao: v['ano_fabricacao'] ?? "",
+      anoModelo: v['ano_modelo'] ?? "",
+      km: v['km'] != null ? String(v['km']) : "",
+      cor: v['cor'] ?? "",
+      cambio: v['cambio'] ?? "",
+      combustivel: v['combustivel'] ?? "",
+      clienteId: v['cliente_id'] ?? "",
+      valorFipe: v['valor_fipe'] != null ? String(v['valor_fipe']) : "",
+      valorInteresseCliente: v['valor_interesse_cliente'] != null ? String(v['valor_interesse_cliente']) : "",
+      tipoExpectativa: v['tipo_expectativa'] ?? "",
+      cienteExpectativa: v['ciente_expectativa'] === true,
+      cep: maskCep(String(v['cep'] ?? "")),
+      endereco: v['endereco'] ?? "",
+      cidade: v['cidade'] ?? "",
+      uf: v['uf'] ?? "",
+      latitude: v['latitude'] != null ? Number(v['latitude']) : null,
+      longitude: v['longitude'] != null ? Number(v['longitude']) : null,
+      observacoes: v['observacoes'] ?? "",
+    });
+    setAba("dados");
+    setOpen(true);
+    const t = await timelineVeiculoFn({ data: { id: String(v['id']) } });
+    setTimeline(t.data ?? []);
+  };
+
+  const usarEnderecoCliente = async () => {
+    const cliente = clientes.find((c) => c['id'] === form.clienteId);
+    if (!cliente) {
+      toast.error("Selecione o cliente proprietário primeiro.");
+      return;
+    }
+    setForm((f) => ({
+      ...f,
+      cep: maskCep(String(cliente['cep'] ?? "")),
+      endereco: cliente['endereco'] ?? "",
+      cidade: cliente['cidade'] ?? "",
+      uf: cliente['uf'] ?? "",
+    }));
+    const coords = await geocodificar(
+      [cliente['endereco'], cliente['cidade'], cliente['uf']].filter(Boolean).join(", "),
+    );
+    if (coords) setForm((f) => ({ ...f, latitude: coords.lat, longitude: coords.lng }));
+  };
+
+  const preencherCep = async (valor: string) => {
+    set("cep", maskCep(valor));
+    if (onlyDigits(valor).length !== 8) return;
+    const endereco = await buscarCep(valor);
+    if (!endereco) {
+      toast.error("CEP não encontrado.");
+      return;
+    }
+    setForm((f) => ({
+      ...f,
+      cep: endereco.cep,
+      endereco: [endereco.logradouro, endereco.bairro].filter(Boolean).join(" - "),
+      cidade: endereco.cidade,
+      uf: endereco.uf,
+    }));
+    const coords = await geocodificar(`${endereco.logradouro}, ${endereco.cidade}, ${endereco.uf}`);
+    if (coords) setForm((f) => ({ ...f, latitude: coords.lat, longitude: coords.lng }));
+  };
 
   const salvar = async () => {
-    if (!isValidPlaca(form.placa)) {
-      toast.error("Placa inválida. Use ABC1234 ou ABC1D23.");
+    if (!placaValida) {
+      toast.error("Placa inválida. Use ABC-1234 ou ABC1D23.");
       return;
     }
     setSalvando(true);
+    const enderecoCompleto = [form.endereco, form.numero, form.complemento].filter(Boolean).join(", ");
     const res = await salvarVeiculoFn({
       data: {
         id: form.id,
@@ -137,22 +248,22 @@ function VeiculosPage() {
         modelo: form.modelo,
         versao: form.versao || null,
         cor: form.cor || null,
-        km: num(form.km),
+        km: form.km ? Number(onlyDigits(form.km)) : null,
         anoFabricacao: form.anoFabricacao || null,
         anoModelo: form.anoModelo || null,
         combustivel: form.combustivel || null,
         cambio: form.cambio || null,
         clienteId: form.clienteId || null,
-        valorFipe: fipe,
-        valorInteresseCliente: interesse,
+        valorFipe: fipe || null,
+        valorInteresseCliente: interesse || null,
         tipoExpectativa: form.tipoExpectativa || null,
         cienteExpectativa: form.cienteExpectativa,
         cep: form.cep || null,
-        endereco: form.endereco || null,
+        endereco: enderecoCompleto || null,
         cidade: form.cidade || null,
         uf: form.uf || null,
-        latitude: num(form.latitude),
-        longitude: num(form.longitude),
+        latitude: form.latitude,
+        longitude: form.longitude,
         observacoes: form.observacoes || null,
       } as never,
     });
@@ -161,25 +272,23 @@ function VeiculosPage() {
       toast.error((res as { message: string }).message);
       return;
     }
-    toast.success(form.id ? "Veículo atualizado." : "Veículo cadastrado.");
+    if ((res as { alertaExpectativa?: boolean }).alertaExpectativa && !form.cienteExpectativa) {
+      toast.warning("Expectativa acima do praticado — registre a ciência antes de agendar a vistoria.");
+    } else {
+      toast.success(form.id ? "Veículo atualizado." : "Veículo cadastrado.");
+    }
     setOpen(false);
-    setForm(vazio);
     void carregar();
   };
 
-  const mudarStatus = async (id: string, novo: string) => {
-    const res = await alterarStatusVeiculoFn({ data: { id, status: novo } });
+  const mudarStatus = async (id: string, status: string) => {
+    const res = await alterarStatusVeiculoFn({ data: { id, status } });
     if (!res.ok) {
       toast.error((res as { message: string }).message);
       return;
     }
-    toast.success(`Status alterado para ${novo}.`);
+    toast.success(`Status alterado para ${status}.`);
     void carregar();
-  };
-
-  const abrirTimeline = async (v: Row) => {
-    const res = await timelineVeiculoFn({ data: { id: v['id'] } });
-    setTimeline({ veiculo: v, itens: res.data ?? [] });
   };
 
   const excluir = async (id: string) => {
@@ -192,146 +301,127 @@ function VeiculosPage() {
     void carregar();
   };
 
+  const abrirAgendar = (v: Row) => {
+    setAgVeiculo(v);
+    setAg({ vistoriadorId: "", parceiroId: "", unidade: "", data: "", hora: "09:00", observacao: "", responsavel: "" });
+    setOcupados([]);
+    setAgendarOpen(true);
+  };
+
+  useEffect(() => {
+    if (!ag.vistoriadorId || !ag.data) {
+      setOcupados([]);
+      return;
+    }
+    void (async () => {
+      const res = await horariosOcupadosFn({ data: { vistoriadorId: ag.vistoriadorId, dia: ag.data } });
+      setOcupados(res.data ?? []);
+    })();
+  }, [ag.vistoriadorId, ag.data]);
+
+  const agendar = async () => {
+    if (!agVeiculo || !ag.vistoriadorId || !ag.data || !ag.hora) {
+      toast.error("Selecione vistoriador, data e horário.");
+      return;
+    }
+    const res = await criarAgendamentoFn({
+      data: {
+        veiculoId: String(agVeiculo['id']),
+        vistoriadorId: ag.vistoriadorId,
+        parceiroId: ag.parceiroId || null,
+        unidade: ag.unidade || null,
+        dataHora: new Date(`${ag.data}T${ag.hora}:00`).toISOString(),
+        observacao: ag.observacao || null,
+        responsavelInterno: ag.responsavel || null,
+      },
+    });
+    if (!res.ok) {
+      toast.error((res as { message: string }).message);
+      return;
+    }
+    toast.success("Vistoria agendada e vistoriador notificado.");
+    setAgendarOpen(false);
+    void carregar();
+  };
+
+  const cidades = useMemo(
+    () => Array.from(new Set(veiculos.map((v) => String(v['cidade'] ?? "")).filter(Boolean))),
+    [veiculos],
+  );
+
   return (
     <BackofficeLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Veículos</h1>
-          <p className="text-slate-500">Placa única, expectativa de preço e fluxo de status auditado.</p>
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Veículos</h1>
+            <p className="text-sm text-slate-500">Cadastro, expectativa de valor, localização da vistoria e fluxo de status.</p>
+          </div>
+          <div className="flex gap-2">
+            <Select value={filtroStatus || "TODOS"} onValueChange={(v) => setFiltroStatus(v === "TODOS" ? "" : v)}>
+              <SelectTrigger className="w-44"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="TODOS">Todos os status</SelectItem>
+                {VEICULO_STATUS.map((s) => (
+                  <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filtroCidade || "TODAS"} onValueChange={(v) => setFiltroCidade(v === "TODAS" ? "" : v)}>
+              <SelectTrigger className="w-44"><SelectValue placeholder="Cidade" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="TODAS">Todas as cidades</SelectItem>
+                {cidades.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {erroDb && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{erroDb}</div>
+          <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">{erroDb}</div>
         )}
 
-        <div className="grid gap-3 md:grid-cols-3">
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="TODOS">Todos os status</SelectItem>
-              {VEICULO_STATUS.map((s) => (
-                <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input placeholder="Filtrar por cidade" value={cidade} onChange={(e) => setCidade(e.target.value)} />
-          <Select value={clienteFiltro} onValueChange={setClienteFiltro}>
-            <SelectTrigger><SelectValue placeholder="Cliente" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="TODOS">Todos os clientes</SelectItem>
-              {clientes.map((c) => (
-                <SelectItem key={c['id']} value={c['id']}>{c['nome']}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <DataTable
-          title={`${veiculos.length} veículo(s)`}
+        <DataTable<Row>
           data={veiculos}
           onSearch={setBusca}
-          onAdd={() => {
-            setForm(vazio);
-            setOpen(true);
-          }}
+          onAdd={abrirNovo}
+          emptyMessage="Nenhum veículo cadastrado ainda."
           columns={[
             {
               header: "Placa",
-              accessor: (r) => (
-                <span className="font-mono font-bold text-slate-900">{formatPlaca(String(r['placa'] ?? ""))}</span>
-              ),
-            },
-            {
-              header: "Veículo",
-              accessor: (r) => (
-                <div>
-                  <p className="font-medium text-slate-900">{r['marca']} {r['modelo']}</p>
-                  <p className="text-xs text-slate-500">{[r['ano_fabricacao'], r['ano_modelo']].filter(Boolean).join("/")}</p>
+              accessor: (v) => (
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-semibold">{formatPlaca(String(v['placa'] ?? ""))}</span>
+                  {v['alerta_expectativa'] === true && (
+                    <Badge className="bg-red-100 text-red-800 gap-1">
+                      <AlertTriangle className="h-3 w-3" /> Expectativa
+                    </Badge>
+                  )}
                 </div>
               ),
             },
-            { header: "Cliente", accessor: (r) => r['cliente_nome'] || "—" },
-            {
-              header: "Expectativa",
-              accessor: (r) =>
-                r['percentual_sobre_fipe'] == null ? (
-                  <span className="text-xs text-slate-400">Pendente</span>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="tabular-nums text-sm">{Number(r['percentual_sobre_fipe']).toFixed(2)}%</span>
-                    {r['alerta_expectativa'] && (
-                      <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
-                        <AlertTriangle className="mr-1 h-3 w-3" /> Alerta
-                      </Badge>
-                    )}
-                  </div>
-                ),
-            },
+            { header: "Veículo", accessor: (v) => `${v['marca']} ${v['modelo']}` },
+            { header: "Cliente", accessor: (v) => v['cliente_nome'] ?? "-" },
+            { header: "Cidade", accessor: (v) => v['cidade'] ?? "-" },
             {
               header: "Status",
-              accessor: (r) => {
-                const atual = String(r['status'] ?? "CADASTRADO").toUpperCase();
-                const proximos = TRANSICOES[atual as keyof typeof TRANSICOES] ?? [];
-                return (
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">{atual.replace(/_/g, " ")}</Badge>
-                    {proximos.length > 0 && (
-                      <Select value="" onValueChange={(v) => void mudarStatus(r['id'], v)}>
-                        <SelectTrigger className="h-8 w-[150px] text-xs"><SelectValue placeholder="Avançar" /></SelectTrigger>
-                        <SelectContent>
-                          {proximos.map((s) => (
-                            <SelectItem key={s} value={s}>{s.replace(/_/g, " ")}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
-                );
-              },
+              accessor: (v) => (
+                <Badge className={statusCor(String(v['status']))}>{String(v['status']).replace(/_/g, " ")}</Badge>
+              ),
             },
             {
               header: "Ações",
-              accessor: (r) => (
-                <div className="flex gap-1">
-                  <Button size="icon" variant="ghost" onClick={() => void abrirTimeline(r)}>
-                    <History className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => {
-                      setForm({
-                        id: r['id'],
-                        placa: r['placa'] ?? "",
-                        marca: r['marca'] ?? "",
-                        modelo: r['modelo'] ?? "",
-                        versao: r['versao'] ?? "",
-                        cor: r['cor'] ?? "",
-                        km: r['km'] != null ? String(r['km']) : "",
-                        anoFabricacao: r['ano_fabricacao'] ?? "",
-                        anoModelo: r['ano_modelo'] ?? "",
-                        combustivel: r['combustivel'] ?? "",
-                        cambio: r['cambio'] ?? "",
-                        clienteId: r['cliente_id'] ?? "",
-                        valorFipe: r['valor_fipe'] != null ? String(r['valor_fipe']) : "",
-                        valorInteresseCliente:
-                          r['valor_interesse_cliente'] != null ? String(r['valor_interesse_cliente']) : "",
-                        tipoExpectativa: r['tipo_expectativa'] ?? "",
-                        cienteExpectativa: Boolean(r['ciente_expectativa']),
-                        cep: r['cep'] ?? "",
-                        endereco: r['endereco'] ?? "",
-                        cidade: r['cidade'] ?? "",
-                        uf: r['uf'] ?? "",
-                        latitude: r['latitude'] != null ? String(r['latitude']) : "",
-                        longitude: r['longitude'] != null ? String(r['longitude']) : "",
-                        observacoes: r['observacoes'] ?? "",
-                      });
-                      setOpen(true);
-                    }}
-                  >
+              accessor: (v) => (
+                <div className="flex items-center gap-1">
+                  {String(v['status']).toUpperCase() === "CADASTRADO" && (
+                    <Button size="icon" variant="ghost" title="Agendar vistoria" onClick={() => abrirAgendar(v)}>
+                      <CalendarPlus className="h-4 w-4 text-teal-800" />
+                    </Button>
+                  )}
+                  <Button size="icon" variant="ghost" onClick={() => void editar(v)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button size="icon" variant="ghost" onClick={() => void excluir(r['id'])}>
+                  <Button size="icon" variant="ghost" onClick={() => void excluir(String(v['id']))}>
                     <Trash2 className="h-4 w-4 text-red-600" />
                   </Button>
                 </div>
@@ -341,189 +431,371 @@ function VeiculosPage() {
         />
       </div>
 
+      {/* Ficha do veículo */}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>{form.id ? "Editar veículo" : "Novo veículo"}</SheetTitle>
+            <SheetTitle>{form.id ? `Ficha do veículo ${formatPlaca(form.placa)}` : "Novo veículo"}</SheetTitle>
           </SheetHeader>
 
-          <div className="space-y-5 py-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Placa</Label>
-                <Input
-                  value={form.placa}
-                  onChange={(e) => set("placa", normalizePlaca(e.target.value))}
-                  placeholder="ABC1D23"
-                  className="font-mono uppercase"
-                />
-                {form.placa && !isValidPlaca(form.placa) && (
-                  <p className="text-xs text-red-600">Formato inválido (ABC1234 ou ABC1D23).</p>
-                )}
-              </div>
-              <div className="space-y-1">
-                <Label>Proprietário</Label>
-                <Select value={form.clienteId} onValueChange={(v) => set("clienteId", v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecionar cliente" /></SelectTrigger>
-                  <SelectContent>
-                    {clientes.map((c) => (
-                      <SelectItem key={c['id']} value={c['id']}>{c['nome']}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Marca</Label>
-                <Input value={form.marca} onChange={(e) => set("marca", e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label>Modelo</Label>
-                <Input value={form.modelo} onChange={(e) => set("modelo", e.target.value)} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <Label>Ano fab.</Label>
-                <Input value={form.anoFabricacao} onChange={(e) => set("anoFabricacao", e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label>Ano mod.</Label>
-                <Input value={form.anoModelo} onChange={(e) => set("anoModelo", e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label>KM</Label>
-                <Input value={form.km} onChange={(e) => set("km", e.target.value)} />
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-              <p className="text-sm font-bold text-slate-900">Expectativa de preço (obrigatória para agendar)</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label>Valor FIPE (R$)</Label>
-                  <Input value={form.valorFipe} onChange={(e) => set("valorFipe", e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Interesse do cliente (R$)</Label>
-                  <Input
-                    value={form.valorInteresseCliente}
-                    onChange={(e) => set("valorInteresseCliente", e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label>Tipo de expectativa</Label>
-                <Select value={form.tipoExpectativa} onValueChange={(v) => set("tipoExpectativa", v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
-                  <SelectContent>
-                    {TIPOS_EXPECTATIVA.map((t) => (
-                      <SelectItem key={t} value={t}>{t.replace(/_/g, " ")}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {percentual !== null && (
-                <div className="text-sm">
-                  <p className="text-slate-600">
-                    Percentual sobre FIPE: <strong className="tabular-nums">{percentual.toFixed(2)}%</strong>{" "}
-                    <span className="text-slate-400">
-                      ({formatCurrency(fipe ?? 0)} → {formatCurrency(interesse ?? 0)})
+          {form.id && (
+            <div className="mt-4 flex flex-wrap items-center gap-1">
+              {TRILHA.map((s, i) => {
+                const atual = veiculos.find((v) => v['id'] === form.id);
+                const idx = TRILHA.indexOf(String(atual?.['status'] ?? "CADASTRADO"));
+                return (
+                  <div key={s} className="flex items-center gap-1">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        i <= idx ? "bg-teal-900 text-white" : "bg-slate-100 text-slate-400"
+                      }`}
+                    >
+                      {s.replace(/_/g, " ")}
                     </span>
-                  </p>
-                  {alerta && (
-                    <label className="mt-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3">
-                      <Checkbox
-                        checked={form.cienteExpectativa}
-                        onCheckedChange={(c) => set("cienteExpectativa", Boolean(c))}
-                      />
-                      <span className="text-xs text-amber-900">
-                        Expectativa acima do limite configurado. Confirmo que o cliente está ciente — sem isso o
-                        agendamento será rejeitado.
-                      </span>
-                    </label>
+                    {i < TRILHA.length - 1 && <span className="text-slate-300">›</span>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <Tabs value={aba} onValueChange={setAba} className="mt-4">
+            <TabsList className="flex w-full flex-wrap justify-start">
+              <TabsTrigger value="dados">Dados</TabsTrigger>
+              <TabsTrigger value="expectativa">Expectativa</TabsTrigger>
+              <TabsTrigger value="local">Local</TabsTrigger>
+              <TabsTrigger value="vistoria">Vistoria</TabsTrigger>
+              <TabsTrigger value="depreciacao">Depreciação</TabsTrigger>
+              <TabsTrigger value="anuncio">Anúncio</TabsTrigger>
+              <TabsTrigger value="leilao">Leilão</TabsTrigger>
+              <TabsTrigger value="venda">Venda</TabsTrigger>
+              <TabsTrigger value="historico">Histórico</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="dados" className="space-y-4 pt-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Placa</Label>
+                  <Input
+                    value={form.placa}
+                    onChange={(e) => set("placa", maskPlaca(e.target.value))}
+                    placeholder="ABC-1234 ou ABC1D23"
+                    className="font-mono uppercase"
+                  />
+                  {form.placa && !placaValida && <p className="mt-1 text-xs text-red-600">Placa inválida.</p>}
+                </div>
+                <div>
+                  <Label>RENAVAM</Label>
+                  <Input value={form.renavam} onChange={(e) => set("renavam", onlyDigits(e.target.value).slice(0, 11))} />
+                </div>
+                <div>
+                  <Label>Marca</Label>
+                  <Input value={form.marca} onChange={(e) => set("marca", e.target.value)} />
+                </div>
+                <div>
+                  <Label>Modelo</Label>
+                  <Input value={form.modelo} onChange={(e) => set("modelo", e.target.value)} />
+                </div>
+                <div className="col-span-2">
+                  <Label>Versão</Label>
+                  <Input value={form.versao} onChange={(e) => set("versao", e.target.value)} />
+                </div>
+                <div>
+                  <Label>Ano fabricação</Label>
+                  <Input value={form.anoFabricacao} onChange={(e) => set("anoFabricacao", onlyDigits(e.target.value).slice(0, 4))} />
+                </div>
+                <div>
+                  <Label>Ano modelo</Label>
+                  <Input value={form.anoModelo} onChange={(e) => set("anoModelo", onlyDigits(e.target.value).slice(0, 4))} />
+                </div>
+                <div>
+                  <Label>Quilometragem</Label>
+                  <Input value={form.km} onChange={(e) => set("km", onlyDigits(e.target.value))} />
+                </div>
+                <div>
+                  <Label>Cor</Label>
+                  <Input value={form.cor} onChange={(e) => set("cor", e.target.value)} />
+                </div>
+                <div>
+                  <Label>Câmbio</Label>
+                  <Select value={form.cambio || "-"} onValueChange={(v) => set("cambio", v === "-" ? "" : v)}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="-">Não informado</SelectItem>
+                      <SelectItem value="MANUAL">Manual</SelectItem>
+                      <SelectItem value="AUTOMATICO">Automático</SelectItem>
+                      <SelectItem value="CVT">CVT</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Combustível</Label>
+                  <Select value={form.combustivel || "-"} onValueChange={(v) => set("combustivel", v === "-" ? "" : v)}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="-">Não informado</SelectItem>
+                      <SelectItem value="FLEX">Flex</SelectItem>
+                      <SelectItem value="GASOLINA">Gasolina</SelectItem>
+                      <SelectItem value="ETANOL">Etanol</SelectItem>
+                      <SelectItem value="DIESEL">Diesel</SelectItem>
+                      <SelectItem value="HIBRIDO">Híbrido</SelectItem>
+                      <SelectItem value="ELETRICO">Elétrico</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2">
+                  <Label>Cliente proprietário</Label>
+                  <Select value={form.clienteId || "-"} onValueChange={(v) => set("clienteId", v === "-" ? "" : v)}>
+                    <SelectTrigger><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="-">Sem cliente vinculado</SelectItem>
+                      {clientes.map((c) => (
+                        <SelectItem key={String(c['id'])} value={String(c['id'])}>{c['nome']}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2">
+                  <Label>Observações</Label>
+                  <Textarea value={form.observacoes} onChange={(e) => set("observacoes", e.target.value)} rows={3} />
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="expectativa" className="pt-4">
+              <div className="rounded-xl border-2 border-amber-300 bg-amber-50/60 p-4 space-y-4">
+                <div className="flex items-center gap-2 text-sm font-bold text-amber-900">
+                  <AlertTriangle className="h-4 w-4" /> Expectativa do cliente
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Valor FIPE (R$)</Label>
+                    <Input value={form.valorFipe} onChange={(e) => set("valorFipe", e.target.value)} placeholder="65000" />
+                  </div>
+                  <div>
+                    <Label>Valor de interesse do cliente (R$)</Label>
+                    <Input
+                      value={form.valorInteresseCliente}
+                      onChange={(e) => set("valorInteresseCliente", e.target.value)}
+                      placeholder="72000"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label>Tipo de expectativa</Label>
+                    <Select value={form.tipoExpectativa || "-"} onValueChange={(v) => set("tipoExpectativa", v === "-" ? "" : v)}>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="-">Não informado</SelectItem>
+                        {TIPOS_EXPECTATIVA.map((t) => (
+                          <SelectItem key={t} value={t}>{t.replace(/_/g, " ")}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="rounded-lg bg-white p-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Interesse sobre a FIPE</span>
+                    <span className={`text-lg font-bold ${alerta ? "text-red-600" : "text-teal-900"}`}>
+                      {percentual === null ? "—" : `${percentual > 0 ? "+" : ""}${percentual.toFixed(2)}%`}
+                    </span>
+                  </div>
+                  {fipe > 0 && interesse > 0 && (
+                    <div className="mt-1 text-xs text-slate-500">
+                      FIPE {formatCurrency(fipe)} · interesse {formatCurrency(interesse)}
+                    </div>
                   )}
                 </div>
+
+                {alerta && (
+                  <div className="rounded-lg border border-red-300 bg-red-50 p-3">
+                    <p className="text-sm font-semibold text-red-700">
+                      Expectativa acima do praticado — avaliar antes de agendar vistoria
+                    </p>
+                    <label className="mt-2 flex items-center gap-2 text-sm text-red-800">
+                      <Checkbox
+                        checked={form.cienteExpectativa}
+                        onCheckedChange={(v) => set("cienteExpectativa", v === true)}
+                      />
+                      Estou ciente da expectativa
+                    </label>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="local" className="space-y-3 pt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                  <MapPin className="h-4 w-4" /> Localização da vistoria
+                </div>
+                <Button variant="outline" size="sm" onClick={() => void usarEnderecoCliente()}>
+                  Usar endereço do cliente
+                </Button>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>CEP</Label>
+                  <Input value={form.cep} onChange={(e) => void preencherCep(e.target.value)} placeholder="00000-000" />
+                </div>
+                <div className="col-span-2">
+                  <Label>Endereço</Label>
+                  <Input value={form.endereco} onChange={(e) => set("endereco", e.target.value)} />
+                </div>
+                <div>
+                  <Label>Número</Label>
+                  <Input value={form.numero} onChange={(e) => set("numero", e.target.value)} />
+                </div>
+                <div>
+                  <Label>Complemento</Label>
+                  <Input value={form.complemento} onChange={(e) => set("complemento", e.target.value)} />
+                </div>
+                <div>
+                  <Label>Cidade / UF</Label>
+                  <div className="flex gap-2">
+                    <Input value={form.cidade} onChange={(e) => set("cidade", e.target.value)} />
+                    <Input className="w-16" maxLength={2} value={form.uf} onChange={(e) => set("uf", e.target.value.toUpperCase())} />
+                  </div>
+                </div>
+              </div>
+              <Suspense fallback={<div className="h-[260px] animate-pulse rounded-lg bg-slate-100" />}>
+                <Mapa
+                  lat={form.latitude}
+                  lng={form.longitude}
+                  onChange={({ lat, lng }) => setForm((f) => ({ ...f, latitude: lat, longitude: lng }))}
+                />
+              </Suspense>
+              <p className="text-xs text-slate-500">
+                Arraste o pino ou clique no mapa para ajustar a posição exata.{" "}
+                {form.latitude != null && `Lat ${form.latitude} · Lng ${form.longitude}`}
+              </p>
+            </TabsContent>
+
+            <TabsContent value="historico" className="pt-4">
+              {timeline.length === 0 ? (
+                <p className="text-sm text-slate-500">Nenhum evento registrado ainda.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {timeline.map((t, i) => (
+                    <li key={i} className="border-l-2 border-teal-800 pl-3">
+                      <div className="text-sm font-medium text-slate-900">
+                        {t['acao']} {t['de'] && t['para'] ? `· ${t['de']} → ${t['para']}` : ""}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {formatDate(String(t['criado_em']))} {t['detalhe'] ? `· ${t['detalhe']}` : ""}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               )}
-            </div>
+            </TabsContent>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <Label>CEP</Label>
-                <Input value={form.cep} onChange={(e) => set("cep", e.target.value)} />
-              </div>
-              <div className="col-span-2 space-y-1">
-                <Label>Endereço</Label>
-                <Input value={form.endereco} onChange={(e) => set("endereco", e.target.value)} />
-              </div>
-            </div>
-            <div className="grid grid-cols-4 gap-3">
-              <div className="col-span-2 space-y-1">
-                <Label>Cidade</Label>
-                <Input value={form.cidade} onChange={(e) => set("cidade", e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label>UF</Label>
-                <Input maxLength={2} value={form.uf} onChange={(e) => set("uf", e.target.value.toUpperCase())} />
-              </div>
-              <div className="space-y-1">
-                <Label>Cor</Label>
-                <Input value={form.cor} onChange={(e) => set("cor", e.target.value)} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Latitude</Label>
-                <Input value={form.latitude} onChange={(e) => set("latitude", e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label>Longitude</Label>
-                <Input value={form.longitude} onChange={(e) => set("longitude", e.target.value)} />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label>Observações</Label>
-              <Textarea value={form.observacoes} onChange={(e) => set("observacoes", e.target.value)} />
-            </div>
-          </div>
+            {["vistoria", "depreciacao", "anuncio", "leilao", "venda"].map((t) => (
+              <TabsContent key={t} value={t} className="pt-4">
+                <p className="text-sm text-slate-500">Este módulo será liberado nas próximas etapas.</p>
+              </TabsContent>
+            ))}
+          </Tabs>
 
-          <SheetFooter>
-            <Button className="w-full bg-teal-900 hover:bg-teal-950" disabled={salvando} onClick={() => void salvar()}>
+          {form.id && (
+            <div className="mt-6 border-t border-slate-200 pt-4">
+              <Label>Alterar status</Label>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(TRANSICOES[
+                  String(veiculos.find((v) => v['id'] === form.id)?.['status'] ?? "CADASTRADO") as keyof typeof TRANSICOES
+                ] ?? []).map((s) => (
+                  <Button key={s} variant="outline" size="sm" onClick={() => void mudarStatus(String(form.id), s)}>
+                    {s.replace(/_/g, " ")}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <SheetFooter className="mt-6">
+            <Button variant="outline" onClick={() => setOpen(false)}>Fechar</Button>
+            <Button className="bg-teal-900 hover:bg-teal-950" disabled={salvando} onClick={() => void salvar()}>
               {salvando ? "Salvando..." : "Salvar veículo"}
             </Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>
 
-      <Sheet open={!!timeline} onOpenChange={(o) => !o && setTimeline(null)}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+      {/* Agendar vistoria */}
+      <Sheet open={agendarOpen} onOpenChange={setAgendarOpen}>
+        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>
-              Histórico — {formatPlaca(String(timeline?.veiculo?.['placa'] ?? ""))}
-            </SheetTitle>
+            <SheetTitle>Agendar vistoria {agVeiculo ? `· ${formatPlaca(String(agVeiculo['placa']))}` : ""}</SheetTitle>
           </SheetHeader>
-          <div className="space-y-3 py-4">
-            {(timeline?.itens ?? []).length === 0 && (
-              <p className="text-sm text-slate-500">Nenhum evento registrado.</p>
-            )}
-            {(timeline?.itens ?? []).map((item, i) => (
-              <div key={i} className="rounded-lg border border-slate-200 bg-white p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-slate-900">{String(item['acao'])}</span>
-                  <span className="text-xs text-slate-400">{formatDate(String(item['criado_em']))}</span>
-                </div>
-                {(item['de'] || item['para']) && (
-                  <p className="mt-1 text-xs text-slate-600">
-                    {String(item['de'] ?? "—")} → <strong>{String(item['para'] ?? "—")}</strong>
-                  </p>
-                )}
-                {item['detalhe'] && <p className="mt-1 text-xs text-slate-500">{String(item['detalhe'])}</p>}
+          <div className="mt-4 space-y-4">
+            <div>
+              <Label>Parceiro</Label>
+              <Select value={ag.parceiroId || "-"} onValueChange={(v) => setAg((a) => ({ ...a, parceiroId: v === "-" ? "" : v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="-">Sem parceiro</SelectItem>
+                  {parceiros.map((p) => (
+                    <SelectItem key={String(p['id'])} value={String(p['id'])}>{p['nome']}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Vistoriador</Label>
+              <Select value={ag.vistoriadorId} onValueChange={(v) => setAg((a) => ({ ...a, vistoriadorId: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {vistoriadores.length === 0 && <SelectItem value="-" disabled>Nenhum vistoriador ativo</SelectItem>}
+                  {vistoriadores.map((v) => (
+                    <SelectItem key={String(v['id'])} value={String(v['id'])}>{v['nome']}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Unidade</Label>
+              <Input value={ag.unidade} onChange={(e) => setAg((a) => ({ ...a, unidade: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Data</Label>
+                <Input type="date" value={ag.data} onChange={(e) => setAg((a) => ({ ...a, data: e.target.value }))} />
               </div>
-            ))}
+              <div>
+                <Label>Horário</Label>
+                <Input type="time" value={ag.hora} onChange={(e) => setAg((a) => ({ ...a, hora: e.target.value }))} />
+              </div>
+            </div>
+            {ag.vistoriadorId && ag.data && (
+              <div className="rounded-lg bg-slate-50 p-3 text-xs">
+                <div className="font-semibold text-slate-700">Horários já ocupados neste dia</div>
+                {ocupados.length === 0 ? (
+                  <p className="text-slate-500">Nenhum — agenda livre.</p>
+                ) : (
+                  <ul className="mt-1 flex flex-wrap gap-1">
+                    {ocupados.map((o) => (
+                      <li key={String(o['id'])} className="rounded bg-amber-100 px-2 py-0.5 text-amber-900">
+                        {new Date(String(o['data_hora'])).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+            <div>
+              <Label>Responsável interno</Label>
+              <Input value={ag.responsavel} onChange={(e) => setAg((a) => ({ ...a, responsavel: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Observação</Label>
+              <Textarea value={ag.observacao} onChange={(e) => setAg((a) => ({ ...a, observacao: e.target.value }))} rows={3} />
+            </div>
           </div>
+          <SheetFooter className="mt-6">
+            <Button variant="outline" onClick={() => setAgendarOpen(false)}>Cancelar</Button>
+            <Button className="bg-teal-900 hover:bg-teal-950" onClick={() => void agendar()}>Agendar</Button>
+          </SheetFooter>
         </SheetContent>
       </Sheet>
     </BackofficeLayout>
