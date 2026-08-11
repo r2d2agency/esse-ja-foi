@@ -8,28 +8,30 @@ WORKDIR /app
 # Instalar dependências
 FROM base AS install
 COPY package.json pnpm-lock.yaml* bun.lockb* ./
-RUN npm install
+# Instalamos TUDO, incluindo devDependencies para o build, mas omitimos scripts de ciclo de vida desnecessários
+RUN npm install --include=dev
 
 # Build da aplicação
 FROM base AS build
 COPY --from=install /app/node_modules ./node_modules
 COPY . .
 ENV NODE_ENV=production
-# Definimos variáveis de build se necessário, mas DATABASE_URL é runtime
+# O TanStack Start gera a pasta .output que contém TUDO que o servidor precisa
 RUN npm run build
 
 # Execução da aplicação
 FROM base AS release
+# O Nitro/Vinxi (TanStack Start) empacota as dependências necessárias no .output/server/node_modules
+# se configurado, mas por segurança copiamos o que é essencial.
 COPY --from=build /app/.output ./.output
 COPY --from=build /app/drizzle ./drizzle
 COPY --from=build /app/package.json ./package.json
 
 ENV NODE_ENV=production
-# O Easypanel geralmente espera porta 3000 ou 8080. 
-# O TanStack Start/Nitro por padrão usa 3000 se não definido.
 ENV PORT=3000
+# Importante: HOST 0.0.0.0 para aceitar conexões externas ao container
+ENV HOST=0.0.0.0
 EXPOSE 3000
 
 # Comando para iniciar o servidor
-# Usamos node para rodar a saída do build (Nitro/Vinxi)
 CMD ["node", ".output/server/index.mjs"]
