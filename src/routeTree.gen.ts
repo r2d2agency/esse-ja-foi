@@ -20,6 +20,7 @@ import { Route as VistoriaRouteImport } from './routes/vistoria'
 import { Route as AdminChecklistRouteImport } from './routes/admin/checklist'
 import { Route as OperacaoAgendaRouteImport } from './routes/operacao/agenda'
 import { Route as OperacaoClientesRouteImport } from './routes/operacao/clientes'
+import { Route as OperacaoLaudosRouteImport } from './routes/operacao/laudos'
 import { Route as OperacaoLeadsRouteImport } from './routes/operacao/leads'
 import { Route as OperacaoVeiculosRouteImport } from './routes/operacao/veiculos'
 import { Route as VistoriaIndexRouteImport } from './routes/vistoria/index'
@@ -81,6 +82,11 @@ const OperacaoClientesRoute = OperacaoClientesRouteImport.update({
   path: '/clientes',
   getParentRoute: () => OperacaoRoute,
 } as any)
+const OperacaoLaudosRoute = OperacaoLaudosRouteImport.update({
+  id: '/laudos',
+  path: '/laudos',
+  getParentRoute: () => OperacaoRoute,
+} as any)
 const OperacaoLeadsRoute = OperacaoLeadsRouteImport.update({
   id: '/leads',
   path: '/leads',
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/admin/checklist': typeof AdminChecklistRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
+  '/operacao/laudos': typeof OperacaoLaudosRoute
   '/operacao/leads': typeof OperacaoLeadsRoute
   '/operacao/veiculos': typeof OperacaoVeiculosRoute
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
@@ -136,6 +143,7 @@ export interface FileRoutesByTo {
   '/admin/checklist': typeof AdminChecklistRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
+  '/operacao/laudos': typeof OperacaoLaudosRoute
   '/operacao/leads': typeof OperacaoLeadsRoute
   '/operacao/veiculos': typeof OperacaoVeiculosRoute
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
@@ -155,6 +163,7 @@ export interface FileRoutesById {
   '/admin/checklist': typeof AdminChecklistRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
+  '/operacao/laudos': typeof OperacaoLaudosRoute
   '/operacao/leads': typeof OperacaoLeadsRoute
   '/operacao/veiculos': typeof OperacaoVeiculosRoute
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
@@ -175,6 +184,7 @@ export interface FileRouteTypes {
     | '/admin/checklist'
     | '/operacao/agenda'
     | '/operacao/clientes'
+    | '/operacao/laudos'
     | '/operacao/leads'
     | '/operacao/veiculos'
     | '/vistoria/$agendamentoId'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/admin/checklist'
     | '/operacao/agenda'
     | '/operacao/clientes'
+    | '/operacao/laudos'
     | '/operacao/leads'
     | '/operacao/veiculos'
     | '/vistoria/$agendamentoId'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/admin/checklist'
     | '/operacao/agenda'
     | '/operacao/clientes'
+    | '/operacao/laudos'
     | '/operacao/leads'
     | '/operacao/veiculos'
     | '/vistoria/$agendamentoId'
@@ -307,6 +319,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OperacaoClientesRouteImport
       parentRoute: typeof OperacaoRoute
     }
+    '/operacao/laudos': {
+      id: '/operacao/laudos'
+      path: '/laudos'
+      fullPath: '/operacao/laudos'
+      preLoaderRoute: typeof OperacaoLaudosRouteImport
+      parentRoute: typeof OperacaoRoute
+    }
     '/operacao/leads': {
       id: '/operacao/leads'
       path: '/leads'
@@ -358,6 +377,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 interface OperacaoRouteChildren {
   OperacaoAgendaRoute: typeof OperacaoAgendaRoute
   OperacaoClientesRoute: typeof OperacaoClientesRoute
+  OperacaoLaudosRoute: typeof OperacaoLaudosRoute
   OperacaoLeadsRoute: typeof OperacaoLeadsRoute
   OperacaoVeiculosRoute: typeof OperacaoVeiculosRoute
 }
@@ -365,6 +385,7 @@ interface OperacaoRouteChildren {
 const OperacaoRouteChildren: OperacaoRouteChildren = {
   OperacaoAgendaRoute: OperacaoAgendaRoute,
   OperacaoClientesRoute: OperacaoClientesRoute,
+  OperacaoLaudosRoute: OperacaoLaudosRoute,
   OperacaoLeadsRoute: OperacaoLeadsRoute,
   OperacaoVeiculosRoute: OperacaoVeiculosRoute,
 }
