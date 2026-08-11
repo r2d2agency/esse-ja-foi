@@ -119,6 +119,9 @@ function VeiculosPage() {
   const [agVeiculo, setAgVeiculo] = useState<Row | null>(null);
   const [ag, setAg] = useState({ vistoriadorId: "", parceiroId: "", unidade: "", data: "", hora: "09:00", observacao: "", responsavel: "" });
   const [ocupados, setOcupados] = useState<Row[]>([]);
+  const [montado, setMontado] = useState(false);
+
+  useEffect(() => setMontado(true), []);
 
   const carregar = useCallback(async () => {
     const res = await listarVeiculosFn({
@@ -659,6 +662,7 @@ function VeiculosPage() {
                   </div>
                 </div>
               </div>
+              {montado ? (
               <Suspense fallback={<div className="h-[260px] animate-pulse rounded-lg bg-slate-100" />}>
                 <Mapa
                   lat={form.latitude}
@@ -666,6 +670,9 @@ function VeiculosPage() {
                   onChange={({ lat, lng }) => setForm((f) => ({ ...f, latitude: lat, longitude: lng }))}
                 />
               </Suspense>
+              ) : (
+                <div className="h-[260px] rounded-lg bg-slate-100" />
+              )}
               <p className="text-xs text-slate-500">
                 Arraste o pino ou clique no mapa para ajustar a posição exata.{" "}
                 {form.latitude != null && `Lat ${form.latitude} · Lng ${form.longitude}`}
