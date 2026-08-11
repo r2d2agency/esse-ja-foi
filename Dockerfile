@@ -1,4 +1,4 @@
-# Dockerfile para TanStack Start + Node.js (Vite 6/8 compatibility)
+# Dockerfile para TanStack Start + Node.js (Vite 6/7 compatibility)
 FROM node:22-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -8,7 +8,6 @@ WORKDIR /app
 # Instalar dependências
 FROM base AS install
 COPY package.json pnpm-lock.yaml* bun.lockb* ./
-# Usamos npm para compatibilidade máxima se não houver lockfile pnpm
 RUN npm install
 
 # Build da aplicação
@@ -16,7 +15,7 @@ FROM base AS build
 COPY --from=install /app/node_modules ./node_modules
 COPY . .
 ENV NODE_ENV=production
-# Vite 6+ pode ter problemas com parseEnv no Bun 1.1.26, então buildamos com Node
+# Definimos variáveis de build se necessário, mas DATABASE_URL é runtime
 RUN npm run build
 
 # Execução da aplicação
@@ -26,10 +25,11 @@ COPY --from=build /app/drizzle ./drizzle
 COPY --from=build /app/package.json ./package.json
 
 ENV NODE_ENV=production
-ENV PORT=8080
-
-EXPOSE 8080
+# O Easypanel geralmente espera porta 3000 ou 8080. 
+# O TanStack Start/Nitro por padrão usa 3000 se não definido.
+ENV PORT=3000
+EXPOSE 3000
 
 # Comando para iniciar o servidor
+# Usamos node para rodar a saída do build (Nitro/Vinxi)
 CMD ["node", ".output/server/index.mjs"]
-
