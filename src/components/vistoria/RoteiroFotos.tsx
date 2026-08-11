@@ -39,6 +39,7 @@ export function RoteiroFotos({
   const [carregando, setCarregando] = useState(false);
 
   const etapaAtual = ETAPAS[etapaIndex];
+  if (!etapaAtual) return null;
   const fotoAtual = fotosExistentes.find((f) => f.item_id === etapaAtual.id);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
