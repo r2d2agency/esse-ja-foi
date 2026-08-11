@@ -189,7 +189,7 @@ function Index() {
 
       <section id="como" className="border-y border-border bg-surface/40">
         <div className="mx-auto max-w-6xl px-6 py-24">
-          <h2 className="text-4xl md:text-5xl">COMO FUNCIONA</h2>
+          <h2 className="text-4xl font-bold md:text-5xl uppercase tracking-tighter">COMO FUNCIONA</h2>
           <ol className="mt-12 grid gap-10 md:grid-cols-3">
             {[
               ["01", "Cadastre-se e habilite", "Envie seus documentos e receba a habilitação para dar lances em minutos."],
@@ -197,7 +197,7 @@ function Index() {
               ["03", "Dê o lance e arremate", "Disputa ao vivo com incremento automático. Pagamento e retirada guiados."],
             ].map(([n, t, d]) => (
               <li key={n}>
-                <span className="font-display text-5xl text-ember/40">{n}</span>
+                <span className="font-bold text-5xl text-ember/40">{n}</span>
                 <h3 className="mt-3 text-2xl">{t}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{d}</p>
               </li>
@@ -227,7 +227,7 @@ function Index() {
 
       <section id="cadastro" className="border-t border-border">
         <div className="mx-auto max-w-3xl px-6 py-24 text-center">
-          <h2 className="text-4xl md:text-6xl">PRÓXIMO PREGÃO EM BREVE</h2>
+          <h2 className="text-4xl font-bold md:text-6xl uppercase tracking-tighter">PRÓXIMO PREGÃO EM BREVE</h2>
           <p className="mt-4 text-muted-foreground">
             Cadastre-se para receber os lotes antes da abertura e habilitar seus lances.
           </p>
