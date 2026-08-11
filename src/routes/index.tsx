@@ -110,7 +110,7 @@ function Index() {
             <a href="#garantias" className="transition-colors hover:text-foreground">Garantias</a>
           </nav>
           <div className="flex items-center gap-4">
-             <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+             <Link to="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Entrar
             </Link>
             <a href="#cadastro" className="btn-ember rounded-md px-5 py-2 text-sm font-semibold">
