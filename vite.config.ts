@@ -7,6 +7,12 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  // Self-hosting (Easypanel/Docker): gera um servidor Node que escuta em HOST/PORT.
+  // Sem isso o build sai no formato Cloudflare Worker e o container sobe sem abrir porta.
+  nitro: {
+    preset: "node-server",
+    output: { dir: ".output", serverDir: ".output/server", publicDir: ".output/public" },
+  },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
