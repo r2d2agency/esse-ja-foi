@@ -23,6 +23,7 @@ import { Route as OperacaoLeadsRouteImport } from './routes/operacao/leads'
 import { Route as OperacaoVeiculosRouteImport } from './routes/operacao/veiculos'
 import { Route as VistoriaIndexRouteImport } from './routes/vistoria/index'
 import { Route as VistoriaAgendamentoIdRouteImport } from './routes/vistoria/$agendamentoId'
+import { Route as VistoriaLaudoLaudoIdRouteImport } from './routes/vistoria/laudo.$laudoId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -94,6 +95,11 @@ const VistoriaAgendamentoIdRoute = VistoriaAgendamentoIdRouteImport.update({
   path: '/$agendamentoId',
   getParentRoute: () => VistoriaRoute,
 } as any)
+const VistoriaLaudoLaudoIdRoute = VistoriaLaudoLaudoIdRouteImport.update({
+  id: '/laudo/$laudoId',
+  path: '/laudo/$laudoId',
+  getParentRoute: () => VistoriaRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/operacao/veiculos': typeof OperacaoVeiculosRoute
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
   '/vistoria/': typeof VistoriaIndexRoute
+  '/vistoria/laudo/$laudoId': typeof VistoriaLaudoLaudoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/operacao/veiculos': typeof OperacaoVeiculosRoute
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
   '/vistoria': typeof VistoriaIndexRoute
+  '/vistoria/laudo/$laudoId': typeof VistoriaLaudoLaudoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/operacao/veiculos': typeof OperacaoVeiculosRoute
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
   '/vistoria/': typeof VistoriaIndexRoute
+  '/vistoria/laudo/$laudoId': typeof VistoriaLaudoLaudoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/operacao/veiculos'
     | '/vistoria/$agendamentoId'
     | '/vistoria/'
+    | '/vistoria/laudo/$laudoId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
     | '/operacao/veiculos'
     | '/vistoria/$agendamentoId'
     | '/vistoria'
+    | '/vistoria/laudo/$laudoId'
   id:
     | '__root__'
     | '/'
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | '/operacao/veiculos'
     | '/vistoria/$agendamentoId'
     | '/vistoria/'
+    | '/vistoria/laudo/$laudoId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -304,6 +316,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VistoriaAgendamentoIdRouteImport
       parentRoute: typeof VistoriaRoute
     }
+    '/vistoria/laudo/$laudoId': {
+      id: '/vistoria/laudo/$laudoId'
+      path: '/laudo/$laudoId'
+      fullPath: '/vistoria/laudo/$laudoId'
+      preLoaderRoute: typeof VistoriaLaudoLaudoIdRouteImport
+      parentRoute: typeof VistoriaRoute
+    }
   }
 }
 
@@ -328,11 +347,13 @@ const OperacaoRouteWithChildren = OperacaoRoute._addFileChildren(
 interface VistoriaRouteChildren {
   VistoriaAgendamentoIdRoute: typeof VistoriaAgendamentoIdRoute
   VistoriaIndexRoute: typeof VistoriaIndexRoute
+  VistoriaLaudoLaudoIdRoute: typeof VistoriaLaudoLaudoIdRoute
 }
 
 const VistoriaRouteChildren: VistoriaRouteChildren = {
   VistoriaAgendamentoIdRoute: VistoriaAgendamentoIdRoute,
   VistoriaIndexRoute: VistoriaIndexRoute,
+  VistoriaLaudoLaudoIdRoute: VistoriaLaudoLaudoIdRoute,
 }
 
 const VistoriaRouteWithChildren = VistoriaRoute._addFileChildren(
