@@ -1,147 +1,161 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { BackofficeLayout } from "@/components/layout/BackofficeLayout";
 import { DataTable } from "@/components/shared/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
   SheetTitle,
   SheetDescription,
-  SheetFooter
+  SheetFooter,
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { 
-  Phone, 
-  MapPin, 
-  Car, 
-  Calendar, 
-  User, 
-  MessageSquare, 
-  History, 
-  CheckCircle2,
-  Clock,
-  ArrowRight
-} from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Phone, MapPin, Car, Calendar, User, MessageSquare, History, CheckCircle2, Clock, ArrowRight } from "lucide-react";
 import { formatPhone, formatDate } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  listarLeadsFn,
+  historicoLeadFn,
+  registrarInteracaoFn,
+  atualizarLeadFn,
+  converterLeadFn,
+} from "@/lib/leads.functions";
 
 export const Route = createFileRoute("/operacao/leads")({
+  head: () => ({
+    meta: [
+      { title: "Gestão de Leads | ESSE JÁ FOI" },
+      { name: "description", content: "Acompanhe, atenda e converta os leads de venda de veículos recebidos pelo site e WhatsApp." },
+      { property: "og:title", content: "Gestão de Leads | ESSE JÁ FOI" },
+      { property: "og:description", content: "Funil completo de atendimento dos leads de captação de veículos." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: LeadsPage,
 });
 
-const mockLeads = [
-  {
-    id: "1",
-    data: "2026-08-11T10:00:00Z",
-    nome: "Carlos Oliveira",
-    whatsapp: "11999998888",
-    cidade: "São Paulo - SP",
-    veiculo: "Toyota Corolla 2022",
-    origem: "LANDING",
-    status: "NOVO",
-    responsavel: "Aguardando",
-    observacoes: "Interessado em venda rápida.",
-    historico: [
-      { data: "2026-08-11T10:05:00Z", acao: "Tentativa de contato via WhatsApp", usuario: "Sistema" }
-    ]
-  },
-  {
-    id: "2",
-    data: "2026-08-11T09:30:00Z",
-    nome: "Ana Pereira",
-    whatsapp: "21988887777",
-    cidade: "Rio de Janeiro - RJ",
-    veiculo: "Honda Civic 2020",
-    origem: "WHATSAPP",
-    status: "EM_ATENDIMENTO",
-    responsavel: "Marcos Lima",
-    observacoes: "Cliente busca avaliação acima da FIPE.",
-    historico: [
-      { data: "2026-08-11T09:40:00Z", acao: "Atendimento iniciado", usuario: "Marcos Lima" }
-    ]
-  },
-  {
-    id: "3",
-    data: "2026-08-10T15:20:00Z",
-    nome: "Roberto Silva",
-    whatsapp: "31977776666",
-    cidade: "Belo Horizonte - MG",
-    veiculo: "VW Polo 2023",
-    origem: "LANDING",
-    status: "AGENDADO",
-    responsavel: "Julia Costa",
-    observacoes: "Vistoria agendada para sexta.",
-    historico: [
-      { data: "2026-08-10T16:00:00Z", acao: "Agendou vistoria", usuario: "Julia Costa" }
-    ]
-  }
-];
+type Lead = Record<string, any>;
+
+const TODOS = "TODOS";
 
 function LeadsPage() {
-  const [selectedLead, setSelectedLead] = useState<any>(null);
+  const queryClient = useQueryClient();
+  const [filtros, setFiltros] = useState({ status: TODOS, origem: TODOS, cidade: "", responsavel: "", data: "" });
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [note, setNote] = useState("");
 
-  const handleOpenLead = (lead: any) => {
+  const listar = useServerFn(listarLeadsFn);
+  const buscarHistorico = useServerFn(historicoLeadFn);
+  const registrar = useServerFn(registrarInteracaoFn);
+  const atualizar = useServerFn(atualizarLeadFn);
+  const converter = useServerFn(converterLeadFn);
+
+  const params = {
+    status: filtros.status === TODOS ? "" : filtros.status,
+    origem: filtros.origem === TODOS ? "" : filtros.origem,
+    cidade: filtros.cidade,
+    responsavel: filtros.responsavel,
+    data: filtros.data,
+  };
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["leads", params],
+    queryFn: () => listar({ data: params }),
+  });
+
+  const leads = (data?.data ?? []) as Array<Lead>;
+  const ind = data?.indicadores;
+
+  const { data: historico } = useQuery({
+    queryKey: ["lead-historico", selectedLead?.['id']],
+    queryFn: () => buscarHistorico({ data: { id: String(selectedLead?.['id']) } }),
+    enabled: !!selectedLead?.['id'],
+  });
+
+  const recarregar = () => {
+    queryClient.invalidateQueries({ queryKey: ["leads"] });
+    queryClient.invalidateQueries({ queryKey: ["lead-historico"] });
+  };
+
+  const handleOpenLead = (lead: Lead) => {
     setSelectedLead(lead);
     setIsSheetOpen(true);
   };
 
-  const handleAddNote = () => {
-    if (!note.trim()) return;
-    toast.success("Tentativa registrada com sucesso!");
+  const handleAddNote = async () => {
+    if (!note.trim() || !selectedLead) return;
+    const res = await registrar({ data: { id: String(selectedLead['id']), acao: note.trim() } });
+    if (!res.ok) return toast.error(res.message);
+    toast.success("Interação registrada.");
     setNote("");
+    recarregar();
   };
 
-  const handleConvert = () => {
-    toast.info("Redirecionando para cadastro de cliente...");
-    // Em um cenário real, usaria navigate para /clientes/novo com state
+  const handleResponsavel = async (responsavel: string) => {
+    if (!selectedLead) return;
+    const res = await atualizar({ data: { id: String(selectedLead['id']), responsavel } });
+    if (!res.ok) return toast.error(res.message);
+    setSelectedLead({ ...selectedLead, responsavel });
+    toast.success("Responsável atribuído.");
+    recarregar();
+  };
+
+  const handleStatus = async (status: string) => {
+    if (!selectedLead) return;
+    const res = await atualizar({ data: { id: String(selectedLead['id']), status } });
+    if (!res.ok) return toast.error(res.message);
+    setSelectedLead({ ...selectedLead, status });
+    recarregar();
+  };
+
+  const handleConvert = async () => {
+    if (!selectedLead) return;
+    const res = await converter({ data: { id: String(selectedLead['id']) } });
+    if (!res.ok) return toast.error(res.message);
+    toast.success("Lead convertido em cliente.");
+    setIsSheetOpen(false);
+    recarregar();
   };
 
   return (
     <BackofficeLayout>
       <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Gestão de Leads</h1>
-            <p className="text-slate-500">Acompanhamento de novas oportunidades de negócio.</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Gestão de Leads</h1>
+          <p className="text-slate-500">Acompanhamento de novas oportunidades de negócio.</p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-4">
           {[
-            { label: "Leads Novos", value: "12", color: "text-blue-600", icon: Clock },
-            { label: "Em Atendimento", value: "8", color: "text-amber-600", icon: MessageSquare },
-            { label: "Vistorias Agendadas", value: "15", color: "text-teal-600", icon: Calendar },
-            { label: "Taxa de Conversão", value: "24%", color: "text-indigo-600", icon: CheckCircle2 },
+            { label: "Leads novos", value: ind?.novos ?? 0, color: "text-blue-600", icon: Clock },
+            { label: "Em atendimento", value: ind?.emAtendimento ?? 0, color: "text-amber-600", icon: MessageSquare },
+            { label: "Agendados", value: ind?.agendados ?? 0, color: "text-teal-600", icon: Calendar },
+            { label: "Taxa de conversão", value: `${ind?.taxaConversao ?? 0}%`, color: "text-indigo-600", icon: CheckCircle2 },
           ].map((card) => (
             <div key={card.label} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-slate-500">{card.label}</p>
                 <card.icon className="h-4 w-4 text-slate-400" />
               </div>
-              <p className={`mt-2 text-3xl font-bold ${card.color}`}>{card.value}</p>
+              <p className={`mt-2 text-3xl font-bold ${card.color}`}>{isLoading ? "—" : card.value}</p>
             </div>
           ))}
         </div>
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <Select>
-              <SelectTrigger>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
+            <Select value={filtros.status} onValueChange={(v) => setFiltros({ ...filtros, status: v })}>
+              <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
+                <SelectItem value={TODOS}>Todos os status</SelectItem>
                 <SelectItem value="NOVO">Novo</SelectItem>
                 <SelectItem value="EM_ATENDIMENTO">Em Atendimento</SelectItem>
                 <SelectItem value="AGENDADO">Agendado</SelectItem>
@@ -149,73 +163,74 @@ function LeadsPage() {
                 <SelectItem value="PERDIDO">Perdido</SelectItem>
               </SelectContent>
             </Select>
-            <Select>
-              <SelectTrigger>
-                <SelectValue placeholder="Origem" />
-              </SelectTrigger>
+            <Select value={filtros.origem} onValueChange={(v) => setFiltros({ ...filtros, origem: v })}>
+              <SelectTrigger><SelectValue placeholder="Origem" /></SelectTrigger>
               <SelectContent>
+                <SelectItem value={TODOS}>Todas as origens</SelectItem>
                 <SelectItem value="LANDING">Landing Page</SelectItem>
                 <SelectItem value="WHATSAPP">WhatsApp</SelectItem>
               </SelectContent>
             </Select>
-            <Input placeholder="Cidade..." />
-            <Input placeholder="Responsável..." />
-            <Input type="date" />
+            <Input placeholder="Cidade..." value={filtros.cidade} onChange={(e) => setFiltros({ ...filtros, cidade: e.target.value })} />
+            <Input placeholder="Responsável..." value={filtros.responsavel} onChange={(e) => setFiltros({ ...filtros, responsavel: e.target.value })} />
+            <Input type="date" value={filtros.data} onChange={(e) => setFiltros({ ...filtros, data: e.target.value })} />
           </div>
 
           <DataTable
-            data={mockLeads}
+            data={leads}
+            emptyMessage={isLoading ? "Carregando leads..." : "Nenhum lead recebido ainda."}
             columns={[
-              { 
-                header: "Data", 
-                accessor: (row) => formatDate(row.data) 
-              },
+              { header: "Data", accessor: (row) => (row['criado_em'] ? formatDate(row['criado_em']) : "—") },
               { header: "Nome", accessor: "nome" },
-              { 
-                header: "WhatsApp", 
+              {
+                header: "WhatsApp",
                 accessor: (row) => (
-                  <a 
-                    href={`https://wa.me/55${row.whatsapp}`} 
-                    target="_blank" 
+                  <a
+                    href={`https://wa.me/55${row['whatsapp']}`}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 text-teal-700 hover:underline"
                   >
                     <Phone className="h-3 w-3" />
-                    {formatPhone(row.whatsapp)}
+                    {formatPhone(String(row['whatsapp'] ?? ""))}
                   </a>
-                )
+                ),
               },
-              { header: "Cidade", accessor: "cidade" },
-              { header: "Veículo", accessor: "veiculo" },
-              { 
-                header: "Origem", 
+              { header: "Cidade", accessor: (row) => row['cidade'] ?? "—" },
+              { header: "Veículo", accessor: (row) => [row['marca'], row['modelo'], row['ano']].filter(Boolean).join(" ") || "—" },
+              {
+                header: "Origem",
                 accessor: (row) => (
-                  <Badge variant="outline" className={row.origem === 'WHATSAPP' ? 'border-green-200 bg-green-50 text-green-700' : ''}>
-                    {row.origem}
+                  <Badge variant="outline" className={row['origem'] === "WHATSAPP" ? "border-green-200 bg-green-50 text-green-700" : ""}>
+                    {row['origem'] ?? "—"}
                   </Badge>
-                )
+                ),
               },
-              { 
-                header: "Status", 
+              {
+                header: "Status",
                 accessor: (row) => (
-                  <Badge className={
-                    row.status === 'NOVO' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' :
-                    row.status === 'EM_ATENDIMENTO' ? 'bg-amber-100 text-amber-700 hover:bg-amber-100' :
-                    'bg-teal-100 text-teal-700 hover:bg-teal-100'
-                  }>
-                    {row.status.replace('_', ' ')}
+                  <Badge
+                    className={
+                      row['status'] === "NOVO"
+                        ? "bg-blue-100 text-blue-700 hover:bg-blue-100"
+                        : row['status'] === "EM_ATENDIMENTO"
+                          ? "bg-amber-100 text-amber-700 hover:bg-amber-100"
+                          : "bg-teal-100 text-teal-700 hover:bg-teal-100"
+                    }
+                  >
+                    {String(row['status'] ?? "").replace(/_/g, " ")}
                   </Badge>
-                )
+                ),
               },
-              { header: "Responsável", accessor: "responsavel" },
+              { header: "Responsável", accessor: (row) => row['responsavel'] ?? "Aguardando" },
               {
                 header: "Ações",
                 accessor: (row) => (
                   <Button variant="ghost" size="sm" onClick={() => handleOpenLead(row)} className="text-teal-700">
                     Ver ficha
                   </Button>
-                )
-              }
+                ),
+              },
             ]}
           />
         </div>
@@ -226,13 +241,11 @@ function LeadsPage() {
           <SheetContent className="w-full sm:max-w-md overflow-y-auto">
             <SheetHeader>
               <div className="flex items-center gap-2 mb-2">
-                <Badge className="bg-blue-100 text-blue-700">{selectedLead.status}</Badge>
-                <Badge variant="outline">{selectedLead.origem}</Badge>
+                <Badge className="bg-blue-100 text-blue-700">{String(selectedLead['status'] ?? "").replace(/_/g, " ")}</Badge>
+                <Badge variant="outline">{selectedLead['origem'] ?? "—"}</Badge>
               </div>
-              <SheetTitle className="text-2xl">{selectedLead.nome}</SheetTitle>
-              <SheetDescription>
-                Recebido em {formatDate(selectedLead.data)}
-              </SheetDescription>
+              <SheetTitle className="text-2xl">{selectedLead['nome']}</SheetTitle>
+              <SheetDescription>Recebido em {selectedLead['criado_em'] ? formatDate(selectedLead['criado_em']) : "—"}</SheetDescription>
             </SheetHeader>
 
             <div className="mt-8 space-y-6">
@@ -243,7 +256,7 @@ function LeadsPage() {
                   </div>
                   <div>
                     <p className="text-slate-500 text-xs">WhatsApp</p>
-                    <p className="font-medium">{formatPhone(selectedLead.whatsapp)}</p>
+                    <p className="font-medium">{formatPhone(String(selectedLead['whatsapp'] ?? ""))}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
@@ -252,7 +265,7 @@ function LeadsPage() {
                   </div>
                   <div>
                     <p className="text-slate-500 text-xs">Cidade</p>
-                    <p className="font-medium">{selectedLead.cidade}</p>
+                    <p className="font-medium">{selectedLead['cidade'] ?? "—"}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
@@ -260,42 +273,63 @@ function LeadsPage() {
                     <Car className="h-4 w-4" />
                   </div>
                   <div>
-                    <p className="text-slate-500 text-xs">Veículo de Interesse</p>
-                    <p className="font-medium">{selectedLead.veiculo}</p>
+                    <p className="text-slate-500 text-xs">Veículo de interesse</p>
+                    <p className="font-medium">
+                      {[selectedLead['marca'], selectedLead['modelo'], selectedLead['ano']].filter(Boolean).join(" ") || "—"}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
                   <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
                     <User className="h-4 w-4" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-slate-500 text-xs">Responsável</p>
-                    <Select defaultValue={selectedLead.responsavel === 'Aguardando' ? "" : '1'}>
-                      <SelectTrigger className="h-8 border-none p-0 focus:ring-0">
-                        <SelectValue placeholder="Atribuir..." />
-                      </SelectTrigger>
+                    <Input
+                      className="h-8"
+                      defaultValue={String(selectedLead['responsavel'] ?? "")}
+                      placeholder="Atribuir responsável"
+                      onBlur={(e) => e.target.value && handleResponsavel(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-slate-500 text-xs">Status</p>
+                    <Select value={String(selectedLead['status'] ?? "NOVO")} onValueChange={handleStatus}>
+                      <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1">Marcos Lima</SelectItem>
-                        <SelectItem value="2">Julia Costa</SelectItem>
+                        <SelectItem value="NOVO">Novo</SelectItem>
+                        <SelectItem value="EM_ATENDIMENTO">Em Atendimento</SelectItem>
+                        <SelectItem value="AGENDADO">Agendado</SelectItem>
+                        <SelectItem value="CONVERTIDO">Convertido</SelectItem>
+                        <SelectItem value="PERDIDO">Perdido</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
               </div>
 
+              {selectedLead['mensagem'] && (
+                <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-600">{selectedLead['mensagem']}</div>
+              )}
+
               <div className="space-y-3">
                 <h3 className="font-semibold text-sm flex items-center gap-2">
                   <MessageSquare className="h-4 w-4 text-slate-400" />
-                  Anotações
+                  Registrar tentativa de contato
                 </h3>
-                <textarea 
-                  className="w-full min-h-[100px] p-3 text-sm rounded-lg border border-slate-200 outline-none focus:border-teal-500 transition-colors"
-                  placeholder="Registre detalhes do atendimento..."
+                <textarea
+                  className="w-full rounded-md border border-slate-200 p-3 text-sm min-h-20"
+                  placeholder="Descreva o contato realizado..."
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                 />
-                <Button onClick={handleAddNote} className="w-full bg-slate-900 text-white" size="sm">
-                  Registrar tentativa
+                <Button size="sm" variant="outline" onClick={handleAddNote}>
+                  Registrar
                 </Button>
               </div>
 
@@ -304,24 +338,24 @@ function LeadsPage() {
                   <History className="h-4 w-4 text-slate-400" />
                   Histórico
                 </h3>
-                <div className="space-y-4 border-l-2 border-slate-100 pl-4 ml-2">
-                  {selectedLead.historico.map((item: any, i: number) => (
-                    <div key={i} className="relative">
-                      <div className="absolute -left-[21px] top-1 h-3 w-3 rounded-full bg-slate-200 border-2 border-white" />
-                      <p className="text-xs text-slate-500">{formatDate(item.data)}</p>
-                      <p className="text-sm">{item.acao}</p>
-                      <p className="text-[10px] text-slate-400">Por: {item.usuario}</p>
-                    </div>
+                <ul className="space-y-3">
+                  {((historico?.data ?? []) as Array<Lead>).map((h) => (
+                    <li key={String(h['id'])} className="border-l-2 border-slate-200 pl-3 text-sm">
+                      <p className="text-slate-700">{h['acao']}</p>
+                      <p className="text-xs text-slate-400">
+                        {h['criado_em'] ? formatDate(h['criado_em']) : ""} · {h['usuario'] ?? "Sistema"}
+                      </p>
+                    </li>
                   ))}
-                </div>
+                  {((historico?.data ?? []) as Array<Lead>).length === 0 && (
+                    <li className="text-sm text-slate-400">Nenhuma interação registrada.</li>
+                  )}
+                </ul>
               </div>
             </div>
 
             <SheetFooter className="mt-8 border-t pt-6">
-              <Button 
-                onClick={handleConvert}
-                className="w-full bg-teal-900 hover:bg-teal-950 text-white gap-2"
-              >
+              <Button onClick={handleConvert} className="w-full bg-teal-900 hover:bg-teal-950 text-white gap-2">
                 Converter em cliente
                 <ArrowRight className="h-4 w-4" />
               </Button>
