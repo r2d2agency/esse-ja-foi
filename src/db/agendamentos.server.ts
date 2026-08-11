@@ -119,11 +119,11 @@ export async function listarParceiros() {
 export async function salvarParceiro(input: {
   id?: string | undefined;
   nome: string;
-  unidade?: string | null;
-  cidade?: string | null;
-  uf?: string | null;
-  endereco?: string | null;
-  telefone?: string | null;
+  unidade?: string | null | undefined;
+  cidade?: string | null | undefined;
+  uf?: string | null | undefined;
+  endereco?: string | null | undefined;
+  telefone?: string | null | undefined;
 }) {
   await ensureAgendaSchema();
   const d = requireDb();
@@ -185,13 +185,13 @@ async function validarConflito(
 export type AgendamentoInput = {
   veiculoId: string;
   vistoriadorId: string;
-  parceiroId?: string | null;
-  unidade?: string | null;
+  parceiroId?: string | null | undefined;
+  unidade?: string | null | undefined;
   dataHora: string;
-  duracaoMin?: number | null;
-  observacao?: string | null;
-  responsavelInterno?: string | null;
-  usuario?: string | null;
+  duracaoMin?: number | null | undefined;
+  observacao?: string | null | undefined;
+  responsavelInterno?: string | null | undefined;
+  usuario?: string | null | undefined;
 };
 
 export async function criarAgendamento(input: AgendamentoInput) {
@@ -274,12 +274,12 @@ export async function criarAgendamento(input: AgendamentoInput) {
 }
 
 export async function listarAgendamentos(filtros: {
-  vistoriadorId?: string | null;
-  parceiroId?: string | null;
-  cidade?: string | null;
-  status?: string | null;
-  de?: string | null;
-  ate?: string | null;
+  vistoriadorId?: string | null | undefined;
+  parceiroId?: string | null | undefined;
+  cidade?: string | null | undefined;
+  status?: string | null | undefined;
+  de?: string | null | undefined;
+  ate?: string | null | undefined;
 } = {}) {
   await ensureAgendaSchema();
   const d = requireDb();
@@ -311,9 +311,9 @@ export async function listarAgendamentos(filtros: {
 
 /** Agenda da semana (segunda a domingo) a partir de uma data qualquer. */
 export async function agendaSemana(referencia: string, filtros: {
-  vistoriadorId?: string | null;
-  parceiroId?: string | null;
-  cidade?: string | null;
+  vistoriadorId?: string | null | undefined;
+  parceiroId?: string | null | undefined;
+  cidade?: string | null | undefined;
 } = {}) {
   const base = referencia ? new Date(`${referencia}T12:00:00`) : new Date();
   const dia = (base.getDay() + 6) % 7;
@@ -359,8 +359,8 @@ export async function remarcarAgendamento(input: {
   id: string;
   dataHora: string;
   motivo: string;
-  vistoriadorId?: string | null;
-  usuario?: string | null;
+  vistoriadorId?: string | null | undefined;
+  usuario?: string | null | undefined;
 }) {
   await ensureAgendaSchema();
   const d = requireDb();
@@ -401,7 +401,7 @@ export async function remarcarAgendamento(input: {
   return { id: input.id, dataHora: nova.toISOString() };
 }
 
-export async function cancelarAgendamento(input: { id: string; motivo: string; usuario?: string | null }) {
+export async function cancelarAgendamento(input: { id: string; motivo: string; usuario?: string | null | undefined }) {
   await ensureAgendaSchema();
   const d = requireDb();
   const motivo = (input.motivo ?? "").trim();
