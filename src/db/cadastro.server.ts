@@ -1,0 +1,435 @@
+import { sql } from "drizzle-orm";
+import { db } from "./index";
+import {
+  calcPercentualSobreFipe,
+  isValidDocumento,
+  isValidPlaca,
+  normalizePlaca,
+  onlyDigits,
+  podeTransicionar,
+  tipoPessoa,
+} from "@/lib/validators";
+
+export class RegraNegocioError extends Error {
+  status: number;
+  constructor(message: string, status = 400) {
+    super(message);
+    this.status = status;
+  }
+}
+
+function requireDb() {
+  if (!db) throw new RegraNegocioError("Banco de dados indisponível. Verifique a DATABASE_URL.", 503);
+  return db;
+}
+
+let prepared = false;
+
+/** Cria/ajusta as tabelas de clientes, veículos, logs e configurações. Idempotente. */
+export async function ensureCadastroSchema() {
+  if (prepared) return;
+  const d = requireDb();
+
+  await d.execute(sql`
+    CREATE TABLE IF NOT EXISTS clientes (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      nome text NOT NULL,
+      documento text NOT NULL,
+      tipo_pessoa text NOT NULL DEFAULT 'PF',
+      email text,
+      telefone text,
+      whatsapp text,
+      cidade text,
+      uf text,
+      cep text,
+      endereco text,
+      observacoes text,
+      ativo boolean NOT NULL DEFAULT true,
+      criado_em timestamptz NOT NULL DEFAULT now(),
+      atualizado_em timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await d.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS clientes_documento_uidx ON clientes (documento);`);
+
+  await d.execute(sql`
+    CREATE TABLE IF NOT EXISTS veiculos (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      placa text NOT NULL,
+      marca text NOT NULL,
+      modelo text NOT NULL,
+      status text NOT NULL DEFAULT 'CADASTRADO',
+      criado_em timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+
+  const cols: Array<[string, string]> = [
+    ["cliente_id", "uuid"],
+    ["ano_fabricacao", "text"],
+    ["ano_modelo", "text"],
+    ["versao", "text"],
+    ["cor", "text"],
+    ["km", "integer"],
+    ["combustivel", "text"],
+    ["cambio", "text"],
+    ["valor_fipe", "numeric(12,2)"],
+    ["valor_interesse_cliente", "numeric(12,2)"],
+    ["tipo_expectativa", "text"],
+    ["percentual_sobre_fipe", "numeric(8,2)"],
+    ["alerta_expectativa", "boolean NOT NULL DEFAULT false"],
+    ["ciente_expectativa", "boolean NOT NULL DEFAULT false"],
+    ["cep", "text"],
+    ["endereco", "text"],
+    ["cidade", "text"],
+    ["uf", "text"],
+    ["latitude", "numeric(10,7)"],
+    ["longitude", "numeric(10,7)"],
+    ["observacoes", "text"],
+    ["atualizado_em", "timestamptz NOT NULL DEFAULT now()"],
+  ];
+  for (const [name, type] of cols) {
+    await d.execute(sql.raw(`ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS ${name} ${type};`));
+  }
+  await d.execute(sql`ALTER TABLE veiculos ALTER COLUMN status SET DEFAULT 'CADASTRADO';`);
+  await d.execute(sql`UPDATE veiculos SET placa = upper(placa) WHERE placa <> upper(placa);`);
+  await d.execute(sql`UPDATE veiculos SET status = upper(status) WHERE status <> upper(status);`);
+  await d.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS veiculos_placa_uidx ON veiculos (placa);`);
+
+  await d.execute(sql`
+    CREATE TABLE IF NOT EXISTS logs (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      entidade text NOT NULL,
+      entidade_id uuid,
+      acao text NOT NULL,
+      de text,
+      para text,
+      detalhe text,
+      usuario text,
+      criado_em timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await d.execute(sql`CREATE INDEX IF NOT EXISTS logs_entidade_idx ON logs (entidade, entidade_id);`);
+
+  await d.execute(sql`
+    CREATE TABLE IF NOT EXISTS configuracoes (
+      chave text PRIMARY KEY,
+      valor text NOT NULL,
+      descricao text
+    );
+  `);
+  await d.execute(sql`
+    INSERT INTO configuracoes (chave, valor, descricao)
+    VALUES ('percentual_alerta_expectativa', '15', 'Percentual acima da FIPE que dispara alerta de expectativa')
+    ON CONFLICT (chave) DO NOTHING;
+  `);
+
+  prepared = true;
+}
+
+async function registrarLog(entrada: {
+  entidade: string;
+  entidadeId: string;
+  acao: string;
+  de?: string | null;
+  para?: string | null;
+  detalhe?: string | null;
+  usuario?: string | null;
+}) {
+  const d = requireDb();
+  await d.execute(sql`
+    INSERT INTO logs (entidade, entidade_id, acao, de, para, detalhe, usuario)
+    VALUES (${entrada.entidade}, ${entrada.entidadeId}, ${entrada.acao}, ${entrada.de ?? null},
+            ${entrada.para ?? null}, ${entrada.detalhe ?? null}, ${entrada.usuario ?? null});
+  `);
+}
+
+async function getPercentualAlerta() {
+  const d = requireDb();
+  const rows = (await d.execute(
+    sql`SELECT valor FROM configuracoes WHERE chave = 'percentual_alerta_expectativa' LIMIT 1;`,
+  )) as unknown as Array<{ valor: string }>;
+  const valor = Number(rows?.[0]?.valor ?? 15);
+  return Number.isFinite(valor) ? valor : 15;
+}
+
+/* ------------------------------- CLIENTES -------------------------------- */
+
+export type ClienteInput = {
+  id?: string;
+  nome: string;
+  documento: string;
+  email?: string | null;
+  telefone?: string | null;
+  whatsapp?: string | null;
+  cidade?: string | null;
+  uf?: string | null;
+  cep?: string | null;
+  endereco?: string | null;
+  observacoes?: string | null;
+};
+
+export async function listarClientes(busca?: string) {
+  await ensureCadastroSchema();
+  const d = requireDb();
+  const termo = (busca ?? "").trim();
+  const digitos = onlyDigits(termo);
+  const like = `%${termo.toLowerCase()}%`;
+  const likeDigits = digitos ? `%${digitos}%` : "%__nunca__%";
+  const rows = (await d.execute(sql`
+    SELECT * FROM clientes
+    WHERE ${termo === ""}
+       OR lower(nome) LIKE ${like}
+       OR documento LIKE ${likeDigits}
+       OR coalesce(regexp_replace(telefone, '\\D', '', 'g'), '') LIKE ${likeDigits}
+       OR coalesce(regexp_replace(whatsapp, '\\D', '', 'g'), '') LIKE ${likeDigits}
+    ORDER BY criado_em DESC
+    LIMIT 200;
+  `)) as unknown as Array<Record<string, unknown>>;
+  return rows;
+}
+
+export async function salvarCliente(input: ClienteInput) {
+  await ensureCadastroSchema();
+  const d = requireDb();
+
+  const nome = (input.nome ?? "").trim();
+  if (nome.length < 3) throw new RegraNegocioError("Informe o nome completo do cliente.", 422);
+
+  const documento = onlyDigits(input.documento);
+  if (!isValidDocumento(documento)) throw new RegraNegocioError("CPF ou CNPJ inválido (dígito verificador).", 422);
+
+  const dup = (await d.execute(sql`
+    SELECT id FROM clientes WHERE documento = ${documento} AND id <> ${input.id ?? "00000000-0000-0000-0000-000000000000"} LIMIT 1;
+  `)) as unknown as Array<{ id: string }>;
+  if (dup.length > 0) throw new RegraNegocioError("Já existe um cliente cadastrado com este documento.", 409);
+
+  const tipo = tipoPessoa(documento);
+
+  if (input.id) {
+    await d.execute(sql`
+      UPDATE clientes SET nome = ${nome}, documento = ${documento}, tipo_pessoa = ${tipo},
+        email = ${input.email ?? null}, telefone = ${input.telefone ?? null}, whatsapp = ${input.whatsapp ?? null},
+        cidade = ${input.cidade ?? null}, uf = ${input.uf ?? null}, cep = ${input.cep ?? null},
+        endereco = ${input.endereco ?? null}, observacoes = ${input.observacoes ?? null}, atualizado_em = now()
+      WHERE id = ${input.id};
+    `);
+    await registrarLog({ entidade: "cliente", entidadeId: input.id, acao: "ATUALIZADO" });
+    return { id: input.id };
+  }
+
+  const rows = (await d.execute(sql`
+    INSERT INTO clientes (nome, documento, tipo_pessoa, email, telefone, whatsapp, cidade, uf, cep, endereco, observacoes)
+    VALUES (${nome}, ${documento}, ${tipo}, ${input.email ?? null}, ${input.telefone ?? null}, ${input.whatsapp ?? null},
+            ${input.cidade ?? null}, ${input.uf ?? null}, ${input.cep ?? null}, ${input.endereco ?? null}, ${input.observacoes ?? null})
+    RETURNING id;
+  `)) as unknown as Array<{ id: string }>;
+  const id = rows[0]?.id as string;
+  await registrarLog({ entidade: "cliente", entidadeId: id, acao: "CRIADO" });
+  return { id };
+}
+
+export async function removerCliente(id: string) {
+  await ensureCadastroSchema();
+  const d = requireDb();
+  const vinculos = (await d.execute(
+    sql`SELECT id FROM veiculos WHERE cliente_id = ${id} LIMIT 1;`,
+  )) as unknown as Array<{ id: string }>;
+  if (vinculos.length > 0) throw new RegraNegocioError("Cliente possui veículos vinculados e não pode ser excluído.", 409);
+  await d.execute(sql`DELETE FROM clientes WHERE id = ${id};`);
+  await registrarLog({ entidade: "cliente", entidadeId: id, acao: "EXCLUIDO" });
+  return { ok: true };
+}
+
+/* ------------------------------- VEÍCULOS -------------------------------- */
+
+export type VeiculoInput = {
+  id?: string;
+  placa: string;
+  marca: string;
+  modelo: string;
+  versao?: string | null;
+  cor?: string | null;
+  km?: number | null;
+  anoFabricacao?: string | null;
+  anoModelo?: string | null;
+  combustivel?: string | null;
+  cambio?: string | null;
+  clienteId?: string | null;
+  valorFipe?: number | null;
+  valorInteresseCliente?: number | null;
+  tipoExpectativa?: string | null;
+  cienteExpectativa?: boolean;
+  cep?: string | null;
+  endereco?: string | null;
+  cidade?: string | null;
+  uf?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  observacoes?: string | null;
+};
+
+export async function listarVeiculos(filtros: {
+  status?: string | null;
+  cidade?: string | null;
+  clienteId?: string | null;
+  busca?: string | null;
+} = {}) {
+  await ensureCadastroSchema();
+  const d = requireDb();
+  const status = (filtros.status ?? "").toUpperCase();
+  const cidade = (filtros.cidade ?? "").toLowerCase();
+  const cliente = filtros.clienteId ?? "";
+  const busca = (filtros.busca ?? "").trim().toLowerCase();
+  const like = `%${busca}%`;
+  const likePlaca = `%${normalizePlaca(busca)}%`;
+  const rows = (await d.execute(sql`
+    SELECT v.*, c.nome AS cliente_nome
+    FROM veiculos v
+    LEFT JOIN clientes c ON c.id = v.cliente_id
+    WHERE (${status === ""} OR upper(v.status) = ${status})
+      AND (${cidade === ""} OR lower(coalesce(v.cidade, '')) LIKE ${`%${cidade}%`})
+      AND (${cliente === ""} OR v.cliente_id::text = ${cliente})
+      AND (${busca === ""} OR v.placa LIKE ${likePlaca} OR lower(v.modelo) LIKE ${like} OR lower(v.marca) LIKE ${like})
+    ORDER BY v.criado_em DESC
+    LIMIT 200;
+  `)) as unknown as Array<Record<string, unknown>>;
+  return rows;
+}
+
+export async function salvarVeiculo(input: VeiculoInput) {
+  await ensureCadastroSchema();
+  const d = requireDb();
+
+  const placa = normalizePlaca(input.placa);
+  if (!isValidPlaca(placa)) {
+    throw new RegraNegocioError("Placa inválida. Use o formato antigo (ABC1234) ou Mercosul (ABC1D23).", 422);
+  }
+  if (!input.marca?.trim() || !input.modelo?.trim()) {
+    throw new RegraNegocioError("Marca e modelo são obrigatórios.", 422);
+  }
+
+  const dup = (await d.execute(sql`
+    SELECT id FROM veiculos WHERE placa = ${placa} AND id <> ${input.id ?? "00000000-0000-0000-0000-000000000000"} LIMIT 1;
+  `)) as unknown as Array<{ id: string }>;
+  if (dup.length > 0) throw new RegraNegocioError("Já existe um veículo cadastrado com esta placa.", 409);
+
+  const limite = await getPercentualAlerta();
+  const fipe = Number(input.valorFipe ?? 0);
+  const interesse = Number(input.valorInteresseCliente ?? 0);
+  const percentual = fipe > 0 && interesse > 0 ? calcPercentualSobreFipe(fipe, interesse) : null;
+  const alerta = percentual !== null && percentual >= limite;
+
+  const base = {
+    placa,
+    marca: input.marca.trim(),
+    modelo: input.modelo.trim(),
+    versao: input.versao ?? null,
+    cor: input.cor ?? null,
+    km: input.km ?? null,
+    anoFabricacao: input.anoFabricacao ?? null,
+    anoModelo: input.anoModelo ?? null,
+    combustivel: input.combustivel ?? null,
+    cambio: input.cambio ?? null,
+    clienteId: input.clienteId || null,
+    fipe: fipe > 0 ? fipe : null,
+    interesse: interesse > 0 ? interesse : null,
+    tipoExpectativa: input.tipoExpectativa ?? null,
+    percentual,
+    alerta,
+    ciente: Boolean(input.cienteExpectativa),
+    cep: input.cep ?? null,
+    endereco: input.endereco ?? null,
+    cidade: input.cidade ?? null,
+    uf: input.uf ?? null,
+    latitude: input.latitude ?? null,
+    longitude: input.longitude ?? null,
+    observacoes: input.observacoes ?? null,
+  };
+
+  if (input.id) {
+    await d.execute(sql`
+      UPDATE veiculos SET placa = ${base.placa}, marca = ${base.marca}, modelo = ${base.modelo},
+        versao = ${base.versao}, cor = ${base.cor}, km = ${base.km}, ano_fabricacao = ${base.anoFabricacao},
+        ano_modelo = ${base.anoModelo}, combustivel = ${base.combustivel}, cambio = ${base.cambio},
+        cliente_id = ${base.clienteId}, valor_fipe = ${base.fipe}, valor_interesse_cliente = ${base.interesse},
+        tipo_expectativa = ${base.tipoExpectativa}, percentual_sobre_fipe = ${base.percentual},
+        alerta_expectativa = ${base.alerta}, ciente_expectativa = ${base.ciente}, cep = ${base.cep},
+        endereco = ${base.endereco}, cidade = ${base.cidade}, uf = ${base.uf}, latitude = ${base.latitude},
+        longitude = ${base.longitude}, observacoes = ${base.observacoes}, atualizado_em = now()
+      WHERE id = ${input.id};
+    `);
+    await registrarLog({ entidade: "veiculo", entidadeId: input.id, acao: "ATUALIZADO", detalhe: `Placa ${placa}` });
+    return { id: input.id, percentualSobreFipe: percentual, alertaExpectativa: alerta, percentualAlerta: limite };
+  }
+
+  const rows = (await d.execute(sql`
+    INSERT INTO veiculos (placa, marca, modelo, versao, cor, km, ano_fabricacao, ano_modelo, combustivel, cambio,
+      cliente_id, valor_fipe, valor_interesse_cliente, tipo_expectativa, percentual_sobre_fipe, alerta_expectativa,
+      ciente_expectativa, cep, endereco, cidade, uf, latitude, longitude, observacoes, status)
+    VALUES (${base.placa}, ${base.marca}, ${base.modelo}, ${base.versao}, ${base.cor}, ${base.km},
+      ${base.anoFabricacao}, ${base.anoModelo}, ${base.combustivel}, ${base.cambio}, ${base.clienteId},
+      ${base.fipe}, ${base.interesse}, ${base.tipoExpectativa}, ${base.percentual}, ${base.alerta},
+      ${base.ciente}, ${base.cep}, ${base.endereco}, ${base.cidade}, ${base.uf}, ${base.latitude},
+      ${base.longitude}, ${base.observacoes}, 'CADASTRADO')
+    RETURNING id;
+  `)) as unknown as Array<{ id: string }>;
+  const id = rows[0]?.id as string;
+  await registrarLog({ entidade: "veiculo", entidadeId: id, acao: "CRIADO", para: "CADASTRADO", detalhe: `Placa ${placa}` });
+  return { id, percentualSobreFipe: percentual, alertaExpectativa: alerta, percentualAlerta: limite };
+}
+
+export async function alterarStatusVeiculo(id: string, novoStatus: string, usuario?: string) {
+  await ensureCadastroSchema();
+  const d = requireDb();
+  const rows = (await d.execute(sql`
+    SELECT status, valor_fipe, valor_interesse_cliente, tipo_expectativa, alerta_expectativa, ciente_expectativa
+    FROM veiculos WHERE id = ${id} LIMIT 1;
+  `)) as unknown as Array<Record<string, unknown>>;
+  const atual = rows[0];
+  if (!atual) throw new RegraNegocioError("Veículo não encontrado.", 404);
+
+  const de = String(atual['status'] ?? "CADASTRADO").toUpperCase();
+  const para = (novoStatus || "").toUpperCase();
+  if (!podeTransicionar(de, para)) {
+    throw new RegraNegocioError(`Transição inválida: ${de} → ${para}.`, 422);
+  }
+
+  if (para === "AGENDADO") {
+    const temExpectativa =
+      atual['valor_fipe'] != null && atual['valor_interesse_cliente'] != null && !!atual['tipo_expectativa'];
+    if (!temExpectativa) {
+      throw new RegraNegocioError(
+        "Preencha valor FIPE, valor de interesse do cliente e tipo de expectativa antes de agendar.",
+        422,
+      );
+    }
+    if (atual['alerta_expectativa'] === true && atual['ciente_expectativa'] !== true) {
+      throw new RegraNegocioError(
+        "Expectativa acima do limite configurado. É necessário registrar a ciência do cliente antes de agendar.",
+        422,
+      );
+    }
+  }
+
+  await d.execute(sql`UPDATE veiculos SET status = ${para}, atualizado_em = now() WHERE id = ${id};`);
+  await registrarLog({ entidade: "veiculo", entidadeId: id, acao: "STATUS", de, para, usuario: usuario ?? null });
+  return { id, status: para };
+}
+
+export async function timelineVeiculo(id: string) {
+  await ensureCadastroSchema();
+  const d = requireDb();
+  const rows = (await d.execute(sql`
+    SELECT acao, de, para, detalhe, usuario, criado_em
+    FROM logs WHERE entidade = 'veiculo' AND entidade_id = ${id}
+    ORDER BY criado_em DESC LIMIT 200;
+  `)) as unknown as Array<Record<string, unknown>>;
+  return rows;
+}
+
+export async function removerVeiculo(id: string) {
+  await ensureCadastroSchema();
+  const d = requireDb();
+  await d.execute(sql`DELETE FROM veiculos WHERE id = ${id};`);
+  await registrarLog({ entidade: "veiculo", entidadeId: id, acao: "EXCLUIDO" });
+  return { ok: true };
+}
