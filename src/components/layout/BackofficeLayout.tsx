@@ -1,7 +1,12 @@
 import { Outlet, Navigate } from "@tanstack/react-router";
 import { useAuthStore } from "@/hooks/use-auth";
+import { ReactNode } from "react";
 
-export function BackofficeLayout() {
+interface BackofficeLayoutProps {
+  children?: ReactNode;
+}
+
+export function BackofficeLayout({ children }: BackofficeLayoutProps) {
   const { user, isAuthenticated } = useAuthStore();
 
   if (!isAuthenticated) return <Navigate to="/login" />;
@@ -25,7 +30,7 @@ export function BackofficeLayout() {
           <button onClick={() => useAuthStore.getState().logout()} className="text-sm text-red-600 hover:underline">Sair</button>
         </header>
         <main className="flex-1 overflow-y-auto p-6">
-          <Outlet />
+          {children || <Outlet />}
         </main>
       </div>
     </div>
