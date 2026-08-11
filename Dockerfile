@@ -1,9 +1,11 @@
 # Use Node para rodar o TanStack Start no Easypanel
 FROM node:22-slim AS build
-RUN corepack enable
+RUN npm install --global bun@1.2.22
 WORKDIR /app
-COPY package.json pnpm-lock.yaml* bun.lockb* ./
-RUN npm install
+COPY package.json bun.lock ./
+# Respeita o lockfile do projeto. Usar npm install aqui ignorava bun.lock e
+# podia gerar um conjunto incompatível de versões no build do Easypanel.
+RUN bun install --frozen-lockfile
 COPY . .
 # Define a URL da API para o build
 ARG VITE_API_URL
@@ -11,7 +13,7 @@ ENV VITE_API_URL=$VITE_API_URL
 # Garante o build como servidor Node (e nao Cloudflare Worker)
 ENV NITRO_PRESET=node-server
 ENV SERVER_PRESET=node-server
-RUN npm run build
+RUN bun run build
 # Falha o build cedo caso o servidor Node nao tenha sido gerado
 RUN test -f .output/server/index.mjs
 
