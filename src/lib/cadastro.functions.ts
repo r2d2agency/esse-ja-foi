@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { Row } from "@/db/cadastro.server";
 
 const clienteSchema = z.object({
   id: z.string().uuid().optional(),
@@ -54,7 +55,7 @@ export const listarClientesFn = createServerFn({ method: "GET" })
     try {
       return { ok: true as const, data: await m.listarClientes(data.busca) };
     } catch (e) {
-      return { ...falha(e), data: [] as Array<Record<string, unknown>> };
+      return { ...falha(e), data: [] as Array<Row> };
     }
   });
 
@@ -97,7 +98,7 @@ export const listarVeiculosFn = createServerFn({ method: "GET" })
     try {
       return { ok: true as const, data: await m.listarVeiculos(data) };
     } catch (e) {
-      return { ...falha(e), data: [] as Array<Record<string, unknown>> };
+      return { ...falha(e), data: [] as Array<Row> };
     }
   });
 
@@ -132,7 +133,7 @@ export const timelineVeiculoFn = createServerFn({ method: "GET" })
     try {
       return { ok: true as const, data: await m.timelineVeiculo(data.id) };
     } catch (e) {
-      return { ...falha(e), data: [] as Array<Record<string, unknown>> };
+      return { ...falha(e), data: [] as Array<Row> };
     }
   });
 

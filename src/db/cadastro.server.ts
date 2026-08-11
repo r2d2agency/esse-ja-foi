@@ -10,6 +10,8 @@ import {
   tipoPessoa,
 } from "@/lib/validators";
 
+export type Row = Record<string, string | number | boolean | Date | null>;
+
 export class RegraNegocioError extends Error {
   status: number;
   constructor(message: string, status = 400) {
@@ -183,7 +185,7 @@ export async function listarClientes(busca?: string) {
        OR coalesce(regexp_replace(whatsapp, '\\D', '', 'g'), '') LIKE ${likeDigits}
     ORDER BY criado_em DESC
     LIMIT 200;
-  `)) as unknown as Array<Record<string, unknown>>;
+  `)) as unknown as Array<Row>;
   return rows;
 }
 
@@ -268,10 +270,10 @@ export type VeiculoInput = {
 };
 
 export async function listarVeiculos(filtros: {
-  status?: string | null;
-  cidade?: string | null;
-  clienteId?: string | null;
-  busca?: string | null;
+  status?: string | null | undefined;
+  cidade?: string | null | undefined;
+  clienteId?: string | null | undefined;
+  busca?: string | null | undefined;
 } = {}) {
   await ensureCadastroSchema();
   const d = requireDb();
@@ -291,7 +293,7 @@ export async function listarVeiculos(filtros: {
       AND (${busca === ""} OR v.placa LIKE ${likePlaca} OR lower(v.modelo) LIKE ${like} OR lower(v.marca) LIKE ${like})
     ORDER BY v.criado_em DESC
     LIMIT 200;
-  `)) as unknown as Array<Record<string, unknown>>;
+  `)) as unknown as Array<Row>;
   return rows;
 }
 
@@ -383,7 +385,7 @@ export async function alterarStatusVeiculo(id: string, novoStatus: string, usuar
   const rows = (await d.execute(sql`
     SELECT status, valor_fipe, valor_interesse_cliente, tipo_expectativa, alerta_expectativa, ciente_expectativa
     FROM veiculos WHERE id = ${id} LIMIT 1;
-  `)) as unknown as Array<Record<string, unknown>>;
+  `)) as unknown as Array<Row>;
   const atual = rows[0];
   if (!atual) throw new RegraNegocioError("Veículo não encontrado.", 404);
 
@@ -422,7 +424,7 @@ export async function timelineVeiculo(id: string) {
     SELECT acao, de, para, detalhe, usuario, criado_em
     FROM logs WHERE entidade = 'veiculo' AND entidade_id = ${id}
     ORDER BY criado_em DESC LIMIT 200;
-  `)) as unknown as Array<Record<string, unknown>>;
+  `)) as unknown as Array<Row>;
   return rows;
 }
 
