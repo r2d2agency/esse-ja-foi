@@ -1,292 +1,394 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState, useMemo } from "react";
-import { Gavel, ShieldCheck, FileSearch, Timer, ArrowRight } from "lucide-react";
-import heroImg from "@/assets/hero-auction.jpg";
-import lote1 from "@/assets/lote-1.jpg";
-import lote2 from "@/assets/lote-2.jpg";
-import lote3 from "@/assets/lote-3.jpg";
+import { useEffect, useState } from "react";
+import { 
+  Gavel, 
+  ShieldCheck, 
+  FileSearch, 
+  ArrowRight, 
+  MessageCircle, 
+  Zap, 
+  Lock, 
+  UserCheck, 
+  CheckCircle2,
+  Phone,
+  HelpCircle
+} from "lucide-react";
+import { 
+  Accordion, 
+  AccordionContent, 
+  AccordionItem, 
+  AccordionTrigger 
+} from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { formatPhone } from "@/lib/utils";
+import { toast } from "sonner";
+import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "ESSE JÁ FOI — Plataforma de Leilão de Veículos" },
+      { title: "ESSE JÁ FOI — Venda seu carro com agilidade e segurança" },
       {
         name: "description",
         content:
-          "Plataforma de gestão de veículos, vistorias e leilões de veículos usados.",
+          "A plataforma que organiza toda a venda do seu carro. Vistoria no local e propostas reais.",
       },
-      { property: "og:title", content: "ESSE JÁ FOI — Plataforma de Leilão de Veículos" },
-      {
-        property: "og:description",
-        content: "Plataforma de gestão de veículos, vistorias e leilões de veículos usados.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Index,
 });
 
-const lotes = [
-  {
-    img: lote1,
-    nome: "Picape Cabine Dupla 4x4",
-    ano: "2021 · 48.320 km",
-    lance: "R$ 96.500",
-    lances: 27,
-    tag: "Encerrando hoje",
-  },
-  {
-    img: lote2,
-    nome: "Hatch Compacto 1.0",
-    ano: "2019 · 71.900 km",
-    lance: "R$ 38.200",
-    lances: 14,
-    tag: "Sem reserva",
-  },
-  {
-    img: lote3,
-    nome: "Motocicleta Esportiva 650",
-    ano: "2022 · 12.150 km",
-    lance: "R$ 27.900",
-    lances: 9,
-    tag: "Novo lote",
-  },
-];
-
-function Countdown() {
-  const [t, setT] = useState({ h: 4, m: 12, s: 58 });
-  useEffect(() => {
-    const id = setInterval(() => {
-      setT((p) => {
-        let { h, m, s } = p;
-        s -= 1;
-        if (s < 0) { s = 59; m -= 1; }
-        if (m < 0) { m = 59; h -= 1; }
-        if (h < 0) return { h: 0, m: 0, s: 0 };
-        return { h, m, s };
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return (
-    <div className="flex items-center gap-3">
-      {[
-        ["HORAS", pad(t.h)],
-        ["MIN", pad(t.m)],
-        ["SEG", pad(t.s)],
-      ].map(([label, val]) => (
-        <div key={label} className="rounded-md border border-border bg-surface px-4 py-2 text-center">
-          <div className="font-display text-3xl leading-none text-ember tabular-nums">{val}</div>
-          <div className="mt-1 text-[10px] tracking-widest text-muted-foreground">{label}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function Index() {
-  const [dbLotes, setDbLotes] = useState<any[]>([]);
+  const [formData, setFormData] = useState({
+    nome: "",
+    whatsapp: "",
+    cidade: "",
+    marca: "",
+    modelo: "",
+    ano: "",
+    mensagem: "",
+  });
   const [loading, setLoading] = useState(false);
 
+  // Capturar UTMs
   useEffect(() => {
-    // Apenas no cliente para evitar erros de SSR com domínios externos no build
-    if (typeof window === 'undefined') return;
-    
-    const apiUrl = import.meta.env['VITE_API_URL'];
-    if (apiUrl) {
-      setLoading(true);
-      fetch(`${apiUrl}/auctions/active`)
-        .then(res => {
-          if (!res.ok) throw new Error("API Indisponível");
-          return res.json();
-        })
-        .then(data => {
-          if (Array.isArray(data)) setDbLotes(data);
-        })
-        .catch(err => {
-          console.error("Erro ao buscar leilões da API:", err);
-        })
-        .finally(() => setLoading(false));
-    }
+    const params = new URLSearchParams(window.location.search);
+    const utms = {
+      utm_source: params.get("utm_source") || "",
+      utm_medium: params.get("utm_medium") || "",
+      utm_campaign: params.get("utm_campaign") || "",
+    };
+    // Armazenar para envio posterior
+    localStorage.setItem("utm_data", JSON.stringify(utms));
   }, []);
 
-  const displayLotes = useMemo(() => {
-    if (dbLotes.length > 0) return dbLotes;
-    return lotes;
-  }, [dbLotes]);
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, whatsapp: formatPhone(e.target.value) });
+  };
+
+  const handleSubmit = async (e: React.FormEvent, origin = "LANDING") => {
+    if (e) e.preventDefault();
+    
+    if (!formData.nome || !formData.whatsapp || !formData.cidade) {
+      toast.error("Por favor, preencha os campos obrigatórios (Nome, WhatsApp e Cidade)");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const utmData = JSON.parse(localStorage.getItem("utm_data") || "{}");
+      await api.post("/leads/publico", {
+        ...formData,
+        origem: origin,
+        ...utmData
+      });
+      
+      toast.success("Recebemos seu contato! Em breve falaremos com você.");
+      setFormData({
+        nome: "",
+        whatsapp: "",
+        cidade: "",
+        marca: "",
+        modelo: "",
+        ano: "",
+        mensagem: "",
+      });
+    } catch (error) {
+      console.error("Erro ao enviar lead:", error);
+      toast.error("Ocorreu um erro de conexão, mas seus dados foram mantidos. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleWhatsAppClick = () => {
+    handleSubmit(null as any, "WHATSAPP");
+    const message = encodeURIComponent(`Olá, gostaria de vender meu carro. Meu nome é ${formData.nome || 'interessado'}.`);
+    window.open(`https://wa.me/5511999999999?text=${message}`, "_blank");
+  };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+    <div className="min-h-screen bg-white text-slate-900 font-sans">
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/80 backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
-            <Gavel className="h-5 w-5 text-ember" />
-            <span className="font-display text-2xl tracking-wide">ESSE JÁ FOI</span>
+            <Gavel className="h-6 w-6 text-teal-800" />
+            <span className="font-display text-2xl font-bold tracking-tight text-teal-900">ESSE JÁ FOI</span>
           </div>
-          <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
-            <a href="#lotes" className="transition-colors hover:text-foreground">Lotes</a>
-            <a href="#como" className="transition-colors hover:text-foreground">Como funciona</a>
-            <a href="#garantias" className="transition-colors hover:text-foreground">Garantias</a>
-          </nav>
           <div className="flex items-center gap-4">
-             <Link to="/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Entrar
+            <Link to="/login" className="text-sm font-medium text-slate-500 hover:text-teal-900 transition-colors">
+              Área Restrita
             </Link>
-            <a href="#cadastro" className="btn-ember rounded-md px-5 py-2 text-sm font-semibold">
-              Cadastrar
-            </a>
+            <Button onClick={() => document.getElementById('formulario')?.scrollIntoView({ behavior: 'smooth' })} className="bg-teal-900 text-white hover:bg-teal-950">
+              Vender meu carro
+            </Button>
           </div>
         </div>
       </header>
 
-      <section className="relative overflow-hidden">
-        <img
-          src={heroImg}
-          alt="Veículos em destaque no pátio de leilão sob holofotes"
-          width={1600}
-          height={1000}
-          className="absolute inset-0 h-full w-full object-cover opacity-10"
-        />
-        <div className="absolute inset-0 bg-background/50" />
-        <div className="relative mx-auto max-w-6xl px-6 py-28 md:py-36">
-          <span className="inline-flex items-center gap-2 rounded-full border border-ember/40 px-3 py-1 text-xs tracking-widest text-ember">
-            <Timer className="h-3.5 w-3.5" /> PREGÃO AO VIVO Nº 428
-          </span>
-          <h1 className="mt-6 max-w-3xl text-5xl font-bold tracking-tight md:text-7xl">
-            O MARTELO BATE. <span className="text-ember">O CARRO É SEU.</span>
-          </h1>
-          <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-            Leilões de carros, motos e utilitários com lances em tempo real, laudo cautelar
-            e documentação verificada em cada lote.
-          </p>
-          <div className="mt-10 flex flex-wrap items-center gap-6">
-            <a href="#lotes" className="btn-ember inline-flex items-center gap-2 rounded-md px-7 py-3.5 font-semibold">
-              Ver lotes abertos <ArrowRight className="h-4 w-4" />
-            </a>
-            <Countdown />
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-slate-50 py-20 lg:py-32">
+        <div className="mx-auto max-w-7xl px-6 grid lg:grid-cols-2 gap-16 items-center">
+          <div>
+            <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-slate-900 leading-[1.1]">
+              A plataforma que organiza toda a <span className="text-teal-800">venda do seu carro.</span>
+            </h1>
+            <p className="mt-8 text-xl text-slate-600 max-w-xl">
+              Esqueça os classificados tradicionais. Nós cuidamos da vistoria, documentação e encontramos propostas reais para você.
+            </p>
+            <div className="mt-10 flex flex-wrap gap-4">
+              <Button 
+                onClick={handleWhatsAppClick}
+                className="bg-green-600 hover:bg-green-700 text-white h-14 px-8 text-lg gap-2"
+              >
+                <MessageCircle className="h-5 w-5" />
+                Falar no WhatsApp
+              </Button>
+            </div>
+            <div className="mt-12 flex items-center gap-8">
+              <div className="flex -space-x-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-10 w-10 rounded-full border-2 border-white bg-slate-200" />
+                ))}
+              </div>
+              <p className="text-sm text-slate-500">
+                <span className="font-bold text-slate-900">+500 veículos</span> vendidos este mês
+              </p>
+            </div>
           </div>
-          <dl className="mt-16 grid max-w-2xl grid-cols-3 gap-8 border-t border-border pt-8">
-            {[
-              ["12.400+", "Veículos vendidos"],
-              ["98%", "Laudos aprovados"],
-              ["37%", "Abaixo da FIPE"],
-            ].map(([v, l]) => (
-              <div key={l}>
-                <dt className="font-display text-4xl text-foreground">{v}</dt>
-                <dd className="mt-1 text-sm text-muted-foreground">{l}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
 
-      <section id="lotes" className="mx-auto max-w-6xl px-6 py-24">
-        <div className="flex items-end justify-between border-b border-border pb-6">
-          <h2 className="text-4xl font-bold md:text-5xl uppercase tracking-tighter">LOTES EM DISPUTA</h2>
-          <span className="text-sm text-muted-foreground">Atualizado agora</span>
-        </div>
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
-          {displayLotes.map((l: any) => (
-            <article key={l.nome} className="card-lot overflow-hidden rounded-lg">
-              <div className="relative">
-                <img
-                  src={l.img}
-                  alt={l.nome}
-                  loading="lazy"
-                  width={900}
-                  height={700}
-                  className="h-52 w-full object-cover"
-                />
-                <span className="absolute left-3 top-3 rounded-sm bg-ember px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-ember-foreground">
-                  {l.tag}
-                </span>
-              </div>
-              <div className="p-5">
-                <h3 className="text-2xl">{l.nome}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{l.ano}</p>
-                <div className="mt-5 flex items-end justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-widest text-muted-foreground">Lance atual</p>
-                    <p className="font-display text-3xl font-bold text-ember">{l.lance}</p>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{l.lances} lances</p>
+          <div id="formulario" className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8 lg:p-10">
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">Comece agora mesmo</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Nome Completo *</label>
+                  <Input 
+                    placeholder="Seu nome" 
+                    value={formData.nome}
+                    onChange={(e) => setFormData({...formData, nome: e.target.value})}
+                    required
+                  />
                 </div>
-                <button className="btn-ember mt-5 w-full rounded-md py-2.5 text-sm font-semibold">
-                  Dar lance
-                </button>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">WhatsApp *</label>
+                  <Input 
+                    placeholder="(00) 00000-0000" 
+                    value={formData.whatsapp}
+                    onChange={handlePhoneChange}
+                    required
+                  />
+                </div>
               </div>
-            </article>
-          ))}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Cidade *</label>
+                <Input 
+                  placeholder="Ex: São Paulo - SP" 
+                  value={formData.cidade}
+                  onChange={(e) => setFormData({...formData, cidade: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Marca</label>
+                  <Input 
+                    placeholder="Ex: Toyota" 
+                    value={formData.marca}
+                    onChange={(e) => setFormData({...formData, marca: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Modelo</label>
+                  <Input 
+                    placeholder="Ex: Corolla" 
+                    value={formData.modelo}
+                    onChange={(e) => setFormData({...formData, modelo: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Ano</label>
+                  <Input 
+                    placeholder="Ex: 2022" 
+                    value={formData.ano}
+                    onChange={(e) => setFormData({...formData, ano: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Mensagem (opcional)</label>
+                <Textarea 
+                  placeholder="Conte um pouco sobre o estado do veículo..."
+                  value={formData.mensagem}
+                  onChange={(e) => setFormData({...formData, mensagem: e.target.value})}
+                />
+              </div>
+              <Button type="submit" disabled={loading} className="w-full h-12 bg-teal-900 hover:bg-teal-950 text-white font-bold">
+                {loading ? "Enviando..." : "Receber Proposta"}
+              </Button>
+              <p className="text-[10px] text-center text-slate-400 mt-4">
+                Ao enviar, você concorda com nossos termos de privacidade.
+              </p>
+            </form>
+          </div>
         </div>
       </section>
 
-      <section id="como" className="border-y border-border bg-surface/40">
-        <div className="mx-auto max-w-6xl px-6 py-24">
-          <h2 className="text-4xl font-bold md:text-5xl uppercase tracking-tighter">COMO FUNCIONA</h2>
-          <ol className="mt-12 grid gap-10 md:grid-cols-3">
+      {/* Como Funciona */}
+      <section className="py-24 bg-white">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl font-bold tracking-tight">Como funciona</h2>
+            <p className="mt-4 text-slate-500">Processo simples, transparente e 100% assistido.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-12">
             {[
-              ["01", "Cadastre-se e habilite", "Envie seus documentos e receba a habilitação para dar lances em minutos."],
-              ["02", "Analise o lote", "Fotos em alta, laudo cautelar, histórico de sinistro e situação documental."],
-              ["03", "Dê o lance e arremate", "Disputa ao vivo com incremento automático. Pagamento e retirada guiados."],
-            ].map(([n, t, d]) => (
-              <li key={n}>
-                <span className="font-bold text-5xl text-ember/40">{n}</span>
-                <h3 className="mt-3 text-2xl">{t}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{d}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      <section id="garantias" className="mx-auto max-w-6xl px-6 py-24">
-        <div className="grid gap-6 md:grid-cols-3">
-          {[
-            [ShieldCheck, "Leiloeiro oficial", "Pregões conduzidos por leiloeiro público matriculado na Junta Comercial."],
-            [FileSearch, "Laudo cautelar", "Vistoria estrutural e checagem de chassi disponíveis antes do lance."],
-            [Gavel, "Sem taxa surpresa", "Comissão e custos exibidos no lote, calculados antes de você dar o lance."],
-          ].map(([Icon, t, d]) => {
-            const I = Icon as typeof Gavel;
-            return (
-              <div key={t as string} className="rounded-lg border border-border p-6">
-                <I className="h-6 w-6 text-ember" />
-                <h3 className="mt-4 text-2xl">{t as string}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{d as string}</p>
+              { 
+                step: "01", 
+                title: "Cadastro rápido", 
+                desc: "Informe os dados básicos do seu veículo pelo formulário ou WhatsApp em menos de 1 minuto." 
+              },
+              { 
+                step: "02", 
+                title: "Vistoria no local", 
+                desc: "Nossos especialistas vão até você para realizar a vistoria técnica e cautelar completa." 
+              },
+              { 
+                step: "03", 
+                title: "Propostas reais", 
+                desc: "Seu carro é apresentado para nossa rede de compradores e você recebe a melhor oferta." 
+              },
+            ].map((item) => (
+              <div key={item.step} className="relative p-8 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-6xl font-black text-teal-900/10 absolute top-4 right-8">{item.step}</span>
+                <h3 className="text-2xl font-bold mt-4">{item.title}</h3>
+                <p className="mt-4 text-slate-600 leading-relaxed">{item.desc}</p>
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
       </section>
 
-      <section id="cadastro" className="border-t border-border">
-        <div className="mx-auto max-w-3xl px-6 py-24 text-center">
-          <h2 className="text-4xl font-bold md:text-6xl uppercase tracking-tighter">PRÓXIMO PREGÃO EM BREVE</h2>
-          <p className="mt-4 text-muted-foreground">
-            Cadastre-se para receber os lotes antes da abertura e habilitar seus lances.
-          </p>
-          <form
-            className="mx-auto mt-8 flex max-w-md flex-col gap-3 sm:flex-row"
-            onSubmit={(e) => e.preventDefault()}
-          >
-            <input
-              type="email"
-              required
-              placeholder="seu@email.com.br"
-              className="flex-1 rounded-md border border-input bg-surface px-4 py-3 text-sm outline-none placeholder:text-muted-foreground focus:border-ember"
-            />
-            <button type="submit" className="btn-ember rounded-md px-6 py-3 text-sm font-semibold">
-              Quero participar
-            </button>
-          </form>
+      {/* Por que vender conosco */}
+      <section className="py-24 bg-teal-950 text-white overflow-hidden relative">
+        <div className="mx-auto max-w-7xl px-6 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-20 items-center">
+            <div>
+              <h2 className="text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
+                Por que vender com a ESSE JÁ FOI?
+              </h2>
+              <div className="mt-12 space-y-8">
+                {[
+                  { icon: Zap, title: "Agilidade", desc: "Venda seu carro em poucos dias, sem perder tempo com curiosos." },
+                  { icon: ShieldCheck, title: "Segurança total", desc: "Transação garantida e documentação cuidada por especialistas." },
+                  { icon: UserCheck, title: "Processo assistido", desc: "Um consultor dedicado acompanha você do início ao fim." },
+                  { icon: Lock, title: "Privacidade", desc: "Seu telefone não é exposto. Nós filtramos todos os contatos." },
+                ].map((feature, i) => (
+                  <div key={i} className="flex gap-6">
+                    <div className="h-12 w-12 rounded-xl bg-teal-900/50 flex items-center justify-center shrink-0">
+                      <feature.icon className="h-6 w-6 text-teal-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold">{feature.title}</h4>
+                      <p className="mt-1 text-teal-100/70">{feature.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="bg-white/5 rounded-3xl p-8 border border-white/10 backdrop-blur-sm">
+              <h3 className="text-2xl font-bold mb-6">O que você precisa informar?</h3>
+              <ul className="space-y-4">
+                {[
+                  "Placa e Renavam para consulta de débitos",
+                  "Histórico de revisões e manutenção",
+                  "Estado geral de pneus e funilaria",
+                  "Quitação ou saldo devedor de financiamento",
+                  "Localização para agendamento da vistoria"
+                ].map((text, i) => (
+                  <li key={i} className="flex items-center gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-teal-400" />
+                    <span>{text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </div>
       </section>
 
-      <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-8 text-sm text-muted-foreground">
-          <span className="font-display text-xl tracking-wide text-foreground">ESSE JÁ FOI</span>
-          <span>© 2026 ESSE JÁ FOI · Todos os direitos reservados.</span>
+      {/* FAQ Accordion */}
+      <section className="py-24 bg-white">
+        <div className="mx-auto max-w-3xl px-6">
+          <div className="text-center mb-16">
+            <HelpCircle className="h-10 w-10 text-teal-800 mx-auto mb-4" />
+            <h2 className="text-4xl font-bold tracking-tight">Dúvidas Frequentes</h2>
+          </div>
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="custos">
+              <AccordionTrigger>Quais são os custos para vender meu carro?</AccordionTrigger>
+              <AccordionContent>
+                Nossa plataforma cobra uma taxa fixa de serviço apenas no momento da venda concluída. A vistoria técnica inicial tem um custo reduzido que é reembolsado caso você aceite a proposta.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="vistoria">
+              <AccordionTrigger>Como é realizada a vistoria?</AccordionTrigger>
+              <AccordionContent>
+                Um vistoriador credenciado vai até sua residência ou trabalho. Ele avalia mais de 150 itens, incluindo estrutura, mecânica e procedência, gerando um laudo técnico completo.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="prazo">
+              <AccordionTrigger>Qual o prazo médio de venda?</AccordionTrigger>
+              <AccordionContent>
+                Após a realização da vistoria e publicação no sistema, a maioria dos veículos recebe propostas firmes em até 48 horas úteis.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="documentos">
+              <AccordionTrigger>Quais documentos são necessários?</AccordionTrigger>
+              <AccordionContent>
+                Você precisará do CRLV-e (documento do carro), RG/CNH do proprietário e comprovante de residência. Nós cuidamos de toda a parte burocrática de transferência.
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-24 bg-slate-900 text-white">
+        <div className="mx-auto max-w-7xl px-6 text-center">
+          <h2 className="text-4xl lg:text-6xl font-bold tracking-tight leading-tight max-w-4xl mx-auto">
+            Não perca tempo com quem só quer olhar. <span className="text-teal-400">Venda para quem quer comprar.</span>
+          </h2>
+          <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6">
+            <Button 
+              onClick={() => document.getElementById('formulario')?.scrollIntoView({ behavior: 'smooth' })}
+              className="bg-teal-700 hover:bg-teal-800 text-white h-16 px-10 text-xl font-bold rounded-full"
+            >
+              Vender meu carro agora
+            </Button>
+            <div className="flex items-center gap-2 text-slate-400">
+              <Phone className="h-5 w-5" />
+              <span>Suporte 24h via WhatsApp</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-12 border-t border-slate-100 bg-white">
+        <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row justify-between items-center gap-8 text-sm text-slate-500">
+          <div className="flex items-center gap-2">
+            <Gavel className="h-5 w-5 text-teal-800" />
+            <span className="font-display text-xl font-bold tracking-tight text-teal-900">ESSE JÁ FOI</span>
+          </div>
+          <p>© 2026 ESSE JÁ FOI · Inteligência em Venda de Veículos. Todos os direitos reservados.</p>
+          <div className="flex gap-6">
+            <a href="#" className="hover:text-teal-900">Termos</a>
+            <a href="#" className="hover:text-teal-900">Privacidade</a>
+          </div>
         </div>
       </footer>
     </div>
