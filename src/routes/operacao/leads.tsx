@@ -270,7 +270,7 @@ function LeadsPage() {
                   </div>
                   <div>
                     <p className="text-slate-500 text-xs">Responsável</p>
-                    <Select defaultValue={selectedLead.responsavel === 'Aguardando' ? undefined : '1'}>
+                    <Select defaultValue={selectedLead.responsavel === 'Aguardando' ? "" : '1'}>
                       <SelectTrigger className="h-8 border-none p-0 focus:ring-0">
                         <SelectValue placeholder="Atribuir..." />
                       </SelectTrigger>
