@@ -30,3 +30,23 @@ export const loginWithPassword = createServerFn({ method: "POST" })
       };
     }
   });
+
+export const solicitarResetSenha = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => z.object({ email: z.string().email() }).parse(data))
+  .handler(async ({ data }) => {
+    try {
+      const { db } = await import("@/db/index");
+      const { ensureCadastroSchema } = await import("@/db/cadastro.server");
+      const { sql } = await import("drizzle-orm");
+      if (!db) return { ok: false as const, message: "Banco de dados indisponível no momento." };
+      await ensureCadastroSchema();
+      await db.execute(sql`
+        INSERT INTO logs (entidade, acao, detalhe, usuario)
+        VALUES (${"auth"}, ${"RESET_SENHA_SOLICITADO"}, ${data.email.toLowerCase()}, ${data.email.toLowerCase()});
+      `);
+      return { ok: true as const };
+    } catch (error) {
+      console.error("Falha ao registrar solicitação de reset:", error);
+      return { ok: false as const, message: "Não foi possível registrar a solicitação. Tente novamente." };
+    }
+  });

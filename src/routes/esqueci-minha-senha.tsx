@@ -5,7 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Gavel, Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { api } from "@/lib/api";
+import { useServerFn } from "@tanstack/react-start";
+import { solicitarResetSenha } from "@/lib/auth.functions";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -31,6 +32,7 @@ function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSent, setIsSent] = useState(false);
   const navigate = useNavigate();
+  const solicitar = useServerFn(solicitarResetSenha);
 
   const form = useForm<ForgotFormValues>({
     resolver: zodResolver(forgotSchema),
@@ -40,12 +42,16 @@ function ForgotPasswordPage() {
   async function onSubmit(values: ForgotFormValues) {
     setIsLoading(true);
     try {
-      await api.post("/auth/forgot-password", values);
+      const res = await solicitar({ data: values });
+      if (!res.ok) {
+        toast.error(res.message);
+        return;
+      }
       setIsSent(true);
-      toast.success("E-mail de recuperação enviado!");
+      toast.success("Solicitação registrada! A equipe administrativa fará o contato.");
     } catch (error) {
-      // Mock success for development
-      setIsSent(true);
+      console.error(error);
+      toast.error("Não foi possível registrar a solicitação. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
