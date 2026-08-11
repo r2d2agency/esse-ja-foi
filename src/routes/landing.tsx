@@ -6,7 +6,7 @@ import lote1 from "@/assets/lote-1.jpg";
 import lote2 from "@/assets/lote-2.jpg";
 import lote3 from "@/assets/lote-3.jpg";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/landing")({
   head: () => ({
     meta: [
       { title: "ESSE JÁ FOI — Plataforma de Leilão de Veículos" },
