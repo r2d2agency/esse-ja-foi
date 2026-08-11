@@ -38,6 +38,10 @@ export const migrateDb = async () => {
 
     const { ensureSuperAdmin } = await import('./auth.server');
     await ensureSuperAdmin();
+    
+    const { seedConfiguracoes, ensureLaudoSchema } = await import('./laudos.server');
+    await ensureLaudoSchema();
+    await seedConfiguracoes();
   } catch (error) {
     console.error('❌ Falha na migração:', error);
   }
