@@ -8,7 +8,10 @@ RUN npm install --include=dev
 
 COPY . .
 ENV NODE_ENV=production
-RUN npm run build
+# Garante o build no modo servidor Node (não Cloudflare Worker)
+ENV LOVABLE_SANDBOX=""
+ENV SANDBOX=""
+RUN npm run build && test -f .output/server/index.mjs
 
 # Production stage
 FROM node:22-slim AS release
