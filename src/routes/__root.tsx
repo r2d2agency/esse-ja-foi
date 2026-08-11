@@ -1,11 +1,14 @@
-import { Outlet, useNavigate } from "@tanstack/react-router";
+import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuthStore } from "@/hooks/use-auth";
 import { Toaster } from "sonner";
 
-export default function RootLayout() {
-  const { isAuthenticated, isLoading, setLoading } = useAuthStore();
-  const navigate = useNavigate();
+export const Route = createRootRoute({
+  component: RootLayout,
+});
+
+function RootLayout() {
+  const { isLoading, setLoading } = useAuthStore();
 
   useEffect(() => {
     // Check local storage for tokens to re-hydrate state if needed
