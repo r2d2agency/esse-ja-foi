@@ -51,3 +51,17 @@ export const leiloes = pgTable('leiloes', {
   status: text('status').default('agendado').notNull(),
   criado_em: timestamp('criado_em').defaultNow().notNull(),
 });
+
+import { relations } from 'drizzle-orm';
+
+export const veiculosRelations = relations(veiculos, ({ many }) => ({
+  leiloes: many(leiloes),
+}));
+
+export const leiloesRelations = relations(leiloes, ({ one }) => ({
+  veiculo: one(veiculos, {
+    fields: [leiloes.veiculo_id],
+    references: [veiculos.id],
+  }),
+}));
+
