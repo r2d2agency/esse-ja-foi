@@ -13,10 +13,11 @@ if (!connectionString) {
 // Criamos o cliente apenas se a string existir, para evitar erro de inicialização fatal
 const client = connectionString 
   ? postgres(connectionString, { 
-      max: 1,
+      max: 10,
       ssl: connectionString.includes('sslmode=disable') ? false : 'require',
-      connect_timeout: 15, // Aumentado para 15s
+      connect_timeout: 30,
     }) 
+
   : null;
 
 export const db = client ? drizzle(client, { schema }) : null;
