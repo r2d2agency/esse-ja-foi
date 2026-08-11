@@ -1,5 +1,3 @@
-import { BackofficeLayout } from "@/components/layout/BackofficeLayout";
-import { formatCurrency, formatDate } from "@/lib/utils";
 import { 
   Table, 
   TableBody, 
@@ -21,9 +19,10 @@ interface DataTableProps<T> {
   onSearch?: (term: string) => void;
   onAdd?: () => void;
   title?: string;
+  emptyMessage?: string;
 }
 
-export function DataTable<T>({ data, columns, onSearch, onAdd, title }: DataTableProps<T>) {
+export function DataTable<T>({ data, columns, onSearch, onAdd, title, emptyMessage }: DataTableProps<T>) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -65,7 +64,7 @@ export function DataTable<T>({ data, columns, onSearch, onAdd, title }: DataTabl
             {data.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center text-slate-500">
-                  Nenhum registro encontrado.
+                  {emptyMessage ?? "Nenhum registro encontrado."}
                 </TableCell>
               </TableRow>
             ) : (
