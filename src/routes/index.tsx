@@ -93,9 +93,7 @@ function Index() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // In a decoupled frontend, we should fetch from the external API
-    // For now, we'll use the static 'lotes' defined above or fetch if VITE_API_URL is set
-    const apiUrl = import.meta.env.VITE_API_URL;
+    const apiUrl = import.meta.env['VITE_API_URL'];
     if (apiUrl) {
       setLoading(true);
       fetch(`${apiUrl}/auctions/active`)
