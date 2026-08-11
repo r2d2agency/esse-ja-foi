@@ -6,7 +6,7 @@ import * as z from "zod";
 import { Gavel, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/hooks/use-auth";
-import { api } from "@/lib/api";
+import { loginWithPassword } from "@/lib/auth.functions";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -45,14 +45,18 @@ function LoginPage() {
   async function onSubmit(values: LoginFormValues) {
     setIsLoading(true);
     try {
-      // API call to login endpoint
-      const response = await api.post("/auth/login", values);
-      const { user, accessToken, refreshToken } = response.data;
-      
-      login({ user, accessToken, refreshToken });
+      const result = await loginWithPassword({ data: values });
+
+      if (!result.ok) {
+        toast.error(result.message);
+        return;
+      }
+
+      const { user, accessToken } = result;
+      login({ user, accessToken, refreshToken: accessToken });
       localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
-      
+      localStorage.setItem("refreshToken", accessToken);
+
       toast.success(`Bem-vindo, ${user.name}!`);
       
       // Redirect based on role
@@ -72,15 +76,9 @@ function LoginPage() {
         default:
           navigate({ to: "/" });
       }
-    } catch (error: any) {
-      // For demo purposes, allow login with fake data if API fails but user entered specific emails
-      if (values.email.includes("admin")) {
-        const mockUser = { id: "1", name: "Admin", email: values.email, role: "admin" as const };
-        login({ user: mockUser, accessToken: "fake", refreshToken: "fake" });
-        navigate({ to: "/admin" });
-        return;
-      }
-      toast.error("Erro ao realizar login. Verifique suas credenciais.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao realizar login. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
