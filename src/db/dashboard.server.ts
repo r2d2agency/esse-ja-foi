@@ -81,6 +81,33 @@ export async function veiculosRecentes(limite = 10) {
   }, [] as Array<Row>);
 }
 
+export function bancoDisponivel() {
+  return !!db;
+}
+
+export async function leadsRecentes(limite = 10) {
+  return safe(async () => {
+    const { ensureLeadsSchema } = await import("./leads.server");
+    await ensureLeadsSchema();
+    return (await db!.execute(sql`
+      SELECT id, nome, whatsapp, cidade, marca, modelo, ano, origem, status, criado_em
+      FROM leads ORDER BY criado_em DESC LIMIT ${limite};
+    `)) as unknown as Array<Row>;
+  }, [] as Array<Row>);
+}
+
+export async function totaisLeads() {
+  return safe(async () => {
+    const { ensureLeadsSchema } = await import("./leads.server");
+    await ensureLeadsSchema();
+    const rows = (await db!.execute(sql`
+      SELECT count(*) AS total, count(*) FILTER (WHERE upper(status) = 'NOVO') AS novos FROM leads;
+    `)) as unknown as Array<Record<string, string>>;
+    const r = rows[0] ?? {};
+    return { total: num(r['total']), novos: num(r['novos']) };
+  }, { total: 0, novos: 0 });
+}
+
 export async function filaOperacao() {
   return safe(async () => {
     const { ensureCadastroSchema } = await import("./cadastro.server");
