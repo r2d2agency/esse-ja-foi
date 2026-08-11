@@ -9,38 +9,100 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
+import { Route as AuthenticatedCompradorRouteRouteImport } from './routes/_authenticated/comprador/route'
+import { Route as AuthenticatedOperacaoRouteRouteImport } from './routes/_authenticated/operacao/route'
+import { Route as AuthenticatedVistoriaRouteRouteImport } from './routes/_authenticated/vistoria/route'
 
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCompradorRouteRoute =
+  AuthenticatedCompradorRouteRouteImport.update({
+    id: '/comprador',
+    path: '/comprador',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedOperacaoRouteRoute =
+  AuthenticatedOperacaoRouteRouteImport.update({
+    id: '/operacao',
+    path: '/operacao',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedVistoriaRouteRoute =
+  AuthenticatedVistoriaRouteRouteImport.update({
+    id: '/vistoria',
+    path: '/vistoria',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
+  '/admin': typeof AuthenticatedAdminRouteRoute
+  '/comprador': typeof AuthenticatedCompradorRouteRoute
+  '/operacao': typeof AuthenticatedOperacaoRouteRoute
+  '/vistoria': typeof AuthenticatedVistoriaRouteRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
+  '/admin': typeof AuthenticatedAdminRouteRoute
+  '/comprador': typeof AuthenticatedCompradorRouteRoute
+  '/operacao': typeof AuthenticatedOperacaoRouteRoute
+  '/vistoria': typeof AuthenticatedVistoriaRouteRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteRoute
+  '/_authenticated/comprador': typeof AuthenticatedCompradorRouteRoute
+  '/_authenticated/operacao': typeof AuthenticatedOperacaoRouteRoute
+  '/_authenticated/vistoria': typeof AuthenticatedVistoriaRouteRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/auth'
+  fullPaths: '/' | '/auth' | '/admin' | '/comprador' | '/operacao' | '/vistoria'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth'
-  id: '__root__' | '/auth'
+  to: '/' | '/auth' | '/admin' | '/comprador' | '/operacao' | '/vistoria'
+  id:
+    | '__root__'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/admin'
+    | '/_authenticated/comprador'
+    | '/_authenticated/operacao'
+    | '/_authenticated/vistoria'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -48,10 +110,57 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/comprador': {
+      id: '/_authenticated/comprador'
+      path: '/comprador'
+      fullPath: '/comprador'
+      preLoaderRoute: typeof AuthenticatedCompradorRouteRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/operacao': {
+      id: '/_authenticated/operacao'
+      path: '/operacao'
+      fullPath: '/operacao'
+      preLoaderRoute: typeof AuthenticatedOperacaoRouteRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/vistoria': {
+      id: '/_authenticated/vistoria'
+      path: '/vistoria'
+      fullPath: '/vistoria'
+      preLoaderRoute: typeof AuthenticatedVistoriaRouteRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
+interface AuthenticatedRouteChildren {
+  AuthenticatedAdminRouteRoute: typeof AuthenticatedAdminRouteRoute
+  AuthenticatedCompradorRouteRoute: typeof AuthenticatedCompradorRouteRoute
+  AuthenticatedOperacaoRouteRoute: typeof AuthenticatedOperacaoRouteRoute
+  AuthenticatedVistoriaRouteRoute: typeof AuthenticatedVistoriaRouteRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAdminRouteRoute: AuthenticatedAdminRouteRoute,
+  AuthenticatedCompradorRouteRoute: AuthenticatedCompradorRouteRoute,
+  AuthenticatedOperacaoRouteRoute: AuthenticatedOperacaoRouteRoute,
+  AuthenticatedVistoriaRouteRoute: AuthenticatedVistoriaRouteRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport

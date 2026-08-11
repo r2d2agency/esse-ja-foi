@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 
-export const Route = createFileRoute('/_authenticated/_admin')({
+export const Route = createFileRoute('/_authenticated/admin')({
   beforeLoad: async ({ context }: any) => {
     if (context.session?.user?.id) {
         const { data: profile } = await context.supabase
