@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { BackofficeLayout } from "@/components/layout/BackofficeLayout";
@@ -32,10 +32,10 @@ function AdminDashboard() {
 
   const i = data?.indicadores;
   const cards: Array<[string, number, string]> = [
+    ["Leads novos", data?.leadsTotais?.novos ?? 0, "text-emerald-600"],
     ["Em vistoria", i?.emVistoria ?? 0, "text-blue-600"],
     ["Leilões ativos", i?.leiloesAtivos ?? 0, "text-amber-600"],
     ["Veículos captados", i?.veiculos ?? 0, "text-teal-600"],
-    ["Aguardando laudo", i?.aguardandoLaudo ?? 0, "text-orange-600"],
   ];
 
   return (
@@ -46,6 +46,12 @@ function AdminDashboard() {
           <p className="text-slate-500">Gestão central da plataforma ESSE JÁ FOI.</p>
         </div>
 
+        {data && data.bancoOk === false && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            Banco de dados não conectado (DATABASE_URL ausente). Os cadastros feitos na landing page não estão sendo gravados.
+          </div>
+        )}
+
         <div className="grid gap-6 md:grid-cols-4">
           {cards.map(([label, val, color]) => (
             <div key={label} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -54,6 +60,24 @@ function AdminDashboard() {
             </div>
           ))}
         </div>
+
+        <DataTable
+          title="Leads recebidos pela landing page"
+          data={(data?.leads ?? []) as Array<Record<string, any>>}
+          emptyMessage={isLoading ? "Carregando..." : "Nenhum lead recebido ainda."}
+          columns={[
+            { header: "Nome", accessor: "nome" },
+            { header: "WhatsApp", accessor: "whatsapp" },
+            { header: "Cidade", accessor: (row) => row['cidade'] ?? "—" },
+            { header: "Veículo", accessor: (row) => `${row['marca'] ?? ""} ${row['modelo'] ?? ""} ${row['ano'] ?? ""}`.trim() || "—" },
+            { header: "Origem", accessor: (row) => row['origem'] ?? "—" },
+            { header: "Status", accessor: (row) => String(row['status'] ?? "").replace(/_/g, " ") },
+            { header: "Recebido em", accessor: (row) => (row['criado_em'] ? formatDate(row['criado_em']) : "—") },
+          ]}
+        />
+        <Link to="/operacao/leads" className="inline-block text-sm font-medium text-teal-700 hover:underline">
+          Ver todos os leads →
+        </Link>
 
         <DataTable
           title="Veículos recentes"
