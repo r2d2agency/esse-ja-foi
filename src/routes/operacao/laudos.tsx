@@ -266,11 +266,11 @@ function LaudosOperacao() {
                   <div key={i} className="rounded-xl border border-slate-200 p-4 space-y-3 bg-white hover:border-teal-200 transition-colors">
                     <div className="flex justify-between items-start">
                       <div>
-                        <p className="text-xs text-slate-500 font-medium">{new Date(calc.criado_em).toLocaleString('pt-BR')}</p>
-                        <p className="text-sm font-bold text-slate-900 mt-1">Calculado por: {calc.usuario_nome || 'Sistema'}</p>
+                        <p className="text-xs text-slate-500 font-medium">{new Date(String(calc['criado_em'])).toLocaleString('pt-BR')}</p>
+                        <p className="text-sm font-bold text-slate-900 mt-1">Calculado por: {calc['usuario_nome'] || 'Sistema'}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xl font-black text-teal-900 leading-tight">{formatCurrency(calc.valor_final)}</p>
+                        <p className="text-xl font-black text-teal-900 leading-tight">{formatCurrency(calc['valor_final'])}</p>
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Valor Sugerido</p>
                       </div>
                     </div>
@@ -278,9 +278,9 @@ function LaudosOperacao() {
                     <div className="grid grid-cols-2 gap-4 py-2 border-y border-slate-50">
                       <div className="text-xs">
                         <span className="text-slate-400 block font-bold uppercase text-[9px]">Valor FIPE</span>
-                        <span className="text-slate-900 font-semibold">{formatCurrency(calc.valor_fipe)}</span>
+                        <span className="text-slate-900 font-semibold">{formatCurrency(calc['valor_fipe'])}</span>
                       </div>
-                      {calc.fora_da_curva && (
+                      {calc['fora_da_curva'] === true && (
                         <div className="flex items-center gap-1.5 text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-md h-fit w-fit">
                           <AlertTriangle className="h-3 w-3" /> FORA DA CURVA (TETO)
                         </div>
@@ -288,7 +288,7 @@ function LaudosOperacao() {
                     </div>
 
                     <div className="space-y-1.5 bg-slate-50 p-3 rounded-lg">
-                      {(calc.detalhamento as any[]).map((d, idx) => (
+                      {((calc['detalhamento'] as any[]) || []).map((d, idx) => (
                         <div key={idx} className="flex justify-between text-[11px] items-center">
                           <span className="text-slate-600 font-medium">{d.titulo} {d.info ? <span className="text-[10px] text-slate-400 font-normal">· {d.info}</span> : ''}</span>
                           <span className={d.tipo === 'DESCONTO' || d.tipo === 'MARGEM' || d.tipo === 'TETO' ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold'}>
