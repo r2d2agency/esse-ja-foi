@@ -26,13 +26,15 @@ function PreencherLaudo() {
   const { laudoId } = Route.useParams();
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const [abaAtiva, setAbaAtiva] = useState<string>("checklist");
   const [dados, setDados] = useState<Row | null>(null);
   const [respostas, setRespostas] = useState<Record<string, RespostaLocal>>({});
   const [acessorios, setAcessorios] = useState<Record<string, string>>({});
   const [fotos, setFotos] = useState<Array<Row>>([]);
   const [carregando, setCarregando] = useState(true);
   const [enviando, setEnviando] = useState(false);
-  const [pendencias, setPendencias] = useState<Array<{ titulo: string; motivo: string }>>([]);
+  const [pendencias, setPendencias] = useState<Array<{ titulo: string; motivo: string; itemId: string | null }>>([]);
+  const [sucesso, setSucesso] = useState<{ protocolo: string; data: string } | null>(null);
 
   const enviarResposta = useCallback(
     async (payload: { laudoId: string; itemId: string; resposta?: string | null; gravidade?: string | null; observacao?: string | null }) => {
