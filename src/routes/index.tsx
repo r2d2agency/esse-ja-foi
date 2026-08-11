@@ -9,16 +9,16 @@ import lote3 from "@/assets/lote-3.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "LeilãoMotor — Leilão de Veículos Online ao Vivo" },
+      { title: "ESSE JÁ FOI — Plataforma de Leilão de Veículos" },
       {
         name: "description",
         content:
-          "Participe de leilões de carros, motos e utilitários com lances ao vivo, laudo cautelar e documentação verificada. Cadastre-se e dê seu lance.",
+          "Plataforma de gestão de veículos, vistorias e leilões de veículos usados.",
       },
-      { property: "og:title", content: "LeilãoMotor — Leilão de Veículos Online ao Vivo" },
+      { property: "og:title", content: "ESSE JÁ FOI — Plataforma de Leilão de Veículos" },
       {
         property: "og:description",
-        content: "Lances ao vivo em carros, motos e utilitários com laudo e documentação verificada.",
+        content: "Plataforma de gestão de veículos, vistorias e leilões de veículos usados.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -93,7 +93,7 @@ function Index() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
             <Gavel className="h-5 w-5 text-ember" />
-            <span className="font-display text-2xl tracking-wide">LEILÃOMOTOR</span>
+            <span className="font-display text-2xl tracking-wide">ESSE JÁ FOI</span>
           </div>
           <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
             <a href="#lotes" className="transition-colors hover:text-foreground">Lotes</a>
@@ -112,14 +112,14 @@ function Index() {
           alt="Veículos em destaque no pátio de leilão sob holofotes"
           width={1600}
           height={1000}
-          className="absolute inset-0 h-full w-full object-cover opacity-45"
+          className="absolute inset-0 h-full w-full object-cover opacity-10"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/85 to-background/40" />
+        <div className="absolute inset-0 bg-background/50" />
         <div className="relative mx-auto max-w-6xl px-6 py-28 md:py-36">
           <span className="inline-flex items-center gap-2 rounded-full border border-ember/40 px-3 py-1 text-xs tracking-widest text-ember">
             <Timer className="h-3.5 w-3.5" /> PREGÃO AO VIVO Nº 428
           </span>
-          <h1 className="mt-6 max-w-3xl text-5xl leading-[0.95] md:text-7xl">
+          <h1 className="mt-6 max-w-3xl text-5xl font-bold tracking-tight md:text-7xl">
             O MARTELO BATE. <span className="text-ember">O CARRO É SEU.</span>
           </h1>
           <p className="mt-6 max-w-xl text-lg text-muted-foreground">
@@ -135,8 +135,8 @@ function Index() {
           <dl className="mt-16 grid max-w-2xl grid-cols-3 gap-8 border-t border-border pt-8">
             {[
               ["12.400+", "Veículos vendidos"],
-              ["98%", "Lotes com laudo"],
-              ["37%", "Abaixo da tabela"],
+              ["98%", "Laudos aprovados"],
+              ["37%", "Abaixo da FIPE"],
             ].map(([v, l]) => (
               <div key={l}>
                 <dt className="font-display text-4xl text-foreground">{v}</dt>
@@ -149,7 +149,7 @@ function Index() {
 
       <section id="lotes" className="mx-auto max-w-6xl px-6 py-24">
         <div className="flex items-end justify-between border-b border-border pb-6">
-          <h2 className="text-4xl md:text-5xl">LOTES EM DISPUTA</h2>
+          <h2 className="text-4xl font-bold md:text-5xl uppercase tracking-tighter">LOTES EM DISPUTA</h2>
           <span className="text-sm text-muted-foreground">Atualizado agora</span>
         </div>
         <div className="mt-10 grid gap-6 md:grid-cols-3">
@@ -174,7 +174,7 @@ function Index() {
                 <div className="mt-5 flex items-end justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-widest text-muted-foreground">Lance atual</p>
-                    <p className="font-display text-3xl text-ember">{l.lance}</p>
+                    <p className="font-display text-3xl font-bold text-ember">{l.lance}</p>
                   </div>
                   <p className="text-sm text-muted-foreground">{l.lances} lances</p>
                 </div>
@@ -189,7 +189,7 @@ function Index() {
 
       <section id="como" className="border-y border-border bg-surface/40">
         <div className="mx-auto max-w-6xl px-6 py-24">
-          <h2 className="text-4xl md:text-5xl">COMO FUNCIONA</h2>
+          <h2 className="text-4xl font-bold md:text-5xl uppercase tracking-tighter">COMO FUNCIONA</h2>
           <ol className="mt-12 grid gap-10 md:grid-cols-3">
             {[
               ["01", "Cadastre-se e habilite", "Envie seus documentos e receba a habilitação para dar lances em minutos."],
@@ -197,7 +197,7 @@ function Index() {
               ["03", "Dê o lance e arremate", "Disputa ao vivo com incremento automático. Pagamento e retirada guiados."],
             ].map(([n, t, d]) => (
               <li key={n}>
-                <span className="font-display text-5xl text-ember/40">{n}</span>
+                <span className="font-bold text-5xl text-ember/40">{n}</span>
                 <h3 className="mt-3 text-2xl">{t}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{d}</p>
               </li>
@@ -227,7 +227,7 @@ function Index() {
 
       <section id="cadastro" className="border-t border-border">
         <div className="mx-auto max-w-3xl px-6 py-24 text-center">
-          <h2 className="text-4xl md:text-6xl">PRÓXIMO PREGÃO EM BREVE</h2>
+          <h2 className="text-4xl font-bold md:text-6xl uppercase tracking-tighter">PRÓXIMO PREGÃO EM BREVE</h2>
           <p className="mt-4 text-muted-foreground">
             Cadastre-se para receber os lotes antes da abertura e habilitar seus lances.
           </p>
@@ -250,7 +250,7 @@ function Index() {
 
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-8 text-sm text-muted-foreground">
-          <span className="font-display text-xl tracking-wide text-foreground">LEILÃOMOTOR</span>
+          <span className="font-display text-xl tracking-wide text-foreground">ESSE JÁ FOI</span>
           <span>© 2026 LeilãoMotor · Leiloeiro Oficial JUCESP 1234</span>
         </div>
       </footer>
