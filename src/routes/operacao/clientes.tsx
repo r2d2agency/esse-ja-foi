@@ -84,7 +84,10 @@ function ClientesPage() {
 
   const excluir = async (id: string) => {
     const res = await removerClienteFn({ data: { id } });
-    if (!res.ok) return toast.error((res as { message: string }).message);
+    if (!res.ok) {
+      toast.error((res as { message: string }).message);
+      return;
+    }
     toast.success("Cliente excluído.");
     void carregar(busca);
   };
