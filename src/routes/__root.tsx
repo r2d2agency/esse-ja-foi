@@ -1,5 +1,7 @@
+import type { QueryClient } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import {
-  createRootRoute,
+  createRootRouteWithContext,
   HeadContent,
   Outlet,
   Scripts,
@@ -8,7 +10,7 @@ import { Toaster } from "sonner";
 
 import appCss from "@/styles.css?url";
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -33,16 +35,19 @@ export const Route = createRootRoute({
 });
 
 function RootLayout() {
+  const { queryClient } = Route.useRouteContext();
   return (
     <html lang="pt-BR">
       <head>
         <HeadContent />
       </head>
       <body>
-        <div className="min-h-screen bg-background text-foreground">
-          <Outlet />
-        </div>
-        <Toaster richColors position="top-right" />
+        <QueryClientProvider client={queryClient}>
+          <div className="min-h-screen bg-background text-foreground">
+            <Outlet />
+          </div>
+          <Toaster richColors position="top-right" />
+        </QueryClientProvider>
         <Scripts />
       </body>
     </html>
