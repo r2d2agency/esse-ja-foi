@@ -154,15 +154,17 @@ function CompradorIndex() {
       const { cadastrarVendedorFn } = await import("@/lib/vendedor.functions");
       const result = await cadastrarVendedorFn({
         data: {
-          nome: formData.nome,
-          email: formData.email,
-          password: formData.password || "123456",
-          whatsapp: formData.whatsapp,
-          cpf: formData.cpf,
-          cep: formData.cep,
-          endereco: `${formData.endereco}, ${formData.numero}${formData.complemento ? ` - ${formData.complemento}` : ""} - ${formData.bairro}`,
-          cidade: formData.cidade,
-          uf: formData.uf
+          data: { 
+            nome: formData.nome,
+            email: formData.email,
+            password: formData.password || "123456",
+            whatsapp: formData.whatsapp || null,
+            cpf: formData.cpf || null,
+            cep: formData.cep || null,
+            endereco: `${formData.endereco}, ${formData.numero}${formData.complemento ? ` - ${formData.complemento}` : ""} - ${formData.bairro}`,
+            cidade: formData.cidade,
+            uf: formData.uf
+          }
         }
       });
 
@@ -173,8 +175,9 @@ function CompradorIndex() {
 
       toast.success("Cadastro realizado com sucesso!");
       setWizardStep(3);
-    } catch (error) {
-      toast.error("Erro técnico ao processar cadastro.");
+    } catch (error: any) {
+      console.error("Erro no cadastro:", error);
+      toast.error(error.message || "Erro técnico ao processar cadastro.");
     } finally {
       setIsSubmitting(false);
     }

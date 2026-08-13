@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { hashPassword } from "@/db/auth.server";
-import { db } from "@/db/index";
 import { sql } from "drizzle-orm";
 import { RegraNegocioError } from "@/db/cadastro.server";
 
@@ -9,18 +8,20 @@ const vendedorSchema = z.object({
   nome: z.string().min(3, "Nome muito curto"),
   email: z.string().email("E-mail inválido"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-  whatsapp: z.string().optional(),
-  cpf: z.string().optional(),
-  cep: z.string().optional(),
-  endereco: z.string().optional(),
-  cidade: z.string().optional(),
-  uf: z.string().optional(),
+  whatsapp: z.string().optional().nullable(),
+  cpf: z.string().optional().nullable(),
+  cep: z.string().optional().nullable(),
+  endereco: z.string().optional().nullable(),
+  cidade: z.string().optional().nullable(),
+  uf: z.string().optional().nullable(),
 });
 
 export const cadastrarVendedorFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ data: vendedorSchema }).parse(d))
   .handler(async ({ data: { data } }) => {
-    if (!db) throw new Error("Banco de dados indisponível");
+    const { db: database } = await import("@/db/index");
+    if (!database) throw new Error(`Banco de dados indisponível (Verifique se a DATABASE_URL está configurada corretamente)`);
+    const db = database;
     
     const { ensureCadastroSchema } = await import("@/db/cadastro.server");
     await ensureCadastroSchema();
@@ -36,17 +37,20 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
       const user = (rows as any).rows?.[0] || (rows as any)[0];
       return { ok: true as const, user };
     } catch (error: any) {
-      if (error.message?.includes("unique constraint") || error.message?.includes("already exists")) {
+      console.error("Erro ao cadastrar vendedor:", error);
+      if (error.message?.includes("unique constraint") || error.message?.includes("already exists") || error.code === '23505') {
         return { ok: false as const, message: "Este e-mail já está cadastrado." };
       }
-      throw error;
+      return { ok: false as const, message: `Erro no servidor: ${error.message || 'Erro desconhecido'}` };
     }
   });
 
 export const listarMeusVeiculosFn = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ data: z.object({ perfilId: z.string().uuid() }) }).parse(d))
   .handler(async ({ data: { data } }) => {
-    if (!db) throw new Error("Banco de dados indisponível");
+    const { db: database } = await import("@/db/index");
+    if (!database) throw new Error("Banco de dados indisponível");
+    const db = database;
     const rows = await db.execute(sql`
       SELECT * FROM veiculos 
       WHERE perfil_id = ${data.perfilId}::uuid 
