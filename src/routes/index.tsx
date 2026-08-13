@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { buscarCep } from "@/lib/brasil";
 import { loginWithPassword } from "@/lib/auth.functions";
 import { 
   Gavel, 
@@ -114,6 +115,28 @@ function CompradorIndex() {
       setIsSubmitting(false);
     }
   };
+  
+  const handleCepChange = useCallback(async (cep: string) => {
+    const cleanCep = cep.replace(/\D/g, "");
+    setFormData(prev => ({ ...prev, cep }));
+    
+    if (cleanCep.length === 8) {
+      try {
+        const address = await buscarCep(cleanCep);
+        if (address) {
+          setFormData(prev => ({
+            ...prev,
+            endereco: address.logradouro + (address.bairro ? `, ${address.bairro}` : ""),
+            cidade: address.cidade,
+            uf: address.uf
+          }));
+          toast.success("Endereço preenchido automaticamente");
+        }
+      } catch (error) {
+        console.error("Erro ao buscar CEP:", error);
+      }
+    }
+  }, []);
 
   const handleCadastro = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -349,7 +372,7 @@ function CompradorIndex() {
                               <Input 
                                 required
                                 value={formData.cep}
-                                onChange={(e) => setFormData({...formData, cep: e.target.value})}
+                                onChange={(e) => handleCepChange(e.target.value)}
                                 placeholder="00000-000" 
                               />
                             </div>
