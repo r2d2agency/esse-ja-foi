@@ -124,7 +124,7 @@ export async function ensureSuperAdmin() {
           senha_hash = COALESCE(profiles.senha_hash, EXCLUDED.senha_hash);
   `);
 
-  console.log("✅ Superadmin garantido:", SUPERADMIN_EMAIL);
+  // console.log("✅ Superadmin garantido:", SUPERADMIN_EMAIL);
 }
 
 export async function authenticate(email: string, password: string) {
