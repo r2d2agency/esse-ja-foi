@@ -9,13 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CompradorRouteImport } from './routes/comprador'
 import { Route as EsqueciMinhaSenhaRouteImport } from './routes/esqueci-minha-senha'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OperacaoRouteImport } from './routes/operacao'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as VenderRouteImport } from './routes/vender'
 import { Route as VistoriaRouteImport } from './routes/vistoria'
 import { Route as AdminChecklistRouteImport } from './routes/admin/checklist'
 import { Route as AdminDepreciacaoRouteImport } from './routes/admin/depreciacao'
@@ -31,11 +31,6 @@ import { Route as VistoriaAgendamentoIdRouteImport } from './routes/vistoria/$ag
 import { Route as CompradorLeilaoIdRouteImport } from './routes/comprador/leilao.$id'
 import { Route as VistoriaLaudoLaudoIdRouteImport } from './routes/vistoria/laudo.$laudoId'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -64,6 +59,11 @@ const OperacaoRoute = OperacaoRouteImport.update({
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
   path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VenderRoute = VenderRouteImport.update({
+  id: '/vender',
+  path: '/vender',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VistoriaRoute = VistoriaRouteImport.update({
@@ -138,13 +138,13 @@ const VistoriaLaudoLaudoIdRoute = VistoriaLaudoLaudoIdRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/comprador': typeof CompradorRouteWithChildren
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
   '/login': typeof LoginRoute
   '/operacao': typeof OperacaoRouteWithChildren
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/vender': typeof VenderRoute
   '/vistoria': typeof VistoriaRouteWithChildren
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
@@ -161,12 +161,12 @@ export interface FileRoutesByFullPath {
   '/vistoria/laudo/$laudoId': typeof VistoriaLaudoLaudoIdRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
   '/login': typeof LoginRoute
   '/operacao': typeof OperacaoRouteWithChildren
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/vender': typeof VenderRoute
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
@@ -183,13 +183,13 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/comprador': typeof CompradorRouteWithChildren
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
   '/login': typeof LoginRoute
   '/operacao': typeof OperacaoRouteWithChildren
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/vender': typeof VenderRoute
   '/vistoria': typeof VistoriaRouteWithChildren
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
@@ -208,13 +208,13 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/admin'
     | '/comprador'
     | '/esqueci-minha-senha'
     | '/login'
     | '/operacao'
     | '/redefinir-senha'
+    | '/vender'
     | '/vistoria'
     | '/admin/checklist'
     | '/admin/depreciacao'
@@ -231,12 +231,12 @@ export interface FileRouteTypes {
     | '/vistoria/laudo/$laudoId'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/admin'
     | '/esqueci-minha-senha'
     | '/login'
     | '/operacao'
     | '/redefinir-senha'
+    | '/vender'
     | '/admin/checklist'
     | '/admin/depreciacao'
     | '/operacao/agenda'
@@ -252,13 +252,13 @@ export interface FileRouteTypes {
     | '/vistoria/laudo/$laudoId'
   id:
     | '__root__'
-    | '/'
     | '/admin'
     | '/comprador'
     | '/esqueci-minha-senha'
     | '/login'
     | '/operacao'
     | '/redefinir-senha'
+    | '/vender'
     | '/vistoria'
     | '/admin/checklist'
     | '/admin/depreciacao'
@@ -276,25 +276,18 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   CompradorRoute: typeof CompradorRouteWithChildren
   EsqueciMinhaSenhaRoute: typeof EsqueciMinhaSenhaRoute
   LoginRoute: typeof LoginRoute
   OperacaoRoute: typeof OperacaoRouteWithChildren
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  VenderRoute: typeof VenderRoute
   VistoriaRoute: typeof VistoriaRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -335,6 +328,13 @@ declare module '@tanstack/react-router' {
       path: '/redefinir-senha'
       fullPath: '/redefinir-senha'
       preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vender': {
+      id: '/vender'
+      path: '/vender'
+      fullPath: '/vender'
+      preLoaderRoute: typeof VenderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vistoria': {
@@ -503,13 +503,13 @@ const VistoriaRouteWithChildren = VistoriaRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   CompradorRoute: CompradorRouteWithChildren,
   EsqueciMinhaSenhaRoute: EsqueciMinhaSenhaRoute,
   LoginRoute: LoginRoute,
   OperacaoRoute: OperacaoRouteWithChildren,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  VenderRoute: VenderRoute,
   VistoriaRoute: VistoriaRouteWithChildren,
 }
 export const routeTree = rootRouteImport

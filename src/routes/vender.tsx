@@ -27,7 +27,7 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { criarLeadPublicoFn } from "@/lib/leads.functions";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/vender")({
   head: () => ({
     meta: [
       { title: "ESSE JÁ FOI — Venda seu carro com agilidade e segurança" },
