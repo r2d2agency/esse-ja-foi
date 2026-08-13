@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CompradorRouteImport } from './routes/comprador'
 import { Route as EsqueciMinhaSenhaRouteImport } from './routes/esqueci-minha-senha'
@@ -31,6 +32,11 @@ import { Route as VistoriaAgendamentoIdRouteImport } from './routes/vistoria/$ag
 import { Route as CompradorLeilaoIdRouteImport } from './routes/comprador/leilao.$id'
 import { Route as VistoriaLaudoLaudoIdRouteImport } from './routes/vistoria/laudo.$laudoId'
 
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -138,6 +144,7 @@ const VistoriaLaudoLaudoIdRoute = VistoriaLaudoLaudoIdRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/comprador': typeof CompradorRouteWithChildren
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
@@ -161,6 +168,7 @@ export interface FileRoutesByFullPath {
   '/vistoria/laudo/$laudoId': typeof VistoriaLaudoLaudoIdRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
   '/login': typeof LoginRoute
@@ -183,6 +191,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/comprador': typeof CompradorRouteWithChildren
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
@@ -208,6 +217,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/admin'
     | '/comprador'
     | '/esqueci-minha-senha'
@@ -231,6 +241,7 @@ export interface FileRouteTypes {
     | '/vistoria/laudo/$laudoId'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/admin'
     | '/esqueci-minha-senha'
     | '/login'
@@ -252,6 +263,7 @@ export interface FileRouteTypes {
     | '/vistoria/laudo/$laudoId'
   id:
     | '__root__'
+    | '/'
     | '/admin'
     | '/comprador'
     | '/esqueci-minha-senha'
@@ -276,6 +288,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   CompradorRoute: typeof CompradorRouteWithChildren
   EsqueciMinhaSenhaRoute: typeof EsqueciMinhaSenhaRoute
@@ -288,6 +301,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -503,6 +523,7 @@ const VistoriaRouteWithChildren = VistoriaRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   CompradorRoute: CompradorRouteWithChildren,
   EsqueciMinhaSenhaRoute: EsqueciMinhaSenhaRoute,
