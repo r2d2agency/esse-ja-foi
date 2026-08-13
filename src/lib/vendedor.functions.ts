@@ -45,7 +45,14 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
       if (error.message?.includes("unique constraint") || error.message?.includes("already exists") || error.code === '23505') {
         return { ok: false as const, message: "Este e-mail já está cadastrado." };
       }
-      return { ok: false as const, message: `Erro no servidor: ${error.message || 'Erro desconhecido'}` };
+      
+      // Sanitiza a mensagem de erro para o usuário não ver a query SQL bruta em caso de falha genérica
+      let userMessage = "Erro no servidor ao processar o cadastro.";
+      if (error.message?.includes("app_role")) {
+        userMessage = "Erro na configuração de permissões do sistema. Contate o suporte.";
+      }
+      
+      return { ok: false as const, message: userMessage };
     }
   });
 
