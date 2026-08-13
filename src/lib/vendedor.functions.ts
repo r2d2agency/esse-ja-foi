@@ -9,12 +9,12 @@ const vendedorSchema = z.object({
   nome: z.string().min(3, "Nome muito curto"),
   email: z.string().email("E-mail inválido"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-  whatsapp: z.string().optional(),
-  cpf: z.string().optional(),
-  cep: z.string().optional(),
-  endereco: z.string().optional(),
-  cidade: z.string().optional(),
-  uf: z.string().optional(),
+  whatsapp: z.string().optional().nullable(),
+  cpf: z.string().optional().nullable(),
+  cep: z.string().optional().nullable(),
+  endereco: z.string().optional().nullable(),
+  cidade: z.string().optional().nullable(),
+  uf: z.string().optional().nullable(),
 });
 
 export const cadastrarVendedorFn = createServerFn({ method: "POST" })
