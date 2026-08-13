@@ -80,14 +80,14 @@ export const registrarLance = async (leilaoId: string, valor: string, compradorE
     
     // Validar se leilão está aberto
     const leilao = (await db!.execute(sql`SELECT status, fim_em FROM leiloes WHERE id = ${leilaoId}`)) as unknown as Array<Row>;
-    if (!leilao.length || String(leilao[0]?.status).toUpperCase() !== 'ABERTO' || new Date(String(leilao[0]?.fim_em)) < new Date()) {
+    if (!leilao.length || String(leilao[0]?.['status']).toUpperCase() !== 'ABERTO' || new Date(String(leilao[0]?.['fim_em'])) < new Date()) {
       return { ok: false, message: "Leilão não está ativo para lances" };
     }
 
     // Validar se valor é superior ao atual
     const atual = (await db!.execute(sql`SELECT max(valor) as maior FROM lances WHERE leilao_id = ${leilaoId}`)) as unknown as Array<Row>;
     const v = Number(valor);
-    const m = Number(atual[0]?.maior ?? 0);
+    const m = Number(atual[0]?.['maior'] ?? 0);
     
     if (v <= m) return { ok: false, message: "Seu lance deve ser maior que o lance atual" };
 
