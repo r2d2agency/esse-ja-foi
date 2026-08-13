@@ -36,10 +36,11 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
       const user = (rows as any).rows?.[0] || (rows as any)[0];
       return { ok: true as const, user };
     } catch (error: any) {
-      if (error.message?.includes("unique constraint") || error.message?.includes("already exists")) {
+      console.error("Erro ao cadastrar vendedor:", error);
+      if (error.message?.includes("unique constraint") || error.message?.includes("already exists") || error.code === '23505') {
         return { ok: false as const, message: "Este e-mail já está cadastrado." };
       }
-      throw error;
+      return { ok: false as const, message: `Erro no servidor: ${error.message || 'Erro desconhecido'}` };
     }
   });
 
