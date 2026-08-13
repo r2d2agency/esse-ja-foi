@@ -1,6 +1,6 @@
 import { pgTable, uuid, text, timestamp, boolean, pgEnum } from 'drizzle-orm/pg-core';
 
-export const appRoleEnum = pgEnum('app_role', ['admin', 'operacao', 'vistoriador', 'comprador']);
+export const appRoleEnum = pgEnum('app_role', ['admin', 'operacao', 'vistoriador', 'comprador', 'vendedor']);
 
 export const profiles = pgTable('profiles', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -8,7 +8,13 @@ export const profiles = pgTable('profiles', {
   telefone: text('telefone'),
   whatsapp: text('whatsapp'),
   email: text('email').unique().notNull(),
-  role: appRoleEnum('role').default('comprador').notNull(),
+  role: appRoleEnum('role').default('vendedor').notNull(),
+  senha_hash: text('senha_hash'),
+  cpf: text('cpf'),
+  cep: text('cep'),
+  endereco: text('endereco'),
+  cidade: text('cidade'),
+  uf: text('uf'),
   ativo: boolean('ativo').default(true).notNull(),
   criado_em: timestamp('criado_em').defaultNow().notNull(),
 });
