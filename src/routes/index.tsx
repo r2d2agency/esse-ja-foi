@@ -163,8 +163,8 @@ function CompradorIndex() {
             <span className="font-display text-2xl font-bold tracking-tight text-teal-900">ESSE JÁ FOI</span>
           </div>
           <nav className="hidden md:flex items-center gap-8 mr-8">
-             <Link to="/" className="text-sm font-medium text-teal-900">Comprar</Link>
              <Link to="/vender" className="text-sm font-medium text-slate-500 hover:text-teal-900 transition-colors">Vender</Link>
+             <Link to="/" className="text-sm font-medium text-teal-900">Comprar</Link>
           </nav>
 
           <div className="flex items-center gap-4">
@@ -172,7 +172,7 @@ function CompradorIndex() {
               Entrar
             </Link>
             <Button onClick={() => document.getElementById('cadastro')?.scrollIntoView({ behavior: 'smooth' })} className="bg-teal-900 text-white hover:bg-teal-950">
-              Cadastrar para comprar
+              Vender meu carro
             </Button>
           </div>
         </div>
@@ -239,9 +239,9 @@ function CompradorIndex() {
               {/* Sidebar Login/Cadastro */}
               <div id="cadastro" className="sticky top-24">
                 <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8">
-                  <h2 className="text-2xl font-bold text-slate-900 mb-2">Acesso do Comprador</h2>
+                  <h2 className="text-2xl font-bold text-slate-900 mb-2">Acesso do Vendedor</h2>
                   <p className="text-sm text-slate-500 mb-8">
-                    Faça login ou inicie seu pré-cadastro para ver preços e dar lances.
+                    Cadastre-se para anunciar seus veículos e receber propostas reais.
                   </p>
 
                   <div className="flex p-1 bg-slate-100 rounded-lg mb-8">
@@ -255,7 +255,7 @@ function CompradorIndex() {
                       onClick={() => setShowLogin(false)}
                       className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${!showLogin ? 'bg-white shadow text-teal-900' : 'text-slate-500 hover:text-slate-700'}`}
                     >
-                      Pré-cadastro
+                      Cadastro Vendedor
                     </button>
                   </div>
 
@@ -314,7 +314,7 @@ function CompradorIndex() {
                             />
                           </div>
                           <Button className="w-full bg-teal-900 hover:bg-teal-950 text-white font-bold h-12">
-                            Continuar Cadastro
+                            Próximo Passo
                           </Button>
                         </form>
                       )}
