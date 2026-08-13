@@ -273,7 +273,7 @@ function Index() {
             <Button 
               variant="outline" 
               className="border-teal-800 text-teal-800 hover:bg-teal-50"
-              onClick={() => document.getElementById('compradores-faq')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={() => document.getElementById('compradores')?.scrollIntoView({ behavior: 'smooth' })}
             >
               Como comprar
             </Button>
