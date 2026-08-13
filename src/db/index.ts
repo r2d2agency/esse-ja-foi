@@ -4,7 +4,15 @@ import * as schema from './schema';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import path from 'path';
 
-const connectionString = process.env['DATABASE_URL'];
+// Força a leitura do process.env no runtime do servidor
+const getConnectionString = () => {
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env['DATABASE_URL'];
+  }
+  return undefined;
+};
+
+const connectionString = getConnectionString();
 
 if (!connectionString) {
   console.warn('⚠️ DATABASE_URL não definida. O banco de dados não será conectado até que a variável seja configurada.');
@@ -20,7 +28,7 @@ const client = connectionString
 
   : null;
 
-export const db = client ? drizzle(client, { schema }) : null;
+export const db = client ? drizzle(client, { schema }) : (connectionString ? drizzle(postgres(connectionString), { schema }) : null);
 
 export const migrateDb = async () => {
   if (!db) {
