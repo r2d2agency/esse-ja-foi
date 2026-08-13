@@ -142,8 +142,8 @@ export async function ensureSuperAdmin() {
   const senha = await hashPassword(SUPERADMIN_PASSWORD);
 
   await db.execute(sql`
-    INSERT INTO profiles (nome, email, role, ativo, protegido, senha_hash)
-    VALUES (${SUPERADMIN_NAME}, ${SUPERADMIN_EMAIL}, 'admin', true, true, ${senha})
+    INSERT INTO profiles (nome, email, role, ativo, protegido, senha_hash, cpf, cep, endereco, cidade, uf)
+    VALUES (${SUPERADMIN_NAME}, ${SUPERADMIN_EMAIL}, 'admin', true, true, ${senha}, '00000000000', '00000000', 'Endereço Admin', 'Cidade', 'UF')
     ON CONFLICT (email) DO UPDATE
       SET protegido = true,
           role = 'admin',
