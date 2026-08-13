@@ -438,18 +438,18 @@ function CompradorIndex() {
         {/* FAQ - Compradores */}
         <section className="py-24 bg-slate-50">
           <div className="mx-auto max-w-3xl px-6">
-            <h2 className="text-3xl font-bold text-center mb-12">Dúvidas Frequentes do Comprador</h2>
+            <h2 className="text-3xl font-bold text-center mb-12">Dúvidas Frequentes</h2>
             <Accordion type="single" collapsible className="w-full bg-white rounded-2xl border border-slate-200 p-6">
               <AccordionItem value="participar">
-                <AccordionTrigger>Como faço para participar?</AccordionTrigger>
+                <AccordionTrigger>Como faço para vender meu carro?</AccordionTrigger>
                 <AccordionContent>
-                  Para participar, você deve realizar o cadastro online preenchendo o formulário de pré-cadastro. Após o envio, nossa equipe analisará seus dados e, se aprovado, você receberá acesso total à plataforma para ver preços e dar lances.
+                  Para vender, você deve realizar seu cadastro de vendedor fornecendo seus dados e endereço. Após logar, você terá acesso ao painel onde poderá cadastrar seus veículos com fotos, opcionais e valor desejado. O veículo passará por uma análise técnica antes de ser aprovado.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="seguranca">
-                <AccordionTrigger>É seguro comprar na plataforma?</AccordionTrigger>
+                <AccordionTrigger>O cadastro é gratuito?</AccordionTrigger>
                 <AccordionContent>
-                  Sim. Todos os veículos passam por uma vistoria técnica cautelar rigorosa e os compradores são verificados manualmente para garantir a seriedade de todas as negociações.
+                  Sim, o cadastro de vendedores e veículos é totalmente gratuito. Cobramos apenas uma taxa de serviço administrativa em caso de venda concretizada através da plataforma.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="pagamento">
