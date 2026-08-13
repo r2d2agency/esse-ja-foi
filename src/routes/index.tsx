@@ -165,7 +165,7 @@ function CompradorIndex() {
 
                   <div className="flex p-1 bg-slate-100 rounded-lg mb-8">
                     <button 
-                      onClick={() => setShowLogin(true)}
+                      onClick={() => { setShowLogin(true); setWizardStep(1); }}
                       className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${showLogin ? 'bg-white shadow text-teal-900' : 'text-slate-500 hover:text-slate-700'}`}
                     >
                       Login
@@ -197,13 +197,6 @@ function CompradorIndex() {
                     </form>
                   ) : (
                     <div className="space-y-6">
-                      <div className="space-y-4">
-                        <div className="flex gap-3">
-                          <div className="h-8 w-8 rounded-full bg-teal-50 flex items-center justify-center shrink-0">
-                            <CheckCircle2 className="h-4 w-4 text-teal-600" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-slate-900">Segurança total</p>
                       {wizardStep === 1 && (
                         <form onSubmit={handleCadastro} className="space-y-4">
                           <div className="space-y-2">
@@ -308,13 +301,13 @@ function CompradorIndex() {
               <AccordionItem value="participar">
                 <AccordionTrigger>Como faço para participar?</AccordionTrigger>
                 <AccordionContent>
-                  Para participar, você deve realizar o pré-cadastro enviando seus documentos para nossa equipe. Após a validação, você receberá um acesso exclusivo para visualizar preços e dar lances.
+                  Para participar, você deve realizar o cadastro online preenchendo o formulário de pré-cadastro. Após o envio, nossa equipe analisará seus dados e, se aprovado, você receberá acesso total à plataforma para ver preços e dar lances.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="seguranca">
                 <AccordionTrigger>É seguro comprar na plataforma?</AccordionTrigger>
                 <AccordionContent>
-                  Sim. Todos os veículos passam por uma vistoria técnica cautelar rigorosa e os compradores são verificados para garantir a seriedade de todas as negociações.
+                  Sim. Todos os veículos passam por uma vistoria técnica cautelar rigorosa e os compradores são verificados manualmente para garantir a seriedade de todas as negociações.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="pagamento">
@@ -364,4 +357,3 @@ function CompradorIndex() {
     </div>
   );
 }
-
