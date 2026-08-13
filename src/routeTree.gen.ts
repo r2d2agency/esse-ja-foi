@@ -16,6 +16,7 @@ import { Route as EsqueciMinhaSenhaRouteImport } from './routes/esqueci-minha-se
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as OperacaoRouteImport } from './routes/operacao'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as VenderRouteImport } from './routes/vender'
 import { Route as VistoriaRouteImport } from './routes/vistoria'
 import { Route as AdminChecklistRouteImport } from './routes/admin/checklist'
 import { Route as AdminDepreciacaoRouteImport } from './routes/admin/depreciacao'
@@ -64,6 +65,11 @@ const OperacaoRoute = OperacaoRouteImport.update({
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
   path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VenderRoute = VenderRouteImport.update({
+  id: '/vender',
+  path: '/vender',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VistoriaRoute = VistoriaRouteImport.update({
@@ -145,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/operacao': typeof OperacaoRouteWithChildren
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/vender': typeof VenderRoute
   '/vistoria': typeof VistoriaRouteWithChildren
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/operacao': typeof OperacaoRouteWithChildren
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/vender': typeof VenderRoute
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/operacao': typeof OperacaoRouteWithChildren
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/vender': typeof VenderRoute
   '/vistoria': typeof VistoriaRouteWithChildren
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/operacao'
     | '/redefinir-senha'
+    | '/vender'
     | '/vistoria'
     | '/admin/checklist'
     | '/admin/depreciacao'
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/operacao'
     | '/redefinir-senha'
+    | '/vender'
     | '/admin/checklist'
     | '/admin/depreciacao'
     | '/operacao/agenda'
@@ -259,6 +270,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/operacao'
     | '/redefinir-senha'
+    | '/vender'
     | '/vistoria'
     | '/admin/checklist'
     | '/admin/depreciacao'
@@ -283,6 +295,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OperacaoRoute: typeof OperacaoRouteWithChildren
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  VenderRoute: typeof VenderRoute
   VistoriaRoute: typeof VistoriaRouteWithChildren
 }
 
@@ -335,6 +348,13 @@ declare module '@tanstack/react-router' {
       path: '/redefinir-senha'
       fullPath: '/redefinir-senha'
       preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vender': {
+      id: '/vender'
+      path: '/vender'
+      fullPath: '/vender'
+      preLoaderRoute: typeof VenderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vistoria': {
@@ -510,6 +530,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OperacaoRoute: OperacaoRouteWithChildren,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  VenderRoute: VenderRoute,
   VistoriaRoute: VistoriaRouteWithChildren,
 }
 export const routeTree = rootRouteImport
