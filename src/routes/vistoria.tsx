@@ -32,7 +32,7 @@ function VistoriaMobileLayout() {
         <div className="flex items-center gap-3">
           <div className="text-right">
             <p className="text-[10px] uppercase text-slate-500">Vistoriador</p>
-            <p className="text-xs font-bold text-slate-900">{user?.name || "Operador"}</p>
+            <p className="text-xs font-bold text-slate-900">{user?.nome || "Operador"}</p>
           </div>
           <div className="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center">
             <User className="h-4 w-4 text-slate-500" />

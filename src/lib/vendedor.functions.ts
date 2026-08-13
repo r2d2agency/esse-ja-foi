@@ -1,0 +1,68 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { hashPassword } from "@/db/auth.server";
+import { db } from "@/db/index";
+import { sql } from "drizzle-orm";
+import { RegraNegocioError } from "@/db/cadastro.server";
+
+const vendedorSchema = z.object({
+  nome: z.string().min(3, "Nome muito curto"),
+  email: z.string().email("E-mail inválido"),
+  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+  whatsapp: z.string().optional(),
+});
+
+export const cadastrarVendedorFn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ data: vendedorSchema }).parse(d))
+  .handler(async ({ data: { data } }) => {
+    if (!db) throw new Error("Banco de dados indisponível");
+    
+    const senhaHash = await hashPassword(data.password);
+    
+    try {
+      const rows = await db.execute(sql`
+        INSERT INTO profiles (nome, email, role, senha_hash, whatsapp, ativo)
+        VALUES (${data.nome}, ${data.email.toLowerCase()}, 'vendedor', ${senhaHash}, ${data.whatsapp ?? null}, true)
+        RETURNING id, nome, email, role;
+      `);
+      const user = (rows as any).rows?.[0] || (rows as any)[0];
+      return { ok: true as const, user };
+    } catch (error: any) {
+      if (error.message?.includes("unique constraint") || error.message?.includes("already exists")) {
+        return { ok: false as const, message: "Este e-mail já está cadastrado." };
+      }
+      throw error;
+    }
+  });
+
+export const listarMeusVeiculosFn = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) => z.object({ data: z.object({ perfilId: z.string().uuid() }) }).parse(d))
+  .handler(async ({ data: { data } }) => {
+    if (!db) throw new Error("Banco de dados indisponível");
+    const rows = await db.execute(sql`
+      SELECT * FROM veiculos 
+      WHERE perfil_id = ${data.perfilId}::uuid 
+      ORDER BY criado_em DESC;
+    `);
+    return { ok: true as const, data: (rows as any).rows || rows };
+  });
+
+export const cadastrarMeuVeiculoFn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({
+    data: z.object({
+      perfilId: z.string().uuid(),
+      placa: z.string().min(7),
+      marca: z.string().min(2),
+      modelo: z.string().min(2),
+      anoFabricacao: z.string().optional(),
+      anoModelo: z.string().optional(),
+      km: z.number().optional(),
+    })
+  }).parse(d))
+  .handler(async ({ data: { data } }) => {
+    const { salvarVeiculo } = await import("@/db/cadastro.server");
+    return await salvarVeiculo({
+      ...data,
+      status: 'AGUARDANDO_APROVACAO'
+    } as any);
+  });

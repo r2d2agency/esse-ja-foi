@@ -53,11 +53,20 @@ function LoginPage() {
       }
 
       const { user, accessToken } = result;
-      login({ user, accessToken, refreshToken: accessToken });
+      login({ 
+        user: {
+          id: user.id,
+          nome: user.nome,
+          email: user.email,
+          role: user.role as any
+        }, 
+        accessToken, 
+        refreshToken: accessToken 
+      });
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", accessToken);
 
-      toast.success(`Bem-vindo, ${user.name}!`);
+      toast.success(`Bem-vindo, ${user.nome}!`);
       
       // Redirect based on role
       switch (user.role) {
@@ -72,6 +81,9 @@ function LoginPage() {
           break;
         case "comprador":
           navigate({ to: "/comprador" });
+          break;
+        case "vendedor":
+          navigate({ to: "/vendedor" });
           break;
         default:
           navigate({ to: "/" });

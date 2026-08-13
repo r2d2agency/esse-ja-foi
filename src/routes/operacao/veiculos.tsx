@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { AlertTriangle, CalendarPlus, ChevronDown, History, MapPin, Pencil, RefreshCw, Trash2, Search } from "lucide-react";
+import { AlertTriangle, CalendarPlus, ChevronDown, History, MapPin, Pencil, RefreshCw, Trash2, Search, CheckCircle2 } from "lucide-react";
 
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
@@ -93,7 +93,7 @@ const vazio = {
   observacoes: "",
 };
 
-const TRILHA = ["CADASTRADO", "AGENDADO", "EM_VISTORIA", "EM_AVALIACAO", "APROVADO", "EM_LEILAO", "ENCERRADO", "VENDIDO"];
+const TRILHA = ["AGUARDANDO_APROVACAO", "CADASTRADO", "AGENDADO", "EM_VISTORIA", "EM_AVALIACAO", "APROVADO", "EM_LEILAO", "ENCERRADO", "VENDIDO"];
 
 function statusCor(status: string) {
   if (status === "RECUSADO") return "bg-red-100 text-red-800";
@@ -419,6 +419,11 @@ function VeiculosPage() {
               header: "Ações",
               accessor: (v) => (
                 <div className="flex items-center gap-1">
+                  {String(v['status']).toUpperCase() === "AGUARDANDO_APROVACAO" && (
+                    <Button size="icon" variant="ghost" title="Aprovar veículo" onClick={() => mudarStatus(String(v['id']), "APROVAR")}>
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    </Button>
+                  )}
                   {String(v['status']).toUpperCase() === "CADASTRADO" && (
                     <Button size="icon" variant="ghost" title="Agendar vistoria" onClick={() => abrirAgendar(v)}>
                       <CalendarPlus className="h-4 w-4 text-teal-800" />

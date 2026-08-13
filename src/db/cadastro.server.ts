@@ -65,6 +65,7 @@ export async function ensureCadastroSchema() {
   `);
 
   const cols: Array<[string, string]> = [
+    ["perfil_id", "uuid"],
     ["cliente_id", "uuid"],
     ["ano_fabricacao", "text"],
     ["ano_modelo", "text"],
@@ -382,6 +383,13 @@ export async function salvarVeiculo(input: VeiculoInput) {
 export async function alterarStatusVeiculo(id: string, novoStatus: string, usuario?: string) {
   await ensureCadastroSchema();
   const d = requireDb();
+  
+  if (novoStatus === 'APROVAR') {
+    await d.execute(sql`UPDATE veiculos SET status = 'CADASTRADO', atualizado_em = now() WHERE id = ${id};`);
+    await registrarLog({ entidade: "veiculo", entidadeId: id, acao: "STATUS", para: "CADASTRADO", detalhe: "Veículo aprovado pela operação", usuario: usuario ?? null });
+    return { id, status: 'CADASTRADO' };
+  }
+
   const rows = (await d.execute(sql`
     SELECT status, valor_fipe, valor_interesse_cliente, tipo_expectativa, alerta_expectativa, ciente_expectativa
     FROM veiculos WHERE id = ${id} LIMIT 1;

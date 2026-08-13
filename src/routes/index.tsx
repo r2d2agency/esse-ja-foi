@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { loginWithPassword } from "@/lib/auth.functions";
@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -45,6 +46,7 @@ function CompradorIndex() {
   const [showLogin, setShowLogin] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     nome: "",
     cpf: "",
@@ -75,10 +77,26 @@ function CompradorIndex() {
       
       if (result.ok) {
         toast.success("Login realizado com sucesso!");
-        // Store token if needed, or rely on cookie/session handled by server
-        if (result.user.role === 'admin' || result.user.role === 'operacao') {
+        const { user, accessToken } = result;
+        login({ 
+          user: {
+            id: user.id,
+            nome: user.nome,
+            email: user.email,
+            role: user.role as any
+          }, 
+          accessToken, 
+          refreshToken: "" 
+        });
+
+        if (user.role === 'vendedor') {
+          navigate({ to: '/vendedor' });
+          return;
+        }
+
+        if (user.role === 'admin' || user.role === 'operacao') {
           navigate({ to: "/operacao/veiculos" });
-        } else if (result.user.role === 'vistoriador') {
+        } else if (user.role === 'vistoriador') {
           navigate({ to: "/vistoria" });
         } else {
           navigate({ to: "/comprador" });
@@ -95,18 +113,35 @@ function CompradorIndex() {
 
   const handleCadastro = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (wizardStep < 2) {
-      setWizardStep(wizardStep + 1);
+    if (wizardStep === 1) {
+      setWizardStep(2);
       return;
     }
     
     setIsSubmitting(true);
-    // Simulação de envio para a API
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const { cadastrarVendedorFn } = await import("@/lib/vendedor.functions");
+      const result = await cadastrarVendedorFn({
+        data: {
+          nome: formData.nome,
+          email: formData.email,
+          password: formData.password || "123456",
+          whatsapp: formData.whatsapp
+        }
+      });
+
+      if (!result.ok) {
+        toast.error(result.message || "Erro ao realizar cadastro.");
+        return;
+      }
+
+      toast.success("Cadastro realizado com sucesso!");
       setWizardStep(3);
-      toast.success("Pré-cadastro enviado com sucesso!");
-    }, 1500);
+    } catch (error) {
+      toast.error("Erro técnico ao processar cadastro.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -118,6 +153,11 @@ function CompradorIndex() {
             <Gavel className="h-6 w-6 text-teal-800" />
             <span className="font-display text-2xl font-bold tracking-tight text-teal-900">ESSE JÁ FOI</span>
           </div>
+          <nav className="hidden md:flex items-center gap-8 mr-8">
+             <Link to="/" className="text-sm font-medium text-teal-900">Comprar</Link>
+             <Link to="/vender" className="text-sm font-medium text-slate-500 hover:text-teal-900 transition-colors">Vender</Link>
+          </nav>
+
           <div className="flex items-center gap-4">
             <Link to="/login" className="text-sm font-medium text-slate-500 hover:text-teal-900 transition-colors">
               Entrar
@@ -368,36 +408,45 @@ function CompradorIndex() {
         </section>
       </main>
 
-      {/* Footer / CTA Vender */}
-      <footer className="bg-slate-900 text-white pt-16 pb-8">
-        <div className="mx-auto max-w-7xl px-6 text-center lg:text-left">
-          <div className="bg-teal-900/30 border border-teal-800/50 rounded-3xl p-8 lg:p-12 mb-16 flex flex-col lg:flex-row items-center justify-between gap-8">
-            <div className="max-w-xl">
-              <h2 className="text-3xl font-bold mb-4 text-white">Quer vender seu carro?</h2>
-              <p className="text-teal-100/70">
-                Nós cuidamos de tudo: vistoria, laudo técnico e conectamos você a compradores reais em tempo recorde.
+      <footer className="border-t border-slate-200 bg-teal-900 py-20 text-white">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-3xl font-bold mb-4">Quer vender seu carro?</h2>
+              <p className="text-teal-100 text-lg mb-8 max-w-md">
+                Vendemos seu veículo de forma rápida, segura e pelo melhor preço de mercado através do nosso sistema de leilão.
               </p>
+              <Button asChild className="bg-amber-400 text-teal-950 hover:bg-amber-500 font-bold h-12 px-8">
+                <Link to="/vender">Conhecer processo de venda</Link>
+              </Button>
             </div>
-            <Link 
-              to="/vender" 
-              className="bg-white text-teal-900 hover:bg-teal-50 h-14 px-10 flex items-center justify-center rounded-full font-bold text-lg transition-all group"
-            >
-              Ver como funciona a venda
-              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
+              <div className="flex gap-4 mb-6">
+                <div className="w-12 h-12 bg-amber-400 rounded-full flex items-center justify-center text-teal-950 shrink-0">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-bold mb-1">Pagamento Garantido</h4>
+                  <p className="text-sm text-teal-100/70">Receba o valor à vista após a finalização da venda e transferência.</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <div className="w-12 h-12 bg-amber-400 rounded-full flex items-center justify-center text-teal-950 shrink-0">
+                  <UserCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-bold mb-1">Venda sem Burocracia</h4>
+                  <p className="text-sm text-teal-100/70">Nós cuidamos de toda a documentação e vistoria cautelar para você.</p>
+                </div>
+              </div>
+            </div>
           </div>
-
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8 text-sm text-slate-400 border-t border-slate-800 pt-8">
+          <div className="mt-20 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
-              <Gavel className="h-5 w-5 text-teal-500" />
-              <span className="font-display text-xl font-bold tracking-tight text-white">ESSE JÁ FOI</span>
+              <Gavel className="h-5 w-5 text-amber-400" />
+              <span className="font-bold tracking-tight">ESSE JÁ FOI</span>
             </div>
-            <p>© 2026 ESSE JÁ FOI · Todos os direitos reservados.</p>
-            <div className="flex gap-6">
-              <Link to="/vender" className="hover:text-white transition-colors">Página do Vendedor</Link>
-              <a href="#" className="hover:text-white transition-colors">Termos</a>
-              <a href="#" className="hover:text-white transition-colors">Privacidade</a>
-            </div>
+            <p className="text-sm text-teal-100/50">© 2026 ESSE JÁ FOI - Gestão de Veículos e Leilões.</p>
           </div>
         </div>
       </footer>
