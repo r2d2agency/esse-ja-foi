@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Gavel, 
   ShieldCheck, 
@@ -41,6 +41,14 @@ export const Route = createFileRoute("/")({
 
 function CompradorIndex() {
   const [showLogin, setShowLogin] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    nome: "",
+    cpf: "",
+    whatsapp: "",
+    email: "",
+  });
   const [vitrine] = useState([
     { id: '1', marca: 'Toyota', modelo: 'Corolla Altis', ano: '2022', km: '35.000', cor: 'Branco', combustivel: 'Flex', imagem: 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?q=80&w=800' },
     { id: '2', marca: 'Honda', modelo: 'Civic Touring', ano: '2021', km: '42.000', cor: 'Cinza', combustivel: 'Gasolina', imagem: 'https://images.unsplash.com/photo-1599912027806-cfec9f5944b6?q=80&w=800' },
@@ -51,6 +59,22 @@ function CompradorIndex() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     toast.info("Funcionalidade de login será implementada em breve.");
+  };
+
+  const handleCadastro = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (wizardStep < 2) {
+      setWizardStep(wizardStep + 1);
+      return;
+    }
+    
+    setIsSubmitting(true);
+    // Simulação de envio para a API
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setWizardStep(3);
+      toast.success("Pré-cadastro enviado com sucesso!");
+    }, 1500);
   };
 
   return (
@@ -141,7 +165,7 @@ function CompradorIndex() {
 
                   <div className="flex p-1 bg-slate-100 rounded-lg mb-8">
                     <button 
-                      onClick={() => setShowLogin(true)}
+                      onClick={() => { setShowLogin(true); setWizardStep(1); }}
                       className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${showLogin ? 'bg-white shadow text-teal-900' : 'text-slate-500 hover:text-slate-700'}`}
                     >
                       Login
@@ -173,39 +197,94 @@ function CompradorIndex() {
                     </form>
                   ) : (
                     <div className="space-y-6">
-                      <div className="space-y-4">
-                        <div className="flex gap-3">
-                          <div className="h-8 w-8 rounded-full bg-teal-50 flex items-center justify-center shrink-0">
-                            <CheckCircle2 className="h-4 w-4 text-teal-600" />
+                      {wizardStep === 1 && (
+                        <form onSubmit={handleCadastro} className="space-y-4">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Nome Completo</label>
+                            <Input 
+                              required
+                              value={formData.nome}
+                              onChange={(e) => setFormData({...formData, nome: e.target.value})}
+                              placeholder="Seu nome" 
+                            />
                           </div>
-                          <div>
-                            <p className="text-sm font-bold text-slate-900">Segurança total</p>
-                            <p className="text-xs text-slate-500">Compradores verificados garantem lances reais.</p>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">WhatsApp</label>
+                            <Input 
+                              required
+                              value={formData.whatsapp}
+                              onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
+                              placeholder="(00) 00000-0000" 
+                            />
                           </div>
+                          <Button className="w-full bg-teal-900 hover:bg-teal-950 text-white font-bold h-12">
+                            Continuar Cadastro
+                          </Button>
+                        </form>
+                      )}
+
+                      {wizardStep === 2 && (
+                        <form onSubmit={handleCadastro} className="space-y-4">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">CPF</label>
+                            <Input 
+                              required
+                              value={formData.cpf}
+                              onChange={(e) => setFormData({...formData, cpf: e.target.value})}
+                              placeholder="000.000.000-00" 
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">E-mail</label>
+                            <Input 
+                              required
+                              type="email"
+                              value={formData.email}
+                              onChange={(e) => setFormData({...formData, email: e.target.value})}
+                              placeholder="seu@email.com" 
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              type="button"
+                              variant="outline"
+                              onClick={() => setWizardStep(1)}
+                              className="w-1/3 h-12"
+                            >
+                              Voltar
+                            </Button>
+                            <Button 
+                              disabled={isSubmitting}
+                              className="flex-1 bg-teal-900 hover:bg-teal-950 text-white font-bold h-12"
+                            >
+                              {isSubmitting ? "Enviando..." : "Finalizar Cadastro"}
+                            </Button>
+                          </div>
+                        </form>
+                      )}
+
+                      {wizardStep === 3 && (
+                        <div className="text-center py-6 animate-in fade-in zoom-in duration-300">
+                          <div className="h-16 w-16 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4 border-2 border-amber-200">
+                            <Zap className="h-8 w-8 text-amber-600 animate-pulse" />
+                          </div>
+                          <h3 className="text-lg font-bold text-slate-900 mb-2">Cadastro em Análise</h3>
+                          <p className="text-sm text-slate-500 mb-6 px-4">
+                            Recebemos seus dados! Agora nossa equipe irá validar as informações e documentos. 
+                            Você receberá um e-mail em até 24h úteis.
+                          </p>
+                          <Button 
+                            variant="outline"
+                            onClick={() => {
+                              setWizardStep(1);
+                              setShowLogin(true);
+                            }}
+                            className="w-full"
+                          >
+                            Voltar para o Início
+                          </Button>
                         </div>
-                        <div className="flex gap-3">
-                          <div className="h-8 w-8 rounded-full bg-teal-50 flex items-center justify-center shrink-0">
-                            <ShieldCheck className="h-4 w-4 text-teal-600" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-slate-900">Laudo Cautelar</p>
-                            <p className="text-xs text-slate-500">Acesse o histórico completo de cada veículo.</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="pt-4 border-t border-slate-100">
-                        <p className="text-xs text-slate-500 mb-4">
-                          O pré-cadastro é realizado via WhatsApp com nossa equipe de verificação.
-                        </p>
-                        <Button 
-                          className="w-full bg-green-600 hover:bg-green-700 text-white h-12 gap-2 font-bold"
-                          onClick={() => window.open(`https://wa.me/5511999999999?text=${encodeURIComponent('Olá! Gostaria de fazer meu pré-cadastro para comprar veículos.')}`, '_blank')}
-                        >
-                          <MessageCircle className="h-5 w-5" />
-                          Iniciar Pré-cadastro
-                        </Button>
-                      </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -222,13 +301,13 @@ function CompradorIndex() {
               <AccordionItem value="participar">
                 <AccordionTrigger>Como faço para participar?</AccordionTrigger>
                 <AccordionContent>
-                  Para participar, você deve realizar o pré-cadastro enviando seus documentos para nossa equipe. Após a validação, você receberá um acesso exclusivo para visualizar preços e dar lances.
+                  Para participar, você deve realizar o cadastro online preenchendo o formulário de pré-cadastro. Após o envio, nossa equipe analisará seus dados e, se aprovado, você receberá acesso total à plataforma para ver preços e dar lances.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="seguranca">
                 <AccordionTrigger>É seguro comprar na plataforma?</AccordionTrigger>
                 <AccordionContent>
-                  Sim. Todos os veículos passam por uma vistoria técnica cautelar rigorosa e os compradores são verificados para garantir a seriedade de todas as negociações.
+                  Sim. Todos os veículos passam por uma vistoria técnica cautelar rigorosa e os compradores são verificados manualmente para garantir a seriedade de todas as negociações.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="pagamento">
@@ -278,4 +357,3 @@ function CompradorIndex() {
     </div>
   );
 }
-
