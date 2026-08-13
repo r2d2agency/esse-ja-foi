@@ -53,6 +53,10 @@ function CompradorIndex() {
     whatsapp: "",
     email: "",
     password: "",
+    cep: "",
+    endereco: "",
+    cidade: "",
+    uf: "",
   });
   const [vitrine] = useState([
     { id: '1', marca: 'Toyota', modelo: 'Corolla Altis', ano: '2022', km: '35.000', cor: 'Branco', combustivel: 'Flex', imagem: 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?q=80&w=800' },
@@ -126,7 +130,12 @@ function CompradorIndex() {
           nome: formData.nome,
           email: formData.email,
           password: formData.password || "123456",
-          whatsapp: formData.whatsapp
+          whatsapp: formData.whatsapp,
+          cpf: formData.cpf,
+          cep: formData.cep,
+          endereco: formData.endereco,
+          cidade: formData.cidade,
+          uf: formData.uf
         }
       });
 
@@ -312,26 +321,72 @@ function CompradorIndex() {
 
                       {wizardStep === 2 && (
                         <form onSubmit={handleCadastro} className="space-y-4">
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">CPF</label>
-                            <Input 
-                              required
-                              value={formData.cpf}
-                              onChange={(e) => setFormData({...formData, cpf: e.target.value})}
-                              placeholder="000.000.000-00" 
-                            />
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">CPF</label>
+                              <Input 
+                                required
+                                value={formData.cpf}
+                                onChange={(e) => setFormData({...formData, cpf: e.target.value})}
+                                placeholder="000.000.000-00" 
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">E-mail</label>
+                              <Input 
+                                required
+                                type="email"
+                                value={formData.email}
+                                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                placeholder="seu@email.com" 
+                              />
+                            </div>
                           </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">E-mail</label>
-                            <Input 
-                              required
-                              type="email"
-                              value={formData.email}
-                              onChange={(e) => setFormData({...formData, email: e.target.value})}
-                              placeholder="seu@email.com" 
-                            />
+                          
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2 col-span-1">
+                              <label className="text-sm font-medium">CEP</label>
+                              <Input 
+                                required
+                                value={formData.cep}
+                                onChange={(e) => setFormData({...formData, cep: e.target.value})}
+                                placeholder="00000-000" 
+                              />
+                            </div>
+                            <div className="space-y-2 col-span-2">
+                              <label className="text-sm font-medium">Endereço</label>
+                              <Input 
+                                required
+                                value={formData.endereco}
+                                onChange={(e) => setFormData({...formData, endereco: e.target.value})}
+                                placeholder="Rua, Número, Bairro" 
+                              />
+                            </div>
                           </div>
-                          <div className="flex gap-2">
+
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2 col-span-2">
+                              <label className="text-sm font-medium">Cidade</label>
+                              <Input 
+                                required
+                                value={formData.cidade}
+                                onChange={(e) => setFormData({...formData, cidade: e.target.value})}
+                                placeholder="Ex: São Paulo" 
+                              />
+                            </div>
+                            <div className="space-y-2 col-span-1">
+                              <label className="text-sm font-medium">UF</label>
+                              <Input 
+                                required
+                                maxLength={2}
+                                value={formData.uf}
+                                onChange={(e) => setFormData({...formData, uf: e.target.value.toUpperCase()})}
+                                placeholder="SP" 
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2 pt-4">
                             <Button 
                               type="button"
                               variant="outline"
