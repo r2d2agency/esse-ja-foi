@@ -402,6 +402,17 @@ export async function registrarDivergenciaPlaca(input: { agendamentoId: string; 
   return { ok: true, mensagem: texto };
 }
 
+export async function gerarPdfLaudo(laudoId: string) {
+  // Simulação de geração de PDF
+  // No futuro, integraria com bibliotecas como react-pdf (server-side) ou puppeteer
+  // Retorna um link ou base64 simulado
+  return { 
+    ok: true, 
+    url: "#", 
+    message: "Gerador de PDF em fase de implementação (Layout em desenvolvimento)" 
+  };
+}
+
 export type Pendencia = { itemId: string | null; titulo: string; motivo: string };
 
 /** Lista tudo o que impede o envio do laudo. */

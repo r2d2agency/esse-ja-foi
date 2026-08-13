@@ -14,8 +14,11 @@ import {
   Eye, 
   Calculator,
   History,
-  X
+  X,
+  FileText
 } from "lucide-react";
+import { gerarPdfLaudoFn } from "@/lib/pdf.functions";
+
 
 export const Route = createFileRoute("/operacao/laudos")({
   head: () => ({
@@ -172,8 +175,19 @@ function LaudosOperacao() {
                         >
                           <History className="h-4 w-4" />
                         </button>
+                        <button
+                          onClick={async () => {
+                            const res = await gerarPdfLaudoFn({ data: { laudoId: String(l['id']) } });
+                            toast.info(res.message);
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-red-600 transition-colors"
+                          title="Gerar PDF"
+                        >
+                          <FileText className="h-4 w-4" />
+                        </button>
                       </div>
                     </td>
+
                   </tr>
                 ))}
               </tbody>

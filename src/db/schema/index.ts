@@ -52,16 +52,36 @@ export const leiloes = pgTable('leiloes', {
   criado_em: timestamp('criado_em').defaultNow().notNull(),
 });
 
+export const lances = pgTable('lances', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  leilao_id: uuid('leilao_id').references(() => leiloes.id).notNull(),
+  comprador_id: uuid('comprador_id').references(() => profiles.id).notNull(),
+  valor: text('valor').notNull(),
+  criado_em: timestamp('criado_em').defaultNow().notNull(),
+});
+
 import { relations } from 'drizzle-orm';
 
 export const veiculosRelations = relations(veiculos, ({ many }) => ({
   leiloes: many(leiloes),
 }));
 
-export const leiloesRelations = relations(leiloes, ({ one }) => ({
+export const leiloesRelations = relations(leiloes, ({ one, many }) => ({
   veiculo: one(veiculos, {
     fields: [leiloes.veiculo_id],
     references: [veiculos.id],
+  }),
+  lances: many(lances),
+}));
+
+export const lancesRelations = relations(lances, ({ one }) => ({
+  leilao: one(leiloes, {
+    fields: [lances.leilao_id],
+    references: [leiloes.id],
+  }),
+  comprador: one(profiles, {
+    fields: [lances.comprador_id],
+    references: [profiles.id],
   }),
 }));
 

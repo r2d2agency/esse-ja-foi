@@ -19,13 +19,16 @@ import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as VistoriaRouteImport } from './routes/vistoria'
 import { Route as AdminChecklistRouteImport } from './routes/admin/checklist'
 import { Route as AdminDepreciacaoRouteImport } from './routes/admin/depreciacao'
+import { Route as CompradorIndexRouteImport } from './routes/comprador/index'
 import { Route as OperacaoAgendaRouteImport } from './routes/operacao/agenda'
+import { Route as OperacaoBiRouteImport } from './routes/operacao/bi'
 import { Route as OperacaoClientesRouteImport } from './routes/operacao/clientes'
 import { Route as OperacaoLaudosRouteImport } from './routes/operacao/laudos'
 import { Route as OperacaoLeadsRouteImport } from './routes/operacao/leads'
 import { Route as OperacaoVeiculosRouteImport } from './routes/operacao/veiculos'
 import { Route as VistoriaIndexRouteImport } from './routes/vistoria/index'
 import { Route as VistoriaAgendamentoIdRouteImport } from './routes/vistoria/$agendamentoId'
+import { Route as CompradorLeilaoIdRouteImport } from './routes/comprador/leilao.$id'
 import { Route as VistoriaLaudoLaudoIdRouteImport } from './routes/vistoria/laudo.$laudoId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -78,9 +81,19 @@ const AdminDepreciacaoRoute = AdminDepreciacaoRouteImport.update({
   path: '/depreciacao',
   getParentRoute: () => AdminRoute,
 } as any)
+const CompradorIndexRoute = CompradorIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CompradorRoute,
+} as any)
 const OperacaoAgendaRoute = OperacaoAgendaRouteImport.update({
   id: '/agenda',
   path: '/agenda',
+  getParentRoute: () => OperacaoRoute,
+} as any)
+const OperacaoBiRoute = OperacaoBiRouteImport.update({
+  id: '/bi',
+  path: '/bi',
   getParentRoute: () => OperacaoRoute,
 } as any)
 const OperacaoClientesRoute = OperacaoClientesRouteImport.update({
@@ -113,6 +126,11 @@ const VistoriaAgendamentoIdRoute = VistoriaAgendamentoIdRouteImport.update({
   path: '/$agendamentoId',
   getParentRoute: () => VistoriaRoute,
 } as any)
+const CompradorLeilaoIdRoute = CompradorLeilaoIdRouteImport.update({
+  id: '/leilao/$id',
+  path: '/leilao/$id',
+  getParentRoute: () => CompradorRoute,
+} as any)
 const VistoriaLaudoLaudoIdRoute = VistoriaLaudoLaudoIdRouteImport.update({
   id: '/laudo/$laudoId',
   path: '/laudo/$laudoId',
@@ -122,7 +140,7 @@ const VistoriaLaudoLaudoIdRoute = VistoriaLaudoLaudoIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/comprador': typeof CompradorRoute
+  '/comprador': typeof CompradorRouteWithChildren
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
   '/login': typeof LoginRoute
   '/operacao': typeof OperacaoRouteWithChildren
@@ -131,18 +149,20 @@ export interface FileRoutesByFullPath {
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
+  '/operacao/bi': typeof OperacaoBiRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
   '/operacao/laudos': typeof OperacaoLaudosRoute
   '/operacao/leads': typeof OperacaoLeadsRoute
   '/operacao/veiculos': typeof OperacaoVeiculosRoute
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
+  '/comprador/': typeof CompradorIndexRoute
   '/vistoria/': typeof VistoriaIndexRoute
+  '/comprador/leilao/$id': typeof CompradorLeilaoIdRoute
   '/vistoria/laudo/$laudoId': typeof VistoriaLaudoLaudoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/comprador': typeof CompradorRoute
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
   '/login': typeof LoginRoute
   '/operacao': typeof OperacaoRouteWithChildren
@@ -150,19 +170,22 @@ export interface FileRoutesByTo {
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
+  '/operacao/bi': typeof OperacaoBiRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
   '/operacao/laudos': typeof OperacaoLaudosRoute
   '/operacao/leads': typeof OperacaoLeadsRoute
   '/operacao/veiculos': typeof OperacaoVeiculosRoute
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
+  '/comprador': typeof CompradorIndexRoute
   '/vistoria': typeof VistoriaIndexRoute
+  '/comprador/leilao/$id': typeof CompradorLeilaoIdRoute
   '/vistoria/laudo/$laudoId': typeof VistoriaLaudoLaudoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/comprador': typeof CompradorRoute
+  '/comprador': typeof CompradorRouteWithChildren
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
   '/login': typeof LoginRoute
   '/operacao': typeof OperacaoRouteWithChildren
@@ -171,12 +194,15 @@ export interface FileRoutesById {
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
+  '/operacao/bi': typeof OperacaoBiRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
   '/operacao/laudos': typeof OperacaoLaudosRoute
   '/operacao/leads': typeof OperacaoLeadsRoute
   '/operacao/veiculos': typeof OperacaoVeiculosRoute
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
+  '/comprador/': typeof CompradorIndexRoute
   '/vistoria/': typeof VistoriaIndexRoute
+  '/comprador/leilao/$id': typeof CompradorLeilaoIdRoute
   '/vistoria/laudo/$laudoId': typeof VistoriaLaudoLaudoIdRoute
 }
 export interface FileRouteTypes {
@@ -193,18 +219,20 @@ export interface FileRouteTypes {
     | '/admin/checklist'
     | '/admin/depreciacao'
     | '/operacao/agenda'
+    | '/operacao/bi'
     | '/operacao/clientes'
     | '/operacao/laudos'
     | '/operacao/leads'
     | '/operacao/veiculos'
     | '/vistoria/$agendamentoId'
+    | '/comprador/'
     | '/vistoria/'
+    | '/comprador/leilao/$id'
     | '/vistoria/laudo/$laudoId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin'
-    | '/comprador'
     | '/esqueci-minha-senha'
     | '/login'
     | '/operacao'
@@ -212,12 +240,15 @@ export interface FileRouteTypes {
     | '/admin/checklist'
     | '/admin/depreciacao'
     | '/operacao/agenda'
+    | '/operacao/bi'
     | '/operacao/clientes'
     | '/operacao/laudos'
     | '/operacao/leads'
     | '/operacao/veiculos'
     | '/vistoria/$agendamentoId'
+    | '/comprador'
     | '/vistoria'
+    | '/comprador/leilao/$id'
     | '/vistoria/laudo/$laudoId'
   id:
     | '__root__'
@@ -232,19 +263,22 @@ export interface FileRouteTypes {
     | '/admin/checklist'
     | '/admin/depreciacao'
     | '/operacao/agenda'
+    | '/operacao/bi'
     | '/operacao/clientes'
     | '/operacao/laudos'
     | '/operacao/leads'
     | '/operacao/veiculos'
     | '/vistoria/$agendamentoId'
+    | '/comprador/'
     | '/vistoria/'
+    | '/comprador/leilao/$id'
     | '/vistoria/laudo/$laudoId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
-  CompradorRoute: typeof CompradorRoute
+  CompradorRoute: typeof CompradorRouteWithChildren
   EsqueciMinhaSenhaRoute: typeof EsqueciMinhaSenhaRoute
   LoginRoute: typeof LoginRoute
   OperacaoRoute: typeof OperacaoRouteWithChildren
@@ -324,11 +358,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDepreciacaoRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/comprador/': {
+      id: '/comprador/'
+      path: '/'
+      fullPath: '/comprador/'
+      preLoaderRoute: typeof CompradorIndexRouteImport
+      parentRoute: typeof CompradorRoute
+    }
     '/operacao/agenda': {
       id: '/operacao/agenda'
       path: '/agenda'
       fullPath: '/operacao/agenda'
       preLoaderRoute: typeof OperacaoAgendaRouteImport
+      parentRoute: typeof OperacaoRoute
+    }
+    '/operacao/bi': {
+      id: '/operacao/bi'
+      path: '/bi'
+      fullPath: '/operacao/bi'
+      preLoaderRoute: typeof OperacaoBiRouteImport
       parentRoute: typeof OperacaoRoute
     }
     '/operacao/clientes': {
@@ -373,6 +421,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VistoriaAgendamentoIdRouteImport
       parentRoute: typeof VistoriaRoute
     }
+    '/comprador/leilao/$id': {
+      id: '/comprador/leilao/$id'
+      path: '/leilao/$id'
+      fullPath: '/comprador/leilao/$id'
+      preLoaderRoute: typeof CompradorLeilaoIdRouteImport
+      parentRoute: typeof CompradorRoute
+    }
     '/vistoria/laudo/$laudoId': {
       id: '/vistoria/laudo/$laudoId'
       path: '/laudo/$laudoId'
@@ -395,8 +450,23 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface CompradorRouteChildren {
+  CompradorIndexRoute: typeof CompradorIndexRoute
+  CompradorLeilaoIdRoute: typeof CompradorLeilaoIdRoute
+}
+
+const CompradorRouteChildren: CompradorRouteChildren = {
+  CompradorIndexRoute: CompradorIndexRoute,
+  CompradorLeilaoIdRoute: CompradorLeilaoIdRoute,
+}
+
+const CompradorRouteWithChildren = CompradorRoute._addFileChildren(
+  CompradorRouteChildren,
+)
+
 interface OperacaoRouteChildren {
   OperacaoAgendaRoute: typeof OperacaoAgendaRoute
+  OperacaoBiRoute: typeof OperacaoBiRoute
   OperacaoClientesRoute: typeof OperacaoClientesRoute
   OperacaoLaudosRoute: typeof OperacaoLaudosRoute
   OperacaoLeadsRoute: typeof OperacaoLeadsRoute
@@ -405,6 +475,7 @@ interface OperacaoRouteChildren {
 
 const OperacaoRouteChildren: OperacaoRouteChildren = {
   OperacaoAgendaRoute: OperacaoAgendaRoute,
+  OperacaoBiRoute: OperacaoBiRoute,
   OperacaoClientesRoute: OperacaoClientesRoute,
   OperacaoLaudosRoute: OperacaoLaudosRoute,
   OperacaoLeadsRoute: OperacaoLeadsRoute,
@@ -434,7 +505,7 @@ const VistoriaRouteWithChildren = VistoriaRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
-  CompradorRoute: CompradorRoute,
+  CompradorRoute: CompradorRouteWithChildren,
   EsqueciMinhaSenhaRoute: EsqueciMinhaSenhaRoute,
   LoginRoute: LoginRoute,
   OperacaoRoute: OperacaoRouteWithChildren,
