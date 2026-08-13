@@ -57,6 +57,14 @@ function Index() {
   });
   const [loading, setLoading] = useState(false);
   const enviarLead = useServerFn(criarLeadPublicoFn);
+  
+  // Showcase vehicles (simulated or from DB if available)
+  const [vitrine, setVitrine] = useState([
+    { id: '1', marca: 'Toyota', modelo: 'Corolla Altis', ano: '2022', km: '35.000', cor: 'Branco', combustivel: 'Flex', imagem: 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?q=80&w=800' },
+    { id: '2', marca: 'Honda', modelo: 'Civic Touring', ano: '2021', km: '42.000', cor: 'Cinza', combustivel: 'Gasolina', imagem: 'https://images.unsplash.com/photo-1599912027806-cfec9f5944b6?q=80&w=800' },
+    { id: '3', marca: 'Volkswagen', modelo: 'Nivus Highline', ano: '2023', km: '12.000', cor: 'Azul', combustivel: 'Flex', imagem: 'https://images.unsplash.com/photo-1632243193041-563a017a5509?q=80&w=800' },
+    { id: '4', marca: 'Jeep', modelo: 'Compass Longitude', ano: '2022', km: '28.000', cor: 'Preto', combustivel: 'Diesel', imagem: 'https://images.unsplash.com/photo-1606148334078-2c4f1c9f4d71?q=80&w=800' },
+  ]);
 
   // Capturar UTMs
   useEffect(() => {
@@ -251,6 +259,91 @@ function Index() {
         </div>
       </section>
 
+      {/* Vitrine de Veículos */}
+      <section className="py-24 bg-white border-b border-slate-100">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+            <div>
+              <h2 className="text-4xl font-bold tracking-tight text-slate-900">Vitrine de Oportunidades</h2>
+              <p className="mt-4 text-slate-500 max-w-2xl">
+                Confira alguns dos veículos disponíveis em nossa plataforma. 
+                Documentação e procedência garantidas por nossa vistoria técnica.
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              className="border-teal-800 text-teal-800 hover:bg-teal-50"
+              onClick={() => document.getElementById('compradores-faq')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              Como comprar
+            </Button>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {vitrine.map((v) => (
+              <div key={v.id} className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-xl transition-all duration-300">
+                <div className="aspect-[4/3] relative overflow-hidden bg-slate-100">
+                  <img 
+                    src={v.imagem} 
+                    alt={v.modelo} 
+                    className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute top-4 left-4">
+                    <span className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-slate-700 border border-slate-200">
+                      Vistoria Aprovada
+                    </span>
+                  </div>
+                </div>
+                <div className="p-5">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="text-xs font-semibold text-teal-700 uppercase tracking-wider">{v.marca}</p>
+                      <h3 className="text-xl font-bold text-slate-900">{v.modelo}</h3>
+                    </div>
+                    <span className="text-sm font-medium text-slate-500">{v.ano}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-y-2 mt-4 pb-4 border-b border-slate-100 text-sm text-slate-600">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-3 w-3 text-slate-400" />
+                      {v.km} km
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-3 w-3 text-slate-400" />
+                      {v.combustivel}
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold">Lance Inicial</span>
+                      <div className="flex items-center gap-1 text-slate-400 blur-[3px] select-none">
+                        <span className="text-sm">R$</span>
+                        <span className="text-lg font-bold">88.888</span>
+                      </div>
+                    </div>
+                    <Button size="sm" className="bg-slate-900 hover:bg-teal-900 text-white text-xs h-8" onClick={() => document.getElementById('compradores-faq')?.scrollIntoView({ behavior: 'smooth' })}>
+                      Ver Preço
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="mt-16 bg-teal-50 rounded-2xl p-8 border border-teal-100 text-center">
+            <h4 className="text-xl font-bold text-teal-900">Quer ter acesso aos preços e dar lances?</h4>
+            <p className="mt-2 text-teal-800/70">
+              Por segurança, os valores são visíveis apenas para compradores cadastrados e verificados.
+            </p>
+            <Button 
+              className="mt-6 bg-teal-900 text-white hover:bg-teal-950 px-8"
+              onClick={() => document.getElementById('compradores-faq')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              Fazer meu pré-cadastro agora
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* Como Funciona */}
       <section className="py-24 bg-white">
         <div className="mx-auto max-w-7xl px-6">
@@ -341,7 +434,7 @@ function Index() {
             <HelpCircle className="h-10 w-10 text-teal-800 mx-auto mb-4" />
             <h2 className="text-4xl font-bold tracking-tight">Dúvidas Frequentes</h2>
           </div>
-          <Accordion type="single" collapsible className="w-full">
+          <Accordion type="single" collapsible className="w-full" id="compradores-faq">
             <AccordionItem value="custos">
               <AccordionTrigger>Quais são os custos para vender meu carro?</AccordionTrigger>
               <AccordionContent>
