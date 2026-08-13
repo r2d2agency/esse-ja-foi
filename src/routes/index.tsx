@@ -367,7 +367,7 @@ function Index() {
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="compradores">
-              <AccordionTrigger>Como funciona para quem quer dar os lances?</AccordionTrigger>
+              <AccordionTrigger>Como funciona para quem quer dar os lances? onde eu me cadastro para fazer o pre-cadastro ?</AccordionTrigger>
               <AccordionContent>
                 Para participar dos leilões e dar lances, os compradores precisam passar por um processo de cadastro e verificação. Exigimos um cadastro pré-aprovado para garantir a segurança e seriedade de todas as ofertas realizadas em nossa plataforma.
               </AccordionContent>
