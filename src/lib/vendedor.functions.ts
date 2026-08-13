@@ -48,7 +48,9 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
 export const listarMeusVeiculosFn = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ data: z.object({ perfilId: z.string().uuid() }) }).parse(d))
   .handler(async ({ data: { data } }) => {
-    if (!db) throw new Error("Banco de dados indisponível");
+    const { db: database } = await import("@/db/index");
+    if (!database) throw new Error("Banco de dados indisponível");
+    const db = database;
     const rows = await db.execute(sql`
       SELECT * FROM veiculos 
       WHERE perfil_id = ${data.perfilId}::uuid 
