@@ -34,7 +34,7 @@ export function BackofficeLayout({ children }: BackofficeLayoutProps) {
       {/* Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="h-16 border-b border-slate-200 bg-white px-6 flex items-center justify-between">
-          <div className="text-sm font-medium text-slate-500">Bem-vindo, {user?.name}</div>
+          <div className="text-sm font-medium text-slate-500">Bem-vindo, {user?.nome}</div>
           <button onClick={() => useAuthStore.getState().logout()} className="text-sm text-red-600 hover:underline">Sair</button>
         </header>
         <main className="flex-1 overflow-y-auto p-6">

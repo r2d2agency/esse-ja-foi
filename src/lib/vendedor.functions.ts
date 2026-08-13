@@ -13,8 +13,8 @@ const vendedorSchema = z.object({
 });
 
 export const cadastrarVendedorFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => vendedorSchema.parse(d))
-  .handler(async ({ data }) => {
+  .inputValidator((d: unknown) => z.object({ data: vendedorSchema }).parse(d))
+  .handler(async ({ data: { data } }) => {
     if (!db) throw new Error("Banco de dados indisponível");
     
     const senhaHash = await hashPassword(data.password);
@@ -36,8 +36,8 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
   });
 
 export const listarMeusVeiculosFn = createServerFn({ method: "GET" })
-  .inputValidator((d: unknown) => z.object({ perfilId: z.string().uuid() }).parse(d))
-  .handler(async ({ data }) => {
+  .inputValidator((d: unknown) => z.object({ data: z.object({ perfilId: z.string().uuid() }) }).parse(d))
+  .handler(async ({ data: { data } }) => {
     if (!db) throw new Error("Banco de dados indisponível");
     const rows = await db.execute(sql`
       SELECT * FROM veiculos 
@@ -49,15 +49,17 @@ export const listarMeusVeiculosFn = createServerFn({ method: "GET" })
 
 export const cadastrarMeuVeiculoFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({
-    perfilId: z.string().uuid(),
-    placa: z.string().min(7),
-    marca: z.string().min(2),
-    modelo: z.string().min(2),
-    anoFabricacao: z.string().optional(),
-    anoModelo: z.string().optional(),
-    km: z.number().optional(),
+    data: z.object({
+      perfilId: z.string().uuid(),
+      placa: z.string().min(7),
+      marca: z.string().min(2),
+      modelo: z.string().min(2),
+      anoFabricacao: z.string().optional(),
+      anoModelo: z.string().optional(),
+      km: z.number().optional(),
+    })
   }).parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data: { data } }) => {
     const { salvarVeiculo } = await import("@/db/cadastro.server");
     return await salvarVeiculo({
       ...data,
