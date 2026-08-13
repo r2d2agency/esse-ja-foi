@@ -53,6 +53,10 @@ function CompradorIndex() {
     whatsapp: "",
     email: "",
     password: "",
+    cep: "",
+    endereco: "",
+    cidade: "",
+    uf: "",
   });
   const [vitrine] = useState([
     { id: '1', marca: 'Toyota', modelo: 'Corolla Altis', ano: '2022', km: '35.000', cor: 'Branco', combustivel: 'Flex', imagem: 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?q=80&w=800' },
@@ -126,7 +130,12 @@ function CompradorIndex() {
           nome: formData.nome,
           email: formData.email,
           password: formData.password || "123456",
-          whatsapp: formData.whatsapp
+          whatsapp: formData.whatsapp,
+          cpf: formData.cpf,
+          cep: formData.cep,
+          endereco: formData.endereco,
+          cidade: formData.cidade,
+          uf: formData.uf
         }
       });
 
@@ -154,8 +163,8 @@ function CompradorIndex() {
             <span className="font-display text-2xl font-bold tracking-tight text-teal-900">ESSE JÁ FOI</span>
           </div>
           <nav className="hidden md:flex items-center gap-8 mr-8">
-             <Link to="/" className="text-sm font-medium text-teal-900">Comprar</Link>
              <Link to="/vender" className="text-sm font-medium text-slate-500 hover:text-teal-900 transition-colors">Vender</Link>
+             <Link to="/" className="text-sm font-medium text-teal-900">Comprar</Link>
           </nav>
 
           <div className="flex items-center gap-4">
@@ -163,7 +172,7 @@ function CompradorIndex() {
               Entrar
             </Link>
             <Button onClick={() => document.getElementById('cadastro')?.scrollIntoView({ behavior: 'smooth' })} className="bg-teal-900 text-white hover:bg-teal-950">
-              Cadastrar para comprar
+              Vender meu carro
             </Button>
           </div>
         </div>
@@ -230,9 +239,9 @@ function CompradorIndex() {
               {/* Sidebar Login/Cadastro */}
               <div id="cadastro" className="sticky top-24">
                 <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8">
-                  <h2 className="text-2xl font-bold text-slate-900 mb-2">Acesso do Comprador</h2>
+                  <h2 className="text-2xl font-bold text-slate-900 mb-2">Acesso do Vendedor</h2>
                   <p className="text-sm text-slate-500 mb-8">
-                    Faça login ou inicie seu pré-cadastro para ver preços e dar lances.
+                    Cadastre-se para anunciar seus veículos e receber propostas reais.
                   </p>
 
                   <div className="flex p-1 bg-slate-100 rounded-lg mb-8">
@@ -246,7 +255,7 @@ function CompradorIndex() {
                       onClick={() => setShowLogin(false)}
                       className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${!showLogin ? 'bg-white shadow text-teal-900' : 'text-slate-500 hover:text-slate-700'}`}
                     >
-                      Pré-cadastro
+                      Cadastro Vendedor
                     </button>
                   </div>
 
@@ -305,33 +314,79 @@ function CompradorIndex() {
                             />
                           </div>
                           <Button className="w-full bg-teal-900 hover:bg-teal-950 text-white font-bold h-12">
-                            Continuar Cadastro
+                            Próximo Passo
                           </Button>
                         </form>
                       )}
 
                       {wizardStep === 2 && (
                         <form onSubmit={handleCadastro} className="space-y-4">
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">CPF</label>
-                            <Input 
-                              required
-                              value={formData.cpf}
-                              onChange={(e) => setFormData({...formData, cpf: e.target.value})}
-                              placeholder="000.000.000-00" 
-                            />
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">CPF</label>
+                              <Input 
+                                required
+                                value={formData.cpf}
+                                onChange={(e) => setFormData({...formData, cpf: e.target.value})}
+                                placeholder="000.000.000-00" 
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">E-mail</label>
+                              <Input 
+                                required
+                                type="email"
+                                value={formData.email}
+                                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                placeholder="seu@email.com" 
+                              />
+                            </div>
                           </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">E-mail</label>
-                            <Input 
-                              required
-                              type="email"
-                              value={formData.email}
-                              onChange={(e) => setFormData({...formData, email: e.target.value})}
-                              placeholder="seu@email.com" 
-                            />
+                          
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2 col-span-1">
+                              <label className="text-sm font-medium">CEP</label>
+                              <Input 
+                                required
+                                value={formData.cep}
+                                onChange={(e) => setFormData({...formData, cep: e.target.value})}
+                                placeholder="00000-000" 
+                              />
+                            </div>
+                            <div className="space-y-2 col-span-2">
+                              <label className="text-sm font-medium">Endereço</label>
+                              <Input 
+                                required
+                                value={formData.endereco}
+                                onChange={(e) => setFormData({...formData, endereco: e.target.value})}
+                                placeholder="Rua, Número, Bairro" 
+                              />
+                            </div>
                           </div>
-                          <div className="flex gap-2">
+
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2 col-span-2">
+                              <label className="text-sm font-medium">Cidade</label>
+                              <Input 
+                                required
+                                value={formData.cidade}
+                                onChange={(e) => setFormData({...formData, cidade: e.target.value})}
+                                placeholder="Ex: São Paulo" 
+                              />
+                            </div>
+                            <div className="space-y-2 col-span-1">
+                              <label className="text-sm font-medium">UF</label>
+                              <Input 
+                                required
+                                maxLength={2}
+                                value={formData.uf}
+                                onChange={(e) => setFormData({...formData, uf: e.target.value.toUpperCase()})}
+                                placeholder="SP" 
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2 pt-4">
                             <Button 
                               type="button"
                               variant="outline"
@@ -383,24 +438,24 @@ function CompradorIndex() {
         {/* FAQ - Compradores */}
         <section className="py-24 bg-slate-50">
           <div className="mx-auto max-w-3xl px-6">
-            <h2 className="text-3xl font-bold text-center mb-12">Dúvidas Frequentes do Comprador</h2>
+            <h2 className="text-3xl font-bold text-center mb-12">Dúvidas Frequentes</h2>
             <Accordion type="single" collapsible className="w-full bg-white rounded-2xl border border-slate-200 p-6">
               <AccordionItem value="participar">
-                <AccordionTrigger>Como faço para participar?</AccordionTrigger>
+                <AccordionTrigger>Como faço para vender meu carro?</AccordionTrigger>
                 <AccordionContent>
-                  Para participar, você deve realizar o cadastro online preenchendo o formulário de pré-cadastro. Após o envio, nossa equipe analisará seus dados e, se aprovado, você receberá acesso total à plataforma para ver preços e dar lances.
+                  Para vender, você deve realizar seu cadastro de vendedor fornecendo seus dados e endereço. Após logar, você terá acesso ao painel onde poderá cadastrar seus veículos com fotos, opcionais e valor desejado. O veículo passará por uma análise técnica antes de ser aprovado.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="seguranca">
-                <AccordionTrigger>É seguro comprar na plataforma?</AccordionTrigger>
+                <AccordionTrigger>O cadastro é gratuito?</AccordionTrigger>
                 <AccordionContent>
-                  Sim. Todos os veículos passam por uma vistoria técnica cautelar rigorosa e os compradores são verificados manualmente para garantir a seriedade de todas as negociações.
+                  Sim, o cadastro de vendedores e veículos é totalmente gratuito. Cobramos apenas uma taxa de serviço administrativa em caso de venda concretizada através da plataforma.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="pagamento">
-                <AccordionTrigger>Como funciona o pagamento?</AccordionTrigger>
+                <AccordionTrigger>Quais documentos são necessários?</AccordionTrigger>
                 <AccordionContent>
-                  O pagamento é realizado diretamente ao vendedor ou via plataforma, dependendo da modalidade da venda. Nossa equipe auxilia em todo o processo de documentação.
+                  Para o cadastro inicial, solicitamos CPF, comprovante de endereço e dados de contato. Para o veículo, será necessário informar a placa e dados do documento (CRV/CRLV) durante a etapa de vistoria.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>

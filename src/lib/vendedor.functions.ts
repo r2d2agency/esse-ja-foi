@@ -10,6 +10,11 @@ const vendedorSchema = z.object({
   email: z.string().email("E-mail inválido"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   whatsapp: z.string().optional(),
+  cpf: z.string().optional(),
+  cep: z.string().optional(),
+  endereco: z.string().optional(),
+  cidade: z.string().optional(),
+  uf: z.string().optional(),
 });
 
 export const cadastrarVendedorFn = createServerFn({ method: "POST" })
@@ -21,8 +26,8 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
     
     try {
       const rows = await db.execute(sql`
-        INSERT INTO profiles (nome, email, role, senha_hash, whatsapp, ativo)
-        VALUES (${data.nome}, ${data.email.toLowerCase()}, 'vendedor', ${senhaHash}, ${data.whatsapp ?? null}, true)
+        INSERT INTO profiles (nome, email, role, senha_hash, whatsapp, cpf, cep, endereco, cidade, uf, ativo)
+        VALUES (${data.nome}, ${data.email.toLowerCase()}, 'vendedor', ${senhaHash}, ${data.whatsapp ?? null}, ${data.cpf ?? null}, ${data.cep ?? null}, ${data.endereco ?? null}, ${data.cidade ?? null}, ${data.uf ?? null}, true)
         RETURNING id, nome, email, role;
       `);
       const user = (rows as any).rows?.[0] || (rows as any)[0];
@@ -57,12 +62,18 @@ export const cadastrarMeuVeiculoFn = createServerFn({ method: "POST" })
       anoFabricacao: z.string().optional(),
       anoModelo: z.string().optional(),
       km: z.number().optional(),
+      valorInteresse: z.number().optional(),
+      opcionais: z.array(z.string()).optional(),
+      observacoes: z.string().optional(),
+      fotos: z.array(z.string()).optional(),
     })
   }).parse(d))
   .handler(async ({ data: { data } }) => {
     const { salvarVeiculo } = await import("@/db/cadastro.server");
     return await salvarVeiculo({
       ...data,
-      status: 'AGUARDANDO_APROVACAO'
+      valorInteresseCliente: data.valorInteresse,
+      status: 'AGUARDANDO_APROVACAO',
+      observacoes: `Opcionais: ${(data.opcionais || []).join(', ')}. ${data.observacoes || ''}`
     } as any);
   });
