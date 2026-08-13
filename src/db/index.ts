@@ -4,31 +4,25 @@ import * as schema from './schema';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import path from 'path';
 
-// Força a leitura do process.env no runtime do servidor
-const getConnectionString = () => {
-  if (typeof process !== 'undefined' && process.env) {
-    return process.env['DATABASE_URL'];
-  }
-  return undefined;
-};
-
-const connectionString = getConnectionString();
+// Note: DATABASE_URL must be available as a server-side environment variable.
+const connectionString = process.env['DATABASE_URL'];
 
 if (!connectionString) {
-  console.warn('⚠️ DATABASE_URL não definida. O banco de dados não será conectado até que a variável seja configurada.');
+  console.warn('⚠️ DATABASE_URL não definida.');
 }
 
-// Criamos o cliente apenas se a string existir, para evitar erro de inicialização fatal
-const client = connectionString 
-  ? postgres(connectionString, { 
-      max: 10,
-      ssl: connectionString.includes('sslmode=disable') ? false : 'require',
-      connect_timeout: 30,
-    }) 
+const getClient = () => {
+  const conn = process.env['DATABASE_URL'];
+  if (!conn) return null;
+  return postgres(conn, { 
+    max: 10,
+    ssl: conn.includes('sslmode=disable') ? false : 'require',
+    connect_timeout: 30,
+  });
+};
 
-  : null;
-
-export const db = client ? drizzle(client, { schema }) : (connectionString ? drizzle(postgres(connectionString), { schema }) : null);
+export const client = getClient();
+export const db = client ? drizzle(client, { schema }) : null;
 
 export const migrateDb = async () => {
   if (!db) {
