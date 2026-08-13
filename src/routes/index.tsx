@@ -320,7 +320,7 @@ function Index() {
                         <span className="text-lg font-bold">88.888</span>
                       </div>
                     </div>
-                    <Button size="sm" className="bg-slate-900 hover:bg-teal-900 text-white text-xs h-8" onClick={() => document.getElementById('compradores-faq')?.scrollIntoView({ behavior: 'smooth' })}>
+                    <Button size="sm" className="bg-slate-900 hover:bg-teal-900 text-white text-xs h-8" onClick={() => document.getElementById('compradores')?.scrollIntoView({ behavior: 'smooth' })}>
                       Ver Preço
                     </Button>
                   </div>
