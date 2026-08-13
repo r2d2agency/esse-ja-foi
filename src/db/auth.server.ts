@@ -60,45 +60,51 @@ export async function ensureSuperAdmin() {
   // Garante que uma instalação nova consiga autenticar mesmo antes de qualquer
   // acesso à aplicação. Todas as operações são idempotentes.
   try {
+    // Tenta adicionar o valor 'vendedor' ao enum app_role
     await db.execute(sql`
-      DO $$ BEGIN
-        CREATE TYPE app_role AS ENUM ('admin', 'operacao', 'vistoriador', 'comprador', 'vendedor');
-      EXCEPTION WHEN duplicate_object THEN 
-        BEGIN
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid WHERE t.typname = 'app_role' AND e.enumlabel = 'vendedor') THEN
           ALTER TYPE app_role ADD VALUE 'vendedor';
-        EXCEPTION WHEN duplicate_object THEN NULL;
-        END;
+        END IF;
+      EXCEPTION
+        WHEN undefined_object THEN
+          CREATE TYPE app_role AS ENUM ('admin', 'operacao', 'vistoriador', 'comprador', 'vendedor');
       END $$;
     `);
   } catch (e) {
-    // Silently continue if type already has the value
+    console.error("Erro ao garantir app_role enum:", e);
   }
 
-  await db.execute(sql`
-    CREATE TABLE IF NOT EXISTS profiles (
-      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      nome text,
-      telefone text,
-      whatsapp text,
-      email text NOT NULL UNIQUE,
-      role app_role NOT NULL DEFAULT 'comprador',
-      ativo boolean NOT NULL DEFAULT true,
-      criado_em timestamp NOT NULL DEFAULT now()
-    );
-  `);
-  
-  const profileColumns = [
-    ["senha_hash", "text"],
-    ["protegido", "boolean NOT NULL DEFAULT false"],
-    ["cpf", "text"],
-    ["cep", "text"],
-    ["endereco", "text"],
-    ["cidade", "text"],
-    ["uf", "text"]
-  ];
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS profiles (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        nome text,
+        telefone text,
+        whatsapp text,
+        email text NOT NULL UNIQUE,
+        role app_role NOT NULL DEFAULT 'comprador',
+        ativo boolean NOT NULL DEFAULT true,
+        criado_em timestamp NOT NULL DEFAULT now()
+      );
+    `);
+    
+    const profileColumns = [
+      ["senha_hash", "text"],
+      ["protegido", "boolean NOT NULL DEFAULT false"],
+      ["cpf", "text"],
+      ["cep", "text"],
+      ["endereco", "text"],
+      ["cidade", "text"],
+      ["uf", "text"]
+    ];
 
-  for (const [name, type] of profileColumns) {
-    await db.execute(sql.raw(`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ${name} ${type};`));
+    for (const [name, type] of profileColumns) {
+      await db.execute(sql.raw(`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ${name} ${type};`));
+    }
+  } catch (e) {
+    console.error("Erro ao garantir tabela profiles:", e);
   }
 
   await db.execute(sql`
