@@ -204,32 +204,94 @@ function CompradorIndex() {
                           </div>
                           <div>
                             <p className="text-sm font-bold text-slate-900">Segurança total</p>
-                            <p className="text-xs text-slate-500">Compradores verificados garantem lances reais.</p>
+                      {wizardStep === 1 && (
+                        <form onSubmit={handleCadastro} className="space-y-4">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Nome Completo</label>
+                            <Input 
+                              required
+                              value={formData.nome}
+                              onChange={(e) => setFormData({...formData, nome: e.target.value})}
+                              placeholder="Seu nome" 
+                            />
                           </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">WhatsApp</label>
+                            <Input 
+                              required
+                              value={formData.whatsapp}
+                              onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
+                              placeholder="(00) 00000-0000" 
+                            />
+                          </div>
+                          <Button className="w-full bg-teal-900 hover:bg-teal-950 text-white font-bold h-12">
+                            Continuar Cadastro
+                          </Button>
+                        </form>
+                      )}
+
+                      {wizardStep === 2 && (
+                        <form onSubmit={handleCadastro} className="space-y-4">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">CPF</label>
+                            <Input 
+                              required
+                              value={formData.cpf}
+                              onChange={(e) => setFormData({...formData, cpf: e.target.value})}
+                              placeholder="000.000.000-00" 
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">E-mail</label>
+                            <Input 
+                              required
+                              type="email"
+                              value={formData.email}
+                              onChange={(e) => setFormData({...formData, email: e.target.value})}
+                              placeholder="seu@email.com" 
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              type="button"
+                              variant="outline"
+                              onClick={() => setWizardStep(1)}
+                              className="w-1/3 h-12"
+                            >
+                              Voltar
+                            </Button>
+                            <Button 
+                              disabled={isSubmitting}
+                              className="flex-1 bg-teal-900 hover:bg-teal-950 text-white font-bold h-12"
+                            >
+                              {isSubmitting ? "Enviando..." : "Finalizar Cadastro"}
+                            </Button>
+                          </div>
+                        </form>
+                      )}
+
+                      {wizardStep === 3 && (
+                        <div className="text-center py-6 animate-in fade-in zoom-in duration-300">
+                          <div className="h-16 w-16 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4 border-2 border-amber-200">
+                            <Zap className="h-8 w-8 text-amber-600 animate-pulse" />
+                          </div>
+                          <h3 className="text-lg font-bold text-slate-900 mb-2">Cadastro em Análise</h3>
+                          <p className="text-sm text-slate-500 mb-6 px-4">
+                            Recebemos seus dados! Agora nossa equipe irá validar as informações e documentos. 
+                            Você receberá um e-mail em até 24h úteis.
+                          </p>
+                          <Button 
+                            variant="outline"
+                            onClick={() => {
+                              setWizardStep(1);
+                              setShowLogin(true);
+                            }}
+                            className="w-full"
+                          >
+                            Voltar para o Início
+                          </Button>
                         </div>
-                        <div className="flex gap-3">
-                          <div className="h-8 w-8 rounded-full bg-teal-50 flex items-center justify-center shrink-0">
-                            <ShieldCheck className="h-4 w-4 text-teal-600" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-slate-900">Laudo Cautelar</p>
-                            <p className="text-xs text-slate-500">Acesse o histórico completo de cada veículo.</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="pt-4 border-t border-slate-100">
-                        <p className="text-xs text-slate-500 mb-4">
-                          O pré-cadastro é realizado via WhatsApp com nossa equipe de verificação.
-                        </p>
-                        <Button 
-                          className="w-full bg-green-600 hover:bg-green-700 text-white h-12 gap-2 font-bold"
-                          onClick={() => window.open(`https://wa.me/5511999999999?text=${encodeURIComponent('Olá! Gostaria de fazer meu pré-cadastro para comprar veículos.')}`, '_blank')}
-                        >
-                          <MessageCircle className="h-5 w-5" />
-                          Iniciar Pré-cadastro
-                        </Button>
-                      </div>
+                      )}
                     </div>
                   )}
                 </div>
