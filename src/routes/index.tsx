@@ -365,6 +365,11 @@ function Index() {
               <AccordionContent>
                 Você precisará do CRLV-e (documento do carro), RG/CNH do proprietário e comprovante de residência. Nós cuidamos de toda a parte burocrática de transferência.
               </AccordionContent>
+            <AccordionItem value="compradores">
+              <AccordionTrigger>Como funciona para quem quer dar os lances?</AccordionTrigger>
+              <AccordionContent>
+                Para participar dos leilões e dar lances, os compradores precisam passar por um processo de cadastro e verificação. Exigimos um cadastro pré-aprovado para garantir a segurança e seriedade de todas as ofertas realizadas em nossa plataforma.
+              </AccordionContent>
             </AccordionItem>
           </Accordion>
         </div>
