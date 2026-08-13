@@ -61,7 +61,7 @@ export async function ensureSuperAdmin() {
   // acesso à aplicação. Todas as operações são idempotentes.
   await db.execute(sql`
     DO $$ BEGIN
-      CREATE TYPE app_role AS ENUM ('admin', 'operacao', 'vistoriador', 'comprador');
+      CREATE TYPE app_role AS ENUM ('admin', 'operacao', 'vistoriador', 'comprador', 'vendedor');
     EXCEPTION WHEN duplicate_object THEN NULL;
     END $$;
   `);

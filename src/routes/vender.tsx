@@ -144,6 +144,11 @@ function Index() {
               </div>
             </Link>
           </div>
+          <nav className="hidden md:flex items-center gap-8 mr-8">
+             <Link to="/" className="text-sm font-medium text-slate-500 hover:text-teal-900 transition-colors">Comprar</Link>
+             <Link to="/vender" className="text-sm font-medium text-teal-900">Vender</Link>
+          </nav>
+
           <div className="flex items-center gap-6">
             <Link to="/" className="text-sm font-medium text-slate-500 hover:text-teal-900 transition-colors">
               Página do Comprador

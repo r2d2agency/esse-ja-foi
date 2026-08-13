@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { loginWithPassword } from "@/lib/auth.functions";
@@ -118,6 +118,11 @@ function CompradorIndex() {
             <Gavel className="h-6 w-6 text-teal-800" />
             <span className="font-display text-2xl font-bold tracking-tight text-teal-900">ESSE JÁ FOI</span>
           </div>
+          <nav className="hidden md:flex items-center gap-8 mr-8">
+             <Link to="/" className="text-sm font-medium text-teal-900">Comprar</Link>
+             <Link to="/vender" className="text-sm font-medium text-slate-500 hover:text-teal-900 transition-colors">Vender</Link>
+          </nav>
+
           <div className="flex items-center gap-4">
             <Link to="/login" className="text-sm font-medium text-slate-500 hover:text-teal-900 transition-colors">
               Entrar
