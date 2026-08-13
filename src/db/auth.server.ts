@@ -59,12 +59,21 @@ export async function ensureSuperAdmin() {
 
   // Garante que uma instalação nova consiga autenticar mesmo antes de qualquer
   // acesso à aplicação. Todas as operações são idempotentes.
-  await db.execute(sql`
-    DO $$ BEGIN
-      CREATE TYPE app_role AS ENUM ('admin', 'operacao', 'vistoriador', 'comprador', 'vendedor');
-    EXCEPTION WHEN duplicate_object THEN NULL;
-    END $$;
-  `);
+  try {
+    await db.execute(sql`
+      DO $$ BEGIN
+        CREATE TYPE app_role AS ENUM ('admin', 'operacao', 'vistoriador', 'comprador', 'vendedor');
+      EXCEPTION WHEN duplicate_object THEN 
+        BEGIN
+          ALTER TYPE app_role ADD VALUE 'vendedor';
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END;
+      END $$;
+    `);
+  } catch (e) {
+    // Silently continue if type already has the value
+  }
+
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS profiles (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -77,39 +86,42 @@ export async function ensureSuperAdmin() {
       criado_em timestamp NOT NULL DEFAULT now()
     );
   `);
+  
+  const profileColumns = [
+    ["senha_hash", "text"],
+    ["protegido", "boolean NOT NULL DEFAULT false"],
+    ["cpf", "text"],
+    ["cep", "text"],
+    ["endereco", "text"],
+    ["cidade", "text"],
+    ["uf", "text"]
+  ];
+
+  for (const [name, type] of profileColumns) {
+    await db.execute(sql.raw(`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ${name} ${type};`));
+  }
+
   await db.execute(sql`
-    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS senha_hash text;
+    CREATE TABLE IF NOT EXISTS veiculos (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      placa text NOT NULL UNIQUE,
+      marca text NOT NULL,
+      modelo text NOT NULL,
+      status text NOT NULL DEFAULT 'cadastrado',
+      criado_em timestamp NOT NULL DEFAULT now()
+    );
   `);
-  await db.execute(sql`
-    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS protegido boolean NOT NULL DEFAULT false;
-  `);
-  await db.execute(sql`
-    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cpf text;
-  `);
-  await db.execute(sql`
-    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cep text;
-  `);
-  await db.execute(sql`
-    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS endereco text;
-  `);
-  await db.execute(sql`
-    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cidade text;
-  `);
-  await db.execute(sql`
-    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS uf text;
-  `);
-  await db.execute(sql`
-    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS perfil_id uuid;
-  `);
-  await db.execute(sql`
-    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS km integer;
-  `);
-  await db.execute(sql`
-    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS valor_interesse_cliente numeric;
-  `);
-  await db.execute(sql`
-    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS observacoes text;
-  `);
+
+  const veiculoColumns = [
+    ["perfil_id", "uuid"],
+    ["km", "integer"],
+    ["valor_interesse_cliente", "numeric"],
+    ["observacoes", "text"]
+  ];
+
+  for (const [name, type] of veiculoColumns) {
+    await db.execute(sql.raw(`ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS ${name} ${type};`));
+  }
 
   // Bloqueia exclusão e rebaixamento do superadmin diretamente no banco
   await db.execute(sql`
