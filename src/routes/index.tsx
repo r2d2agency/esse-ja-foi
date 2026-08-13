@@ -152,15 +152,20 @@ function CompradorIndex() {
     setIsSubmitting(true);
     try {
       const { cadastrarVendedorFn } = await import("@/lib/vendedor.functions");
+      console.log("Enviando dados para cadastro:", {
+        nome: formData.nome,
+        email: formData.email,
+        whatsapp: formData.whatsapp,
+      });
       const result = await cadastrarVendedorFn({
         data: {
-          data: { // Note: The Zod schema in functions.ts expects { data: vendedorSchema }
+          data: { 
             nome: formData.nome,
             email: formData.email,
             password: formData.password || "123456",
-            whatsapp: formData.whatsapp,
-            cpf: formData.cpf,
-            cep: formData.cep,
+            whatsapp: formData.whatsapp || null,
+            cpf: formData.cpf || null,
+            cep: formData.cep || null,
             endereco: `${formData.endereco}, ${formData.numero}${formData.complemento ? ` - ${formData.complemento}` : ""} - ${formData.bairro}`,
             cidade: formData.cidade,
             uf: formData.uf
