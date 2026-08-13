@@ -367,9 +367,37 @@ function Index() {
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="compradores">
-              <AccordionTrigger>Como funciona para quem quer dar os lances? onde eu me cadastro para fazer o pre-cadastro ?</AccordionTrigger>
+              <AccordionTrigger>Como funciona para quem quer comprar? Onde faço meu pré-cadastro?</AccordionTrigger>
               <AccordionContent>
-                Para participar dos leilões e dar lances, os compradores precisam passar por um processo de cadastro e verificação. Exigimos um cadastro pré-aprovado para garantir a segurança e seriedade de todas as ofertas realizadas em nossa plataforma.
+                <div className="space-y-4">
+                  <p>
+                    Para participar dos leilões e dar lances, os compradores precisam passar por um processo de verificação rigoroso. 
+                    Exigimos um cadastro pré-aprovado para garantir a segurança e seriedade de todas as ofertas.
+                  </p>
+                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-4">
+                    <p className="font-semibold text-teal-900">Documentação necessária para o pré-cadastro:</p>
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-teal-600" /> RG / CNH (Frente e Verso)
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-teal-600" /> Comprovante de Residência
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-teal-600" /> Foto (Selfie) com documento
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-teal-600" /> Contrato de adesão assinado
+                      </li>
+                    </ul>
+                    <Button 
+                      className="w-full bg-teal-900 text-white hover:bg-teal-950"
+                      onClick={() => window.open(`https://wa.me/5511999999999?text=${encodeURIComponent('Olá! Gostaria de fazer meu pré-cadastro para comprar veículos.')}`, '_blank')}
+                    >
+                      Quero me cadastrar para comprar
+                    </Button>
+                  </div>
+                </div>
               </AccordionContent>
             </AccordionItem>
           </Accordion>
