@@ -21,6 +21,7 @@ import { Route as AdminChecklistRouteImport } from './routes/admin/checklist'
 import { Route as AdminDepreciacaoRouteImport } from './routes/admin/depreciacao'
 import { Route as CompradorIndexRouteImport } from './routes/comprador/index'
 import { Route as OperacaoAgendaRouteImport } from './routes/operacao/agenda'
+import { Route as OperacaoBiRouteImport } from './routes/operacao/bi'
 import { Route as OperacaoClientesRouteImport } from './routes/operacao/clientes'
 import { Route as OperacaoLaudosRouteImport } from './routes/operacao/laudos'
 import { Route as OperacaoLeadsRouteImport } from './routes/operacao/leads'
@@ -90,6 +91,11 @@ const OperacaoAgendaRoute = OperacaoAgendaRouteImport.update({
   path: '/agenda',
   getParentRoute: () => OperacaoRoute,
 } as any)
+const OperacaoBiRoute = OperacaoBiRouteImport.update({
+  id: '/bi',
+  path: '/bi',
+  getParentRoute: () => OperacaoRoute,
+} as any)
 const OperacaoClientesRoute = OperacaoClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
+  '/operacao/bi': typeof OperacaoBiRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
   '/operacao/laudos': typeof OperacaoLaudosRoute
   '/operacao/leads': typeof OperacaoLeadsRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
+  '/operacao/bi': typeof OperacaoBiRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
   '/operacao/laudos': typeof OperacaoLaudosRoute
   '/operacao/leads': typeof OperacaoLeadsRoute
@@ -186,6 +194,7 @@ export interface FileRoutesById {
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
+  '/operacao/bi': typeof OperacaoBiRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
   '/operacao/laudos': typeof OperacaoLaudosRoute
   '/operacao/leads': typeof OperacaoLeadsRoute
@@ -210,6 +219,7 @@ export interface FileRouteTypes {
     | '/admin/checklist'
     | '/admin/depreciacao'
     | '/operacao/agenda'
+    | '/operacao/bi'
     | '/operacao/clientes'
     | '/operacao/laudos'
     | '/operacao/leads'
@@ -230,6 +240,7 @@ export interface FileRouteTypes {
     | '/admin/checklist'
     | '/admin/depreciacao'
     | '/operacao/agenda'
+    | '/operacao/bi'
     | '/operacao/clientes'
     | '/operacao/laudos'
     | '/operacao/leads'
@@ -252,6 +263,7 @@ export interface FileRouteTypes {
     | '/admin/checklist'
     | '/admin/depreciacao'
     | '/operacao/agenda'
+    | '/operacao/bi'
     | '/operacao/clientes'
     | '/operacao/laudos'
     | '/operacao/leads'
@@ -360,6 +372,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OperacaoAgendaRouteImport
       parentRoute: typeof OperacaoRoute
     }
+    '/operacao/bi': {
+      id: '/operacao/bi'
+      path: '/bi'
+      fullPath: '/operacao/bi'
+      preLoaderRoute: typeof OperacaoBiRouteImport
+      parentRoute: typeof OperacaoRoute
+    }
     '/operacao/clientes': {
       id: '/operacao/clientes'
       path: '/clientes'
@@ -447,6 +466,7 @@ const CompradorRouteWithChildren = CompradorRoute._addFileChildren(
 
 interface OperacaoRouteChildren {
   OperacaoAgendaRoute: typeof OperacaoAgendaRoute
+  OperacaoBiRoute: typeof OperacaoBiRoute
   OperacaoClientesRoute: typeof OperacaoClientesRoute
   OperacaoLaudosRoute: typeof OperacaoLaudosRoute
   OperacaoLeadsRoute: typeof OperacaoLeadsRoute
@@ -455,6 +475,7 @@ interface OperacaoRouteChildren {
 
 const OperacaoRouteChildren: OperacaoRouteChildren = {
   OperacaoAgendaRoute: OperacaoAgendaRoute,
+  OperacaoBiRoute: OperacaoBiRoute,
   OperacaoClientesRoute: OperacaoClientesRoute,
   OperacaoLaudosRoute: OperacaoLaudosRoute,
   OperacaoLeadsRoute: OperacaoLeadsRoute,
