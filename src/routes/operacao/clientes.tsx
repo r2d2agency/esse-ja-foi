@@ -301,7 +301,7 @@ function ClientesPage() {
             </Button>
             {passo < PASSOS.length - 1 ? (
               <Button className="bg-teal-900 hover:bg-teal-950" disabled={!podeAvancar} onClick={() => setPasso(passo + 1)}>
-                Continuar
+                vamos para o proximo passo
               </Button>
             ) : (
               <Button className="bg-teal-900 hover:bg-teal-950" disabled={salvando} onClick={() => void salvar()}>
