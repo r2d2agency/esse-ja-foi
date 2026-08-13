@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { hashPassword } from "@/db/auth.server";
-import { db } from "@/db/index";
 import { sql } from "drizzle-orm";
 import { RegraNegocioError } from "@/db/cadastro.server";
 
