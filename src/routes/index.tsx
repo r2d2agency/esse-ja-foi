@@ -273,7 +273,7 @@ function Index() {
             <Button 
               variant="outline" 
               className="border-teal-800 text-teal-800 hover:bg-teal-50"
-              onClick={() => document.getElementById('compradores-faq')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={() => document.getElementById('compradores')?.scrollIntoView({ behavior: 'smooth' })}
             >
               Como comprar
             </Button>
@@ -320,7 +320,7 @@ function Index() {
                         <span className="text-lg font-bold">88.888</span>
                       </div>
                     </div>
-                    <Button size="sm" className="bg-slate-900 hover:bg-teal-900 text-white text-xs h-8" onClick={() => document.getElementById('compradores-faq')?.scrollIntoView({ behavior: 'smooth' })}>
+                    <Button size="sm" className="bg-slate-900 hover:bg-teal-900 text-white text-xs h-8" onClick={() => document.getElementById('compradores')?.scrollIntoView({ behavior: 'smooth' })}>
                       Ver Preço
                     </Button>
                   </div>
@@ -329,17 +329,61 @@ function Index() {
             ))}
           </div>
           
-          <div className="mt-16 bg-teal-50 rounded-2xl p-8 border border-teal-100 text-center">
+          <div id="compradores" className="mt-16 bg-teal-50 rounded-2xl p-8 border border-teal-100 text-center">
             <h4 className="text-xl font-bold text-teal-900">Quer ter acesso aos preços e dar lances?</h4>
             <p className="mt-2 text-teal-800/70">
               Por segurança, os valores são visíveis apenas para compradores cadastrados e verificados.
             </p>
-            <Button 
-              className="mt-6 bg-teal-900 text-white hover:bg-teal-950 px-8"
-              onClick={() => document.getElementById('compradores-faq')?.scrollIntoView({ behavior: 'smooth' })}
-            >
-              Fazer meu pré-cadastro agora
-            </Button>
+            <div className="mt-8 grid md:grid-cols-2 gap-8 items-start text-left">
+              <div className="bg-white p-6 rounded-xl border border-teal-100 shadow-sm">
+                <h5 className="font-bold text-teal-900 mb-4 flex items-center gap-2">
+                  <UserCheck className="h-5 w-5" />
+                  Como funciona o pré-cadastro?
+                </h5>
+                <ul className="space-y-3 text-sm text-slate-600">
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-teal-600 shrink-0 mt-0.5" />
+                    <span>Envie seus documentos via WhatsApp ou formulário abaixo.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-teal-600 shrink-0 mt-0.5" />
+                    <span>Nossa equipe analisa seu perfil em até 24h úteis.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-teal-600 shrink-0 mt-0.5" />
+                    <span>Após aprovado, você recebe sua senha de acesso.</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="bg-white p-6 rounded-xl border border-teal-100 shadow-sm">
+                <h5 className="font-bold text-teal-900 mb-4 flex items-center gap-2">
+                  <FileSearch className="h-5 w-5" />
+                  Iniciar Pré-cadastro
+                </h5>
+                <p className="text-sm text-slate-600 mb-6">
+                  Escolha como prefere enviar seus dados e documentos para análise:
+                </p>
+                <div className="flex flex-col gap-3">
+                  <Button 
+                    className="w-full bg-teal-900 text-white hover:bg-teal-950"
+                    onClick={() => {
+                      setFormData({ ...formData, mensagem: "Olá! Gostaria de fazer meu pré-cadastro para comprar veículos." });
+                      document.getElementById('formulario')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
+                    Abrir Formulário de Cadastro
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="w-full border-green-600 text-green-600 hover:bg-green-50"
+                    onClick={() => window.open(`https://wa.me/5511999999999?text=${encodeURIComponent('Olá! Gostaria de fazer meu pré-cadastro para comprar veículos.')}`, '_blank')}
+                  >
+                    Enviar via WhatsApp
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
