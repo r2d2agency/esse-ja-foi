@@ -30,11 +30,11 @@ export const migrateDb = async () => {
   
   if (process.env['SKIP_MIGRATIONS'] === 'true') return;
   
-  console.log('🚀 Iniciando migrações...');
+  // console.log('🚀 Iniciando migrações...');
   try {
     const migrationsPath = path.join(process.cwd(), 'drizzle');
     await migrate(db, { migrationsFolder: migrationsPath });
-    console.log('✅ Migrações concluídas.');
+    // console.log('✅ Migrações concluídas.');
 
     const { ensureSuperAdmin } = await import('./auth.server');
     await ensureSuperAdmin();
