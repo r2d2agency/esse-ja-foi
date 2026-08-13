@@ -365,6 +365,7 @@ function Index() {
               <AccordionContent>
                 Você precisará do CRLV-e (documento do carro), RG/CNH do proprietário e comprovante de residência. Nós cuidamos de toda a parte burocrática de transferência.
               </AccordionContent>
+            </AccordionItem>
             <AccordionItem value="compradores">
               <AccordionTrigger>Como funciona para quem quer dar os lances?</AccordionTrigger>
               <AccordionContent>
