@@ -30,7 +30,7 @@ function LeilaoDetalhes() {
     refetchInterval: 5000, // Atualiza a cada 5 segundos para simular real-time
   });
 
-  const leilao = res?.data;
+  const leilao = res?.data as any;
   const lances = (leilao?.lances ?? []) as any[];
   const lanceAtual = Number(lances[0]?.valor ?? leilao?.lance_inicial ?? 0);
 

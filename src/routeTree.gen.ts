@@ -27,6 +27,7 @@ import { Route as OperacaoLeadsRouteImport } from './routes/operacao/leads'
 import { Route as OperacaoVeiculosRouteImport } from './routes/operacao/veiculos'
 import { Route as VistoriaIndexRouteImport } from './routes/vistoria/index'
 import { Route as VistoriaAgendamentoIdRouteImport } from './routes/vistoria/$agendamentoId'
+import { Route as CompradorLeilaoIdRouteImport } from './routes/comprador/leilao.$id'
 import { Route as VistoriaLaudoLaudoIdRouteImport } from './routes/vistoria/laudo.$laudoId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -119,6 +120,11 @@ const VistoriaAgendamentoIdRoute = VistoriaAgendamentoIdRouteImport.update({
   path: '/$agendamentoId',
   getParentRoute: () => VistoriaRoute,
 } as any)
+const CompradorLeilaoIdRoute = CompradorLeilaoIdRouteImport.update({
+  id: '/leilao/$id',
+  path: '/leilao/$id',
+  getParentRoute: () => CompradorRoute,
+} as any)
 const VistoriaLaudoLaudoIdRoute = VistoriaLaudoLaudoIdRouteImport.update({
   id: '/laudo/$laudoId',
   path: '/laudo/$laudoId',
@@ -144,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
   '/comprador/': typeof CompradorIndexRoute
   '/vistoria/': typeof VistoriaIndexRoute
+  '/comprador/leilao/$id': typeof CompradorLeilaoIdRoute
   '/vistoria/laudo/$laudoId': typeof VistoriaLaudoLaudoIdRoute
 }
 export interface FileRoutesByTo {
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
   '/comprador': typeof CompradorIndexRoute
   '/vistoria': typeof VistoriaIndexRoute
+  '/comprador/leilao/$id': typeof CompradorLeilaoIdRoute
   '/vistoria/laudo/$laudoId': typeof VistoriaLaudoLaudoIdRoute
 }
 export interface FileRoutesById {
@@ -185,6 +193,7 @@ export interface FileRoutesById {
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
   '/comprador/': typeof CompradorIndexRoute
   '/vistoria/': typeof VistoriaIndexRoute
+  '/comprador/leilao/$id': typeof CompradorLeilaoIdRoute
   '/vistoria/laudo/$laudoId': typeof VistoriaLaudoLaudoIdRoute
 }
 export interface FileRouteTypes {
@@ -208,6 +217,7 @@ export interface FileRouteTypes {
     | '/vistoria/$agendamentoId'
     | '/comprador/'
     | '/vistoria/'
+    | '/comprador/leilao/$id'
     | '/vistoria/laudo/$laudoId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -227,6 +237,7 @@ export interface FileRouteTypes {
     | '/vistoria/$agendamentoId'
     | '/comprador'
     | '/vistoria'
+    | '/comprador/leilao/$id'
     | '/vistoria/laudo/$laudoId'
   id:
     | '__root__'
@@ -248,6 +259,7 @@ export interface FileRouteTypes {
     | '/vistoria/$agendamentoId'
     | '/comprador/'
     | '/vistoria/'
+    | '/comprador/leilao/$id'
     | '/vistoria/laudo/$laudoId'
   fileRoutesById: FileRoutesById
 }
@@ -390,6 +402,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VistoriaAgendamentoIdRouteImport
       parentRoute: typeof VistoriaRoute
     }
+    '/comprador/leilao/$id': {
+      id: '/comprador/leilao/$id'
+      path: '/leilao/$id'
+      fullPath: '/comprador/leilao/$id'
+      preLoaderRoute: typeof CompradorLeilaoIdRouteImport
+      parentRoute: typeof CompradorRoute
+    }
     '/vistoria/laudo/$laudoId': {
       id: '/vistoria/laudo/$laudoId'
       path: '/laudo/$laudoId'
@@ -414,10 +433,12 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface CompradorRouteChildren {
   CompradorIndexRoute: typeof CompradorIndexRoute
+  CompradorLeilaoIdRoute: typeof CompradorLeilaoIdRoute
 }
 
 const CompradorRouteChildren: CompradorRouteChildren = {
   CompradorIndexRoute: CompradorIndexRoute,
+  CompradorLeilaoIdRoute: CompradorLeilaoIdRoute,
 }
 
 const CompradorRouteWithChildren = CompradorRoute._addFileChildren(
