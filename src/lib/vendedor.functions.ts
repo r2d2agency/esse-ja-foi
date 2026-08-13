@@ -35,7 +35,7 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
 
       const rows = await db.execute(sql`
         INSERT INTO profiles (nome, email, role, senha_hash, whatsapp, cpf, cep, endereco, cidade, uf, ativo, protegido)
-        VALUES (${data.nome}, ${data.email.toLowerCase()}, 'vendedor', ${senhaHash}, ${data.whatsapp ?? null}, ${data.cpf ?? null}, ${data.cep ?? null}, ${data.endereco ?? null}, ${data.cidade ?? null}, ${data.uf ?? null}, true, false)
+        VALUES (${data.nome}, ${data.email.toLowerCase()}, 'vendedor'::app_role, ${senhaHash}, ${data.whatsapp ?? null}, ${data.cpf ?? null}, ${data.cep ?? null}, ${data.endereco ?? null}, ${data.cidade ?? null}, ${data.uf ?? null}, true, false)
         RETURNING id, nome, email, role;
       `);
       const user = (rows as any).rows?.[0] || (rows as any)[0];
