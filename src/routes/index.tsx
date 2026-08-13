@@ -61,6 +61,22 @@ function CompradorIndex() {
     toast.info("Funcionalidade de login será implementada em breve.");
   };
 
+  const handleCadastro = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (wizardStep < 2) {
+      setWizardStep(wizardStep + 1);
+      return;
+    }
+    
+    setIsSubmitting(true);
+    // Simulação de envio para a API
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setWizardStep(3);
+      toast.success("Pré-cadastro enviado com sucesso!");
+    }, 1500);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
       {/* Header */}
