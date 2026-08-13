@@ -64,12 +64,14 @@ export async function ensureSuperAdmin() {
     await db.execute(sql`
       DO $$ 
       BEGIN
-        IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid WHERE t.typname = 'app_role' AND e.enumlabel = 'vendedor') THEN
+        IF NOT EXISTS (SELECT 1 FROM pg_type t WHERE t.typname = 'app_role') THEN
+          CREATE TYPE app_role AS ENUM ('admin', 'operacao', 'vistoriador', 'comprador', 'vendedor');
+        ELSIF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid WHERE t.typname = 'app_role' AND e.enumlabel = 'vendedor') THEN
           ALTER TYPE app_role ADD VALUE 'vendedor';
         END IF;
       EXCEPTION
-        WHEN undefined_object THEN
-          CREATE TYPE app_role AS ENUM ('admin', 'operacao', 'vistoriador', 'comprador', 'vendedor');
+        WHEN OTHERS THEN
+          NULL;
       END $$;
     `);
   } catch (e) {
