@@ -47,6 +47,9 @@ function CadastrarVeiculoVendedor() {
   const [localizacao, setLocalizacao] = useState({
     cep: '',
     endereco: '',
+    numero: '',
+    bairro: '',
+    complemento: '',
     cidade: '',
     uf: '',
   });
@@ -61,7 +64,10 @@ function CadastrarVeiculoVendedor() {
         if (address) {
           setLocalizacao({
             cep: address.cep,
-            endereco: address.logradouro + (address.bairro ? `, ${address.bairro}` : ""),
+            endereco: address.logradouro,
+            bairro: address.bairro,
+            numero: '',
+            complemento: '',
             cidade: address.cidade,
             uf: address.uf
           });
@@ -96,6 +102,7 @@ function CadastrarVeiculoVendedor() {
         data: {
           ...form,
           ...localizacao,
+          endereco: `${localizacao.endereco}, ${localizacao.numero}${localizacao.complemento ? ` - ${localizacao.complemento}` : ""} - ${localizacao.bairro}`,
           perfilId: user.id,
         }
       });
@@ -227,13 +234,48 @@ function CadastrarVeiculoVendedor() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-slate-700 font-bold">Endereço / Bairro *</Label>
+                      <Label className="text-slate-700 font-bold">Logradouro *</Label>
                       <Input 
                         required 
-                        placeholder="Rua, Número, Bairro" 
+                        placeholder="Rua, Av, etc" 
                         className="h-12 border-slate-200"
                         value={localizacao.endereco}
                         onChange={e => setLocalizacao({...localizacao, endereco: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-4 gap-6">
+                    <div className="space-y-2 col-span-1">
+                      <Label className="text-slate-700 font-bold">Número *</Label>
+                      <Input 
+                        required 
+                        placeholder="123" 
+                        className="h-12 border-slate-200"
+                        value={localizacao.numero}
+                        onChange={e => setLocalizacao({...localizacao, numero: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2 col-span-3">
+                      <Label className="text-slate-700 font-bold">Bairro *</Label>
+                      <Input 
+                        required 
+                        placeholder="Bairro" 
+                        className="h-12 border-slate-200"
+                        value={localizacao.bairro}
+                        onChange={e => setLocalizacao({...localizacao, bairro: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-slate-700 font-bold">Complemento</Label>
+                      <Input 
+                        placeholder="Apto, Bloco, etc" 
+                        className="h-12 border-slate-200"
+                        value={localizacao.complemento}
+                        onChange={e => setLocalizacao({...localizacao, complemento: e.target.value})}
                       />
                     </div>
                   </div>

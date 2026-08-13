@@ -56,6 +56,9 @@ function CompradorIndex() {
     password: "",
     cep: "",
     endereco: "",
+    numero: "",
+    bairro: "",
+    complemento: "",
     cidade: "",
     uf: "",
   });
@@ -126,7 +129,8 @@ function CompradorIndex() {
         if (address) {
           setFormData(prev => ({
             ...prev,
-            endereco: address.logradouro + (address.bairro ? `, ${address.bairro}` : ""),
+            endereco: address.logradouro,
+            bairro: address.bairro,
             cidade: address.cidade,
             uf: address.uf
           }));
@@ -156,7 +160,7 @@ function CompradorIndex() {
           whatsapp: formData.whatsapp,
           cpf: formData.cpf,
           cep: formData.cep,
-          endereco: formData.endereco,
+          endereco: `${formData.endereco}, ${formData.numero}${formData.complemento ? ` - ${formData.complemento}` : ""} - ${formData.bairro}`,
           cidade: formData.cidade,
           uf: formData.uf
         }
@@ -377,12 +381,44 @@ function CompradorIndex() {
                               />
                             </div>
                             <div className="space-y-2 col-span-2">
-                              <label className="text-sm font-medium">Endereço</label>
+                              <label className="text-sm font-medium">Logradouro</label>
                               <Input 
                                 required
                                 value={formData.endereco}
                                 onChange={(e) => setFormData({...formData, endereco: e.target.value})}
-                                placeholder="Rua, Número, Bairro" 
+                                placeholder="Rua, Av, etc" 
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-4 gap-4">
+                            <div className="space-y-2 col-span-1">
+                              <label className="text-sm font-medium">Número</label>
+                              <Input 
+                                required
+                                value={formData.numero}
+                                onChange={(e) => setFormData({...formData, numero: e.target.value})}
+                                placeholder="123" 
+                              />
+                            </div>
+                            <div className="space-y-2 col-span-3">
+                              <label className="text-sm font-medium">Bairro</label>
+                              <Input 
+                                required
+                                value={formData.bairro}
+                                onChange={(e) => setFormData({...formData, bairro: e.target.value})}
+                                placeholder="Bairro" 
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">Complemento</label>
+                              <Input 
+                                value={formData.complemento}
+                                onChange={(e) => setFormData({...formData, complemento: e.target.value})}
+                                placeholder="Apto, Bloco, etc" 
                               />
                             </div>
                           </div>
