@@ -7,8 +7,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Car, ArrowLeft, Loader2, Upload, CheckCircle2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useServerFn } from '@tanstack/react-start';
+import { buscarCep } from '@/lib/brasil';
 import { cadastrarMeuVeiculoFn } from '@/lib/vendedor.functions';
 import { toast } from 'sonner';
 
@@ -43,6 +44,35 @@ function CadastrarVeiculoVendedor() {
     aceiteTermos: false,
   });
 
+  const [localizacao, setLocalizacao] = useState({
+    cep: '',
+    endereco: '',
+    cidade: '',
+    uf: '',
+  });
+
+  const handleCepChange = useCallback(async (cep: string) => {
+    const cleanCep = cep.replace(/\D/g, "");
+    setLocalizacao(prev => ({ ...prev, cep }));
+    
+    if (cleanCep.length === 8) {
+      try {
+        const address = await buscarCep(cleanCep);
+        if (address) {
+          setLocalizacao({
+            cep: address.cep,
+            endereco: address.logradouro + (address.bairro ? `, ${address.bairro}` : ""),
+            cidade: address.cidade,
+            uf: address.uf
+          });
+          toast.success("Endereço localizado");
+        }
+      } catch (error) {
+        console.error("Erro ao buscar CEP:", error);
+      }
+    }
+  }, []);
+
   const handleToggleOpcional = (opcional: string) => {
     setForm(prev => ({
       ...prev,
@@ -65,6 +95,7 @@ function CadastrarVeiculoVendedor() {
       const result = await cadastrarVeiculo({
         data: {
           ...form,
+          ...localizacao,
           perfilId: user.id,
         }
       });
@@ -184,11 +215,64 @@ function CadastrarVeiculoVendedor() {
                     </div>
                   </div>
 
+                  <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+                    <div className="space-y-2">
+                      <Label className="text-slate-700 font-bold">CEP Onde o Veículo se encontra *</Label>
+                      <Input 
+                        required 
+                        placeholder="00000-000" 
+                        className="h-12 border-slate-200"
+                        value={localizacao.cep}
+                        onChange={e => handleCepChange(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-slate-700 font-bold">Endereço / Bairro *</Label>
+                      <Input 
+                        required 
+                        placeholder="Rua, Número, Bairro" 
+                        className="h-12 border-slate-200"
+                        value={localizacao.endereco}
+                        onChange={e => setLocalizacao({...localizacao, endereco: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-slate-700 font-bold">Cidade *</Label>
+                      <Input 
+                        required 
+                        placeholder="Ex: São Paulo" 
+                        className="h-12 border-slate-200"
+                        value={localizacao.cidade}
+                        onChange={e => setLocalizacao({...localizacao, cidade: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-slate-700 font-bold">UF *</Label>
+                      <Input 
+                        required 
+                        maxLength={2}
+                        placeholder="SP" 
+                        className="h-12 border-slate-200"
+                        value={localizacao.uf}
+                        onChange={e => setLocalizacao({...localizacao, uf: e.target.value.toUpperCase()})}
+                      />
+                    </div>
+                  </div>
+
                   <div className="pt-4 border-t border-slate-100 flex justify-end">
                     <Button 
                       type="button" 
                       className="bg-teal-900 hover:bg-teal-950 text-white px-8 h-12 font-bold"
-                      onClick={() => setStep(2)}
+                      onClick={() => {
+                        if (!localizacao.cep || !localizacao.endereco || !localizacao.cidade || !localizacao.uf) {
+                          toast.error("Por favor, informe a localização do veículo.");
+                          return;
+                        }
+                        setStep(2);
+                      }}
                     >
                       Próximo Passo
                     </Button>
