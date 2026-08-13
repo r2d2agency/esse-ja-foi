@@ -19,8 +19,9 @@ const vendedorSchema = z.object({
 export const cadastrarVendedorFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ data: vendedorSchema }).parse(d))
   .handler(async ({ data: { data } }) => {
+    console.log("DATABASE_URL present:", !!process.env['DATABASE_URL']);
     const { db: database } = await import("@/db/index");
-    if (!database) throw new Error("Banco de dados indisponível (DATABASE_URL não configurada no servidor)");
+    if (!database) throw new Error(`Banco de dados indisponível (URL: ${!!process.env['DATABASE_URL']})`);
     const db = database;
     
     const { ensureCadastroSchema } = await import("@/db/cadastro.server");
