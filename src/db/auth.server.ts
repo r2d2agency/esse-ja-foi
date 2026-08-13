@@ -83,6 +83,33 @@ export async function ensureSuperAdmin() {
   await db.execute(sql`
     ALTER TABLE profiles ADD COLUMN IF NOT EXISTS protegido boolean NOT NULL DEFAULT false;
   `);
+  await db.execute(sql`
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cpf text;
+  `);
+  await db.execute(sql`
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cep text;
+  `);
+  await db.execute(sql`
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS endereco text;
+  `);
+  await db.execute(sql`
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cidade text;
+  `);
+  await db.execute(sql`
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS uf text;
+  `);
+  await db.execute(sql`
+    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS perfil_id uuid;
+  `);
+  await db.execute(sql`
+    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS km integer;
+  `);
+  await db.execute(sql`
+    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS valor_interesse_cliente numeric;
+  `);
+  await db.execute(sql`
+    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS observacoes text;
+  `);
 
   // Bloqueia exclusão e rebaixamento do superadmin diretamente no banco
   await db.execute(sql`
