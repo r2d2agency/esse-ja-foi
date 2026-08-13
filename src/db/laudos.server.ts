@@ -390,6 +390,21 @@ export async function registrarDivergenciaPlaca(input: { agendamentoId: string; 
   await ensureLaudoSchema();
   const d = requireDb();
   const agendamento = await detalheAgendamento(input.agendamentoId, input.vistoriadorId);
+  // ... resto da lógica
+  return { ok: true };
+}
+
+export async function gerarPdfLaudo(laudoId: string) {
+  // Simulação de geração de PDF
+  // No futuro, integraria com bibliotecas como react-pdf (server-side) ou puppeteer
+  // Retorna um link ou base64 simulado
+  return { 
+    ok: true, 
+    url: "#", 
+    message: "Gerador de PDF em fase de implementação (Layout em desenvolvimento)" 
+  };
+}
+
   const texto = `Placa divergente: esperada ${agendamento['placa']}, encontrada ${normalizePlaca(input.placaInformada)}. ${input.observacao ?? ""}`.trim();
   await d.execute(sql`
     INSERT INTO logs (entidade, entidade_id, acao, detalhe)
