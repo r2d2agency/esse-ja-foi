@@ -1,5 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { loginWithPassword } from "@/lib/auth.functions";
 import { 
   Gavel, 
   ShieldCheck, 
@@ -48,6 +50,7 @@ function CompradorIndex() {
     cpf: "",
     whatsapp: "",
     email: "",
+    password: "",
   });
   const [vitrine] = useState([
     { id: '1', marca: 'Toyota', modelo: 'Corolla Altis', ano: '2022', km: '35.000', cor: 'Branco', combustivel: 'Flex', imagem: 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?q=80&w=800' },
@@ -56,9 +59,38 @@ function CompradorIndex() {
     { id: '4', marca: 'Jeep', modelo: 'Compass Longitude', ano: '2022', km: '28.000', cor: 'Preto', combustivel: 'Diesel', imagem: 'https://images.unsplash.com/photo-1606148334078-2c4f1c9f4d71?q=80&w=800' },
   ]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const loginFn = useServerFn(loginWithPassword);
+  const navigate = useNavigate();
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.info("Funcionalidade de login será implementada em breve.");
+    setIsSubmitting(true);
+    try {
+      const result = await loginFn({ 
+        data: { 
+          email: formData.email, 
+          password: formData.password 
+        } 
+      });
+      
+      if (result.ok) {
+        toast.success("Login realizado com sucesso!");
+        // Store token if needed, or rely on cookie/session handled by server
+        if (result.user.role === 'admin' || result.user.role === 'operacao') {
+          navigate({ to: "/operacao/veiculos" });
+        } else if (result.user.role === 'vistoriador') {
+          navigate({ to: "/vistoria" });
+        } else {
+          navigate({ to: "/comprador" });
+        }
+      } else {
+        toast.error(result.message || "Erro ao realizar login");
+      }
+    } catch (error) {
+      toast.error("Erro na conexão com o servidor");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCadastro = async (e: React.FormEvent) => {
@@ -182,14 +214,29 @@ function CompradorIndex() {
                     <form onSubmit={handleLogin} className="space-y-4">
                       <div className="space-y-2">
                         <label className="text-sm font-medium">E-mail</label>
-                        <Input type="email" placeholder="seu@email.com" />
+                        <Input 
+                          type="email" 
+                          required
+                          value={formData.email}
+                          onChange={(e) => setFormData({...formData, email: e.target.value})}
+                          placeholder="seu@email.com" 
+                        />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-medium">Senha</label>
-                        <Input type="password" placeholder="••••••••" />
+                        <Input 
+                          type="password" 
+                          required
+                          value={formData.password}
+                          onChange={(e) => setFormData({...formData, password: e.target.value})}
+                          placeholder="••••••••" 
+                        />
                       </div>
-                      <Button className="w-full bg-teal-900 hover:bg-teal-950 text-white font-bold h-12">
-                        Entrar no Painel
+                      <Button 
+                        disabled={isSubmitting}
+                        className="w-full bg-teal-900 hover:bg-teal-950 text-white font-bold h-12"
+                      >
+                        {isSubmitting ? "Autenticando..." : "Entrar no Painel"}
                       </Button>
                       <button type="button" className="w-full text-xs text-slate-400 hover:text-teal-800 transition-colors">
                         Esqueceu sua senha?
