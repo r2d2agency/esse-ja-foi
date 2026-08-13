@@ -29,9 +29,13 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
     const senhaHash = await hashPassword(data.password);
     
     try {
+      // Primeiro garante o superadmin e a estrutura básica de auth (inclusive o enum)
+      const { ensureSuperAdmin } = await import("@/db/auth.server");
+      await ensureSuperAdmin();
+
       const rows = await db.execute(sql`
         INSERT INTO profiles (nome, email, role, senha_hash, whatsapp, cpf, cep, endereco, cidade, uf, ativo, protegido)
-        VALUES (${data.nome}, ${data.email.toLowerCase()}, 'vendedor', ${senhaHash}, ${data.whatsapp ?? null}, ${data.cpf ?? null}, ${data.cep ?? null}, ${data.endereco ?? null}, ${data.cidade ?? null}, ${data.uf ?? null}, true, false)
+        VALUES (${data.nome}, ${data.email.toLowerCase()}, 'vendedor'::app_role, ${senhaHash}, ${data.whatsapp ?? null}, ${data.cpf ?? null}, ${data.cep ?? null}, ${data.endereco ?? null}, ${data.cidade ?? null}, ${data.uf ?? null}, true, false)
         RETURNING id, nome, email, role;
       `);
       const user = (rows as any).rows?.[0] || (rows as any)[0];
@@ -41,7 +45,14 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
       if (error.message?.includes("unique constraint") || error.message?.includes("already exists") || error.code === '23505') {
         return { ok: false as const, message: "Este e-mail já está cadastrado." };
       }
-      return { ok: false as const, message: `Erro no servidor: ${error.message || 'Erro desconhecido'}` };
+      
+      // Sanitiza a mensagem de erro para o usuário não ver a query SQL bruta em caso de falha genérica
+      let userMessage = "Erro no servidor ao processar o cadastro.";
+      if (error.message?.includes("app_role")) {
+        userMessage = "Erro na configuração de permissões do sistema. Contate o suporte.";
+      }
+      
+      return { ok: false as const, message: userMessage };
     }
   });
 
