@@ -140,9 +140,9 @@ export async function authenticate(email: string, password: string) {
   if (!ok) return null;
   return {
     id: String(user.id),
-    name: user.nome ?? user.email,
+    nome: user.nome ?? user.email,
     email: user.email as string,
-    role: user.role as "admin" | "operacao" | "vistoriador" | "comprador",
+    role: user.role as any,
   };
 }
 
