@@ -41,6 +41,14 @@ export const Route = createFileRoute("/")({
 
 function CompradorIndex() {
   const [showLogin, setShowLogin] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    nome: "",
+    cpf: "",
+    whatsapp: "",
+    email: "",
+  });
   const [vitrine] = useState([
     { id: '1', marca: 'Toyota', modelo: 'Corolla Altis', ano: '2022', km: '35.000', cor: 'Branco', combustivel: 'Flex', imagem: 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?q=80&w=800' },
     { id: '2', marca: 'Honda', modelo: 'Civic Touring', ano: '2021', km: '42.000', cor: 'Cinza', combustivel: 'Gasolina', imagem: 'https://images.unsplash.com/photo-1599912027806-cfec9f5944b6?q=80&w=800' },
