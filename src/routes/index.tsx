@@ -453,9 +453,9 @@ function CompradorIndex() {
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="pagamento">
-                <AccordionTrigger>Como funciona o pagamento?</AccordionTrigger>
+                <AccordionTrigger>Quais documentos são necessários?</AccordionTrigger>
                 <AccordionContent>
-                  O pagamento é realizado diretamente ao vendedor ou via plataforma, dependendo da modalidade da venda. Nossa equipe auxilia em todo o processo de documentação.
+                  Para o cadastro inicial, solicitamos CPF, comprovante de endereço e dados de contato. Para o veículo, será necessário informar a placa e dados do documento (CRV/CRLV) durante a etapa de vistoria.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
