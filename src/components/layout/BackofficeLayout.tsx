@@ -24,6 +24,8 @@ export function BackofficeLayout({ children }: BackofficeLayoutProps) {
           <Link to="/operacao/agenda" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Agenda</Link>
           <Link to="/operacao/laudos" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Laudos</Link>
           <Link to="/admin/checklist" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Checklist</Link>
+          <Link to="/operacao/bi" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Dashboard BI</Link>
+
           <Link to="/comprador" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Leilões</Link>
           <Link to="/vistoria" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Vistorias</Link>
         </nav>
