@@ -390,8 +390,16 @@ export async function registrarDivergenciaPlaca(input: { agendamentoId: string; 
   await ensureLaudoSchema();
   const d = requireDb();
   const agendamento = await detalheAgendamento(input.agendamentoId, input.vistoriadorId);
-  // ... resto da lógica
-  return { ok: true };
+  const texto = `Placa divergente: esperada ${agendamento['placa']}, encontrada ${normalizePlaca(input.placaInformada)}. ${input.observacao ?? ""}`.trim();
+  await d.execute(sql`
+    INSERT INTO logs (entidade, entidade_id, acao, detalhe)
+    VALUES ('agendamento', ${input.agendamentoId}, 'Divergência de placa', ${texto});
+  `);
+  await d.execute(sql`
+    INSERT INTO notificacoes (destinatario_id, titulo, mensagem, tipo)
+    VALUES (NULL, ${"Divergência de placa na vistoria"}, ${texto}, 'VISTORIA');
+  `);
+  return { ok: true, mensagem: texto };
 }
 
 export async function gerarPdfLaudo(laudoId: string) {
@@ -403,18 +411,6 @@ export async function gerarPdfLaudo(laudoId: string) {
     url: "#", 
     message: "Gerador de PDF em fase de implementação (Layout em desenvolvimento)" 
   };
-}
-
-  const texto = `Placa divergente: esperada ${agendamento['placa']}, encontrada ${normalizePlaca(input.placaInformada)}. ${input.observacao ?? ""}`.trim();
-  await d.execute(sql`
-    INSERT INTO logs (entidade, entidade_id, acao, detalhe)
-    VALUES ('agendamento', ${input.agendamentoId}, 'Divergência de placa', ${texto});
-  `);
-  await d.execute(sql`
-    INSERT INTO notificacoes (destinatario_id, titulo, mensagem, tipo)
-    VALUES (NULL, ${"Divergência de placa na vistoria"}, ${texto}, 'VISTORIA');
-  `);
-  return { ok: true, mensagem: texto };
 }
 
 export type Pendencia = { itemId: string | null; titulo: string; motivo: string };
