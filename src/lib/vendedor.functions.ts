@@ -22,6 +22,9 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
   .handler(async ({ data: { data } }) => {
     if (!db) throw new Error("Banco de dados indisponível");
     
+    const { ensureCadastroSchema } = await import("@/db/cadastro.server");
+    await ensureCadastroSchema();
+    
     const senhaHash = await hashPassword(data.password);
     
     try {
