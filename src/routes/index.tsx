@@ -213,14 +213,41 @@ function CompradorIndex() {
             </div>
           </div>
         </section>
+
+        {/* FAQ - Compradores */}
+        <section className="py-24 bg-slate-50">
+          <div className="mx-auto max-w-3xl px-6">
+            <h2 className="text-3xl font-bold text-center mb-12">Dúvidas Frequentes do Comprador</h2>
+            <Accordion type="single" collapsible className="w-full bg-white rounded-2xl border border-slate-200 p-6">
+              <AccordionItem value="participar">
+                <AccordionTrigger>Como faço para participar?</AccordionTrigger>
+                <AccordionContent>
+                  Para participar, você deve realizar o pré-cadastro enviando seus documentos para nossa equipe. Após a validação, você receberá um acesso exclusivo para visualizar preços e dar lances.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="seguranca">
+                <AccordionTrigger>É seguro comprar na plataforma?</AccordionTrigger>
+                <AccordionContent>
+                  Sim. Todos os veículos passam por uma vistoria técnica cautelar rigorosa e os compradores são verificados para garantir a seriedade de todas as negociações.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="pagamento">
+                <AccordionTrigger>Como funciona o pagamento?</AccordionTrigger>
+                <AccordionContent>
+                  O pagamento é realizado diretamente ao vendedor ou via plataforma, dependendo da modalidade da venda. Nossa equipe auxilia em todo o processo de documentação.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+        </section>
       </main>
 
       {/* Footer / CTA Vender */}
       <footer className="bg-slate-900 text-white pt-16 pb-8">
-        <div className="mx-auto max-w-7xl px-6">
+        <div className="mx-auto max-w-7xl px-6 text-center lg:text-left">
           <div className="bg-teal-900/30 border border-teal-800/50 rounded-3xl p-8 lg:p-12 mb-16 flex flex-col lg:flex-row items-center justify-between gap-8">
-            <div className="max-w-xl text-center lg:text-left">
-              <h2 className="text-3xl font-bold mb-4">Quer vender seu carro?</h2>
+            <div className="max-w-xl">
+              <h2 className="text-3xl font-bold mb-4 text-white">Quer vender seu carro?</h2>
               <p className="text-teal-100/70">
                 Nós cuidamos de tudo: vistoria, laudo técnico e conectamos você a compradores reais em tempo recorde.
               </p>
@@ -229,7 +256,7 @@ function CompradorIndex() {
               to="/vender" 
               className="bg-white text-teal-900 hover:bg-teal-50 h-14 px-10 flex items-center justify-center rounded-full font-bold text-lg transition-all group"
             >
-              Ver como funciona
+              Ver como funciona a venda
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
@@ -241,7 +268,7 @@ function CompradorIndex() {
             </div>
             <p>© 2026 ESSE JÁ FOI · Todos os direitos reservados.</p>
             <div className="flex gap-6">
-              <Link to="/vender" className="hover:text-white transition-colors">Vender Carro</Link>
+              <Link to="/vender" className="hover:text-white transition-colors">Página do Vendedor</Link>
               <a href="#" className="hover:text-white transition-colors">Termos</a>
               <a href="#" className="hover:text-white transition-colors">Privacidade</a>
             </div>
@@ -251,3 +278,4 @@ function CompradorIndex() {
     </div>
   );
 }
+
