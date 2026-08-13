@@ -35,8 +35,10 @@ function CadastrarVeiculoVendedor() {
     setIsSubmitting(true);
     try {
       const result = await cadastrarVeiculo({
-        ...form,
-        perfilId: user.id,
+        data: {
+          ...form,
+          perfilId: user.id,
+        }
       });
 
       if (result) {

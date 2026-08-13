@@ -1,11 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type Role = "admin" | "operacao" | "vistoriador" | "comprador";
+export type Role = "admin" | "operacao" | "vistoriador" | "comprador" | "vendedor";
 
 interface User {
   id: string;
-  name: string;
+  nome: string;
   email: string;
   role: Role;
 }
@@ -61,3 +61,15 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+/** Hook para facilitar o uso do store de autenticação */
+export function useAuth() {
+  const store = useAuthStore();
+  return {
+    user: store.user,
+    isAuthenticated: store.isAuthenticated,
+    isLoading: store.isLoading,
+    login: store.login,
+    logout: store.logout
+  };
+}
