@@ -83,6 +83,33 @@ export async function ensureSuperAdmin() {
   await db.execute(sql`
     ALTER TABLE profiles ADD COLUMN IF NOT EXISTS protegido boolean NOT NULL DEFAULT false;
   `);
+  await db.execute(sql`
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cpf text;
+  `);
+  await db.execute(sql`
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cep text;
+  `);
+  await db.execute(sql`
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS endereco text;
+  `);
+  await db.execute(sql`
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cidade text;
+  `);
+  await db.execute(sql`
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS uf text;
+  `);
+  await db.execute(sql`
+    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS perfil_id uuid;
+  `);
+  await db.execute(sql`
+    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS km integer;
+  `);
+  await db.execute(sql`
+    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS valor_interesse_cliente numeric;
+  `);
+  await db.execute(sql`
+    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS observacoes text;
+  `);
 
   // Bloqueia exclusão e rebaixamento do superadmin diretamente no banco
   await db.execute(sql`
@@ -115,8 +142,8 @@ export async function ensureSuperAdmin() {
   const senha = await hashPassword(SUPERADMIN_PASSWORD);
 
   await db.execute(sql`
-    INSERT INTO profiles (nome, email, role, ativo, protegido, senha_hash)
-    VALUES (${SUPERADMIN_NAME}, ${SUPERADMIN_EMAIL}, 'admin', true, true, ${senha})
+    INSERT INTO profiles (nome, email, role, ativo, protegido, senha_hash, cpf, cep, endereco, cidade, uf)
+    VALUES (${SUPERADMIN_NAME}, ${SUPERADMIN_EMAIL}, 'admin', true, true, ${senha}, '00000000000', '00000000', 'Endereço Admin', 'Cidade', 'UF')
     ON CONFLICT (email) DO UPDATE
       SET protegido = true,
           role = 'admin',
