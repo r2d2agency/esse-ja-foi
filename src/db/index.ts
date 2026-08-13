@@ -30,11 +30,11 @@ export const migrateDb = async () => {
   
   if (process.env['SKIP_MIGRATIONS'] === 'true') return;
   
-  console.log('🚀 Iniciando migrações...');
+  // console.log('🚀 Iniciando migrações...');
   try {
     const migrationsPath = path.join(process.cwd(), 'drizzle');
     await migrate(db, { migrationsFolder: migrationsPath });
-    console.log('✅ Migrações concluídas.');
+    // console.log('✅ Migrações concluídas.');
 
     const { ensureSuperAdmin } = await import('./auth.server');
     await ensureSuperAdmin();
@@ -48,13 +48,13 @@ export const migrateDb = async () => {
 };
 
 // Log de inicialização para debug no Easypanel
-console.log('🌐 Servidor iniciando...');
-console.log('📍 NODE_ENV:', process.env['NODE_ENV']);
-console.log('📍 PORT:', process.env['PORT']);
-console.log('📍 DATABASE_URL presente:', !!connectionString);
+// console.log('🌐 Servidor iniciando...');
+// console.log('📍 NODE_ENV:', process.env['NODE_ENV']);
+// console.log('📍 PORT:', process.env['PORT']);
+// console.log('📍 DATABASE_URL presente:', !!connectionString);
 if (connectionString) {
   const masked = connectionString.replace(/:([^:@]+)@/, ':****@');
-  console.log('📍 DATABASE_URL (masked):', masked);
+  // console.log('📍 DATABASE_URL (masked):', masked);
 }
 
 
