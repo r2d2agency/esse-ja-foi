@@ -169,6 +169,7 @@ function CompradorIndex() {
       });
 
       if (!result.ok) {
+        console.error("Erro retornado pela server function:", result);
         toast.error(result.message || "Erro ao realizar cadastro.");
         return;
       }
