@@ -152,11 +152,6 @@ function CompradorIndex() {
     setIsSubmitting(true);
     try {
       const { cadastrarVendedorFn } = await import("@/lib/vendedor.functions");
-      console.log("Enviando dados para cadastro:", {
-        nome: formData.nome,
-        email: formData.email,
-        whatsapp: formData.whatsapp,
-      });
       const result = await cadastrarVendedorFn({
         data: {
           data: { 
@@ -174,7 +169,6 @@ function CompradorIndex() {
       });
 
       if (!result.ok) {
-        console.error("Erro retornado pela server function:", result);
         toast.error(result.message || "Erro ao realizar cadastro.");
         return;
       }
