@@ -140,7 +140,22 @@ function Index() {
             <Gavel className="h-6 w-6 text-teal-800" />
             <span className="font-display text-2xl font-bold tracking-tight text-teal-900">ESSE JÁ FOI</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
+            <nav className="hidden md:flex items-center gap-6">
+              <button 
+                onClick={() => document.getElementById('formulario')?.scrollIntoView({ behavior: 'smooth' })}
+                className="text-sm font-medium text-slate-600 hover:text-teal-900 transition-colors"
+              >
+                Quero Vender
+              </button>
+              <button 
+                onClick={() => document.getElementById('compradores')?.scrollIntoView({ behavior: 'smooth' })}
+                className="text-sm font-medium text-slate-600 hover:text-teal-900 transition-colors"
+              >
+                Quero Comprar
+              </button>
+            </nav>
+            <div className="h-4 w-[1px] bg-slate-200 hidden md:block"></div>
             <Link to="/login" className="text-sm font-medium text-slate-500 hover:text-teal-900 transition-colors">
               Área Restrita
             </Link>
