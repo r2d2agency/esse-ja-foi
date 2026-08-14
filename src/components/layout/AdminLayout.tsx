@@ -48,6 +48,7 @@ const MENU_ITEMS = [
   { label: "Vistorias", icon: Camera, to: "/admin/vistorias" },
   { label: "Anúncios", icon: Megaphone, to: "/admin/anuncios" },
   { label: "Leilões", icon: Gavel, to: "/admin/leiloes" },
+  { label: "Negociações", icon: Handshake, to: "/admin/negociacoes" },
   { label: "Compradores", icon: ShoppingBag, to: "/admin/compradores" },
   { label: "Financeiro", icon: DollarSign, to: "/admin/financeiro" },
   { label: "Entregas", icon: Truck, to: "/admin/entregas" },
