@@ -81,6 +81,8 @@ function AdminDashboard() {
       </div>
 
       {/* Funil Operacional */}
+      <IndicadoresNegociacao />
+
       <section className="space-y-4">
         <h2 className="text-sm font-black text-slate-950 uppercase tracking-wider flex items-center gap-2">
           Fluxo da operação
