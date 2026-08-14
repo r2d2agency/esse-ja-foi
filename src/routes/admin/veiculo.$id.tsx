@@ -25,7 +25,8 @@ import {
   Clock,
   Eye,
   RotateCcw,
-  Maximize2
+  Maximize2,
+  Calendar
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
