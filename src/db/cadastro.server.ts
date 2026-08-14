@@ -28,9 +28,11 @@ function requireDb() {
 let prepared = false;
 
 /** Cria/ajusta as tabelas de clientes, veículos, logs e configurações. Idempotente. */
-export async function ensureCadastroSchema() {
+export async function ensureCadastroSchema(silent = false) {
   if (prepared) return;
   const d = requireDb();
+  if (!silent) console.log("[cadastro.server] Garantindo schema cadastro...");
+
 
   await d.execute(sql`
     CREATE TABLE IF NOT EXISTS clientes (

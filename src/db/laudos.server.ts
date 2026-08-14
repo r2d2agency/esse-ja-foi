@@ -12,11 +12,13 @@ function requireDb() {
 
 let prepared = false;
 
-export async function ensureLaudoSchema() {
+export async function ensureLaudoSchema(silent = false) {
   if (prepared) return;
   await ensureAgendaSchema();
   await ensureChecklistSchema();
   const d = requireDb();
+  if (!silent) console.log("[laudos.server] Garantindo schema laudos...");
+
 
   await d.execute(sql`
     CREATE TABLE IF NOT EXISTS laudos (

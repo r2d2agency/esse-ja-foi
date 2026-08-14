@@ -62,15 +62,15 @@ export async function verifyPassword(password: string, stored: string) {
 }
 
 /** Cria as colunas de senha/proteção, o gatilho anti-exclusão e o superadmin. Idempotente. */
-export async function ensureSuperAdmin() {
+export async function ensureSuperAdmin(silent = true) {
   if (!db) {
     throw new Error("DATABASE_URL ausente.");
   }
-  console.log("[auth.server] ensureSuperAdmin iniciado...");
+  if (!silent) console.log("[auth.server] ensureSuperAdmin iniciado...");
   try {
     const adminModule = await import("./admin.server");
     const ensureAdminTables = adminModule.ensureAdminTables;
-    console.log("[auth.server] Garantindo tabelas e roles...");
+    if (!silent) console.log("[auth.server] Garantindo tabelas e roles...");
     // Garante que uma instalação nova consiga autenticar mesmo antes de qualquer
     // acesso à aplicação. Todas as operações são idempotentes.
     try {
@@ -209,8 +209,8 @@ export async function ensureSuperAdmin() {
   const cadastroModule = await import("./cadastro.server");
   const ensureCadastroSchema = cadastroModule.ensureCadastroSchema;
   
-  await ensureCadastroSchema();
-  await ensureAdminTables();
+  await ensureCadastroSchema(silent);
+  await ensureAdminTables(silent);
 
   // Garante que o enum seja criado antes de qualquer tentativa de inserção
   // e remove qualquer ambiguidade de tipo.
@@ -224,7 +224,7 @@ export async function ensureSuperAdmin() {
           senha_hash = COALESCE(profiles.senha_hash, EXCLUDED.senha_hash);
   `);
 
-  console.log("✅ Superadmin garantido:", SUPERADMIN_EMAIL);
+  if (!silent) console.log("✅ Superadmin garantido:", SUPERADMIN_EMAIL);
 } catch (err) {
   console.error("[auth.server] Erro fatal no ensureSuperAdmin:", err);
 }
