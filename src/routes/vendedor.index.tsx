@@ -52,11 +52,11 @@ function DashboardVendedor() {
         <p className="mt-1 text-slate-500">Acompanhe por aqui seu cadastro, veículos e negociações.</p>
       </div>
 
-      {!completo && (
+      {!completo && profile.cadastro_completo !== true && (
         <AlertaAcao
           titulo="Precisamos de você"
-          descricao="Seu cadastro ainda possui informações pendentes."
-          acaoLabel="Resolver agora"
+          descricao={profile.cadastro_completo === false && pct > 80 ? "Seu cadastro está em análise. Aguarde a validação." : "Seu cadastro ainda possui informações pendentes."}
+          acaoLabel={profile.cadastro_completo === false && pct > 80 ? "Ver status" : "Resolver agora"}
           onAcao={() => navigate({ to: '/vendedor/onboarding' })}
         />
       )}
