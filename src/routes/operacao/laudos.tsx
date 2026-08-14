@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { BackofficeLayout } from "@/components/layout/BackofficeLayout";
+const BackofficeLayout = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 import { devolverLaudoFn, listarLaudosFn, obterLaudoFn } from "@/lib/laudos.functions";
 import { calcularDepreciacaoFn, obterHistoricoDepreciacaoFn } from "@/lib/depreciacao.functions";
 import { useAuthStore } from "@/hooks/use-auth";

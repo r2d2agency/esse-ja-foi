@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { BackofficeLayout } from "@/components/layout/BackofficeLayout";
+const BackofficeLayout = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 import { useAuthStore } from "@/hooks/use-auth";
 import { 
   TrendingUp, 

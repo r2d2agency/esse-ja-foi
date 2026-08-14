@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BackofficeLayout } from "@/components/layout/BackofficeLayout";
+const BackofficeLayout = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 import { obterDetalhesLeilaoFn, registrarLanceFn } from "@/lib/leiloes.functions";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Gavel, Clock, TrendingUp, ArrowLeft, History, Shield } from "lucide-react";

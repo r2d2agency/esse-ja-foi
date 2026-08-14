@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BackofficeLayout } from "@/components/layout/BackofficeLayout";
+const BackofficeLayout = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 import { DataTable } from "@/components/shared/DataTable";
 import { dashboardOperacaoFn } from "@/lib/dashboard.functions";
 import { formatDate } from "@/lib/utils";

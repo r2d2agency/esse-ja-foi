@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { BackofficeLayout } from "@/components/layout/BackofficeLayout";
+import { Outlet } from "@tanstack/react-router";
+// O layout já é provido por src/routes/admin.tsx
+const BackofficeLayout = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

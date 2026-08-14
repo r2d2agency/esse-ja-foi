@@ -15,6 +15,9 @@ import { ArrowLeft, Camera, Check, CloudOff, Loader2, Send, ChevronRight, AlertC
 import { ProgressBar } from "@/components/vistoria/ProgressBar";
 import { RoteiroFotos } from "@/components/vistoria/RoteiroFotos";
 
+// @ts-ignore
+const BackofficeLayout = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+
 export const Route = createFileRoute("/vistoria/laudo/$laudoId")({
   component: PreencherLaudo,
 });
