@@ -12,7 +12,7 @@ function requireDb() {
 
 let prepared = false;
 
-export async function ensureLaudoSchema(silent = false) {
+export async function ensureLaudoSchema(silent = true) {
   if (prepared) return;
   await ensureAgendaSchema();
   await ensureChecklistSchema();
