@@ -337,172 +337,63 @@ function CompradorIndex() {
                     </form>
                   ) : (
                     <div className="space-y-6">
-                      {wizardStep === 1 && (
-                        <form onSubmit={handleCadastro} className="space-y-4">
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Nome Completo</label>
-                            <Input 
-                              required
-                              value={formData.nome}
-                              onChange={(e) => setFormData({...formData, nome: e.target.value})}
-                              placeholder="Seu nome" 
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">WhatsApp</label>
-                            <Input 
-                              required
-                              value={formData.whatsapp}
-                              onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
-                              placeholder="(00) 00000-0000" 
-                            />
-                          </div>
-                          <Button className="w-full bg-teal-900 hover:bg-teal-950 text-white font-bold h-12">
-                            Próximo Passo
-                          </Button>
-                        </form>
-                      )}
-
-                      {wizardStep === 2 && (
-                        <form onSubmit={handleCadastro} className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">CPF</label>
-                              <Input 
-                                required
-                                value={formData.cpf}
-                                onChange={(e) => setFormData({...formData, cpf: e.target.value})}
-                                placeholder="000.000.000-00" 
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">E-mail</label>
-                              <Input 
-                                required
-                                type="email"
-                                value={formData.email}
-                                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                                placeholder="seu@email.com" 
-                              />
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-2 col-span-1">
-                              <label className="text-sm font-medium">CEP</label>
-                              <Input 
-                                required
-                                value={formData.cep}
-                                onChange={(e) => handleCepChange(e.target.value)}
-                                placeholder="00000-000" 
-                              />
-                            </div>
-                            <div className="space-y-2 col-span-2">
-                              <label className="text-sm font-medium">Logradouro</label>
-                              <Input 
-                                required
-                                value={formData.endereco}
-                                onChange={(e) => setFormData({...formData, endereco: e.target.value})}
-                                placeholder="Rua, Av, etc" 
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-4 gap-4">
-                            <div className="space-y-2 col-span-1">
-                              <label className="text-sm font-medium">Número</label>
-                              <Input 
-                                required
-                                value={formData.numero}
-                                onChange={(e) => setFormData({...formData, numero: e.target.value})}
-                                placeholder="123" 
-                              />
-                            </div>
-                            <div className="space-y-2 col-span-3">
-                              <label className="text-sm font-medium">Bairro</label>
-                              <Input 
-                                required
-                                value={formData.bairro}
-                                onChange={(e) => setFormData({...formData, bairro: e.target.value})}
-                                placeholder="Bairro" 
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 gap-4">
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">Complemento</label>
-                              <Input 
-                                value={formData.complemento}
-                                onChange={(e) => setFormData({...formData, complemento: e.target.value})}
-                                placeholder="Apto, Bloco, etc" 
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-2 col-span-2">
-                              <label className="text-sm font-medium">Cidade</label>
-                              <Input 
-                                required
-                                value={formData.cidade}
-                                onChange={(e) => setFormData({...formData, cidade: e.target.value})}
-                                placeholder="Ex: São Paulo" 
-                              />
-                            </div>
-                            <div className="space-y-2 col-span-1">
-                              <label className="text-sm font-medium">UF</label>
-                              <Input 
-                                required
-                                maxLength={2}
-                                value={formData.uf}
-                                onChange={(e) => setFormData({...formData, uf: e.target.value.toUpperCase()})}
-                                placeholder="SP" 
-                              />
-                            </div>
-                          </div>
-
-                          <div className="flex gap-2 pt-4">
-                            <Button 
-                              type="button"
-                              variant="outline"
-                              onClick={() => setWizardStep(1)}
-                              className="w-1/3 h-12"
-                            >
-                              Voltar
-                            </Button>
-                            <Button 
-                              disabled={isSubmitting}
-                              className="flex-1 bg-teal-900 hover:bg-teal-950 text-white font-bold h-12"
-                            >
-                              {isSubmitting ? "Enviando..." : "Finalizar Cadastro"}
-                            </Button>
-                          </div>
-                        </form>
-                      )}
-
-                      {wizardStep === 3 && (
-                        <div className="text-center py-6 animate-in fade-in zoom-in duration-300">
-                          <div className="h-16 w-16 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4 border-2 border-amber-200">
-                            <Zap className="h-8 w-8 text-amber-600 animate-pulse" />
-                          </div>
-                          <h3 className="text-lg font-bold text-slate-900 mb-2">Cadastro em Análise</h3>
-                          <p className="text-sm text-slate-500 mb-6 px-4">
-                            Recebemos seus dados! Agora nossa equipe irá validar as informações e documentos. 
-                            Você receberá um e-mail em até 24h úteis.
-                          </p>
-                          <Button 
-                            variant="outline"
-                            onClick={() => {
-                              setWizardStep(1);
-                              setShowLogin(true);
-                            }}
-                            className="w-full"
-                          >
-                            Voltar para o Início
-                          </Button>
+                      <form onSubmit={handleCadastro} className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Nome Completo</label>
+                          <Input 
+                            required
+                            value={formData.nome}
+                            onChange={(e) => setFormData({...formData, nome: e.target.value})}
+                            placeholder="Seu nome" 
+                          />
                         </div>
-                      )}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">WhatsApp</label>
+                          <Input 
+                            required
+                            value={formData.whatsapp}
+                            onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
+                            placeholder="(00) 00000-0000" 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">E-mail</label>
+                          <Input 
+                            required
+                            type="email"
+                            value={formData.email}
+                            onChange={(e) => setFormData({...formData, email: e.target.value})}
+                            placeholder="seu@email.com" 
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Criar Senha</label>
+                            <Input 
+                              required
+                              type="password"
+                              value={formData.password}
+                              onChange={(e) => setFormData({...formData, password: e.target.value})}
+                              placeholder="••••••••" 
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Confirmar Senha</label>
+                            <Input 
+                              required
+                              type="password"
+                              placeholder="••••••••" 
+                            />
+                          </div>
+                        </div>
+                        
+                        <Button 
+                          disabled={isSubmitting}
+                          className="w-full bg-teal-900 hover:bg-teal-950 text-white font-bold h-12"
+                        >
+                          {isSubmitting ? "Processando..." : "Criar Minha Conta"}
+                        </Button>
+                      </form>
                     </div>
                   )}
                 </div>
