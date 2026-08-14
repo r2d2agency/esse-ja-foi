@@ -283,10 +283,11 @@ function DetalheVendedorPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="veiculos" className="mt-6">
-          <></>
+        <TabsContent value="contrato" className="mt-6">
+          <AbaContratoVendedor vendedorId={id} />
         </TabsContent>
-        <TabsContent value="contrato-placeholder" className="mt-6">
+
+        <TabsContent value="veiculos" className="mt-6">
           <Card>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
