@@ -223,11 +223,10 @@ export async function ensureSuperAdmin() {
           senha_hash = COALESCE(profiles.senha_hash, EXCLUDED.senha_hash);
   `);
 
-    await ensureAdminTables();
-    console.log("✅ Superadmin garantido:", SUPERADMIN_EMAIL);
-  } catch (err) {
-    console.error("[auth.server] Erro fatal no ensureSuperAdmin:", err);
-  }
+  console.log("✅ Superadmin garantido:", SUPERADMIN_EMAIL);
+} catch (err) {
+  console.error("[auth.server] Erro fatal no ensureSuperAdmin:", err);
+}
 }
 
 export async function authenticate(email: string, password: string) {
