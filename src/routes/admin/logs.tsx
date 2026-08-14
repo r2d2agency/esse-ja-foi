@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { RefreshCw, Search, Terminal, AlertCircle, Info, Database } from "lucide-react";
-import { getSystemLogsFn } from "@/lib/logs.functions";
+import { RefreshCw, Search, Terminal, AlertCircle, Info, Database, Trash2 } from "lucide-react";
+import { getSystemLogsFn, limparLogsFn } from "@/lib/logs.functions";
 import { formatDate } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -54,6 +54,21 @@ function LogsAdminPage() {
     return <Info className="h-4 w-4 text-slate-400" />;
   };
 
+  const limparLogs = async () => {
+    if (!confirm("Tem certeza que deseja apagar todos os logs do sistema?")) return;
+    try {
+        const res = await limparLogsFn();
+        if (res.ok) {
+            toast.success("Logs limpos com sucesso.");
+            void carregar();
+        } else {
+            toast.error(res.message);
+        }
+    } catch (e) {
+        toast.error("Erro ao limpar logs.");
+    }
+  };
+
   return (
     <BackofficeLayout>
       <div className="space-y-6">
@@ -80,6 +95,9 @@ function LogsAdminPage() {
             </div>
             <Button variant="outline" size="icon" onClick={() => void carregar()} disabled={loading}>
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            </Button>
+            <Button variant="outline" size="icon" onClick={limparLogs} className="text-red-600 hover:text-red-700 hover:bg-red-50" title="Limpar logs">
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>

@@ -64,13 +64,17 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
       const { db: database } = await import("@/db/index");
       if (database) {
         try {
+          const detail = {
+            mensagem: error.message,
+            codigo: error.code,
+            hint: error.hint,
+            stack: error.stack,
+            context: { email: data.email, nome: data.nome }
+          };
+          
           await database.execute(sql`
             INSERT INTO logs (entidade, acao, detalhe, usuario)
-            VALUES ('auth', 'CADASTRO_VENDEDOR_ERRO', ${JSON.stringify({ 
-              error: error.message, 
-              email: data.email, 
-              stack: error.stack 
-            })}, ${data.email})
+            VALUES ('auth', 'CADASTRO_VENDEDOR_ERRO', ${JSON.stringify(detail)}, ${data.email})
           `);
         } catch (logErr) {
           console.error("Erro ao registrar log de erro:", logErr);
@@ -82,8 +86,8 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
       }
       
       let userMessage = `Erro técnico: ${error.message || "Erro desconhecido"}`;
-      if (error.message?.includes("app_role") || error.message?.includes("permission")) {
-        userMessage = `Erro na configuração de permissões (app_role): ${error.message}`;
+      if (error.message?.includes("app_role") || error.message?.includes("permission") || error.code === '42P01') {
+        userMessage = `Erro de permissão ou estrutura de banco: ${error.message}. Use o Dashboard Admin para verificar a saúde do sistema.`;
       }
       
       return { ok: false as const, message: userMessage };

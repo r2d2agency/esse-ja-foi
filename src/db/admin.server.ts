@@ -12,12 +12,41 @@ export async function ensureAdminTables() {
   const d = requireDb();
   console.log("[admin.server] Garantindo tabelas admin...");
   try {
+    // Tabela de configurações
     await d.execute(sql`
       CREATE TABLE IF NOT EXISTS configuracoes_sistema (
         chave text PRIMARY KEY,
         valor text NOT NULL,
         descricao text,
         atualizado_em timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+
+    // Tabela de logs (se não existir, embora já devesse existir pela migration)
+    await d.execute(sql`
+      CREATE TABLE IF NOT EXISTS logs (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        entidade text NOT NULL,
+        acao text NOT NULL,
+        detalhe text,
+        usuario text,
+        criado_em timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+
+    // Tabela depreciacao_regras (se não existir)
+    await d.execute(sql`
+      CREATE TABLE IF NOT EXISTS depreciacao_regras (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        item_id uuid,
+        resposta text,
+        tipo_desconto text NOT NULL DEFAULT 'PERCENTUAL',
+        valor numeric(14,2) NOT NULL DEFAULT 0,
+        fator_leve numeric(14,2) DEFAULT 0.6,
+        fator_media numeric(14,2) DEFAULT 1.0,
+        fator_grave numeric(14,2) DEFAULT 1.8,
+        ativo boolean NOT NULL DEFAULT true,
+        criado_em timestamptz NOT NULL DEFAULT now()
       );
     `);
 
@@ -40,12 +69,41 @@ export async function ensureAdminTables() {
   }
 }
 
+export async function checkSystemHealth() {
+  const d = requireDb();
+  const tables = ['profiles', 'veiculos', 'agendamentos', 'clientes', 'laudos', 'logs', 'configuracoes_sistema'];
+  const health: Record<string, boolean> = {};
+  
+  for (const table of tables) {
+    try {
+      const res = await d.execute(sql`SELECT 1 FROM ${sql.identifier(table)} LIMIT 1`);
+      health[table] = true;
+    } catch (e) {
+      health[table] = false;
+      console.warn(`[health] Tabela ${table} não acessível:`, (e as Error).message);
+    }
+  }
+  
+  return health;
+}
+
 export async function listarVendedoresPendentes() {
+  const d = requireDb();
+  const rows = await d.execute(sql`
+    SELECT id, nome, email, whatsapp, cpf, cidade, uf, ativo, cadastro_completo, criado_em, documento_cnh_url, documento_crlv_url, documento_selfie_url
+    FROM profiles 
+    WHERE role = 'vendedor'::app_role
+    ORDER BY criado_em DESC;
+  `);
+  return (rows as any).rows || rows;
+}
+
+export async function listarCompradores() {
   const d = requireDb();
   const rows = await d.execute(sql`
     SELECT id, nome, email, whatsapp, cpf, cidade, uf, ativo, criado_em
     FROM profiles 
-    WHERE role = 'vendedor'::app_role
+    WHERE role = 'comprador'::app_role
     ORDER BY criado_em DESC;
   `);
   return (rows as any).rows || rows;
