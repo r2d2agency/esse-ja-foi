@@ -1,5 +1,6 @@
 import { sql, eq, and } from "drizzle-orm";
 import { db } from "./index";
+import { metaService } from "./meta-whatsapp.server";
 
 function requireDb() {
   if (!db) throw new Error("Banco de dados indisponível.");
