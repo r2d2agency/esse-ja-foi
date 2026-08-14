@@ -218,7 +218,7 @@ export async function registrarEventoPagamento(evento: {
   evento_externo_id: string;
   id_externo: string;
   tipo: string;
-  valor?: number;
+  valor?: number | undefined;
   payload?: any;
 }) {
   const d = requireDb();
