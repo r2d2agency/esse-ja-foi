@@ -15,6 +15,7 @@ import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as EsqueciMinhaSenhaRouteImport } from './routes/esqueci-minha-senha'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as VeiculosRouteImport } from './routes/veiculos'
 import { Route as VendedorRouteImport } from './routes/vendedor'
 import { Route as VenderRouteImport } from './routes/vender'
 import { Route as VistoriadorRouteImport } from './routes/vistoriador'
@@ -82,6 +83,11 @@ const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   path: '/redefinir-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VeiculosRoute = VeiculosRouteImport.update({
+  id: '/veiculos',
+  path: '/veiculos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VendedorRoute = VendedorRouteImport.update({
   id: '/vendedor',
   path: '/vendedor',
@@ -143,14 +149,14 @@ const AdminVistoriasRoute = AdminVistoriasRouteImport.update({
   getParentRoute: () => AdminRoute,
 } as any)
 const VeiculosIndexRoute = VeiculosIndexRouteImport.update({
-  id: '/veiculos/',
-  path: '/veiculos/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => VeiculosRoute,
 } as any)
 const VeiculosSlugRoute = VeiculosSlugRouteImport.update({
-  id: '/veiculos/$slug',
-  path: '/veiculos/$slug',
-  getParentRoute: () => rootRouteImport,
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => VeiculosRoute,
 } as any)
 const VendedorIndexRoute = VendedorIndexRouteImport.update({
   id: '/',
@@ -271,6 +277,7 @@ export interface FileRoutesByFullPath {
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/veiculos': typeof VeiculosRouteWithChildren
   '/vendedor': typeof VendedorRouteWithChildren
   '/vender': typeof VenderRoute
   '/vistoriador': typeof VistoriadorRouteWithChildren
@@ -357,6 +364,7 @@ export interface FileRoutesById {
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/veiculos': typeof VeiculosRouteWithChildren
   '/vendedor': typeof VendedorRouteWithChildren
   '/vender': typeof VenderRoute
   '/vistoriador': typeof VistoriadorRouteWithChildren
@@ -403,6 +411,7 @@ export interface FileRouteTypes {
     | '/esqueci-minha-senha'
     | '/login'
     | '/redefinir-senha'
+    | '/veiculos'
     | '/vendedor'
     | '/vender'
     | '/vistoriador'
@@ -488,6 +497,7 @@ export interface FileRouteTypes {
     | '/esqueci-minha-senha'
     | '/login'
     | '/redefinir-senha'
+    | '/veiculos'
     | '/vendedor'
     | '/vender'
     | '/vistoriador'
@@ -533,11 +543,10 @@ export interface RootRouteChildren {
   EsqueciMinhaSenhaRoute: typeof EsqueciMinhaSenhaRoute
   LoginRoute: typeof LoginRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  VeiculosRoute: typeof VeiculosRouteWithChildren
   VendedorRoute: typeof VendedorRouteWithChildren
   VenderRoute: typeof VenderRoute
   VistoriadorRoute: typeof VistoriadorRouteWithChildren
-  VeiculosSlugRoute: typeof VeiculosSlugRoute
-  VeiculosIndexRoute: typeof VeiculosIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -582,6 +591,13 @@ declare module '@tanstack/react-router' {
       path: '/redefinir-senha'
       fullPath: '/redefinir-senha'
       preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/veiculos': {
+      id: '/veiculos'
+      path: '/veiculos'
+      fullPath: '/veiculos'
+      preLoaderRoute: typeof VeiculosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vendedor': {
@@ -670,17 +686,17 @@ declare module '@tanstack/react-router' {
     }
     '/veiculos/': {
       id: '/veiculos/'
-      path: '/veiculos'
+      path: '/'
       fullPath: '/veiculos/'
       preLoaderRoute: typeof VeiculosIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof VeiculosRoute
     }
     '/veiculos/$slug': {
       id: '/veiculos/$slug'
-      path: '/veiculos/$slug'
+      path: '/$slug'
       fullPath: '/veiculos/$slug'
       preLoaderRoute: typeof VeiculosSlugRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof VeiculosRoute
     }
     '/vendedor/': {
       id: '/vendedor/'
@@ -885,6 +901,20 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface VeiculosRouteChildren {
+  VeiculosSlugRoute: typeof VeiculosSlugRoute
+  VeiculosIndexRoute: typeof VeiculosIndexRoute
+}
+
+const VeiculosRouteChildren: VeiculosRouteChildren = {
+  VeiculosSlugRoute: VeiculosSlugRoute,
+  VeiculosIndexRoute: VeiculosIndexRoute,
+}
+
+const VeiculosRouteWithChildren = VeiculosRoute._addFileChildren(
+  VeiculosRouteChildren,
+)
+
 interface VendedorVeiculoIdRouteChildren {
   VendedorVeiculoIdPropostaRoute: typeof VendedorVeiculoIdPropostaRoute
 }
@@ -955,11 +985,10 @@ const rootRouteChildren: RootRouteChildren = {
   EsqueciMinhaSenhaRoute: EsqueciMinhaSenhaRoute,
   LoginRoute: LoginRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  VeiculosRoute: VeiculosRouteWithChildren,
   VendedorRoute: VendedorRouteWithChildren,
   VenderRoute: VenderRoute,
   VistoriadorRoute: VistoriadorRouteWithChildren,
-  VeiculosSlugRoute: VeiculosSlugRoute,
-  VeiculosIndexRoute: VeiculosIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
