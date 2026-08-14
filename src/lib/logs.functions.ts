@@ -49,3 +49,14 @@ export const getSystemLogsFn = createServerFn({ method: "GET" })
       return { ok: false as const, message: e.message };
     }
   });
+
+export const limparLogsFn = createServerFn({ method: "POST" })
+  .handler(async () => {
+    if (!db) return { ok: false as const, message: "Banco de dados indisponível." };
+    try {
+      await db.execute(sql`DELETE FROM logs`);
+      return { ok: true as const };
+    } catch (e: any) {
+      return { ok: false as const, message: e.message };
+    }
+  });
