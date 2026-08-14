@@ -19,6 +19,7 @@ import { Route as VendedorRouteImport } from './routes/vendedor'
 import { Route as VenderRouteImport } from './routes/vender'
 import { Route as VistoriadorRouteImport } from './routes/vistoriador'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminAnunciosRouteImport } from './routes/admin/anuncios'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configuracoes'
 import { Route as AdminContratosRouteImport } from './routes/admin/contratos'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
@@ -45,6 +46,7 @@ import { Route as AdminVendedorIdRouteImport } from './routes/admin/vendedor.$id
 import { Route as VendedorVeiculoIdRouteImport } from './routes/vendedor.veiculo.$id'
 import { Route as VistoriadorExecucaoIdRouteImport } from './routes/vistoriador.execucao.$id'
 import { Route as VistoriadorVistoriaIdRouteImport } from './routes/vistoriador.vistoria.$id'
+import { Route as AdminAnunciosNovoRouteImport } from './routes/admin/anuncios.novo.'
 import { Route as VendedorVeiculoIdPropostaRouteImport } from './routes/vendedor.veiculo.$id.proposta'
 
 const IndexRoute = IndexRouteImport.update({
@@ -95,6 +97,11 @@ const VistoriadorRoute = VistoriadorRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAnunciosRoute = AdminAnunciosRouteImport.update({
+  id: '/anuncios',
+  path: '/anuncios',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
@@ -227,6 +234,11 @@ const VistoriadorVistoriaIdRoute = VistoriadorVistoriaIdRouteImport.update({
   path: '/vistoria/$id',
   getParentRoute: () => VistoriadorRoute,
 } as any)
+const AdminAnunciosNovoRoute = AdminAnunciosNovoRouteImport.update({
+  id: '/novo/',
+  path: '/novo/',
+  getParentRoute: () => AdminAnunciosRoute,
+} as any)
 const VendedorVeiculoIdPropostaRoute =
   VendedorVeiculoIdPropostaRouteImport.update({
     id: '/proposta',
@@ -244,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/vendedor': typeof VendedorRouteWithChildren
   '/vender': typeof VenderRoute
   '/vistoriador': typeof VistoriadorRouteWithChildren
+  '/admin/anuncios': typeof AdminAnunciosRouteWithChildren
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/contratos': typeof AdminContratosRoute
   '/admin/logs': typeof AdminLogsRoute
@@ -271,6 +284,7 @@ export interface FileRoutesByFullPath {
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRouteWithChildren
   '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
+  '/admin/anuncios/novo/': typeof AdminAnunciosNovoRoute
   '/vendedor/veiculo/$id/proposta': typeof VendedorVeiculoIdPropostaRoute
 }
 export interface FileRoutesByTo {
@@ -280,6 +294,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/vender': typeof VenderRoute
+  '/admin/anuncios': typeof AdminAnunciosRouteWithChildren
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/contratos': typeof AdminContratosRoute
   '/admin/logs': typeof AdminLogsRoute
@@ -307,6 +322,7 @@ export interface FileRoutesByTo {
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRouteWithChildren
   '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
+  '/admin/anuncios/novo': typeof AdminAnunciosNovoRoute
   '/vendedor/veiculo/$id/proposta': typeof VendedorVeiculoIdPropostaRoute
 }
 export interface FileRoutesById {
@@ -320,6 +336,7 @@ export interface FileRoutesById {
   '/vendedor': typeof VendedorRouteWithChildren
   '/vender': typeof VenderRoute
   '/vistoriador': typeof VistoriadorRouteWithChildren
+  '/admin/anuncios': typeof AdminAnunciosRouteWithChildren
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/contratos': typeof AdminContratosRoute
   '/admin/logs': typeof AdminLogsRoute
@@ -347,6 +364,7 @@ export interface FileRoutesById {
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRouteWithChildren
   '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
+  '/admin/anuncios/novo/': typeof AdminAnunciosNovoRoute
   '/vendedor/veiculo/$id/proposta': typeof VendedorVeiculoIdPropostaRoute
 }
 export interface FileRouteTypes {
@@ -361,6 +379,7 @@ export interface FileRouteTypes {
     | '/vendedor'
     | '/vender'
     | '/vistoriador'
+    | '/admin/anuncios'
     | '/admin/configuracoes'
     | '/admin/contratos'
     | '/admin/logs'
@@ -388,6 +407,7 @@ export interface FileRouteTypes {
     | '/vendedor/veiculo/$id'
     | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
+    | '/admin/anuncios/novo/'
     | '/vendedor/veiculo/$id/proposta'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -397,6 +417,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/vender'
+    | '/admin/anuncios'
     | '/admin/configuracoes'
     | '/admin/contratos'
     | '/admin/logs'
@@ -424,6 +445,7 @@ export interface FileRouteTypes {
     | '/vendedor/veiculo/$id'
     | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
+    | '/admin/anuncios/novo'
     | '/vendedor/veiculo/$id/proposta'
   id:
     | '__root__'
@@ -436,6 +458,7 @@ export interface FileRouteTypes {
     | '/vendedor'
     | '/vender'
     | '/vistoriador'
+    | '/admin/anuncios'
     | '/admin/configuracoes'
     | '/admin/contratos'
     | '/admin/logs'
@@ -463,6 +486,7 @@ export interface FileRouteTypes {
     | '/vendedor/veiculo/$id'
     | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
+    | '/admin/anuncios/novo/'
     | '/vendedor/veiculo/$id/proposta'
   fileRoutesById: FileRoutesById
 }
@@ -548,6 +572,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/anuncios': {
+      id: '/admin/anuncios'
+      path: '/anuncios'
+      fullPath: '/admin/anuncios'
+      preLoaderRoute: typeof AdminAnunciosRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/configuracoes': {
@@ -732,6 +763,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VistoriadorVistoriaIdRouteImport
       parentRoute: typeof VistoriadorRoute
     }
+    '/admin/anuncios/novo/': {
+      id: '/admin/anuncios/novo/'
+      path: '/novo'
+      fullPath: '/admin/anuncios/novo/'
+      preLoaderRoute: typeof AdminAnunciosNovoRouteImport
+      parentRoute: typeof AdminAnunciosRoute
+    }
     '/vendedor/veiculo/$id/proposta': {
       id: '/vendedor/veiculo/$id/proposta'
       path: '/proposta'
@@ -742,7 +780,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminAnunciosRouteChildren {
+  AdminAnunciosNovoRoute: typeof AdminAnunciosNovoRoute
+}
+
+const AdminAnunciosRouteChildren: AdminAnunciosRouteChildren = {
+  AdminAnunciosNovoRoute: AdminAnunciosNovoRoute,
+}
+
+const AdminAnunciosRouteWithChildren = AdminAnunciosRoute._addFileChildren(
+  AdminAnunciosRouteChildren,
+)
+
 interface AdminRouteChildren {
+  AdminAnunciosRoute: typeof AdminAnunciosRouteWithChildren
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminContratosRoute: typeof AdminContratosRoute
   AdminLogsRoute: typeof AdminLogsRoute
@@ -758,6 +809,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAnunciosRoute: AdminAnunciosRouteWithChildren,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminContratosRoute: AdminContratosRoute,
   AdminLogsRoute: AdminLogsRoute,

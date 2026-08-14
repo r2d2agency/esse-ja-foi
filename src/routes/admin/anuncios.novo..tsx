@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Save, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/admin/anuncios/novo/$id")({
+export const Route = createFileRoute("/admin/anuncios/novo/")({
   component: NovoAnuncioPage,
 });
 
