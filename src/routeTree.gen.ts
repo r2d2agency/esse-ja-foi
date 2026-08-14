@@ -27,6 +27,7 @@ import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configura
 import { Route as AdminContratosRouteImport } from './routes/admin/contratos'
 import { Route as AdminLeiloesRouteImport } from './routes/admin/leiloes'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
+import { Route as AdminNegociacoesRouteImport } from './routes/admin/negociacoes'
 import { Route as AdminUsuariosRouteImport } from './routes/admin/usuarios'
 import { Route as AdminVeiculosRouteImport } from './routes/admin/veiculos'
 import { Route as AdminVendedoresRouteImport } from './routes/admin/vendedores'
@@ -150,6 +151,11 @@ const AdminLeiloesRoute = AdminLeiloesRouteImport.update({
 const AdminLogsRoute = AdminLogsRouteImport.update({
   id: '/logs',
   path: '/logs',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminNegociacoesRoute = AdminNegociacoesRouteImport.update({
+  id: '/negociacoes',
+  path: '/negociacoes',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
@@ -342,6 +348,7 @@ export interface FileRoutesByFullPath {
   '/admin/contratos': typeof AdminContratosRoute
   '/admin/leiloes': typeof AdminLeiloesRouteWithChildren
   '/admin/logs': typeof AdminLogsRoute
+  '/admin/negociacoes': typeof AdminNegociacoesRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
@@ -391,6 +398,7 @@ export interface FileRoutesByTo {
   '/admin/contratos': typeof AdminContratosRoute
   '/admin/leiloes': typeof AdminLeiloesRouteWithChildren
   '/admin/logs': typeof AdminLogsRoute
+  '/admin/negociacoes': typeof AdminNegociacoesRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
@@ -446,6 +454,7 @@ export interface FileRoutesById {
   '/admin/contratos': typeof AdminContratosRoute
   '/admin/leiloes': typeof AdminLeiloesRouteWithChildren
   '/admin/logs': typeof AdminLogsRoute
+  '/admin/negociacoes': typeof AdminNegociacoesRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
@@ -502,6 +511,7 @@ export interface FileRouteTypes {
     | '/admin/contratos'
     | '/admin/leiloes'
     | '/admin/logs'
+    | '/admin/negociacoes'
     | '/admin/usuarios'
     | '/admin/veiculos'
     | '/admin/vendedores'
@@ -551,6 +561,7 @@ export interface FileRouteTypes {
     | '/admin/contratos'
     | '/admin/leiloes'
     | '/admin/logs'
+    | '/admin/negociacoes'
     | '/admin/usuarios'
     | '/admin/veiculos'
     | '/admin/vendedores'
@@ -605,6 +616,7 @@ export interface FileRouteTypes {
     | '/admin/contratos'
     | '/admin/leiloes'
     | '/admin/logs'
+    | '/admin/negociacoes'
     | '/admin/usuarios'
     | '/admin/veiculos'
     | '/admin/vendedores'
@@ -782,6 +794,13 @@ declare module '@tanstack/react-router' {
       path: '/logs'
       fullPath: '/admin/logs'
       preLoaderRoute: typeof AdminLogsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/negociacoes': {
+      id: '/admin/negociacoes'
+      path: '/negociacoes'
+      fullPath: '/admin/negociacoes'
+      preLoaderRoute: typeof AdminNegociacoesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/usuarios': {
@@ -1056,6 +1075,7 @@ interface AdminRouteChildren {
   AdminContratosRoute: typeof AdminContratosRoute
   AdminLeiloesRoute: typeof AdminLeiloesRouteWithChildren
   AdminLogsRoute: typeof AdminLogsRoute
+  AdminNegociacoesRoute: typeof AdminNegociacoesRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminVeiculosRoute: typeof AdminVeiculosRoute
   AdminVendedoresRoute: typeof AdminVendedoresRoute
@@ -1075,6 +1095,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminContratosRoute: AdminContratosRoute,
   AdminLeiloesRoute: AdminLeiloesRouteWithChildren,
   AdminLogsRoute: AdminLogsRoute,
+  AdminNegociacoesRoute: AdminNegociacoesRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
   AdminVeiculosRoute: AdminVeiculosRoute,
   AdminVendedoresRoute: AdminVendedoresRoute,
