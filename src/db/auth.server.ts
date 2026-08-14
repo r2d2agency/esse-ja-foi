@@ -199,10 +199,10 @@ export async function ensureSuperAdmin(silent = true) {
           senha_hash = COALESCE(profiles.senha_hash, EXCLUDED.senha_hash);
   `);
 
-  if (!silent && process.env['NODE_ENV'] === 'development') console.log("✅ Superadmin garantido:", SUPERADMIN_EMAIL);
-} catch (err) {
-  console.error("[auth.server] Erro fatal no ensureSuperAdmin:", err);
-}
+    if (!silent && process.env['NODE_ENV'] === 'development') console.log("✅ Superadmin garantido:", SUPERADMIN_EMAIL);
+  } catch (err) {
+    console.error("[auth.server] Erro fatal no ensureSuperAdmin:", err);
+  }
 }
 
 export async function authenticate(email: string, password: string) {

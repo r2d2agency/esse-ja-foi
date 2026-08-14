@@ -1091,6 +1091,7 @@ function ComunicacoesPage() {
                 </table>
               </CardContent>
             </Card>
+          </TabsContent>
 
           {/* Templates */}
           <TabsContent value="templates" className="mt-6 space-y-4">
