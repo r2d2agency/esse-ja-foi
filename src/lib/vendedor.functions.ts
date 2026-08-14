@@ -17,8 +17,8 @@ const vendedorSchema = z.object({
 });
 
 export const cadastrarVendedorFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => z.object({ data: vendedorSchema }).parse(d))
-  .handler(async ({ data: { data } }) => {
+  .inputValidator(vendedorSchema)
+  .handler(async ({ data }) => {
     const { db: database } = await import("@/db/index");
     if (!database) throw new Error(`Banco de dados indisponível (Verifique se a DATABASE_URL está configurada corretamente)`);
     const db = database;
