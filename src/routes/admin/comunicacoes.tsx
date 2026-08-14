@@ -90,11 +90,16 @@ function ComunicacoesPage() {
   const buscarDadosAutos = useServerFn(buscarDadosAutomaticosFn);
   const getTemplates = useServerFn(listarTemplatesFn);
   const criarTemplate = useServerFn(criarTemplateMetaFn);
+  const estimarPublico = useServerFn(estimarPublicoFn);
+  const criarCampanha = useServerFn(criarCampanhaFn);
+  const enviarTeste = useServerFn(enviarTesteFn);
+  const getAnuncios = useServerFn(getAnunciosAdmin);
+  const processarEnvio = useServerFn(processarEnvioCampanhaFn);
 
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<any>({});
   
-  // Wizard State
+  // Wizard Template State
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
   const [newTemplate, setNewTemplate] = useState<any>({
@@ -105,6 +110,24 @@ function ComunicacoesPage() {
       { type: 'BODY', text: '' }
     ]
   });
+
+  // Wizard Campanha State
+  const [isCampanhaWizardOpen, setIsCampanhaWizardOpen] = useState(false);
+  const [campanhaStep, setCampanhaStep] = useState(1);
+  const [novaCampanha, setNovaCampanha] = useState<any>({
+    nome: '',
+    veiculo_id: '',
+    template_id: '',
+    filtros: {
+      tipo: 'TODOS',
+      status: 'APROVADO',
+      uf: '',
+    },
+    mapeamento_variaveis: {},
+    agendado_para: null
+  });
+
+  const [estimativa, setEstimativa] = useState<any>({ total: 0, elegiveis: 0, nao_elegiveis: 0 });
 
   const { data: indicadores } = useQuery({
     queryKey: ['wa-indicadores'],
