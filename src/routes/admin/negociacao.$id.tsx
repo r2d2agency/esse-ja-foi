@@ -1,17 +1,19 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getNegociacaoFn, cancelarNegociacaoFn } from "@/lib/negociacoes.functions";
+import { confirmarPagamentoManualFn } from "@/lib/pagamentos.functions";
 import { useAuth } from "@/hooks/use-auth";
-import { useState } from "react";
+import { useState, ChangeEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, Ban, Trophy } from "lucide-react";
+import { ArrowLeft, Ban, Trophy, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { PrazoPagamento, STATUS_LABEL, STATUS_CLASSE, brl } from "@/components/negociacao/prazo-pagamento";
 
@@ -34,6 +36,9 @@ function AdminNegociacaoDetalhe() {
   const [msgComprador, setMsgComprador] = useState("");
   const [msgVendedor, setMsgVendedor] = useState("");
   const [aberto, setAberto] = useState(false);
+  const [abertoManual, setAbertoManual] = useState(false);
+  const [valorManual, setValorManual] = useState("");
+  const [refManual, setRefManual] = useState("");
 
   const { data: n, isLoading } = useQuery({
     queryKey: ["admin-negociacao", id],
@@ -52,6 +57,24 @@ function AdminNegociacaoDetalhe() {
       queryClient.invalidateQueries({ queryKey: ["admin-negociacao", id] });
     },
     onError: (e: any) => toast.error(e?.message || "Não foi possível cancelar."),
+  });
+
+  const confirmarManual = useMutation({
+    mutationFn: () =>
+      confirmarPagamentoManualFn({
+        data: {
+          negociacao_id: id,
+          valor: Number(valorManual),
+          referencia: refManual,
+          admin_id: user!.id,
+        },
+      }),
+    onSuccess: () => {
+      toast.success("Pagamento manual confirmado com sucesso.");
+      setAbertoManual(false);
+      queryClient.invalidateQueries({ queryKey: ["admin-negociacao", id] });
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao confirmar pagamento manual."),
   });
 
   if (isLoading) return <div className="p-8 text-slate-500">Carregando negociação...</div>;
@@ -170,6 +193,51 @@ function AdminNegociacaoDetalhe() {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+
+              <Dialog open={abertoManual} onOpenChange={setAbertoManual}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    disabled={n.status !== "AGUARDANDO_PAGAMENTO" && n.status !== "PAGAMENTO_NAO_REALIZADO"} 
+                    className="w-full border-teal-100 font-bold text-teal-600 hover:bg-teal-50"
+                  >
+                    <CheckCircle2 className="mr-2 h-4 w-4" /> Baixa manual (TED/Pix externo)
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader><DialogTitle>Baixa Manual - {n.codigo}</DialogTitle></DialogHeader>
+                  <div className="space-y-4">
+                    <p className="text-xs text-slate-500">Use esta opção somente se o cliente já pagou por fora da plataforma.</p>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase text-slate-500">Valor Recebido (R$)</Label>
+                      <Input 
+                        type="number" 
+                        value={valorManual} 
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => setValorManual(e.target.value)} 
+                        placeholder={String(n.valor_venda)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase text-slate-500">Referência / Comprovante</Label>
+                      <Input 
+                        value={refManual} 
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => setRefManual(e.target.value)} 
+                        placeholder="Ex: TED Banco X - 12/08" 
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button 
+                      disabled={!valorManual || !refManual || confirmarManual.isPending} 
+                      onClick={() => confirmarManual.mutate()} 
+                      className="bg-teal-600 font-bold hover:bg-teal-700"
+                    >
+                      Confirmar Recebimento
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
               {n.motivo_cancelamento && (
                 <div className="rounded-lg border border-red-100 bg-white p-3">
                   <p className="text-[10px] font-bold uppercase text-red-500">Motivo do cancelamento</p>

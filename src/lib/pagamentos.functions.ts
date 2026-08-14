@@ -12,6 +12,7 @@ import {
   prorrogarPrazoPagamento,
   getIndicadoresPagamentos,
   getComprovante,
+  confirmarPagamentoManual,
 } from "../db/pagamentos.server";
 
 export const iniciarPagamentoFn = createServerFn({ method: "POST" })
@@ -62,3 +63,17 @@ export const expirarCobrancasFn = createServerFn({ method: "POST" }).handler(asy
   await ensurePagamentosSchema();
   return expirarCobrancasVencidas();
 });
+
+export const confirmarPagamentoManualFn = createServerFn({ method: "POST" })
+  .validator((data: any) => 
+    z.object({
+      negociacao_id: z.string().uuid(),
+      valor: z.number().positive(),
+      referencia: z.string().min(3),
+      admin_id: z.string().uuid()
+    }).parse(data)
+  )
+  .handler(async ({ data }) => {
+    await ensurePagamentosSchema();
+    return await confirmarPagamentoManual(data);
+  });
