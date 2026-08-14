@@ -26,7 +26,7 @@ export const Route = createFileRoute("/esqueci-minha-senha")({
 
 function mascararEmail(email: string) {
   const [nome, dominio] = email.split("@");
-  if (!dominio) return "a*****@email.com";
+  if (!dominio || !nome) return "a*****@email.com";
   return `${nome.slice(0, 1)}*****@${dominio}`;
 }
 
