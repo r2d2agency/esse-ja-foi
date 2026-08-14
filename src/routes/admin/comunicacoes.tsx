@@ -176,16 +176,6 @@ function ComunicacoesPage() {
     });
   };
 
-  const handleSincronizar = async () => {
-    toast.promise(sincronizarTemplates(), {
-      loading: 'Sincronizando templates com a Meta...',
-      success: (res: any) => {
-        if (res.ok) return `${res.count} templates sincronizados!`;
-        throw new Error(res.error);
-      },
-      error: (err) => `Erro: ${err.message}`
-    });
-  };
 
   const handleSaveConfig = async () => {
     try {
