@@ -46,6 +46,7 @@ import { Route as VendedorBoasVindasRouteImport } from './routes/vendedor.boas-v
 import { Route as VendedorCadastrarRouteImport } from './routes/vendedor.cadastrar'
 import { Route as VendedorContratoRouteImport } from './routes/vendedor.contrato'
 import { Route as VendedorDocumentosRouteImport } from './routes/vendedor.documentos'
+import { Route as VendedorFinanceiroRouteImport } from './routes/vendedor.financeiro'
 import { Route as VendedorOnboardingRouteImport } from './routes/vendedor.onboarding'
 import { Route as VendedorPerfilRouteImport } from './routes/vendedor.perfil'
 import { Route as VendedorVeiculosRouteImport } from './routes/vendedor.veiculos'
@@ -58,6 +59,7 @@ import { Route as AdminCompradorIdRouteImport } from './routes/admin/comprador.$
 import { Route as AdminContratoIdRouteImport } from './routes/admin/contrato.$id'
 import { Route as AdminLeiloesIdRouteImport } from './routes/admin/leiloes.$id'
 import { Route as AdminNegociacaoIdRouteImport } from './routes/admin/negociacao.$id'
+import { Route as AdminPagamentoIdRouteImport } from './routes/admin/pagamento.$id'
 import { Route as AdminVeiculoIdRouteImport } from './routes/admin/veiculo.$id'
 import { Route as AdminVendedorIdRouteImport } from './routes/admin/vendedor.$id'
 import { Route as CompradorEntregaIdRouteImport } from './routes/comprador/entrega.$id'
@@ -256,6 +258,11 @@ const VendedorDocumentosRoute = VendedorDocumentosRouteImport.update({
   path: '/documentos',
   getParentRoute: () => VendedorRoute,
 } as any)
+const VendedorFinanceiroRoute = VendedorFinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
+  getParentRoute: () => VendedorRoute,
+} as any)
 const VendedorOnboardingRoute = VendedorOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -314,6 +321,11 @@ const AdminLeiloesIdRoute = AdminLeiloesIdRouteImport.update({
 const AdminNegociacaoIdRoute = AdminNegociacaoIdRouteImport.update({
   id: '/negociacao/$id',
   path: '/negociacao/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPagamentoIdRoute = AdminPagamentoIdRouteImport.update({
+  id: '/pagamento/$id',
+  path: '/pagamento/$id',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminVeiculoIdRoute = AdminVeiculoIdRouteImport.update({
@@ -413,6 +425,7 @@ export interface FileRoutesByFullPath {
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
   '/vendedor/contrato': typeof VendedorContratoRoute
   '/vendedor/documentos': typeof VendedorDocumentosRoute
+  '/vendedor/financeiro': typeof VendedorFinanceiroRoute
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
   '/vendedor/perfil': typeof VendedorPerfilRoute
   '/vendedor/veiculos': typeof VendedorVeiculosRoute
@@ -430,6 +443,7 @@ export interface FileRoutesByFullPath {
   '/admin/contrato/$id': typeof AdminContratoIdRoute
   '/admin/leiloes/$id': typeof AdminLeiloesIdRoute
   '/admin/negociacao/$id': typeof AdminNegociacaoIdRoute
+  '/admin/pagamento/$id': typeof AdminPagamentoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
   '/comprador/entrega/$id': typeof CompradorEntregaIdRoute
@@ -471,6 +485,7 @@ export interface FileRoutesByTo {
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
   '/vendedor/contrato': typeof VendedorContratoRoute
   '/vendedor/documentos': typeof VendedorDocumentosRoute
+  '/vendedor/financeiro': typeof VendedorFinanceiroRoute
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
   '/vendedor/perfil': typeof VendedorPerfilRoute
   '/vendedor/veiculos': typeof VendedorVeiculosRoute
@@ -488,6 +503,7 @@ export interface FileRoutesByTo {
   '/admin/contrato/$id': typeof AdminContratoIdRoute
   '/admin/leiloes/$id': typeof AdminLeiloesIdRoute
   '/admin/negociacao/$id': typeof AdminNegociacaoIdRoute
+  '/admin/pagamento/$id': typeof AdminPagamentoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
   '/comprador/entrega/$id': typeof CompradorEntregaIdRoute
@@ -535,6 +551,7 @@ export interface FileRoutesById {
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
   '/vendedor/contrato': typeof VendedorContratoRoute
   '/vendedor/documentos': typeof VendedorDocumentosRoute
+  '/vendedor/financeiro': typeof VendedorFinanceiroRoute
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
   '/vendedor/perfil': typeof VendedorPerfilRoute
   '/vendedor/veiculos': typeof VendedorVeiculosRoute
@@ -552,6 +569,7 @@ export interface FileRoutesById {
   '/admin/contrato/$id': typeof AdminContratoIdRoute
   '/admin/leiloes/$id': typeof AdminLeiloesIdRoute
   '/admin/negociacao/$id': typeof AdminNegociacaoIdRoute
+  '/admin/pagamento/$id': typeof AdminPagamentoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
   '/comprador/entrega/$id': typeof CompradorEntregaIdRoute
@@ -600,6 +618,7 @@ export interface FileRouteTypes {
     | '/vendedor/cadastrar'
     | '/vendedor/contrato'
     | '/vendedor/documentos'
+    | '/vendedor/financeiro'
     | '/vendedor/onboarding'
     | '/vendedor/perfil'
     | '/vendedor/veiculos'
@@ -617,6 +636,7 @@ export interface FileRouteTypes {
     | '/admin/contrato/$id'
     | '/admin/leiloes/$id'
     | '/admin/negociacao/$id'
+    | '/admin/pagamento/$id'
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
     | '/comprador/entrega/$id'
@@ -658,6 +678,7 @@ export interface FileRouteTypes {
     | '/vendedor/cadastrar'
     | '/vendedor/contrato'
     | '/vendedor/documentos'
+    | '/vendedor/financeiro'
     | '/vendedor/onboarding'
     | '/vendedor/perfil'
     | '/vendedor/veiculos'
@@ -675,6 +696,7 @@ export interface FileRouteTypes {
     | '/admin/contrato/$id'
     | '/admin/leiloes/$id'
     | '/admin/negociacao/$id'
+    | '/admin/pagamento/$id'
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
     | '/comprador/entrega/$id'
@@ -721,6 +743,7 @@ export interface FileRouteTypes {
     | '/vendedor/cadastrar'
     | '/vendedor/contrato'
     | '/vendedor/documentos'
+    | '/vendedor/financeiro'
     | '/vendedor/onboarding'
     | '/vendedor/perfil'
     | '/vendedor/veiculos'
@@ -738,6 +761,7 @@ export interface FileRouteTypes {
     | '/admin/contrato/$id'
     | '/admin/leiloes/$id'
     | '/admin/negociacao/$id'
+    | '/admin/pagamento/$id'
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
     | '/comprador/entrega/$id'
@@ -1027,6 +1051,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendedorDocumentosRouteImport
       parentRoute: typeof VendedorRoute
     }
+    '/vendedor/financeiro': {
+      id: '/vendedor/financeiro'
+      path: '/financeiro'
+      fullPath: '/vendedor/financeiro'
+      preLoaderRoute: typeof VendedorFinanceiroRouteImport
+      parentRoute: typeof VendedorRoute
+    }
     '/vendedor/onboarding': {
       id: '/vendedor/onboarding'
       path: '/onboarding'
@@ -1109,6 +1140,13 @@ declare module '@tanstack/react-router' {
       path: '/negociacao/$id'
       fullPath: '/admin/negociacao/$id'
       preLoaderRoute: typeof AdminNegociacaoIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/pagamento/$id': {
+      id: '/admin/pagamento/$id'
+      path: '/pagamento/$id'
+      fullPath: '/admin/pagamento/$id'
+      preLoaderRoute: typeof AdminPagamentoIdRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/veiculo/$id': {
@@ -1241,6 +1279,7 @@ interface AdminRouteChildren {
   AdminCompradorIdRoute: typeof AdminCompradorIdRoute
   AdminContratoIdRoute: typeof AdminContratoIdRoute
   AdminNegociacaoIdRoute: typeof AdminNegociacaoIdRoute
+  AdminPagamentoIdRoute: typeof AdminPagamentoIdRoute
   AdminVeiculoIdRoute: typeof AdminVeiculoIdRoute
   AdminVendedorIdRoute: typeof AdminVendedorIdRoute
 }
@@ -1264,6 +1303,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCompradorIdRoute: AdminCompradorIdRoute,
   AdminContratoIdRoute: AdminContratoIdRoute,
   AdminNegociacaoIdRoute: AdminNegociacaoIdRoute,
+  AdminPagamentoIdRoute: AdminPagamentoIdRoute,
   AdminVeiculoIdRoute: AdminVeiculoIdRoute,
   AdminVendedorIdRoute: AdminVendedorIdRoute,
 }
@@ -1324,6 +1364,7 @@ interface VendedorRouteChildren {
   VendedorCadastrarRoute: typeof VendedorCadastrarRoute
   VendedorContratoRoute: typeof VendedorContratoRoute
   VendedorDocumentosRoute: typeof VendedorDocumentosRoute
+  VendedorFinanceiroRoute: typeof VendedorFinanceiroRoute
   VendedorOnboardingRoute: typeof VendedorOnboardingRoute
   VendedorPerfilRoute: typeof VendedorPerfilRoute
   VendedorVeiculosRoute: typeof VendedorVeiculosRoute
@@ -1338,6 +1379,7 @@ const VendedorRouteChildren: VendedorRouteChildren = {
   VendedorCadastrarRoute: VendedorCadastrarRoute,
   VendedorContratoRoute: VendedorContratoRoute,
   VendedorDocumentosRoute: VendedorDocumentosRoute,
+  VendedorFinanceiroRoute: VendedorFinanceiroRoute,
   VendedorOnboardingRoute: VendedorOnboardingRoute,
   VendedorPerfilRoute: VendedorPerfilRoute,
   VendedorVeiculosRoute: VendedorVeiculosRoute,
