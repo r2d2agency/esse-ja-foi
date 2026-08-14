@@ -95,7 +95,7 @@ function LandingVendedor() {
               <a href="#como-funciona" onClick={() => setMenuOpen(false)} className="text-base text-slate-600">
                 Como funciona
               </a>
-              <Link to="/comprador" className="text-base text-slate-600">Quero comprar</Link>
+              <Link to="/vender" className="text-base text-slate-600">Quero vender</Link>
               <Link to="/login" className="text-base text-slate-600">Entrar</Link>
               <Button onClick={() => irParaCadastro(placaHero)} className="h-12 rounded-full bg-slate-900 text-white hover:bg-teal-800">
                 Vender meu carro
