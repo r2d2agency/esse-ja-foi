@@ -231,7 +231,7 @@ export async function criarLaudo(input: { agendamentoId: string; vistoriadorId: 
   `);
   await d.execute(sql`
     INSERT INTO logs (entidade, entidade_id, acao, para, detalhe)
-    VALUES ('laudo', ${String(laudo['id'])}, 'Laudo iniciado', 'EM_VISTORIA', ${`Modelo ${modelo['nome']} v${modelo['versao']}`});
+    VALUES ('laudo', ${String(laudo['id'])}, 'Laudo iniciado', 'EM_VISTORIA', 'Modelo base v1');
   `);
   return laudo;
 }
