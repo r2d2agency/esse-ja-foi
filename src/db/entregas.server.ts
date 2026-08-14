@@ -499,7 +499,7 @@ export async function confirmarRecebimento(entregaId: string, compradorId: strin
 }
 
 export async function registrarDivergencia(params: {
-  entrega_id: string; comprador_id: string; motivo: string; descricao: string; fotos?: { url: string }[];
+  entrega_id: string; comprador_id: string; motivo: string; descricao: string; fotos?: { url: string }[] | undefined;
 }) {
   const d = requireDb();
   const res = await d.execute(sql`${SELECT_ENTREGA} WHERE e.id = ${params.entrega_id}::uuid`);
