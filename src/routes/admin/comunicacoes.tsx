@@ -49,8 +49,11 @@ import {
   Smartphone,
   Info,
   ChevronLeft,
-  Check
+  Check,
+  Car,
+  Megaphone
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { 
@@ -64,8 +67,13 @@ import {
   getWebhookLogsFn,
   buscarDadosAutomaticosFn,
   listarTemplatesFn,
-  criarTemplateMetaFn
+  criarTemplateMetaFn,
+  estimarPublicoFn,
+  criarCampanhaFn,
+  enviarTesteFn,
+  processarEnvioCampanhaFn
 } from '@/lib/comunicacoes.functions';
+import { getAnunciosAdmin } from '@/lib/anuncios.functions';
 import { toast } from 'sonner';
 
 export const Route = createFileRoute('/admin/comunicacoes')({
@@ -85,11 +93,16 @@ function ComunicacoesPage() {
   const buscarDadosAutos = useServerFn(buscarDadosAutomaticosFn);
   const getTemplates = useServerFn(listarTemplatesFn);
   const criarTemplate = useServerFn(criarTemplateMetaFn);
+  const estimarPublico = useServerFn(estimarPublicoFn);
+  const criarCampanha = useServerFn(criarCampanhaFn);
+  const enviarTeste = useServerFn(enviarTesteFn);
+  const getAnuncios = useServerFn(getAnunciosAdmin);
+  const processarEnvio = useServerFn(processarEnvioCampanhaFn);
 
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<any>({});
   
-  // Wizard State
+  // Wizard Template State
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
   const [newTemplate, setNewTemplate] = useState<any>({
@@ -100,6 +113,24 @@ function ComunicacoesPage() {
       { type: 'BODY', text: '' }
     ]
   });
+
+  // Wizard Campanha State
+  const [isCampanhaWizardOpen, setIsCampanhaWizardOpen] = useState(false);
+  const [campanhaStep, setCampanhaStep] = useState(1);
+  const [novaCampanha, setNovaCampanha] = useState<any>({
+    nome: '',
+    veiculo_id: '',
+    template_id: '',
+    filtros: {
+      tipo: 'TODOS',
+      status: 'APROVADO',
+      uf: '',
+    },
+    mapeamento_variaveis: {},
+    agendado_para: null
+  });
+
+  const [estimativa, setEstimativa] = useState<any>({ total: 0, elegiveis: 0, nao_elegiveis: 0 });
 
   const { data: indicadores } = useQuery({
     queryKey: ['wa-indicadores'],
@@ -125,6 +156,57 @@ function ComunicacoesPage() {
     queryKey: ['wa-templates'],
     queryFn: () => getTemplates()
   });
+
+  const { data: anuncios } = useQuery({
+    queryKey: ['anuncios-ativos'],
+    queryFn: () => getAnuncios({ data: 'PUBLICADO' })
+  });
+
+  const handleEstimar = async () => {
+    const res = await estimarPublico({ data: novaCampanha.filtros });
+    setEstimativa(res);
+  };
+
+  const handleSalvarCampanha = async (enviarAgora = false) => {
+    toast.promise(criarCampanha({ data: novaCampanha }), {
+      loading: 'Salvando campanha...',
+      success: (res: any) => {
+        if (res.id) {
+          setIsCampanhaWizardOpen(false);
+          queryClient.invalidateQueries({ queryKey: ['wa-campanhas'] });
+          if (enviarAgora) {
+            handleProcessarEnvio(res.id);
+          }
+          return 'Campanha salva com sucesso!';
+        }
+        throw new Error(res.error || 'Erro ao salvar');
+      },
+      error: (err) => `Falha: ${err.message}`
+    });
+  };
+
+  const handleProcessarEnvio = async (id: string) => {
+    toast.promise(processarEnvio({ data: id }), {
+      loading: 'Processando fila de envio...',
+      success: 'Envio concluído!',
+      error: (err) => `Erro no processamento: ${err.message}`
+    });
+  };
+
+  const handleEnviarTeste = async () => {
+    toast.promise(enviarTeste({ 
+      data: {
+        telefone: '5517999999999', 
+        template_id: novaCampanha.template_id,
+        variaveis: novaCampanha.mapeamento_variaveis
+      }
+    }), {
+      loading: 'Enviando teste...',
+      success: 'Teste enviado!',
+      error: (err) => `Erro: ${err.message}`
+    });
+  };
+
 
   const handleSincronizar = async () => {
     toast.promise(sincronizarTemplates(), {
@@ -301,17 +383,714 @@ function ComunicacoesPage() {
                 <h2 className="text-lg font-semibold">Campanhas de Divulgação</h2>
                 <p className="text-sm text-muted-foreground">Envios em massa pelo WhatsApp Cloud API</p>
               </div>
+              <Dialog open={isCampanhaWizardOpen} onOpenChange={setIsCampanhaWizardOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-teal-600 hover:bg-teal-700">
+                    <Plus className="w-4 h-4 mr-2" /> Nova Campanha
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Nova Campanha (Etapa {campanhaStep}/7)</DialogTitle>
+                    <DialogDescription>Divulgue veículos ou envie comunicados gerais</DialogDescription>
+                  </DialogHeader>
+
+                  <div className="py-6 space-y-6">
+                    {campanhaStep === 1 && (
+                      <div className="space-y-6">
+                        <Label className="text-lg">O que você deseja divulgar?</Label>
+                        <div className="grid grid-cols-2 gap-4">
+                          <Card 
+                            className={cn(
+                              "cursor-pointer border-2 hover:border-teal-500 transition-all",
+                              novaCampanha.veiculo_id ? "border-teal-600 bg-teal-50" : "border-slate-200"
+                            )}
+                            onClick={() => setCampanhaStep(2)}
+                          >
+                            <CardContent className="p-6 text-center space-y-3">
+                              <Car className="w-10 h-10 mx-auto text-teal-600" />
+                              <h3 className="font-bold">Veículo Específico</h3>
+                              <p className="text-xs text-muted-foreground">Envie fotos e detalhes de um anúncio ativo</p>
+                            </CardContent>
+                          </Card>
+                          <Card className="opacity-50 cursor-not-allowed border-slate-200">
+                            <CardContent className="p-6 text-center space-y-3">
+                              <Megaphone className="w-10 h-10 mx-auto text-slate-400" />
+                              <h3 className="font-bold">Campanha Geral</h3>
+                              <p className="text-xs text-muted-foreground">Comunicados institucionais ou avisos gerais</p>
+                              <Badge variant="outline" className="text-[10px]">Em breve</Badge>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      </div>
+                    )}
+
+                    {campanhaStep === 2 && (
+                      <div className="space-y-4">
+                        <Label>Escolha o Veículo</Label>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                          <Input placeholder="Buscar por marca, modelo ou código EJF..." className="pl-10" />
+                        </div>
+                        <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-2">
+                          {anuncios?.map((anuncio: any) => (
+                            <div 
+                              key={anuncio.id}
+                              onClick={() => {
+                                setNovaCampanha({
+                                  ...novaCampanha, 
+                                  veiculo_id: anuncio.veiculo_id,
+                                  nome: `${anuncio.marca} ${anuncio.modelo} - ${anuncio.codigo_publico}`
+                                });
+                                setCampanhaStep(3);
+                              }}
+                              className={cn(
+                                "flex items-center gap-4 p-3 border rounded-lg cursor-pointer hover:border-teal-500 transition-all",
+                                novaCampanha.veiculo_id === anuncio.veiculo_id ? "border-teal-600 bg-teal-50" : "border-slate-100"
+                              )}
+                            >
+                              <div className="w-16 h-12 bg-slate-100 rounded overflow-hidden shrink-0">
+                                {anuncio.foto_capa ? <img src={anuncio.foto_capa} className="w-full h-full object-cover" /> : <Car className="w-full h-full p-3 text-slate-300" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold truncate">{anuncio.marca} {anuncio.modelo}</p>
+                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                  <span>{anuncio.codigo_publico}</span>
+                                  <span>•</span>
+                                  <Badge variant="outline" className="text-[8px] px-1 h-3">{anuncio.status}</Badge>
+                                </div>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-slate-300" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {campanhaStep === 3 && (
+                      <div className="space-y-6">
+                        <div className="flex justify-between items-end">
+                          <Label className="text-lg">Público Alvo</Label>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-teal-600">{estimativa.elegiveis}</p>
+                            <p className="text-[10px] text-muted-foreground">Elegíveis para WhatsApp</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Tipo de Comprador</Label>
+                            <Select 
+                              value={novaCampanha.filtros.tipo} 
+                              onValueChange={v => {
+                                const newFiltros = {...novaCampanha.filtros, tipo: v};
+                                setNovaCampanha({...novaCampanha, filtros: newFiltros});
+                                handleEstimar();
+                              }}
+                            >
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="TODOS">Todos</SelectItem>
+                                <SelectItem value="PF">Pessoa Física</SelectItem>
+                                <SelectItem value="PJ">Empresa / Lojista</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Estado (UF)</Label>
+                            <Select 
+                              value={novaCampanha.filtros.uf} 
+                              onValueChange={v => {
+                                const newFiltros = {...novaCampanha.filtros, uf: v};
+                                setNovaCampanha({...novaCampanha, filtros: newFiltros});
+                                handleEstimar();
+                              }}
+                            >
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="TODOS">Todos</SelectItem>
+                                <SelectItem value="SP">São Paulo</SelectItem>
+                                <SelectItem value="RJ">Rio de Janeiro</SelectItem>
+                                <SelectItem value="MG">Minas Gerais</SelectItem>
+                                <SelectItem value="PR">Paraná</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Users className="w-5 h-5 text-slate-400" />
+                            <div>
+                              <p className="text-sm font-semibold">{estimativa.total} compradores encontrados</p>
+                              <p className="text-xs text-muted-foreground">{estimativa.nao_elegiveis} não elegíveis (ausência de WhatsApp ou desativado)</p>
+                            </div>
+                          </div>
+                          <Button variant="ghost" size="sm" className="text-xs">Ver detalhes</Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {campanhaStep === 4 && (
+                      <div className="space-y-4">
+                        <Label className="text-lg">Escolher Template</Label>
+                        <div className="grid grid-cols-2 gap-3 max-h-80 overflow-y-auto pr-2">
+                          {templates?.filter((t: any) => t.status === 'APPROVED').map((template: any) => (
+                            <div 
+                              key={template.id}
+                              onClick={() => {
+                                setNovaCampanha({...novaCampanha, template_id: template.id});
+                                setCampanhaStep(5);
+                              }}
+                              className={cn(
+                                "p-3 border rounded-lg cursor-pointer hover:border-teal-500 transition-all",
+                                novaCampanha.template_id === template.id ? "border-teal-600 bg-teal-50" : "border-slate-100"
+                              )}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-[10px] font-mono text-muted-foreground truncate max-w-[120px]">{template.meta_name}</span>
+                                <Badge className="text-[8px] bg-blue-100 text-blue-700 hover:bg-blue-100">{template.categoria}</Badge>
+                              </div>
+                              <p className="text-xs font-medium line-clamp-2">
+                                {template.conteudo?.find((c: any) => c.type === 'BODY')?.text}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {campanhaStep === 5 && (
+                      <div className="space-y-6">
+                        <Label className="text-lg">Mapeamento de Variáveis</Label>
+                        <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-lg border border-blue-100 dark:border-blue-900/50 flex gap-3">
+                          <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                          <p className="text-xs text-blue-900 dark:text-blue-200">
+                            Preencha as variáveis do template com os dados dinâmicos do veículo ou comprador.
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4 items-center">
+                            <div className="space-y-1">
+                              <Label className="text-xs">{"{{"}1{"}}"} Nome do Comprador</Label>
+                              <div className="p-2 bg-slate-100 rounded border text-xs text-muted-foreground flex items-center gap-2">
+                                <Users className="w-3 h-3" /> Automático: comprador.nome
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">{"{{"}2{"}}"} Marca/Modelo Veículo</Label>
+                              <div className="p-2 bg-slate-100 rounded border text-xs text-muted-foreground flex items-center gap-2">
+                                <Car className="w-3 h-3" /> Automático: veiculo.nome_completo
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">{"{{"}3{"}}"} Link do Anúncio</Label>
+                              <div className="p-2 bg-slate-100 rounded border text-xs text-muted-foreground flex items-center gap-2">
+                                <Globe className="w-3 h-3" /> Automático: anuncio.url
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {campanhaStep === 6 && (
+                      <div className="space-y-6">
+                        <div className="flex justify-between items-center">
+                          <Label className="text-lg">Prévia da Mensagem</Label>
+                          <Button variant="outline" size="sm" onClick={handleEnviarTeste}>
+                            <Send className="w-4 h-4 mr-2" /> Enviar Teste
+                          </Button>
+                        </div>
+                        
+                        <div className="max-w-[320px] mx-auto bg-[#e5ddd5] dark:bg-slate-800 p-4 rounded-xl relative shadow-inner">
+                          <div className="bg-white dark:bg-slate-900 rounded-lg p-3 shadow-sm text-sm space-y-2">
+                            <div className="w-full aspect-video bg-slate-100 rounded mb-2 flex items-center justify-center">
+                              <Car className="w-12 h-12 text-slate-300" />
+                            </div>
+                            <p className="font-bold">Olá Carlos,</p>
+                            <p>Uma nova oportunidade acaba de entrar no Esse Já Foi: <strong>{novaCampanha.nome}</strong>. Confira as fotos e participe pelo botão abaixo.</p>
+                            <div className="border-t pt-2 mt-2">
+                              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs">
+                                Ver veículo
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="text-[10px] text-slate-500 mt-1 text-right">14:30</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {campanhaStep === 7 && (
+                      <div className="space-y-6">
+                        <Label className="text-lg">Revisão Final</Label>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-4">
+                            <div className="p-4 border rounded-lg bg-slate-50 dark:bg-slate-900/50 space-y-2">
+                              <p className="text-[10px] text-muted-foreground uppercase">Conteúdo</p>
+                              <p className="text-sm font-bold truncate">{novaCampanha.nome}</p>
+                              <div className="flex items-center gap-2">
+                                <FileText className="w-3 h-3 text-slate-400" />
+                                <span className="text-xs">Template: {templates?.find((t: any) => t.id === novaCampanha.template_id)?.meta_name}</span>
+                              </div>
+                            </div>
+                            <div className="p-4 border rounded-lg bg-slate-50 dark:bg-slate-900/50 space-y-2">
+                              <p className="text-[10px] text-muted-foreground uppercase">Conexão</p>
+                              <div className="flex items-center gap-2">
+                                <Globe className="w-3 h-3 text-green-500" />
+                                <span className="text-xs font-bold text-green-600">Meta WABA Conectada</span>
+                              </div>
+                              <p className="text-xs font-mono">{config?.phone_number}</p>
+                            </div>
+                          </div>
+
+                          <div className="p-4 border rounded-lg bg-slate-900 text-white space-y-4">
+                            <p className="text-[10px] text-slate-400 uppercase">Resumo de Envio</p>
+                            <div className="space-y-3">
+                              <div className="flex justify-between items-center text-xs">
+                                <span>Público encontrado</span>
+                                <span>{estimativa.total}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-xs">
+                                <span>Duplicados removidos</span>
+                                <span>0</span>
+                              </div>
+                              <div className="flex justify-between items-center text-xs">
+                                <span>Não elegíveis</span>
+                                <span className="text-red-400">{estimativa.nao_elegiveis}</span>
+                              </div>
+                              <div className="border-t border-slate-700 pt-2 flex justify-between items-center">
+                                <span className="text-sm font-bold">Total a enviar</span>
+                                <span className="text-xl font-black text-teal-400">{estimativa.elegiveis}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <DialogFooter className="flex justify-between sm:justify-between w-full border-t pt-4">
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => campanhaStep > 1 ? setCampanhaStep(campanhaStep - 1) : setIsCampanhaWizardOpen(false)}
+                    >
+                      {campanhaStep === 1 ? 'Cancelar' : 'Voltar'}
+                    </Button>
+                    <div className="flex gap-2">
+                      {campanhaStep === 7 ? (
+                        <>
+                          <Button variant="outline" onClick={() => handleSalvarCampanha(false)}>Agendar</Button>
+                          <Button className="bg-teal-600 hover:bg-teal-700" onClick={() => handleSalvarCampanha(true)}>
+                            Enviar Agora <Send className="w-4 h-4 ml-2" />
+                          </Button>
+                        </>
+                      ) : (
+                        <Button 
+                          className="bg-teal-600 hover:bg-teal-700" 
+                          onClick={() => {
+                            if (campanhaStep === 2 && !novaCampanha.veiculo_id) {
+                              toast.error('Selecione um veículo');
+                              return;
+                            }
+                            if (campanhaStep === 3) handleEstimar();
+                            setCampanhaStep(campanhaStep + 1);
+                          }}
+                        >
+                          Próximo <ChevronRight className="w-4 h-4 ml-2" />
+                        </Button>
+                      )}
+                    </div>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              {campanhas?.length === 0 ? (
+                <Card>
+                  <CardContent className="p-12 text-center text-muted-foreground flex flex-col items-center gap-4">
+                    <Send className="w-12 h-12 opacity-20" />
+                    <p>Nenhuma campanha realizada até o momento.</p>
+                    <Button variant="outline" onClick={() => setIsCampanhaWizardOpen(true)}>Criar minha primeira campanha</Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="border rounded-lg overflow-hidden bg-white">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50 border-b">
+                      <tr>
+                        <th className="px-4 py-3 text-left font-medium text-muted-foreground">Campanha</th>
+                        <th className="px-4 py-3 text-left font-medium text-muted-foreground">Veículo</th>
+                        <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
+                        <th className="px-4 py-3 text-right font-medium text-muted-foreground">Elegíveis</th>
+                        <th className="px-4 py-3 text-right font-medium text-muted-foreground">Enviados</th>
+                        <th className="px-4 py-3 text-right font-medium text-muted-foreground">Lidos</th>
+                        <th className="px-4 py-3 text-right font-medium text-muted-foreground">Cliques</th>
+                        <th className="px-4 py-3"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {campanhas?.map((campanha: any) => (
+                        <tr key={campanha.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col">
+                              <span className="font-bold">{campanha.nome}</span>
+                              <span className="text-[10px] text-muted-foreground">{new Date(campanha.criado_em).toLocaleDateString()}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-xs">{campanha.marca} {campanha.modelo}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge variant={
+                              campanha.status === 'CONCLUIDA' ? 'success' : 
+                              campanha.status === 'PROCESSANDO' ? 'warning' : 'secondary'
+                            } className="text-[10px]">
+                              {campanha.status}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono">{campanha.total_destinatarios}</td>
+                          <td className="px-4 py-3 text-right font-mono text-blue-600">{campanha.total_enviados}</td>
+                          <td className="px-4 py-3 text-right font-mono text-purple-600">{campanha.total_lidos}</td>
+                          <td className="px-4 py-3 text-right font-mono text-teal-600">{campanha.total_cliques}</td>
+                          <td className="px-4 py-3 text-right">
+                            <Button variant="ghost" size="icon"><ChevronRight className="w-4 h-4" /></Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Segmentos */}
+          <TabsContent value="segmentos" className="mt-6 space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-semibold">Segmentos de Compradores</h2>
+                <p className="text-sm text-muted-foreground">Crie públicos dinâmicos baseados em filtros ou listas manuais</p>
+              </div>
               <Button className="bg-teal-600 hover:bg-teal-700">
-                <Plus className="w-4 h-4 mr-2" /> Nova Campanha
+                <Plus className="w-4 h-4 mr-2" /> Novo Segmento
               </Button>
             </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-md">Segmentos Ativos</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-50 border-b">
+                        <tr>
+                          <th className="px-4 py-3 text-left">Nome</th>
+                          <th className="px-4 py-3 text-left">Tipo</th>
+                          <th className="px-4 py-3 text-right">Contatos</th>
+                          <th className="px-4 py-3 text-right">Elegíveis</th>
+                          <th className="px-4 py-3"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        <tr className="hover:bg-slate-50">
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col">
+                              <span className="font-bold">Lojistas VIP - São Paulo</span>
+                              <span className="text-[10px] text-muted-foreground">Filtro: PJ + SP</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3"><Badge variant="outline">Dinâmico</Badge></td>
+                          <td className="px-4 py-3 text-right">142</td>
+                          <td className="px-4 py-3 text-right text-teal-600 font-bold">128</td>
+                          <td className="px-4 py-3 text-right">
+                            <Button variant="ghost" size="icon"><ChevronRight className="w-4 h-4" /></Button>
+                          </td>
+                        </tr>
+                        <tr className="hover:bg-slate-50">
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col">
+                              <span className="font-bold">Interessados SUVs Premium</span>
+                              <span className="text-[10px] text-muted-foreground">Filtro: Interesse SUV + {">"} 2018</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3"><Badge variant="outline">Dinâmico</Badge></td>
+                          <td className="px-4 py-3 text-right">86</td>
+                          <td className="px-4 py-3 text-right text-teal-600 font-bold">74</td>
+                          <td className="px-4 py-3 text-right">
+                            <Button variant="ghost" size="icon"><ChevronRight className="w-4 h-4" /></Button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-md">Bibliotecas de Filtros</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium">Por Tipo</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary" className="cursor-pointer">Lojista</Badge>
+                        <Badge variant="secondary" className="cursor-pointer">Pessoa Física</Badge>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium">Por Interesse</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary" className="cursor-pointer">SUV</Badge>
+                        <Badge variant="secondary" className="cursor-pointer">Sedan</Badge>
+                        <Badge variant="secondary" className="cursor-pointer">Hatch</Badge>
+                        <Badge variant="secondary" className="cursor-pointer">Picape</Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Contatos */}
+          <TabsContent value="contatos" className="mt-6 space-y-4">
+             <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-semibold">Base de Contatos (WhatsApp)</h2>
+                <p className="text-sm text-muted-foreground">Monitore a elegibilidade e saúde dos números dos seus compradores</p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline">
+                  <Filter className="w-4 h-4 mr-2" /> Filtrar Elegíveis
+                </Button>
+                <Button variant="outline"> Exportar Base</Button>
+              </div>
+            </div>
+            
             <Card>
-               {/* Tabela de campanhas aqui - já existente mas simplificada */}
-               <div className="p-4 text-center text-muted-foreground py-10">
-                 Carregando campanhas...
-               </div>
+              <CardContent className="p-0">
+                <div className="border-b p-4 bg-slate-50/50 flex gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input placeholder="Buscar por nome, telefone ou empresa..." className="pl-10" />
+                  </div>
+                </div>
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 border-b">
+                    <tr>
+                      <th className="px-4 py-3 text-left">Comprador</th>
+                      <th className="px-4 py-3 text-left">WhatsApp</th>
+                      <th className="px-4 py-3 text-left">Status</th>
+                      <th className="px-4 py-3 text-left">Elegibilidade</th>
+                      <th className="px-4 py-3 text-right">Interesses</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    <tr className="hover:bg-slate-50">
+                      <td className="px-4 py-3 font-medium">Auto Prime Multimarcas</td>
+                      <td className="px-4 py-3 font-mono">(17) 99762-4832</td>
+                      <td className="px-4 py-3"><Badge variant="success">ATIVO</Badge></td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          <span>Elegível</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-1">
+                          <Badge variant="outline" className="text-[9px]">SUV</Badge>
+                          <Badge variant="outline" className="text-[9px]">Luxury</Badge>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr className="hover:bg-slate-50">
+                      <td className="px-4 py-3 font-medium">Carlos Eduardo Silva</td>
+                      <td className="px-4 py-3 font-mono">(11) 98221-0092</td>
+                      <td className="px-4 py-3"><Badge variant="destructive">INVÁLIDO</Badge></td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <AlertCircle className="w-4 h-4 text-red-500" />
+                          <span>Número Inexistente</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                         <Badge variant="outline" className="text-[9px]">Hatch</Badge>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Segmentos */}
+          <TabsContent value="segmentos" className="mt-6 space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-semibold">Segmentos de Compradores</h2>
+                <p className="text-sm text-muted-foreground">Crie públicos dinâmicos baseados em filtros ou listas manuais</p>
+              </div>
+              <Button className="bg-teal-600 hover:bg-teal-700">
+                <Plus className="w-4 h-4 mr-2" /> Novo Segmento
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-md">Segmentos Ativos</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-50 border-b">
+                        <tr>
+                          <th className="px-4 py-3 text-left">Nome</th>
+                          <th className="px-4 py-3 text-left">Tipo</th>
+                          <th className="px-4 py-3 text-right">Contatos</th>
+                          <th className="px-4 py-3 text-right">Elegíveis</th>
+                          <th className="px-4 py-3"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        <tr className="hover:bg-slate-50">
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col">
+                              <span className="font-bold">Lojistas VIP - São Paulo</span>
+                              <span className="text-[10px] text-muted-foreground">Filtro: PJ + SP</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3"><Badge variant="outline">Dinâmico</Badge></td>
+                          <td className="px-4 py-3 text-right">142</td>
+                          <td className="px-4 py-3 text-right text-teal-600 font-bold">128</td>
+                          <td className="px-4 py-3 text-right">
+                            <Button variant="ghost" size="icon"><ChevronRight className="w-4 h-4" /></Button>
+                          </td>
+                        </tr>
+                        <tr className="hover:bg-slate-50">
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col">
+                              <span className="font-bold">Interessados SUVs Premium</span>
+                              <span className="text-[10px] text-muted-foreground">Filtro: Interesse SUV + {'>'} 2018</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3"><Badge variant="outline">Dinâmico</Badge></td>
+                          <td className="px-4 py-3 text-right">86</td>
+                          <td className="px-4 py-3 text-right text-teal-600 font-bold">74</td>
+                          <td className="px-4 py-3 text-right">
+                            <Button variant="ghost" size="icon"><ChevronRight className="w-4 h-4" /></Button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-md">Bibliotecas de Filtros</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium">Por Tipo</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary" className="cursor-pointer">Lojista</Badge>
+                        <Badge variant="secondary" className="cursor-pointer">Pessoa Física</Badge>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium">Por Interesse</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary" className="cursor-pointer">SUV</Badge>
+                        <Badge variant="secondary" className="cursor-pointer">Sedan</Badge>
+                        <Badge variant="secondary" className="cursor-pointer">Hatch</Badge>
+                        <Badge variant="secondary" className="cursor-pointer">Picape</Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Contatos */}
+          <TabsContent value="contatos" className="mt-6 space-y-4">
+             <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-semibold">Base de Contatos (WhatsApp)</h2>
+                <p className="text-sm text-muted-foreground">Monitore a elegibilidade e saúde dos números dos seus compradores</p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline">
+                  <Filter className="w-4 h-4 mr-2" /> Filtrar Elegíveis
+                </Button>
+                <Button variant="outline"> Exportar Base</Button>
+              </div>
+            </div>
+            
+            <Card>
+              <CardContent className="p-0">
+                <div className="border-b p-4 bg-slate-50/50 flex gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input placeholder="Buscar por nome, telefone ou empresa..." className="pl-10" />
+                  </div>
+                </div>
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 border-b">
+                    <tr>
+                      <th className="px-4 py-3 text-left">Comprador</th>
+                      <th className="px-4 py-3 text-left">WhatsApp</th>
+                      <th className="px-4 py-3 text-left">Status</th>
+                      <th className="px-4 py-3 text-left">Elegibilidade</th>
+                      <th className="px-4 py-3 text-right">Interesses</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    <tr className="hover:bg-slate-50">
+                      <td className="px-4 py-3 font-medium">Auto Prime Multimarcas</td>
+                      <td className="px-4 py-3 font-mono">(17) 99762-4832</td>
+                      <td className="px-4 py-3"><Badge variant="success">ATIVO</Badge></td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          <span>Elegível</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-1">
+                          <Badge variant="outline" className="text-[9px]">SUV</Badge>
+                          <Badge variant="outline" className="text-[9px]">Luxury</Badge>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr className="hover:bg-slate-50">
+                      <td className="px-4 py-3 font-medium">Carlos Eduardo Silva</td>
+                      <td className="px-4 py-3 font-mono">(11) 98221-0092</td>
+                      <td className="px-4 py-3"><Badge variant="destructive">INVÁLIDO</Badge></td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <AlertCircle className="w-4 h-4 text-red-500" />
+                          <span>Número Inexistente</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                         <Badge variant="outline" className="text-[9px]">Hatch</Badge>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
 
           {/* Templates */}
           <TabsContent value="templates" className="mt-6 space-y-4">

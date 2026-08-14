@@ -104,3 +104,51 @@ export const criarTemplateMetaFn = createServerFn({ method: "POST" })
       return { ok: false, error: error.message };
     }
   });
+
+export const estimarPublicoFn = createServerFn({ method: "POST" })
+  .validator((data: any) => data)
+  .handler(async ({ data }) => {
+    return db.estimarPublico(data);
+  });
+
+export const criarCampanhaFn = createServerFn({ method: "POST" })
+  .validator((data: any) => data)
+  .handler(async ({ data, context }) => {
+    // Pegar usuário da auth se disponível, ou mockar admin
+    const userId = (context as any).userId || '00000000-0000-0000-0000-000000000000';
+    return db.criarCampanha(data, userId);
+  });
+
+export const getCampanhaDetalhesFn = createServerFn({ method: "GET" })
+  .validator((id: string) => z.string().uuid().parse(id))
+  .handler(async ({ data: id }) => {
+    return db.getCampanhaDetalhes(id);
+  });
+
+export const processarEnvioCampanhaFn = createServerFn({ method: "POST" })
+  .validator((id: string) => z.string().uuid().parse(id))
+  .handler(async ({ data: id }) => {
+    return db.processarEnvioCampanha(id);
+  });
+
+export const enviarTesteFn = createServerFn({ method: "POST" })
+  .validator((data: any) => z.object({
+    telefone: z.string(),
+    template_id: z.string().uuid(),
+    variaveis: z.any()
+  }).parse(data))
+  .handler(async ({ data }) => {
+    try {
+      const template = (await db.listarTemplates()).find((t: any) => t.id === data.template_id);
+      if (!template) throw new Error("Template não encontrado");
+      
+      return await metaService.enviarMensagem(
+        data.telefone,
+        template.meta_name,
+        template.idioma,
+        [] // TODO: Mapear variáveis
+      );
+    } catch (error: any) {
+      return { ok: false, error: error.message };
+    }
+  });
