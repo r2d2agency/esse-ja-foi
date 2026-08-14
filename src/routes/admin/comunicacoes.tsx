@@ -90,11 +90,11 @@ export default function ComunicacoesPage() {
     toast.promise(testarConexao(), {
       loading: 'Validando credenciais com a Meta...',
       success: (res: any) => {
-        if (res.ok) {
+        if (res && typeof res === 'object' && 'ok' in res && res.ok) {
           queryClient.invalidateQueries({ queryKey: ['wa-config'] });
           return '✓ Conexão validada com sucesso!';
         }
-        throw new Error(res.error || 'Erro desconhecido');
+        throw new Error((res as any)?.error || 'Erro desconhecido');
       },
       error: (err) => `Erro: ${err.message}`
     });
@@ -461,7 +461,11 @@ export default function ComunicacoesPage() {
                       </div>
                       <div className="space-y-1">
                         <p className="text-[10px] uppercase text-muted-foreground">Último Evento</p>
-                        <p className="text-sm">{logs?.[0] ? new Date(logs[0].criado_em).toLocaleTimeString() : 'Nenhum'}</p>
+                        <p className="text-sm">
+                          {logs && Array.isArray(logs) && logs.length > 0 && (logs[0] as any).criado_em 
+                            ? new Date((logs[0] as any).criado_em).toLocaleTimeString() 
+                            : 'Nenhum'}
+                        </p>
                       </div>
                       <div className="space-y-1 text-right">
                          <Button variant="link" className="h-auto p-0 text-teal-600" onClick={() => {}}>Ver Documentação Meta</Button>
