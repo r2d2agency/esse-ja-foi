@@ -95,9 +95,57 @@ export async function ensureVistoriaSchema() {
       criado_em timestamptz DEFAULT now()
     );
   `);
+
+  // 6. Laudos
+  await d.execute(sql`
+    CREATE TABLE IF NOT EXISTS laudos (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      vistoria_id uuid NOT NULL REFERENCES vistorias(id) ON DELETE CASCADE,
+      veiculo_id uuid NOT NULL REFERENCES veiculos(id),
+      vistoriador_id uuid NOT NULL REFERENCES vistoriadores(id),
+      status text NOT NULL DEFAULT 'EM_ANDAMENTO', -- EM_ANDAMENTO, CONCLUIDO
+      quilometragem_atual integer,
+      localizacao_checkin jsonb, -- { lat, lng, timestamp }
+      placa_confirmada text,
+      observacao_geral text,
+      declaracao_vistoriador boolean DEFAULT false,
+      concluido_em timestamptz,
+      criado_em timestamptz DEFAULT now(),
+      atualizado_em timestamptz DEFAULT now(),
+      UNIQUE(vistoria_id)
+    );
+  `);
+
+  // 7. Laudo Checklist
+  await d.execute(sql`
+    CREATE TABLE IF NOT EXISTS laudo_checklist (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      laudo_id uuid NOT NULL REFERENCES laudos(id) ON DELETE CASCADE,
+      etapa text NOT NULL, 
+      item_chave text NOT NULL,
+      status text NOT NULL, 
+      observacao text,
+      foto_url text,
+      criado_em timestamptz DEFAULT now(),
+      atualizado_em timestamptz DEFAULT now(),
+      UNIQUE(laudo_id, item_chave)
+    );
+  `);
+
+  // 8. Laudo Fotos
+  await d.execute(sql`
+    CREATE TABLE IF NOT EXISTS laudo_fotos (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      laudo_id uuid NOT NULL REFERENCES laudos(id) ON DELETE CASCADE,
+      tipo_foto text NOT NULL, 
+      url text NOT NULL,
+      metadata jsonb,
+      criado_em timestamptz DEFAULT now()
+    );
+  `);
 }
 
-// Server Functions para Admin Vistoria
+// Server Functions para Admin e App Vistoriador
 
 export async function listarVistoriasAdmin(filtros: any = {}) {
   const d = requireDb();
@@ -163,14 +211,12 @@ export async function criarAgendamento(data: any) {
   
   const vistoriaId = (res as any).rows[0].id;
   
-  // Atualiza status do veículo
   await d.execute(sql`
     UPDATE veiculos 
     SET status = 'VISTORIA_AGENDADA', atualizado_em = now() 
     WHERE id = ${data.veiculo_id}::uuid
   `);
   
-  // Log histórico
   await d.execute(sql`
     INSERT INTO vistorias_historico (vistoria_id, acao, detalhe, usuario_id)
     VALUES (${vistoriaId}, 'Agendamento criado', 'Vistoria agendada para ' || ${data.data_vistoria} || ' às ' || ${data.horario_vistoria}, ${data.usuario_id}::uuid)
@@ -240,5 +286,146 @@ export async function confirmarVistoriaVendedor(vistoriaId: string, vendedorId: 
     VALUES (${vistoriaId}, 'Presença confirmada', 'Vendedor confirmou presença no agendamento.', ${vendedorId}::uuid)
   `);
   
+  return { ok: true };
+}
+
+// App Vistoriador
+
+export async function listarVistoriasHojeVistoriador(usuarioId: string) {
+  const d = requireDb();
+  await ensureVistoriaSchema();
+  
+  const res = await d.execute(sql`
+    SELECT v.*, 
+           vei.placa, vei.marca, vei.modelo, vei.ano,
+           prof.nome as vendedor_nome,
+           uv.nome as unidade_nome
+    FROM vistorias v
+    JOIN veiculos vei ON v.veiculo_id = vei.id
+    JOIN profiles prof ON v.vendedor_id = prof.id
+    JOIN unidades_vistoria uv ON v.unidade_id = uv.id
+    JOIN vistoriadores vist ON v.vistoriador_id = vist.id
+    WHERE vist.usuario_id = ${usuarioId}::uuid
+      AND v.data_vistoria = CURRENT_DATE
+      AND v.status NOT IN ('CANCELADA')
+    ORDER BY v.horario_vistoria ASC
+  `);
+  
+  return (res as any).rows || res;
+}
+
+export async function getVistoriaDetalheVistoriador(vistoriaId: string, usuarioId: string) {
+  const d = requireDb();
+  
+  const res = await d.execute(sql`
+    SELECT v.*, 
+           vei.placa, vei.marca, vei.modelo, vei.ano, vei.km as km_base,
+           prof.nome as vendedor_nome, prof.telefone as vendedor_telefone,
+           uv.nome as unidade_nome, uv.endereco as unidade_endereco,
+           l.id as laudo_id, l.status as laudo_status
+    FROM vistorias v
+    JOIN veiculos vei ON v.veiculo_id = vei.id
+    JOIN profiles prof ON v.vendedor_id = prof.id
+    JOIN unidades_vistoria uv ON v.unidade_id = uv.id
+    JOIN vistoriadores vist ON v.vistoriador_id = vist.id
+    LEFT JOIN laudos l ON l.vistoria_id = v.id
+    WHERE v.id = ${vistoriaId}::uuid
+      AND vist.usuario_id = ${usuarioId}::uuid
+    LIMIT 1
+  `);
+  
+  return (res as any).rows[0] || null;
+}
+
+export async function iniciarCheckin(data: { vistoriaId: string; usuarioId: string; placa: string; localizacao: any }) {
+  const d = requireDb();
+  await ensureVistoriaSchema();
+
+  const vistRes = await d.execute(sql`SELECT id FROM vistoriadores WHERE usuario_id = ${data.usuarioId}::uuid LIMIT 1`);
+  const vistoriador = (vistRes as any).rows[0];
+  if (!vistoriador) throw new Error("Vistoriador não encontrado.");
+
+  const vRes = await d.execute(sql`
+    SELECT v.id, v.veiculo_id, vei.placa 
+    FROM vistorias v 
+    JOIN veiculos vei ON v.veiculo_id = vei.id
+    WHERE v.id = ${data.vistoriaId}::uuid 
+  `);
+  const vistoria = (vRes as any).rows[0];
+  if (!vistoria) throw new Error("Vistoria não encontrada.");
+  if (vistoria.placa.toUpperCase() !== data.placa.toUpperCase()) throw new Error("Essa placa não corresponde ao veículo agendado.");
+
+  const res = await d.execute(sql`
+    INSERT INTO laudos (vistoria_id, veiculo_id, vistoriador_id, placa_confirmada, localizacao_checkin, status)
+    VALUES (${data.vistoriaId}::uuid, ${vistoria.veiculo_id}::uuid, ${vistoriador.id}::uuid, ${data.placa}, ${JSON.stringify(data.localizacao)}, 'EM_ANDAMENTO')
+    ON CONFLICT (vistoria_id) DO UPDATE SET atualizado_em = now()
+    RETURNING id
+  `);
+
+  const laudoId = (res as any).rows[0].id;
+
+  await d.execute(sql`UPDATE vistorias SET status = 'EM_ANDAMENTO', atualizado_em = now() WHERE id = ${data.vistoriaId}::uuid`);
+
+  return { ok: true, laudoId };
+}
+
+export async function salvarItemChecklist(data: { laudoId: string; etapa: string; item_chave: string; status: string; observacao?: string | null; foto_url?: string | null }) {
+  const d = requireDb();
+  await ensureVistoriaSchema();
+
+  await d.execute(sql`
+    INSERT INTO laudo_checklist (laudo_id, etapa, item_chave, status, observacao, foto_url, atualizado_em)
+    VALUES (${data.laudoId}::uuid, ${data.etapa}, ${data.item_chave}, ${data.status}, ${data.observacao}, ${data.foto_url}, now())
+    ON CONFLICT (laudo_id, item_chave) DO UPDATE SET 
+      status = EXCLUDED.status, 
+      observacao = EXCLUDED.observacao, 
+      foto_url = EXCLUDED.foto_url,
+      atualizado_em = now()
+  `);
+
+  return { ok: true };
+}
+
+export async function salvarFotoLaudo(data: { laudoId: string; tipo_foto: string; url: string; metadata?: any }) {
+  const d = requireDb();
+  await ensureVistoriaSchema();
+
+  await d.execute(sql`
+    INSERT INTO laudo_fotos (laudo_id, tipo_foto, url, metadata)
+    VALUES (${data.laudoId}::uuid, ${data.tipo_foto}, ${data.url}, ${JSON.stringify(data.metadata)})
+  `);
+
+  return { ok: true };
+}
+
+export async function concluirVistoriaApp(data: { laudoId: string; quilometragem: number; observacao_geral: string; declaracao: boolean }) {
+  const d = requireDb();
+  
+  const lRes = await d.execute(sql`SELECT vistoria_id, veiculo_id FROM laudos WHERE id = ${data.laudoId}::uuid`);
+  const laudo = (lRes as any).rows[0];
+  if (!laudo) throw new Error("Laudo não encontrado.");
+
+  await d.execute(sql`
+    UPDATE laudos SET 
+      status = 'CONCLUIDO', 
+      quilometragem_atual = ${data.quilometragem},
+      observacao_geral = ${data.observacao_geral},
+      declaracao_vistoriador = ${data.declaracao},
+      concluido_em = now(),
+      atualizado_em = now()
+    WHERE id = ${data.laudoId}::uuid
+  `);
+
+  await d.execute(sql`UPDATE vistorias SET status = 'CONCLUIDA', atualizado_em = now() WHERE id = ${laudo.vistoria_id}::uuid`);
+  
+  await d.execute(sql`
+    UPDATE veiculos SET 
+      status = 'VISTORIA_CONCLUIDA', 
+      status_analise = 'AGUARDANDO_ANALISE_LAUDO',
+      km = ${data.quilometragem},
+      atualizado_em = now() 
+    WHERE id = ${laudo.veiculo_id}::uuid
+  `);
+
   return { ok: true };
 }

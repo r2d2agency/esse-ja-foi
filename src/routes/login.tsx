@@ -66,7 +66,7 @@ function LoginPage() {
           navigate({ to: "/admin" });
           break;
         case "vistoriador":
-          navigate({ to: "/admin/veiculos" });
+          navigate({ to: "/vistoriador" });
           break;
         case "comprador":
           navigate({ to: "/vender" });
