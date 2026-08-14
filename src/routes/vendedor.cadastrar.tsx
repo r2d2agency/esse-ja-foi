@@ -31,7 +31,7 @@ export const Route = createFileRoute('/vendedor/cadastrar')({
   component: CadastrarVeiculo,
 });
 
-const ETAPAS = ['Identificação', 'Dados', 'Documentação', 'Condição', 'Fotos', 'Valor', 'Revisão'];
+const ETAPAS = ['Placa', 'Dados', 'Documentação', 'Condição', 'Fotos', 'Valor', 'Revisão'];
 const DRAFT_KEY = 'ejf_veiculo_rascunho';
 
 const FOTOS = [
@@ -265,22 +265,45 @@ function CadastrarVeiculo() {
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-black text-slate-900">Qual veículo você quer vender?</h2>
-              <p className="mt-1 text-sm text-slate-500">Informe a placa para tentarmos localizar os dados.</p>
+              <p className="mt-1 text-sm text-slate-500">Informe a placa e o CEP onde o carro se encontra.</p>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Input
-                value={form.placa}
-                onChange={(e) => { set({ placa: maskPlaca(e.target.value) }); setBuscaFeita(false); }}
-                placeholder="ABC1D23"
-                aria-label="Placa"
-                className="h-14 flex-1 rounded-xl text-lg font-bold uppercase tracking-[0.2em]"
-              />
-              <Button onClick={buscarPlaca} disabled={buscando} className="h-14 rounded-xl bg-teal-800 px-8 font-bold text-white hover:bg-teal-900">
-                {buscando ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Search className="mr-2 h-4 w-4" /> Buscar veículo</>}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Placa do Veículo</Label>
+                <Input
+                  value={form.placa}
+                  onChange={(e) => { set({ placa: maskPlaca(e.target.value) }); setBuscaFeita(false); }}
+                  placeholder="ABC1D23"
+                  aria-label="Placa"
+                  className="h-14 w-full rounded-xl text-2xl font-black uppercase tracking-[0.2em] text-center"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">CEP (Onde o carro está?)</Label>
+                <Input
+                  value={form.uf ? `${form.cidade}/${form.uf} (${maskCep(form.uf)})` : form.cidade}
+                  placeholder="00000-000"
+                  onChange={async (e) => {
+                    const val = maskCep(e.target.value);
+                    const clean = val.replace(/\D/g, '');
+                    if (clean.length === 8) {
+                      setBuscando(true);
+                      const res = await buscarCep(clean);
+                      if (res) {
+                        set({ cidade: res.cidade, uf: res.uf });
+                        toast.success(`Localizado: ${res.cidade}/${res.uf}`);
+                      }
+                      setBuscando(false);
+                    }
+                  }}
+                  className="h-14 w-full rounded-xl text-lg font-bold text-center"
+                />
+              </div>
+              
+              <Button onClick={buscarPlaca} disabled={buscando} className="h-16 w-full rounded-2xl bg-teal-800 text-lg font-black text-white hover:bg-teal-900 shadow-lg shadow-teal-900/20">
+                {buscando ? <Loader2 className="h-6 w-6 animate-spin" /> : <><Search className="mr-2 h-5 w-5" /> Buscar e Continuar</>}
               </Button>
             </div>
-
-            {buscando && <p className="text-sm text-slate-400">Buscando informações do veículo...</p>}
 
             {buscaFeita && !veiculoEncontrado && (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
@@ -294,6 +317,7 @@ function CadastrarVeiculo() {
               </div>
             )}
           </div>
+
         )}
 
         {/* 2 — DADOS */}
