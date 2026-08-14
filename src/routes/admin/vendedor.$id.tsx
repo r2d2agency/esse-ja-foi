@@ -167,9 +167,9 @@ function DetalheVendedorPage() {
               <CardContent className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-500">Compliance</span>
-                  <Badge className={cn(
+                  <Badge className={
                     compliance?.status === 'APROVADO' ? "bg-teal-600" : "bg-amber-500"
-                  )}>{compliance?.status || "AGUARDANDO"}</Badge>
+                  }>{compliance?.status || "AGUARDANDO"}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-500">CNH</span>
