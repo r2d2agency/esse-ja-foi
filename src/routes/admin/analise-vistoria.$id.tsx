@@ -7,8 +7,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { 
   ArrowLeft, CheckCircle2, AlertTriangle, Info, Camera, 
-  FileText, LayoutDashboard, History, Comparison, DollarSign,
-  Gavel, Check, X, Search
+  FileText, LayoutDashboard, History, DollarSign,
+  Gavel, Check, X, Search, Replace
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,7 +75,7 @@ function DetalheAnaliseVistoriaPage() {
         toast.success("Proposta enviada ao vendedor!", { id: tId });
         refetch();
       } else {
-        toast.error(resEnvia.message, { id: tId });
+        toast.error((resEnvia as any).message || "Erro desconhecido", { id: tId });
       }
     } catch (err) {
       toast.error("Erro técnico.", { id: tId });

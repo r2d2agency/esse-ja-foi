@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router';
+import { createFileRoute, useNavigate, useParams, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { Car, ArrowLeft, Check, DollarSign } from 'lucide-react';

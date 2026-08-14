@@ -1,10 +1,10 @@
-import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useParams, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getDetalheAnaliseVistoriaFn, responderPropostaVendedorFn } from "@/lib/analise-pos-vistoria.functions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Check, X, ArrowLeft } from "lucide-react";
+import { Check, X, ArrowLeft, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/vendedor/veiculo/$id/proposta")({
 });
 
 function PropostaVendedorPage() {
-  const { id } = useParams({ from: "/vendedor/veiculo//proposta" });
+  const { id } = Route.useParams();
   const navigate = useNavigate();
   const getDetalhe = useServerFn(getDetalheAnaliseVistoriaFn);
   const responder = useServerFn(responderPropostaVendedorFn);
@@ -35,7 +35,9 @@ function PropostaVendedorPage() {
     return (
       <div className="p-8 text-center">
         <p>Não há proposta pendente para este veículo.</p>
-        <Button onClick={() => navigate({ to: "/vendedor/veiculo/", params: { id } })} className="mt-4">Voltar</Button>
+        <Button asChild className="mt-4">
+          <Link to="/vendedor/veiculo/$id" params={{ id }}>Voltar</Link>
+        </Button>
       </div>
     );
   }
@@ -48,12 +50,12 @@ function PropostaVendedorPage() {
 
     const tId = toast.loading(aceite ? "Aceitando proposta..." : "Recusando proposta...");
     try {
-      const res = await responder({ data: { veiculo_id: id, proposta_id: proposta.id, aceite } });
-      if (res.ok) {
+      const resResp = await responder({ data: { veiculo_id: id, proposta_id: proposta.id, aceite } });
+      if (resResp.ok) {
         toast.success(aceite ? "Proposta aceita!" : "Proposta recusada.", { id: tId });
-        navigate({ to: "/vendedor/veiculo/", params: { id } });
+        navigate({ to: "/vendedor/veiculo/$id", params: { id } });
       } else {
-        toast.error(res.message, { id: tId });
+        toast.error((resResp as any).message || "Erro", { id: tId });
       }
     } catch (err) {
       toast.error("Erro técnico.", { id: tId });
@@ -62,9 +64,9 @@ function PropostaVendedorPage() {
 
   return (
     <div className="p-6 max-w-lg mx-auto space-y-8">
-       <button onClick={() => navigate({ to: '/vendedor/veiculo/', params: { id } })} className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900">
+       <Link to="/vendedor/veiculo/$id" params={{ id }} className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900">
         <ArrowLeft className="h-4 w-4" /> Voltar
-      </button>
+      </Link>
 
       <div className="text-center space-y-2">
         <h1 className="text-2xl font-black text-slate-900">Seu veículo está pronto para a próxima etapa</h1>
