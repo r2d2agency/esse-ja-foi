@@ -340,7 +340,7 @@ function VendedorOnboarding() {
                   <div className="rounded-2xl border border-slate-100 p-5 space-y-4">
                     <div className="flex justify-between items-center">
                        <h4 className="font-bold text-slate-900 flex items-center gap-2">
-                          <User className="w-4 h-4 text-teal-600" /> Dados Pessoais
+                          <User className="w-5 h-5 text-teal-600" /> Dados Pessoais
                        </h4>
                        <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="h-7 text-teal-700 font-bold">Editar</Button>
                     </div>
@@ -356,7 +356,7 @@ function VendedorOnboarding() {
                   <div className="rounded-2xl border border-slate-100 p-5 space-y-4">
                     <div className="flex justify-between items-center">
                        <h4 className="font-bold text-slate-900 flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-teal-600" /> Endereço
+                          <MapPin className="w-5 h-5 text-teal-600" /> Endereço
                        </h4>
                        <Button variant="ghost" size="sm" onClick={() => setStep(2)} className="h-7 text-teal-700 font-bold">Editar</Button>
                     </div>
@@ -371,7 +371,7 @@ function VendedorOnboarding() {
                   {/* Bloco Documentos */}
                   <div className="rounded-2xl border border-slate-100 p-5 space-y-4">
                     <h4 className="font-bold text-slate-900 flex items-center gap-2">
-                        <FileCheck className="w-4 h-4 text-teal-600" /> Documentos Enviados
+                        <FileCheck className="w-5 h-5 text-teal-600" /> Documentos Enviados
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
                        <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl">
