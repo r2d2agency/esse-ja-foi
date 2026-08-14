@@ -113,7 +113,7 @@ export function FileUpload({ label, description, value, status = "vazio", onChan
                  size="sm" 
                  className="rounded-xl h-9 px-4 font-semibold border-slate-200"
                  onClick={() => fileInputRef.current?.click()}
-                 disabled={isSubmitting}
+                 disabled={isUploading}
                >
                  <Upload className="mr-2 h-4 w-4" /> Arquivo
                </Button>
@@ -122,7 +122,7 @@ export function FileUpload({ label, description, value, status = "vazio", onChan
                  size="sm" 
                  className="rounded-xl h-9 px-4 font-semibold border-slate-200"
                  onClick={onCameraClick}
-                 disabled={isSubmitting}
+                 disabled={isUploading}
                >
                  <Camera className="mr-2 h-4 w-4" /> Câmera
                </Button>
