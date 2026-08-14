@@ -94,6 +94,13 @@ export async function ensureAdminTables(silent = true) {
       );
     `);
 
+    // Adiciona constraint UNIQUE para documentos para permitir ON CONFLICT
+    try {
+      await d.execute(sql`
+        ALTER TABLE public.documentos ADD CONSTRAINT documentos_entidade_tipo_uidx UNIQUE (entidade, entidade_id, tipo);
+      `);
+    } catch (e) {}
+
 
 
 

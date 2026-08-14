@@ -1,0 +1,100 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { db } from "../db";
+import { sql } from "drizzle-orm";
+
+export const listarCompradoresFn = createServerFn({ method: "GET" })
+  .validator((d: unknown) => z.object({ 
+    status: z.string().optional(), 
+    busca: z.string().optional() 
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const d = db;
+    if (!d) return { ok: false, message: "DB offline" };
+
+    const search = data.busca ? `%${data.busca.toLowerCase()}%` : null;
+    const status = data.status || null;
+
+    const query = sql`
+      SELECT 
+        p.id, p.nome, p.email, p.whatsapp, p.cpf, p.cnpj, p.tipo_pessoa, 
+        p.status_compliance, p.cidade, p.uf, p.atualizado_em,
+        p.responsavel_nome as responsavel
+      FROM profiles p
+      WHERE p.role = 'comprador'::app_role
+        AND (${status} IS NULL OR p.status_compliance = ${status})
+        AND (${search} IS NULL OR (
+          lower(p.nome) LIKE ${search} OR 
+          p.cpf LIKE ${search} OR 
+          p.cnpj LIKE ${search} OR 
+          p.email LIKE ${search}
+        ))
+      ORDER BY p.criado_em DESC
+      LIMIT 100
+    `;
+
+    const res = await d.execute(query);
+    return { ok: true, data: (res as any).rows || res };
+  });
+
+export const obterDetalheCompradorFn = createServerFn({ method: "GET" })
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data }) => {
+    const d = db;
+    if (!d) return { ok: false, message: "DB offline" };
+
+    const res = await d.execute(sql`
+      SELECT * FROM profiles 
+      WHERE id = ${data.id}::uuid AND role = 'comprador'::app_role
+    `);
+    const comprador = (res as any).rows[0];
+
+    if (!comprador) return { ok: false, message: "Comprador não encontrado" };
+
+    const docsRes = await d.execute(sql`
+      SELECT * FROM documentos 
+      WHERE entidade = 'comprador' AND entidade_id = ${data.id}::uuid
+    `);
+
+    return { ok: true, data: { ...comprador, documentos: (docsRes as any).rows || [] } };
+  });
+
+export const aprovarCompradorFn = createServerFn({ method: "POST" })
+  .validator((d: unknown) => z.object({ 
+    id: z.string().uuid(),
+    observacao: z.string().optional()
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const d = db;
+    if (!d) return { ok: false, message: "DB offline" };
+
+    await d.execute(sql`
+      UPDATE profiles 
+      SET status_compliance = 'APROVADO', 
+          pode_ver_valores = true,
+          atualizado_em = now()
+      WHERE id = ${data.id}::uuid
+    `);
+
+    return { ok: true };
+  });
+
+export const solicitarPendenciaCompradorFn = createServerFn({ method: "POST" })
+  .validator((d: unknown) => z.object({ 
+    id: z.string().uuid(),
+    campo: z.string(),
+    mensagem: z.string()
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const d = db;
+    if (!d) return { ok: false, message: "DB offline" };
+
+    await d.execute(sql`
+      UPDATE profiles 
+      SET status_compliance = 'PENDENCIA',
+          atualizado_em = now()
+      WHERE id = ${data.id}::uuid
+    `);
+
+    return { ok: true };
+  });

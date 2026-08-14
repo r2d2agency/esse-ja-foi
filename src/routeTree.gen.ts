@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CadastroRouteImport } from './routes/cadastro'
+import { Route as CompradorRouteImport } from './routes/comprador'
 import { Route as EsqueciMinhaSenhaRouteImport } from './routes/esqueci-minha-senha'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
@@ -21,6 +22,7 @@ import { Route as VenderRouteImport } from './routes/vender'
 import { Route as VistoriadorRouteImport } from './routes/vistoriador'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAnunciosRouteImport } from './routes/admin/anuncios'
+import { Route as AdminCompradoresRouteImport } from './routes/admin/compradores'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configuracoes'
 import { Route as AdminContratosRouteImport } from './routes/admin/contratos'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
@@ -68,6 +70,11 @@ const CadastroRoute = CadastroRouteImport.update({
   path: '/cadastro',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CompradorRoute = CompradorRouteImport.update({
+  id: '/comprador',
+  path: '/comprador',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EsqueciMinhaSenhaRoute = EsqueciMinhaSenhaRouteImport.update({
   id: '/esqueci-minha-senha',
   path: '/esqueci-minha-senha',
@@ -111,6 +118,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AdminAnunciosRoute = AdminAnunciosRouteImport.update({
   id: '/anuncios',
   path: '/anuncios',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCompradoresRoute = AdminCompradoresRouteImport.update({
+  id: '/compradores',
+  path: '/compradores',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
@@ -274,6 +286,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/cadastro': typeof CadastroRoute
+  '/comprador': typeof CompradorRoute
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
@@ -282,6 +295,7 @@ export interface FileRoutesByFullPath {
   '/vender': typeof VenderRoute
   '/vistoriador': typeof VistoriadorRouteWithChildren
   '/admin/anuncios': typeof AdminAnunciosRouteWithChildren
+  '/admin/compradores': typeof AdminCompradoresRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/contratos': typeof AdminContratosRoute
   '/admin/logs': typeof AdminLogsRoute
@@ -318,11 +332,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cadastro': typeof CadastroRoute
+  '/comprador': typeof CompradorRoute
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/vender': typeof VenderRoute
   '/admin/anuncios': typeof AdminAnunciosRouteWithChildren
+  '/admin/compradores': typeof AdminCompradoresRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/contratos': typeof AdminContratosRoute
   '/admin/logs': typeof AdminLogsRoute
@@ -361,6 +377,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/cadastro': typeof CadastroRoute
+  '/comprador': typeof CompradorRoute
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
@@ -369,6 +386,7 @@ export interface FileRoutesById {
   '/vender': typeof VenderRoute
   '/vistoriador': typeof VistoriadorRouteWithChildren
   '/admin/anuncios': typeof AdminAnunciosRouteWithChildren
+  '/admin/compradores': typeof AdminCompradoresRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/contratos': typeof AdminContratosRoute
   '/admin/logs': typeof AdminLogsRoute
@@ -408,6 +426,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/cadastro'
+    | '/comprador'
     | '/esqueci-minha-senha'
     | '/login'
     | '/redefinir-senha'
@@ -416,6 +435,7 @@ export interface FileRouteTypes {
     | '/vender'
     | '/vistoriador'
     | '/admin/anuncios'
+    | '/admin/compradores'
     | '/admin/configuracoes'
     | '/admin/contratos'
     | '/admin/logs'
@@ -452,11 +472,13 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/cadastro'
+    | '/comprador'
     | '/esqueci-minha-senha'
     | '/login'
     | '/redefinir-senha'
     | '/vender'
     | '/admin/anuncios'
+    | '/admin/compradores'
     | '/admin/configuracoes'
     | '/admin/contratos'
     | '/admin/logs'
@@ -494,6 +516,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/cadastro'
+    | '/comprador'
     | '/esqueci-minha-senha'
     | '/login'
     | '/redefinir-senha'
@@ -502,6 +525,7 @@ export interface FileRouteTypes {
     | '/vender'
     | '/vistoriador'
     | '/admin/anuncios'
+    | '/admin/compradores'
     | '/admin/configuracoes'
     | '/admin/contratos'
     | '/admin/logs'
@@ -540,6 +564,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   CadastroRoute: typeof CadastroRoute
+  CompradorRoute: typeof CompradorRoute
   EsqueciMinhaSenhaRoute: typeof EsqueciMinhaSenhaRoute
   LoginRoute: typeof LoginRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
@@ -570,6 +595,13 @@ declare module '@tanstack/react-router' {
       path: '/cadastro'
       fullPath: '/cadastro'
       preLoaderRoute: typeof CadastroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/comprador': {
+      id: '/comprador'
+      path: '/comprador'
+      fullPath: '/comprador'
+      preLoaderRoute: typeof CompradorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/esqueci-minha-senha': {
@@ -633,6 +665,13 @@ declare module '@tanstack/react-router' {
       path: '/anuncios'
       fullPath: '/admin/anuncios'
       preLoaderRoute: typeof AdminAnunciosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/compradores': {
+      id: '/admin/compradores'
+      path: '/compradores'
+      fullPath: '/admin/compradores'
+      preLoaderRoute: typeof AdminCompradoresRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/configuracoes': {
@@ -869,6 +908,7 @@ const AdminAnunciosRouteWithChildren = AdminAnunciosRoute._addFileChildren(
 
 interface AdminRouteChildren {
   AdminAnunciosRoute: typeof AdminAnunciosRouteWithChildren
+  AdminCompradoresRoute: typeof AdminCompradoresRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminContratosRoute: typeof AdminContratosRoute
   AdminLogsRoute: typeof AdminLogsRoute
@@ -885,6 +925,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAnunciosRoute: AdminAnunciosRouteWithChildren,
+  AdminCompradoresRoute: AdminCompradoresRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminContratosRoute: AdminContratosRoute,
   AdminLogsRoute: AdminLogsRoute,
@@ -982,6 +1023,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   CadastroRoute: CadastroRoute,
+  CompradorRoute: CompradorRoute,
   EsqueciMinhaSenhaRoute: EsqueciMinhaSenhaRoute,
   LoginRoute: LoginRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,

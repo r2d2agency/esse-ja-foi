@@ -95,7 +95,8 @@ function VitrinePublica() {
                 {veiculos?.map((v: any) => (
                   <Link 
                     key={v.id} 
-                    to={`/veiculos/${v.slug}`}
+                    to="/veiculos/$slug"
+                    params={{ slug: v.slug }}
                     className="group bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all hover:border-teal-200"
                   >
                     <div className="aspect-[4/3] bg-slate-100 relative overflow-hidden">
