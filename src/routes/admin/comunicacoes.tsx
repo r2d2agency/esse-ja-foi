@@ -224,7 +224,7 @@ function ComunicacoesPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6 pb-20">
+      <div className="p-6 space-y-6 pb-20">
         {/* Header com Indicadores */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
@@ -285,13 +285,13 @@ function ComunicacoesPage() {
         </div>
 
         <Tabs defaultValue="campanhas" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 bg-muted/50">
-            <TabsTrigger value="campanhas">Campanhas</TabsTrigger>
-            <TabsTrigger value="segmentos">Segmentos</TabsTrigger>
-            <TabsTrigger value="templates">Templates</TabsTrigger>
-            <TabsTrigger value="contatos">Contatos</TabsTrigger>
-            <TabsTrigger value="logs">Logs</TabsTrigger>
-            <TabsTrigger value="config">Configurações</TabsTrigger>
+          <TabsList className="flex w-full overflow-x-auto bg-muted/50 p-1 mb-6 border-b rounded-none justify-start h-auto gap-2">
+            <TabsTrigger value="campanhas" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Campanhas</TabsTrigger>
+            <TabsTrigger value="segmentos" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Segmentos</TabsTrigger>
+            <TabsTrigger value="templates" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Templates</TabsTrigger>
+            <TabsTrigger value="contatos" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Contatos</TabsTrigger>
+            <TabsTrigger value="logs" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Logs</TabsTrigger>
+            <TabsTrigger value="config" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Configurações</TabsTrigger>
           </TabsList>
 
           {/* Campanhas */}
