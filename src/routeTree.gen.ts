@@ -19,6 +19,7 @@ import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as VendedorRouteImport } from './routes/vendedor'
 import { Route as VenderRouteImport } from './routes/vender'
 import { Route as VistoriaRouteImport } from './routes/vistoria'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminChecklistRouteImport } from './routes/admin/checklist'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configuracoes'
 import { Route as AdminDepreciacaoRouteImport } from './routes/admin/depreciacao'
@@ -87,6 +88,11 @@ const VistoriaRoute = VistoriaRouteImport.update({
   id: '/vistoria',
   path: '/vistoria',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminChecklistRoute = AdminChecklistRouteImport.update({
   id: '/checklist',
@@ -204,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
+  '/admin/': typeof AdminIndexRoute
   '/comprador/': typeof CompradorIndexRoute
   '/vistoria/': typeof VistoriaIndexRoute
   '/comprador/leilao/$id': typeof CompradorLeilaoIdRoute
@@ -211,7 +218,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteWithChildren
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
   '/login': typeof LoginRoute
   '/operacao': typeof OperacaoRouteWithChildren
@@ -232,6 +238,7 @@ export interface FileRoutesByTo {
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
+  '/admin': typeof AdminIndexRoute
   '/comprador': typeof CompradorIndexRoute
   '/vistoria': typeof VistoriaIndexRoute
   '/comprador/leilao/$id': typeof CompradorLeilaoIdRoute
@@ -263,6 +270,7 @@ export interface FileRoutesById {
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
+  '/admin/': typeof AdminIndexRoute
   '/comprador/': typeof CompradorIndexRoute
   '/vistoria/': typeof VistoriaIndexRoute
   '/comprador/leilao/$id': typeof CompradorLeilaoIdRoute
@@ -295,6 +303,7 @@ export interface FileRouteTypes {
     | '/vendedor/cadastrar'
     | '/vendedor/onboarding'
     | '/vistoria/$agendamentoId'
+    | '/admin/'
     | '/comprador/'
     | '/vistoria/'
     | '/comprador/leilao/$id'
@@ -302,7 +311,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin'
     | '/esqueci-minha-senha'
     | '/login'
     | '/operacao'
@@ -323,6 +331,7 @@ export interface FileRouteTypes {
     | '/vendedor/cadastrar'
     | '/vendedor/onboarding'
     | '/vistoria/$agendamentoId'
+    | '/admin'
     | '/comprador'
     | '/vistoria'
     | '/comprador/leilao/$id'
@@ -353,6 +362,7 @@ export interface FileRouteTypes {
     | '/vendedor/cadastrar'
     | '/vendedor/onboarding'
     | '/vistoria/$agendamentoId'
+    | '/admin/'
     | '/comprador/'
     | '/vistoria/'
     | '/comprador/leilao/$id'
@@ -443,6 +453,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/vistoria'
       preLoaderRoute: typeof VistoriaRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/checklist': {
       id: '/admin/checklist'
@@ -579,6 +596,7 @@ interface AdminRouteChildren {
   AdminDepreciacaoRoute: typeof AdminDepreciacaoRoute
   AdminLogsRoute: typeof AdminLogsRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
+  AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -587,6 +605,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDepreciacaoRoute: AdminDepreciacaoRoute,
   AdminLogsRoute: AdminLogsRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
+  AdminIndexRoute: AdminIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
