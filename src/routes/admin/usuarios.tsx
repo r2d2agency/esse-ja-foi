@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Eye, Mail, Key, UserCheck, Users, FileCheck } from "lucide-react";
+import { CheckCircle, XCircle, Eye, Mail, Key, UserCheck, Users, FileCheck, RefreshCw } from "lucide-react";
 import { listarVendedoresFn, listarCompradoresFn, gerenciarUsuarioFn } from "@/lib/admin.functions";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { formatDate } from "@/lib/utils";
