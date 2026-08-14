@@ -174,7 +174,21 @@ function CompradorIndex() {
       }
 
       toast.success("Cadastro realizado com sucesso!");
-      setWizardStep(3);
+      
+      const { user, accessToken } = result;
+      login({ 
+        user: {
+          id: user.id,
+          nome: user.nome,
+          email: user.email,
+          role: user.role as any
+        }, 
+        accessToken, 
+        refreshToken: "" 
+      });
+
+      // Redireciona para o novo onboarding
+      navigate({ to: '/vendedor/onboarding' });
     } catch (error: any) {
       console.error("Erro no cadastro:", error);
       toast.error(error.message || "Erro técnico ao processar cadastro.");

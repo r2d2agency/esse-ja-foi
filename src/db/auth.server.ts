@@ -99,7 +99,11 @@ export async function ensureSuperAdmin() {
       ["cep", "text"],
       ["endereco", "text"],
       ["cidade", "text"],
-      ["uf", "text"]
+      ["uf", "text"],
+      ["documento_cnh_url", "text"],
+      ["documento_crlv_url", "text"],
+      ["documento_selfie_url", "text"],
+      ["cadastro_completo", "boolean NOT NULL DEFAULT false"]
     ];
 
     for (const [name, type] of profileColumns) {
