@@ -73,7 +73,7 @@ import {
   enviarTesteFn,
   processarEnvioCampanhaFn
 } from '@/lib/comunicacoes.functions';
-import { listarAutomacoesFn, salvarAutomacaoFn } from '@/lib/automacoes.functions';
+import { listarAutomacoesFn, salvarAutomacaoFn, getExecucoesAutomacaoFn } from '@/lib/automacoes.functions';
 import { getAnunciosAdmin } from '@/lib/anuncios.functions';
 import { toast } from 'sonner';
 import { 
@@ -114,8 +114,11 @@ function ComunicacoesPage() {
   const processarEnvio = useServerFn(processarEnvioCampanhaFn);
   const getAutomacoes = useServerFn(listarAutomacoesFn);
   const salvarAutomacao = useServerFn(salvarAutomacaoFn);
+  const getExecucoes = useServerFn(getExecucoesAutomacaoFn);
 
   const [activeTab, setActiveTab] = useState('campanhas');
+  const [selectedAutomacao, setSelectedAutomacao] = useState<any>(null);
+  const [isExecucoesOpen, setIsExecucoesOpen] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<any>({});
   
@@ -159,6 +162,33 @@ function ComunicacoesPage() {
     config_envio: { momento: 'IMEDIATO' },
     mapeamento_variaveis: []
   });
+
+  const { data: automacoes, refetch: refetchAutomacoes } = useQuery({
+    queryKey: ['automacoes'],
+    queryFn: () => getAutomacoes(),
+    enabled: activeTab === 'automacoes'
+  });
+
+  const { data: execucoesAutomacao } = useQuery({
+    queryKey: ['automacao-execucoes', selectedAutomacao?.id],
+    queryFn: () => getExecucoes(selectedAutomacao?.id),
+    enabled: !!selectedAutomacao?.id && isExecucoesOpen
+  });
+
+  const mutationSalvarAutomacao = useMutation({
+    mutationFn: salvarAutomacao,
+    onSuccess: () => {
+      toast.success("Automação salva com sucesso!");
+      setIsAutomacaoWizardOpen(false);
+      refetchAutomacoes();
+      setAutomacaoStep(1);
+    },
+    onError: () => toast.error("Erro ao salvar automação")
+  });
+
+  const handleSalvarAutomacao = () => {
+    mutationSalvarAutomacao.mutate(novaAutomacao);
+  };
 
   const [estimativa, setEstimativa] = useState<any>({ total: 0, elegiveis: 0, nao_elegiveis: 0 });
 
@@ -1846,6 +1876,17 @@ function ComunicacoesPage() {
                         <span>{auto.total_enviados} envios</span>
                       </div>
                       <div className="flex items-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7"
+                          onClick={() => {
+                            setSelectedAutomacao(auto);
+                            setIsExecucoesOpen(true);
+                          }}
+                        >
+                          <History className="w-3.5 h-3.5" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7"><FileEdit className="w-3.5 h-3.5" /></Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600"><Pause className="w-3.5 h-3.5" /></Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
@@ -1863,6 +1904,37 @@ function ComunicacoesPage() {
                 </div>
               )}
             </div>
+
+            <Sheet open={isExecucoesOpen} onOpenChange={setIsExecucoesOpen}>
+              <SheetContent className="sm:max-w-xl overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>Histórico de Execução</SheetTitle>
+                  <SheetDescription>{selectedAutomacao?.nome}</SheetDescription>
+                </SheetHeader>
+                <div className="mt-6 space-y-4">
+                  {execucoesAutomacao?.map((exec: any) => (
+                    <div key={exec.id} className="p-3 border rounded-lg space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">{exec.destinatario_nome || 'N/A'}</span>
+                        <Badge variant={exec.status === 'ENVIADO' ? 'default' : 'destructive'} className="text-[10px]">
+                          {exec.status}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between text-[10px] text-muted-foreground">
+                        <span>{new Date(exec.criado_em).toLocaleString()}</span>
+                        <span>{exec.mensagem_status || 'Pendente'}</span>
+                      </div>
+                      {exec.erro_detalhe && (
+                        <p className="text-[10px] text-red-500 mt-1">{exec.erro_detalhe}</p>
+                      )}
+                    </div>
+                  ))}
+                  {(!execucoesAutomacao || execucoesAutomacao.length === 0) && (
+                    <div className="py-20 text-center opacity-50">Nenhuma execução registrada</div>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
           </TabsContent>
 
         </Tabs>
