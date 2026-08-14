@@ -25,7 +25,7 @@ function DashboardVendedor() {
   });
   
   const veiculos = veiculosResult?.data || [];
-  const profile = (veiculosResult as any)?.profile;
+  const profile = (veiculosResult as any)?.profile || {};
 
   if (authLoading || veiculosLoading) {
     return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
