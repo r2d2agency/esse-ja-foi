@@ -115,21 +115,19 @@ export const cadastrarMeuVeiculoFn = createServerFn({ method: "POST" })
   });
 
 export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => z.object({
-    data: z.object({
-      perfilId: z.string().uuid(),
-      cpf: z.string().optional(),
-      cep: z.string().optional(),
-      endereco: z.string().optional(),
-      cidade: z.string().optional(),
-      uf: z.string().optional(),
-      cnhUrl: z.string().optional(),
-      crlvUrl: z.string().optional(),
-      selfieUrl: z.string().optional(),
-      finalizar: z.boolean().optional(),
-    })
-  }).parse(d))
-  .handler(async ({ data: { data } }) => {
+  .inputValidator(z.object({
+    perfilId: z.string().uuid(),
+    cpf: z.string().optional(),
+    cep: z.string().optional(),
+    endereco: z.string().optional(),
+    cidade: z.string().optional(),
+    uf: z.string().optional(),
+    cnhUrl: z.string().optional(),
+    crlvUrl: z.string().optional(),
+    selfieUrl: z.string().optional(),
+    finalizar: z.boolean().optional(),
+  }))
+  .handler(async ({ data }) => {
     const { db } = await import("@/db/index");
     const { sql } = await import("drizzle-orm");
     if (!db) throw new Error("Banco de dados indisponível");
