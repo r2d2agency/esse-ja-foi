@@ -22,9 +22,10 @@ import { FotoSlot } from '@/components/veiculo/FotoSlot';
 import { OpcaoBotoes } from '@/components/veiculo/OpcaoBotoes';
 import { useAuth } from '@/hooks/use-auth';
 import { cadastrarMeuVeiculoFn, listarMeusVeiculosFn } from '@/lib/vendedor.functions';
-import { maskPlaca, formatCurrency, buscarCep } from '@/lib/brasil';
+import { maskPlaca, formatCurrency, buscarCep, maskCep } from '@/lib/brasil';
 import { montarEtapas, percentual } from '@/components/vendedor/ProgressoCadastro';
 import { TODAS_MARCAS, MARCAS_POPULARES, MODELOS_POR_MARCA, CORES, COMBUSTIVEIS, CAMBIOS, PORTAS, UFS, RELACOES_PROPRIETARIO, BANCOS_COMUNS } from '@/lib/constants-veiculos';
+
 
 
 export const Route = createFileRoute('/vendedor/cadastrar')({
