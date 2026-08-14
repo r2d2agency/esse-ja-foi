@@ -213,16 +213,14 @@ export async function criarLaudo(input: { agendamentoId: string; vistoriadorId: 
   `)) as unknown as Array<Row>;
   if (existentes[0]) return existentes[0];
 
-  const modelo = await modeloAtivo();
-  if (!modelo) throw new RegraNegocioError("Nenhum modelo de checklist ativo. Peça ao admin para cadastrar um.", 422);
-
   const rows = (await d.execute(sql`
     INSERT INTO laudos (agendamento_id, veiculo_id, vistoriador_id, modelo_id, modelo_versao, status, placa_confirmada)
     VALUES (${input.agendamentoId}::uuid, ${String(agendamento['veiculo_id'])}::uuid, ${input.vistoriadorId}::uuid,
-            ${String(modelo['id'])}::uuid, ${Number(modelo['versao'] ?? 1)}, 'RASCUNHO',
+            gen_random_uuid(), 1, 'RASCUNHO',
             ${input.placaConfirmada ? normalizePlaca(input.placaConfirmada) : null})
     RETURNING *;
   `)) as unknown as Array<Row>;
+
   const laudo = rows[0]!;
 
   await d.execute(sql`
