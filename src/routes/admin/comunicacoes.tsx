@@ -83,9 +83,23 @@ function ComunicacoesPage() {
   const gerarToken = useServerFn(gerarNovoVerifyTokenFn);
   const getLogs = useServerFn(getWebhookLogsFn);
   const buscarDadosAutos = useServerFn(buscarDadosAutomaticosFn);
+  const getTemplates = useServerFn(listarTemplatesFn);
+  const criarTemplate = useServerFn(criarTemplateMetaFn);
 
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<any>({});
+  
+  // Wizard State
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1);
+  const [newTemplate, setNewTemplate] = useState<any>({
+    name: '',
+    category: 'MARKETING',
+    language: 'pt_BR',
+    components: [
+      { type: 'BODY', text: '' }
+    ]
+  });
 
   const { data: indicadores } = useQuery({
     queryKey: ['wa-indicadores'],
@@ -106,6 +120,47 @@ function ComunicacoesPage() {
     queryKey: ['wa-logs'],
     queryFn: () => getLogs()
   });
+
+  const { data: templates } = useQuery({
+    queryKey: ['wa-templates'],
+    queryFn: () => getTemplates()
+  });
+
+  const handleSincronizar = async () => {
+    toast.promise(sincronizarTemplates(), {
+      loading: 'Sincronizando com a Meta...',
+      success: (res: any) => {
+        if (res.ok) {
+          queryClient.invalidateQueries({ queryKey: ['wa-templates'] });
+          return `${res.count} templates sincronizados!`;
+        }
+        throw new Error(res.error);
+      },
+      error: (err) => `Erro na sincronização: ${err.message}`
+    });
+  };
+
+  const handleCriarTemplate = async () => {
+    toast.promise(criarTemplate(newTemplate), {
+      loading: 'Enviando para análise da Meta...',
+      success: (res: any) => {
+        if (res.id) {
+          setIsWizardOpen(false);
+          setWizardStep(1);
+          setNewTemplate({
+            name: '',
+            category: 'MARKETING',
+            language: 'pt_BR',
+            components: [{ type: 'BODY', text: '' }]
+          });
+          queryClient.invalidateQueries({ queryKey: ['wa-templates'] });
+          return 'Template criado e enviado para análise!';
+        }
+        throw new Error(res.error || 'Erro ao criar template');
+      },
+      error: (err) => `Falha: ${err.message}`
+    });
+  };
 
   const handleTestarConexao = async () => {
     toast.promise(testarConexao(), {
