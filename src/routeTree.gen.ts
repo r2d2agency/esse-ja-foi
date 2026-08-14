@@ -15,10 +15,12 @@ import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as EsqueciMinhaSenhaRouteImport } from './routes/esqueci-minha-senha'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as VeiculosRouteImport } from './routes/veiculos'
 import { Route as VendedorRouteImport } from './routes/vendedor'
 import { Route as VenderRouteImport } from './routes/vender'
 import { Route as VistoriadorRouteImport } from './routes/vistoriador'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminAnunciosRouteImport } from './routes/admin/anuncios'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configuracoes'
 import { Route as AdminContratosRouteImport } from './routes/admin/contratos'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
@@ -26,6 +28,8 @@ import { Route as AdminUsuariosRouteImport } from './routes/admin/usuarios'
 import { Route as AdminVeiculosRouteImport } from './routes/admin/veiculos'
 import { Route as AdminVendedoresRouteImport } from './routes/admin/vendedores'
 import { Route as AdminVistoriasRouteImport } from './routes/admin/vistorias'
+import { Route as VeiculosIndexRouteImport } from './routes/veiculos.index'
+import { Route as VeiculosSlugRouteImport } from './routes/veiculos.$slug'
 import { Route as VendedorIndexRouteImport } from './routes/vendedor.index'
 import { Route as VendedorBoasVindasRouteImport } from './routes/vendedor.boas-vindas'
 import { Route as VendedorCadastrarRouteImport } from './routes/vendedor.cadastrar'
@@ -42,9 +46,11 @@ import { Route as AdminAnaliseVistoriaIdRouteImport } from './routes/admin/anali
 import { Route as AdminContratoIdRouteImport } from './routes/admin/contrato.$id'
 import { Route as AdminVeiculoIdRouteImport } from './routes/admin/veiculo.$id'
 import { Route as AdminVendedorIdRouteImport } from './routes/admin/vendedor.$id'
+import { Route as VendedorVeiculoRouteImport } from './routes/vendedor.veiculo.'
 import { Route as VendedorVeiculoIdRouteImport } from './routes/vendedor.veiculo.$id'
 import { Route as VistoriadorExecucaoIdRouteImport } from './routes/vistoriador.execucao.$id'
 import { Route as VistoriadorVistoriaIdRouteImport } from './routes/vistoriador.vistoria.$id'
+import { Route as AdminAnunciosNovoRouteImport } from './routes/admin/anuncios.novo.'
 import { Route as VendedorVeiculoIdPropostaRouteImport } from './routes/vendedor.veiculo.$id.proposta'
 
 const IndexRoute = IndexRouteImport.update({
@@ -77,6 +83,11 @@ const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   path: '/redefinir-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VeiculosRoute = VeiculosRouteImport.update({
+  id: '/veiculos',
+  path: '/veiculos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VendedorRoute = VendedorRouteImport.update({
   id: '/vendedor',
   path: '/vendedor',
@@ -95,6 +106,11 @@ const VistoriadorRoute = VistoriadorRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAnunciosRoute = AdminAnunciosRouteImport.update({
+  id: '/anuncios',
+  path: '/anuncios',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
@@ -131,6 +147,16 @@ const AdminVistoriasRoute = AdminVistoriasRouteImport.update({
   id: '/vistorias',
   path: '/vistorias',
   getParentRoute: () => AdminRoute,
+} as any)
+const VeiculosIndexRoute = VeiculosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => VeiculosRoute,
+} as any)
+const VeiculosSlugRoute = VeiculosSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => VeiculosRoute,
 } as any)
 const VendedorIndexRoute = VendedorIndexRouteImport.update({
   id: '/',
@@ -212,6 +238,11 @@ const AdminVendedorIdRoute = AdminVendedorIdRouteImport.update({
   path: '/vendedor/$id',
   getParentRoute: () => AdminRoute,
 } as any)
+const VendedorVeiculoRoute = VendedorVeiculoRouteImport.update({
+  id: '/veiculo/',
+  path: '/veiculo/',
+  getParentRoute: () => VendedorRoute,
+} as any)
 const VendedorVeiculoIdRoute = VendedorVeiculoIdRouteImport.update({
   id: '/veiculo/$id',
   path: '/veiculo/$id',
@@ -227,6 +258,11 @@ const VistoriadorVistoriaIdRoute = VistoriadorVistoriaIdRouteImport.update({
   path: '/vistoria/$id',
   getParentRoute: () => VistoriadorRoute,
 } as any)
+const AdminAnunciosNovoRoute = AdminAnunciosNovoRouteImport.update({
+  id: '/novo/',
+  path: '/novo/',
+  getParentRoute: () => AdminAnunciosRoute,
+} as any)
 const VendedorVeiculoIdPropostaRoute =
   VendedorVeiculoIdPropostaRouteImport.update({
     id: '/proposta',
@@ -241,9 +277,11 @@ export interface FileRoutesByFullPath {
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/veiculos': typeof VeiculosRouteWithChildren
   '/vendedor': typeof VendedorRouteWithChildren
   '/vender': typeof VenderRoute
   '/vistoriador': typeof VistoriadorRouteWithChildren
+  '/admin/anuncios': typeof AdminAnunciosRouteWithChildren
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/contratos': typeof AdminContratosRoute
   '/admin/logs': typeof AdminLogsRoute
@@ -251,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
   '/admin/vistorias': typeof AdminVistoriasRoute
+  '/veiculos/$slug': typeof VeiculosSlugRoute
   '/vendedor/boas-vindas': typeof VendedorBoasVindasRoute
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
   '/vendedor/contrato': typeof VendedorContratoRoute
@@ -262,8 +301,10 @@ export interface FileRoutesByFullPath {
   '/vistoriador/historico': typeof VistoriadorHistoricoRoute
   '/vistoriador/perfil': typeof VistoriadorPerfilRoute
   '/admin/': typeof AdminIndexRoute
+  '/veiculos/': typeof VeiculosIndexRoute
   '/vendedor/': typeof VendedorIndexRoute
   '/vistoriador/': typeof VistoriadorIndexRoute
+  '/vendedor/veiculo/': typeof VendedorVeiculoRoute
   '/admin/analise-vistoria/$id': typeof AdminAnaliseVistoriaIdRoute
   '/admin/contrato/$id': typeof AdminContratoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
@@ -271,6 +312,7 @@ export interface FileRoutesByFullPath {
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRouteWithChildren
   '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
+  '/admin/anuncios/novo/': typeof AdminAnunciosNovoRoute
   '/vendedor/veiculo/$id/proposta': typeof VendedorVeiculoIdPropostaRoute
 }
 export interface FileRoutesByTo {
@@ -280,6 +322,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/vender': typeof VenderRoute
+  '/admin/anuncios': typeof AdminAnunciosRouteWithChildren
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/contratos': typeof AdminContratosRoute
   '/admin/logs': typeof AdminLogsRoute
@@ -287,6 +330,7 @@ export interface FileRoutesByTo {
   '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
   '/admin/vistorias': typeof AdminVistoriasRoute
+  '/veiculos/$slug': typeof VeiculosSlugRoute
   '/vendedor/boas-vindas': typeof VendedorBoasVindasRoute
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
   '/vendedor/contrato': typeof VendedorContratoRoute
@@ -298,8 +342,10 @@ export interface FileRoutesByTo {
   '/vistoriador/historico': typeof VistoriadorHistoricoRoute
   '/vistoriador/perfil': typeof VistoriadorPerfilRoute
   '/admin': typeof AdminIndexRoute
+  '/veiculos': typeof VeiculosIndexRoute
   '/vendedor': typeof VendedorIndexRoute
   '/vistoriador': typeof VistoriadorIndexRoute
+  '/vendedor/veiculo': typeof VendedorVeiculoRoute
   '/admin/analise-vistoria/$id': typeof AdminAnaliseVistoriaIdRoute
   '/admin/contrato/$id': typeof AdminContratoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
@@ -307,6 +353,7 @@ export interface FileRoutesByTo {
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRouteWithChildren
   '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
+  '/admin/anuncios/novo': typeof AdminAnunciosNovoRoute
   '/vendedor/veiculo/$id/proposta': typeof VendedorVeiculoIdPropostaRoute
 }
 export interface FileRoutesById {
@@ -317,9 +364,11 @@ export interface FileRoutesById {
   '/esqueci-minha-senha': typeof EsqueciMinhaSenhaRoute
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
+  '/veiculos': typeof VeiculosRouteWithChildren
   '/vendedor': typeof VendedorRouteWithChildren
   '/vender': typeof VenderRoute
   '/vistoriador': typeof VistoriadorRouteWithChildren
+  '/admin/anuncios': typeof AdminAnunciosRouteWithChildren
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/contratos': typeof AdminContratosRoute
   '/admin/logs': typeof AdminLogsRoute
@@ -327,6 +376,7 @@ export interface FileRoutesById {
   '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
   '/admin/vistorias': typeof AdminVistoriasRoute
+  '/veiculos/$slug': typeof VeiculosSlugRoute
   '/vendedor/boas-vindas': typeof VendedorBoasVindasRoute
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
   '/vendedor/contrato': typeof VendedorContratoRoute
@@ -338,8 +388,10 @@ export interface FileRoutesById {
   '/vistoriador/historico': typeof VistoriadorHistoricoRoute
   '/vistoriador/perfil': typeof VistoriadorPerfilRoute
   '/admin/': typeof AdminIndexRoute
+  '/veiculos/': typeof VeiculosIndexRoute
   '/vendedor/': typeof VendedorIndexRoute
   '/vistoriador/': typeof VistoriadorIndexRoute
+  '/vendedor/veiculo/': typeof VendedorVeiculoRoute
   '/admin/analise-vistoria/$id': typeof AdminAnaliseVistoriaIdRoute
   '/admin/contrato/$id': typeof AdminContratoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
@@ -347,6 +399,7 @@ export interface FileRoutesById {
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRouteWithChildren
   '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
+  '/admin/anuncios/novo/': typeof AdminAnunciosNovoRoute
   '/vendedor/veiculo/$id/proposta': typeof VendedorVeiculoIdPropostaRoute
 }
 export interface FileRouteTypes {
@@ -358,9 +411,11 @@ export interface FileRouteTypes {
     | '/esqueci-minha-senha'
     | '/login'
     | '/redefinir-senha'
+    | '/veiculos'
     | '/vendedor'
     | '/vender'
     | '/vistoriador'
+    | '/admin/anuncios'
     | '/admin/configuracoes'
     | '/admin/contratos'
     | '/admin/logs'
@@ -368,6 +423,7 @@ export interface FileRouteTypes {
     | '/admin/veiculos'
     | '/admin/vendedores'
     | '/admin/vistorias'
+    | '/veiculos/$slug'
     | '/vendedor/boas-vindas'
     | '/vendedor/cadastrar'
     | '/vendedor/contrato'
@@ -379,8 +435,10 @@ export interface FileRouteTypes {
     | '/vistoriador/historico'
     | '/vistoriador/perfil'
     | '/admin/'
+    | '/veiculos/'
     | '/vendedor/'
     | '/vistoriador/'
+    | '/vendedor/veiculo/'
     | '/admin/analise-vistoria/$id'
     | '/admin/contrato/$id'
     | '/admin/veiculo/$id'
@@ -388,6 +446,7 @@ export interface FileRouteTypes {
     | '/vendedor/veiculo/$id'
     | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
+    | '/admin/anuncios/novo/'
     | '/vendedor/veiculo/$id/proposta'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -397,6 +456,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/vender'
+    | '/admin/anuncios'
     | '/admin/configuracoes'
     | '/admin/contratos'
     | '/admin/logs'
@@ -404,6 +464,7 @@ export interface FileRouteTypes {
     | '/admin/veiculos'
     | '/admin/vendedores'
     | '/admin/vistorias'
+    | '/veiculos/$slug'
     | '/vendedor/boas-vindas'
     | '/vendedor/cadastrar'
     | '/vendedor/contrato'
@@ -415,8 +476,10 @@ export interface FileRouteTypes {
     | '/vistoriador/historico'
     | '/vistoriador/perfil'
     | '/admin'
+    | '/veiculos'
     | '/vendedor'
     | '/vistoriador'
+    | '/vendedor/veiculo'
     | '/admin/analise-vistoria/$id'
     | '/admin/contrato/$id'
     | '/admin/veiculo/$id'
@@ -424,6 +487,7 @@ export interface FileRouteTypes {
     | '/vendedor/veiculo/$id'
     | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
+    | '/admin/anuncios/novo'
     | '/vendedor/veiculo/$id/proposta'
   id:
     | '__root__'
@@ -433,9 +497,11 @@ export interface FileRouteTypes {
     | '/esqueci-minha-senha'
     | '/login'
     | '/redefinir-senha'
+    | '/veiculos'
     | '/vendedor'
     | '/vender'
     | '/vistoriador'
+    | '/admin/anuncios'
     | '/admin/configuracoes'
     | '/admin/contratos'
     | '/admin/logs'
@@ -443,6 +509,7 @@ export interface FileRouteTypes {
     | '/admin/veiculos'
     | '/admin/vendedores'
     | '/admin/vistorias'
+    | '/veiculos/$slug'
     | '/vendedor/boas-vindas'
     | '/vendedor/cadastrar'
     | '/vendedor/contrato'
@@ -454,8 +521,10 @@ export interface FileRouteTypes {
     | '/vistoriador/historico'
     | '/vistoriador/perfil'
     | '/admin/'
+    | '/veiculos/'
     | '/vendedor/'
     | '/vistoriador/'
+    | '/vendedor/veiculo/'
     | '/admin/analise-vistoria/$id'
     | '/admin/contrato/$id'
     | '/admin/veiculo/$id'
@@ -463,6 +532,7 @@ export interface FileRouteTypes {
     | '/vendedor/veiculo/$id'
     | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
+    | '/admin/anuncios/novo/'
     | '/vendedor/veiculo/$id/proposta'
   fileRoutesById: FileRoutesById
 }
@@ -473,6 +543,7 @@ export interface RootRouteChildren {
   EsqueciMinhaSenhaRoute: typeof EsqueciMinhaSenhaRoute
   LoginRoute: typeof LoginRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  VeiculosRoute: typeof VeiculosRouteWithChildren
   VendedorRoute: typeof VendedorRouteWithChildren
   VenderRoute: typeof VenderRoute
   VistoriadorRoute: typeof VistoriadorRouteWithChildren
@@ -522,6 +593,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RedefinirSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/veiculos': {
+      id: '/veiculos'
+      path: '/veiculos'
+      fullPath: '/veiculos'
+      preLoaderRoute: typeof VeiculosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vendedor': {
       id: '/vendedor'
       path: '/vendedor'
@@ -548,6 +626,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/anuncios': {
+      id: '/admin/anuncios'
+      path: '/anuncios'
+      fullPath: '/admin/anuncios'
+      preLoaderRoute: typeof AdminAnunciosRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/configuracoes': {
@@ -598,6 +683,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/vistorias'
       preLoaderRoute: typeof AdminVistoriasRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/veiculos/': {
+      id: '/veiculos/'
+      path: '/'
+      fullPath: '/veiculos/'
+      preLoaderRoute: typeof VeiculosIndexRouteImport
+      parentRoute: typeof VeiculosRoute
+    }
+    '/veiculos/$slug': {
+      id: '/veiculos/$slug'
+      path: '/$slug'
+      fullPath: '/veiculos/$slug'
+      preLoaderRoute: typeof VeiculosSlugRouteImport
+      parentRoute: typeof VeiculosRoute
     }
     '/vendedor/': {
       id: '/vendedor/'
@@ -711,6 +810,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminVendedorIdRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/vendedor/veiculo/': {
+      id: '/vendedor/veiculo/'
+      path: '/veiculo'
+      fullPath: '/vendedor/veiculo/'
+      preLoaderRoute: typeof VendedorVeiculoRouteImport
+      parentRoute: typeof VendedorRoute
+    }
     '/vendedor/veiculo/$id': {
       id: '/vendedor/veiculo/$id'
       path: '/veiculo/$id'
@@ -732,6 +838,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VistoriadorVistoriaIdRouteImport
       parentRoute: typeof VistoriadorRoute
     }
+    '/admin/anuncios/novo/': {
+      id: '/admin/anuncios/novo/'
+      path: '/novo'
+      fullPath: '/admin/anuncios/novo/'
+      preLoaderRoute: typeof AdminAnunciosNovoRouteImport
+      parentRoute: typeof AdminAnunciosRoute
+    }
     '/vendedor/veiculo/$id/proposta': {
       id: '/vendedor/veiculo/$id/proposta'
       path: '/proposta'
@@ -742,7 +855,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminAnunciosRouteChildren {
+  AdminAnunciosNovoRoute: typeof AdminAnunciosNovoRoute
+}
+
+const AdminAnunciosRouteChildren: AdminAnunciosRouteChildren = {
+  AdminAnunciosNovoRoute: AdminAnunciosNovoRoute,
+}
+
+const AdminAnunciosRouteWithChildren = AdminAnunciosRoute._addFileChildren(
+  AdminAnunciosRouteChildren,
+)
+
 interface AdminRouteChildren {
+  AdminAnunciosRoute: typeof AdminAnunciosRouteWithChildren
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminContratosRoute: typeof AdminContratosRoute
   AdminLogsRoute: typeof AdminLogsRoute
@@ -758,6 +884,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAnunciosRoute: AdminAnunciosRouteWithChildren,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminContratosRoute: AdminContratosRoute,
   AdminLogsRoute: AdminLogsRoute,
@@ -773,6 +900,20 @@ const AdminRouteChildren: AdminRouteChildren = {
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
+interface VeiculosRouteChildren {
+  VeiculosSlugRoute: typeof VeiculosSlugRoute
+  VeiculosIndexRoute: typeof VeiculosIndexRoute
+}
+
+const VeiculosRouteChildren: VeiculosRouteChildren = {
+  VeiculosSlugRoute: VeiculosSlugRoute,
+  VeiculosIndexRoute: VeiculosIndexRoute,
+}
+
+const VeiculosRouteWithChildren = VeiculosRoute._addFileChildren(
+  VeiculosRouteChildren,
+)
 
 interface VendedorVeiculoIdRouteChildren {
   VendedorVeiculoIdPropostaRoute: typeof VendedorVeiculoIdPropostaRoute
@@ -794,6 +935,7 @@ interface VendedorRouteChildren {
   VendedorPerfilRoute: typeof VendedorPerfilRoute
   VendedorVeiculosRoute: typeof VendedorVeiculosRoute
   VendedorIndexRoute: typeof VendedorIndexRoute
+  VendedorVeiculoRoute: typeof VendedorVeiculoRoute
   VendedorVeiculoIdRoute: typeof VendedorVeiculoIdRouteWithChildren
 }
 
@@ -806,6 +948,7 @@ const VendedorRouteChildren: VendedorRouteChildren = {
   VendedorPerfilRoute: VendedorPerfilRoute,
   VendedorVeiculosRoute: VendedorVeiculosRoute,
   VendedorIndexRoute: VendedorIndexRoute,
+  VendedorVeiculoRoute: VendedorVeiculoRoute,
   VendedorVeiculoIdRoute: VendedorVeiculoIdRouteWithChildren,
 }
 
@@ -842,6 +985,7 @@ const rootRouteChildren: RootRouteChildren = {
   EsqueciMinhaSenhaRoute: EsqueciMinhaSenhaRoute,
   LoginRoute: LoginRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  VeiculosRoute: VeiculosRouteWithChildren,
   VendedorRoute: VendedorRouteWithChildren,
   VenderRoute: VenderRoute,
   VistoriadorRoute: VistoriadorRouteWithChildren,

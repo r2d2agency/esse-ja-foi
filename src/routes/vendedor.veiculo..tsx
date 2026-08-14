@@ -10,15 +10,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge, statusVeiculo } from '@/components/vendedor/StatusBadge';
 import { cn } from '@/lib/utils';
 
-export const Route = createFileRoute('/vendedor/veiculo/$id')({
+export const Route = createFileRoute('/vendedor/veiculo/')({
   component: DetalheVeiculo,
 });
 
 const JORNADA = ['Cadastro do veículo', 'Análise', 'Vistoria', 'Aprovação do valor', 'Anúncio', 'Venda'];
 
 function etapaAtual(status?: string, statusAnalise?: string) {
-  if (statusAnalise === 'AGUARDANDO_ACEITE_VENDEDOR') return 3;
+  if (statusAnalise === 'ANUNCIADO') return 5;
   if (statusAnalise === 'PRONTO_PARA_ANUNCIO') return 4;
+  if (statusAnalise === 'AGUARDANDO_ACEITE_VENDEDOR') return 3;
   
   switch (status) {
     case 'AGUARDANDO_APROVACAO': return 1;
@@ -37,11 +38,18 @@ function DetalheVeiculo() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const listar = useServerFn(listarMeusVeiculosFn);
+  const getAnuncio = useServerFn(getAnuncioVeiculoVendedor);
 
   const { data, isLoading } = useQuery({
     queryKey: ['meus-veiculos', user?.id],
     queryFn: () => listar({ data: { perfilId: user?.id || '' } }),
     enabled: !!user?.id,
+  });
+
+  const { data: anuncio } = useQuery({
+    queryKey: ['anuncio-veiculo-vendedor', id],
+    queryFn: () => getAnuncio({ data: id }),
+    enabled: !!id,
   });
 
   const veiculo = ((data as any)?.data || []).find((v: any) => String(v.id) === id);
@@ -85,19 +93,40 @@ function DetalheVeiculo() {
         </div>
       </div>
 
-      {veiculo.status_analise === 'AGUARDANDO_ACEITE_VENDEDOR' && (
+      {anuncio && (
         <Card className="border-teal-200 bg-teal-50 overflow-hidden">
           <CardContent className="p-6 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-teal-100 flex items-center justify-center">
-                <DollarSign className="h-5 w-5 text-teal-600" />
+                <Megaphone className="h-5 w-5 text-teal-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-slate-900 uppercase">Seu veículo está no ar!</h3>
+                <p className="text-xs text-slate-600">Status: <span className="font-bold text-teal-700">{anuncio.status}</span> • Recebendo ofertas.</p>
+              </div>
+            </div>
+            <Button asChild className="bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl">
+              <a href={`/veiculos/${anuncio.slug}`} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="mr-2 h-4 w-4" /> Ver anúncio
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {veiculo.status_analise === 'AGUARDANDO_ACEITE_VENDEDOR' && !anuncio && (
+        <Card className="border-amber-200 bg-amber-50 overflow-hidden">
+          <CardContent className="p-6 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center">
+                <DollarSign className="h-5 w-5 text-amber-600" />
               </div>
               <div>
                 <h3 className="text-sm font-black text-slate-900 uppercase">Proposta Recebida!</h3>
                 <p className="text-xs text-slate-600">Sua vistoria foi concluída e temos uma proposta para você.</p>
               </div>
             </div>
-            <Button asChild className="bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl">
+            <Button asChild className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl">
               <Link to="/vendedor/veiculo/$id/proposta" params={{ id }}>Ver Proposta</Link>
             </Button>
           </CardContent>
@@ -144,20 +173,6 @@ function DetalheVeiculo() {
           )}
         </section>
       </div>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h2 className="font-bold text-slate-900">Histórico</h2>
-        <ul className="mt-4 space-y-4">
-          {criado && (
-            <li className="border-l-2 border-teal-600 pl-4">
-              <p className="text-xs font-bold text-slate-400">
-                {criado.toLocaleDateString('pt-BR')} às {criado.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-              </p>
-              <p className="text-sm text-slate-700">Veículo enviado para análise.</p>
-            </li>
-          )}
-        </ul>
-      </section>
     </div>
   );
 }
