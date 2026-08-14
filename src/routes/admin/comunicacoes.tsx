@@ -73,8 +73,22 @@ import {
   enviarTesteFn,
   processarEnvioCampanhaFn
 } from '@/lib/comunicacoes.functions';
+import { listarAutomacoesFn, salvarAutomacaoFn } from '@/lib/automacoes.functions';
 import { getAnunciosAdmin } from '@/lib/anuncios.functions';
 import { toast } from 'sonner';
+import { 
+  Clock, 
+  Zap, 
+  Play, 
+  Pause, 
+  FileEdit, 
+  Trash2, 
+  RotateCcw, 
+  Mail, 
+  Target,
+  LayoutTemplate
+} from 'lucide-react';
+
 
 export const Route = createFileRoute('/admin/comunicacoes')({
   component: ComunicacoesPage,
