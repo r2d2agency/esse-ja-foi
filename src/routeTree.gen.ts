@@ -23,6 +23,7 @@ import { Route as VistoriadorRouteImport } from './routes/vistoriador'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAnunciosRouteImport } from './routes/admin/anuncios'
 import { Route as AdminCompradoresRouteImport } from './routes/admin/compradores'
+import { Route as AdminComunicacoesRouteImport } from './routes/admin/comunicacoes'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configuracoes'
 import { Route as AdminContratosRouteImport } from './routes/admin/contratos'
 import { Route as AdminEntregasRouteImport } from './routes/admin/entregas'
@@ -143,6 +144,11 @@ const AdminAnunciosRoute = AdminAnunciosRouteImport.update({
 const AdminCompradoresRoute = AdminCompradoresRouteImport.update({
   id: '/compradores',
   path: '/compradores',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminComunicacoesRoute = AdminComunicacoesRouteImport.update({
+  id: '/comunicacoes',
+  path: '/comunicacoes',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
@@ -418,6 +424,7 @@ export interface FileRoutesByFullPath {
   '/vistoriador': typeof VistoriadorRouteWithChildren
   '/admin/anuncios': typeof AdminAnunciosRouteWithChildren
   '/admin/compradores': typeof AdminCompradoresRoute
+  '/admin/comunicacoes': typeof AdminComunicacoesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/contratos': typeof AdminContratosRoute
   '/admin/entregas': typeof AdminEntregasRoute
@@ -480,6 +487,7 @@ export interface FileRoutesByTo {
   '/vender': typeof VenderRoute
   '/admin/anuncios': typeof AdminAnunciosRouteWithChildren
   '/admin/compradores': typeof AdminCompradoresRoute
+  '/admin/comunicacoes': typeof AdminComunicacoesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/contratos': typeof AdminContratosRoute
   '/admin/entregas': typeof AdminEntregasRoute
@@ -548,6 +556,7 @@ export interface FileRoutesById {
   '/vistoriador': typeof VistoriadorRouteWithChildren
   '/admin/anuncios': typeof AdminAnunciosRouteWithChildren
   '/admin/compradores': typeof AdminCompradoresRoute
+  '/admin/comunicacoes': typeof AdminComunicacoesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/contratos': typeof AdminContratosRoute
   '/admin/entregas': typeof AdminEntregasRoute
@@ -617,6 +626,7 @@ export interface FileRouteTypes {
     | '/vistoriador'
     | '/admin/anuncios'
     | '/admin/compradores'
+    | '/admin/comunicacoes'
     | '/admin/configuracoes'
     | '/admin/contratos'
     | '/admin/entregas'
@@ -679,6 +689,7 @@ export interface FileRouteTypes {
     | '/vender'
     | '/admin/anuncios'
     | '/admin/compradores'
+    | '/admin/comunicacoes'
     | '/admin/configuracoes'
     | '/admin/contratos'
     | '/admin/entregas'
@@ -746,6 +757,7 @@ export interface FileRouteTypes {
     | '/vistoriador'
     | '/admin/anuncios'
     | '/admin/compradores'
+    | '/admin/comunicacoes'
     | '/admin/configuracoes'
     | '/admin/contratos'
     | '/admin/entregas'
@@ -914,6 +926,13 @@ declare module '@tanstack/react-router' {
       path: '/compradores'
       fullPath: '/admin/compradores'
       preLoaderRoute: typeof AdminCompradoresRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/comunicacoes': {
+      id: '/admin/comunicacoes'
+      path: '/comunicacoes'
+      fullPath: '/admin/comunicacoes'
+      preLoaderRoute: typeof AdminComunicacoesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/configuracoes': {
@@ -1303,6 +1322,7 @@ const AdminLeiloesRouteWithChildren = AdminLeiloesRoute._addFileChildren(
 interface AdminRouteChildren {
   AdminAnunciosRoute: typeof AdminAnunciosRouteWithChildren
   AdminCompradoresRoute: typeof AdminCompradoresRoute
+  AdminComunicacoesRoute: typeof AdminComunicacoesRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminContratosRoute: typeof AdminContratosRoute
   AdminEntregasRoute: typeof AdminEntregasRoute
@@ -1327,6 +1347,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAnunciosRoute: AdminAnunciosRouteWithChildren,
   AdminCompradoresRoute: AdminCompradoresRoute,
+  AdminComunicacoesRoute: AdminComunicacoesRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminContratosRoute: AdminContratosRoute,
   AdminEntregasRoute: AdminEntregasRoute,

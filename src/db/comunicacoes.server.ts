@@ -19,12 +19,28 @@ export async function ensureComunicacoesSchema(silent = true) {
         phone_number_id text,
         business_id text,
         phone_number text,
+        app_id text,
+        app_secret text, -- Manter no backend
         access_token text, -- Manter no backend
+        graph_api_version text DEFAULT 'v20.0',
         webhook_verify_token text,
         status text DEFAULT 'DESCONECTADO', -- CONECTADO, DESCONECTADO, ERRO
         ultimo_teste timestamptz,
         detalhes_erro text,
         atualizado_em timestamptz DEFAULT now()
+      );
+    `);
+
+    // 2. Logs de Webhook (Histórico de eventos recebidos da Meta)
+    await d.execute(sql`
+      CREATE TABLE IF NOT EXISTS whatsapp_webhook_logs (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        waba_id text,
+        event_type text,
+        payload jsonb,
+        status text DEFAULT 'PROCESSADO', -- PROCESSADO, ERRO
+        erro_detalhe text,
+        criado_em timestamptz DEFAULT now()
       );
     `);
 
@@ -202,6 +218,16 @@ export async function listarCampanhas() {
     LEFT JOIN veiculos v ON v.id = c.veiculo_id
     LEFT JOIN whatsapp_templates t ON t.id = c.template_id
     ORDER BY c.criado_em DESC
+  `);
+  return (res as any).rows || [];
+}
+
+export async function getWebhookLogs() {
+  const d = requireDb();
+  const res = await d.execute(sql`
+    SELECT * FROM whatsapp_webhook_logs 
+    ORDER BY criado_em DESC 
+    LIMIT 50
   `);
   return (res as any).rows || [];
 }

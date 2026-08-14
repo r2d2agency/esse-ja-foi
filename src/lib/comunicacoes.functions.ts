@@ -1,16 +1,34 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import * as db from "../db/comunicacoes.server";
+import { metaService } from "../db/meta-whatsapp.server";
 
 export const getWhatsappConfigFn = createServerFn({ method: "GET" })
   .handler(async () => {
-    return db.getWhatsappConfig();
+    const config = await db.getWhatsappConfig();
+    if (config) {
+      // Mascarar campos sensíveis
+      return {
+        ...config,
+        app_secret: config.app_secret ? "••••••••••••" : null,
+        access_token: config.access_token ? "••••••••••••" : null,
+        webhook_verify_token: config.webhook_verify_token ? "••••••••••••" : null,
+      };
+    }
+    return config;
   });
 
 export const updateWhatsappConfigFn = createServerFn({ method: "POST" })
   .validator((data: any) => data)
   .handler(async ({ data }) => {
-    return db.updateWhatsappConfig(data);
+    // Se vier mascarado, não atualizar o campo
+    const existing = await db.getWhatsappConfig();
+    const updateData = { ...data };
+    
+    if (data.app_secret === "••••••••••••") updateData.app_secret = existing?.app_secret;
+    if (data.access_token === "••••••••••••") updateData.access_token = existing?.access_token;
+    
+    return db.updateWhatsappConfig(updateData);
   });
 
 export const listarTemplatesFn = createServerFn({ method: "GET" })
@@ -35,20 +53,47 @@ export const getIndicadoresComunicacoesFn = createServerFn({ method: "GET" })
 
 export const testarConexaoFn = createServerFn({ method: "POST" })
   .handler(async () => {
-    // Simular teste de conexão com Meta API
-    const config = await db.getWhatsappConfig();
-    if (!config || !config.access_token) {
-      return { ok: false, error: "Token de acesso ausente." };
+    try {
+      return await metaService.testarConexao();
+    } catch (error: any) {
+      return { ok: false, error: error.message };
     }
-    
-    // Aqui faria uma chamada real para a API da Meta: /me/whatsapp_business_accounts
-    // Por enquanto, simulamos sucesso se houver token
-    return { ok: true, message: "WhatsApp conectado" };
   });
 
 export const sincronizarTemplatesFn = createServerFn({ method: "POST" })
   .handler(async () => {
-    // Simular sincronização com Meta API
-    // Retornaria templates reais da Meta e salvaria no banco
-    return { ok: true, count: 0 };
+    try {
+      const count = await metaService.sincronizarTemplates();
+      return { ok: true, count };
+    } catch (error: any) {
+      return { ok: false, error: error.message };
+    }
+  });
+
+export const buscarDadosAutomaticosFn = createServerFn({ method: "POST" })
+  .handler(async () => {
+    try {
+      const data = await metaService.buscarDadosAutomaticos();
+      return { ok: true, data };
+    } catch (error: any) {
+      return { ok: false, error: error.message };
+    }
+  });
+
+export const gerarNovoVerifyTokenFn = createServerFn({ method: "POST" })
+  .handler(async () => {
+    const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    // Salvar no banco
+    const existing = await db.getWhatsappConfig();
+    await db.updateWhatsappConfig({
+      ...existing,
+      webhook_verify_token: newToken
+    });
+    return { ok: true, token: newToken };
+  });
+
+export const getWebhookLogsFn = createServerFn({ method: "GET" })
+  .handler(async () => {
+    const logs = await db.getWebhookLogs();
+    return logs as any[];
   });
