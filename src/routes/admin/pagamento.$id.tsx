@@ -38,8 +38,7 @@ function RepasseDetalheAdminPage() {
       confirmarConclusaoRepasseFn({ 
         data: { 
           repasseId: params.repasseId, 
-          comprovante_url: params.comprovante_url || undefined,
-          id_externo: undefined
+          ...(params.comprovante_url ? { comprovante_url: params.comprovante_url } : {})
         } 
       }),
     onSuccess: () => {
