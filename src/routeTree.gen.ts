@@ -18,23 +18,18 @@ import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as VendedorRouteImport } from './routes/vendedor'
 import { Route as VenderRouteImport } from './routes/vender'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as AdminChecklistRouteImport } from './routes/admin/checklist'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configuracoes'
 import { Route as AdminContratosRouteImport } from './routes/admin/contratos'
-import { Route as AdminDepreciacaoRouteImport } from './routes/admin/depreciacao'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
 import { Route as AdminUsuariosRouteImport } from './routes/admin/usuarios'
 import { Route as AdminVeiculosRouteImport } from './routes/admin/veiculos'
 import { Route as AdminVendedoresRouteImport } from './routes/admin/vendedores'
 import { Route as VendedorIndexRouteImport } from './routes/vendedor.index'
-import { Route as VendedorAjudaRouteImport } from './routes/vendedor.ajuda'
 import { Route as VendedorBoasVindasRouteImport } from './routes/vendedor.boas-vindas'
 import { Route as VendedorCadastrarRouteImport } from './routes/vendedor.cadastrar'
-import { Route as VendedorContratoRouteImport } from './routes/vendedor.contrato'
 import { Route as VendedorDocumentosRouteImport } from './routes/vendedor.documentos'
 import { Route as VendedorOnboardingRouteImport } from './routes/vendedor.onboarding'
 import { Route as VendedorPerfilRouteImport } from './routes/vendedor.perfil'
-import { Route as VendedorPropostasRouteImport } from './routes/vendedor.propostas'
 import { Route as VendedorVeiculosRouteImport } from './routes/vendedor.veiculos'
 import { Route as AdminContratoIdRouteImport } from './routes/admin/contrato.$id'
 import { Route as AdminVeiculoIdRouteImport } from './routes/admin/veiculo.$id'
@@ -86,11 +81,6 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminChecklistRoute = AdminChecklistRouteImport.update({
-  id: '/checklist',
-  path: '/checklist',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
   id: '/configuracoes',
   path: '/configuracoes',
@@ -99,11 +89,6 @@ const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
 const AdminContratosRoute = AdminContratosRouteImport.update({
   id: '/contratos',
   path: '/contratos',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminDepreciacaoRoute = AdminDepreciacaoRouteImport.update({
-  id: '/depreciacao',
-  path: '/depreciacao',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminLogsRoute = AdminLogsRouteImport.update({
@@ -131,11 +116,6 @@ const VendedorIndexRoute = VendedorIndexRouteImport.update({
   path: '/',
   getParentRoute: () => VendedorRoute,
 } as any)
-const VendedorAjudaRoute = VendedorAjudaRouteImport.update({
-  id: '/ajuda',
-  path: '/ajuda',
-  getParentRoute: () => VendedorRoute,
-} as any)
 const VendedorBoasVindasRoute = VendedorBoasVindasRouteImport.update({
   id: '/boas-vindas',
   path: '/boas-vindas',
@@ -144,11 +124,6 @@ const VendedorBoasVindasRoute = VendedorBoasVindasRouteImport.update({
 const VendedorCadastrarRoute = VendedorCadastrarRouteImport.update({
   id: '/cadastrar',
   path: '/cadastrar',
-  getParentRoute: () => VendedorRoute,
-} as any)
-const VendedorContratoRoute = VendedorContratoRouteImport.update({
-  id: '/contrato',
-  path: '/contrato',
   getParentRoute: () => VendedorRoute,
 } as any)
 const VendedorDocumentosRoute = VendedorDocumentosRouteImport.update({
@@ -164,11 +139,6 @@ const VendedorOnboardingRoute = VendedorOnboardingRouteImport.update({
 const VendedorPerfilRoute = VendedorPerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
-  getParentRoute: () => VendedorRoute,
-} as any)
-const VendedorPropostasRoute = VendedorPropostasRouteImport.update({
-  id: '/propostas',
-  path: '/propostas',
   getParentRoute: () => VendedorRoute,
 } as any)
 const VendedorVeiculosRoute = VendedorVeiculosRouteImport.update({
@@ -206,22 +176,17 @@ export interface FileRoutesByFullPath {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/vendedor': typeof VendedorRouteWithChildren
   '/vender': typeof VenderRoute
-  '/admin/checklist': typeof AdminChecklistRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/contratos': typeof AdminContratosRoute
-  '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
-  '/vendedor/ajuda': typeof VendedorAjudaRoute
   '/vendedor/boas-vindas': typeof VendedorBoasVindasRoute
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
-  '/vendedor/contrato': typeof VendedorContratoRoute
   '/vendedor/documentos': typeof VendedorDocumentosRoute
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
   '/vendedor/perfil': typeof VendedorPerfilRoute
-  '/vendedor/propostas': typeof VendedorPropostasRoute
   '/vendedor/veiculos': typeof VendedorVeiculosRoute
   '/admin/': typeof AdminIndexRoute
   '/vendedor/': typeof VendedorIndexRoute
@@ -237,22 +202,17 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/vender': typeof VenderRoute
-  '/admin/checklist': typeof AdminChecklistRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/contratos': typeof AdminContratosRoute
-  '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
-  '/vendedor/ajuda': typeof VendedorAjudaRoute
   '/vendedor/boas-vindas': typeof VendedorBoasVindasRoute
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
-  '/vendedor/contrato': typeof VendedorContratoRoute
   '/vendedor/documentos': typeof VendedorDocumentosRoute
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
   '/vendedor/perfil': typeof VendedorPerfilRoute
-  '/vendedor/propostas': typeof VendedorPropostasRoute
   '/vendedor/veiculos': typeof VendedorVeiculosRoute
   '/admin': typeof AdminIndexRoute
   '/vendedor': typeof VendedorIndexRoute
@@ -271,22 +231,17 @@ export interface FileRoutesById {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/vendedor': typeof VendedorRouteWithChildren
   '/vender': typeof VenderRoute
-  '/admin/checklist': typeof AdminChecklistRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/contratos': typeof AdminContratosRoute
-  '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
-  '/vendedor/ajuda': typeof VendedorAjudaRoute
   '/vendedor/boas-vindas': typeof VendedorBoasVindasRoute
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
-  '/vendedor/contrato': typeof VendedorContratoRoute
   '/vendedor/documentos': typeof VendedorDocumentosRoute
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
   '/vendedor/perfil': typeof VendedorPerfilRoute
-  '/vendedor/propostas': typeof VendedorPropostasRoute
   '/vendedor/veiculos': typeof VendedorVeiculosRoute
   '/admin/': typeof AdminIndexRoute
   '/vendedor/': typeof VendedorIndexRoute
@@ -306,22 +261,17 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/vendedor'
     | '/vender'
-    | '/admin/checklist'
     | '/admin/configuracoes'
     | '/admin/contratos'
-    | '/admin/depreciacao'
     | '/admin/logs'
     | '/admin/usuarios'
     | '/admin/veiculos'
     | '/admin/vendedores'
-    | '/vendedor/ajuda'
     | '/vendedor/boas-vindas'
     | '/vendedor/cadastrar'
-    | '/vendedor/contrato'
     | '/vendedor/documentos'
     | '/vendedor/onboarding'
     | '/vendedor/perfil'
-    | '/vendedor/propostas'
     | '/vendedor/veiculos'
     | '/admin/'
     | '/vendedor/'
@@ -337,22 +287,17 @@ export interface FileRouteTypes {
     | '/login'
     | '/redefinir-senha'
     | '/vender'
-    | '/admin/checklist'
     | '/admin/configuracoes'
     | '/admin/contratos'
-    | '/admin/depreciacao'
     | '/admin/logs'
     | '/admin/usuarios'
     | '/admin/veiculos'
     | '/admin/vendedores'
-    | '/vendedor/ajuda'
     | '/vendedor/boas-vindas'
     | '/vendedor/cadastrar'
-    | '/vendedor/contrato'
     | '/vendedor/documentos'
     | '/vendedor/onboarding'
     | '/vendedor/perfil'
-    | '/vendedor/propostas'
     | '/vendedor/veiculos'
     | '/admin'
     | '/vendedor'
@@ -370,22 +315,17 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/vendedor'
     | '/vender'
-    | '/admin/checklist'
     | '/admin/configuracoes'
     | '/admin/contratos'
-    | '/admin/depreciacao'
     | '/admin/logs'
     | '/admin/usuarios'
     | '/admin/veiculos'
     | '/admin/vendedores'
-    | '/vendedor/ajuda'
     | '/vendedor/boas-vindas'
     | '/vendedor/cadastrar'
-    | '/vendedor/contrato'
     | '/vendedor/documentos'
     | '/vendedor/onboarding'
     | '/vendedor/perfil'
-    | '/vendedor/propostas'
     | '/vendedor/veiculos'
     | '/admin/'
     | '/vendedor/'
@@ -471,13 +411,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/checklist': {
-      id: '/admin/checklist'
-      path: '/checklist'
-      fullPath: '/admin/checklist'
-      preLoaderRoute: typeof AdminChecklistRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/configuracoes': {
       id: '/admin/configuracoes'
       path: '/configuracoes'
@@ -490,13 +423,6 @@ declare module '@tanstack/react-router' {
       path: '/contratos'
       fullPath: '/admin/contratos'
       preLoaderRoute: typeof AdminContratosRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/depreciacao': {
-      id: '/admin/depreciacao'
-      path: '/depreciacao'
-      fullPath: '/admin/depreciacao'
-      preLoaderRoute: typeof AdminDepreciacaoRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/logs': {
@@ -534,13 +460,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendedorIndexRouteImport
       parentRoute: typeof VendedorRoute
     }
-    '/vendedor/ajuda': {
-      id: '/vendedor/ajuda'
-      path: '/ajuda'
-      fullPath: '/vendedor/ajuda'
-      preLoaderRoute: typeof VendedorAjudaRouteImport
-      parentRoute: typeof VendedorRoute
-    }
     '/vendedor/boas-vindas': {
       id: '/vendedor/boas-vindas'
       path: '/boas-vindas'
@@ -553,13 +472,6 @@ declare module '@tanstack/react-router' {
       path: '/cadastrar'
       fullPath: '/vendedor/cadastrar'
       preLoaderRoute: typeof VendedorCadastrarRouteImport
-      parentRoute: typeof VendedorRoute
-    }
-    '/vendedor/contrato': {
-      id: '/vendedor/contrato'
-      path: '/contrato'
-      fullPath: '/vendedor/contrato'
-      preLoaderRoute: typeof VendedorContratoRouteImport
       parentRoute: typeof VendedorRoute
     }
     '/vendedor/documentos': {
@@ -581,13 +493,6 @@ declare module '@tanstack/react-router' {
       path: '/perfil'
       fullPath: '/vendedor/perfil'
       preLoaderRoute: typeof VendedorPerfilRouteImport
-      parentRoute: typeof VendedorRoute
-    }
-    '/vendedor/propostas': {
-      id: '/vendedor/propostas'
-      path: '/propostas'
-      fullPath: '/vendedor/propostas'
-      preLoaderRoute: typeof VendedorPropostasRouteImport
       parentRoute: typeof VendedorRoute
     }
     '/vendedor/veiculos': {
@@ -629,10 +534,8 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
-  AdminChecklistRoute: typeof AdminChecklistRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminContratosRoute: typeof AdminContratosRoute
-  AdminDepreciacaoRoute: typeof AdminDepreciacaoRoute
   AdminLogsRoute: typeof AdminLogsRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminVeiculosRoute: typeof AdminVeiculosRoute
@@ -644,10 +547,8 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
-  AdminChecklistRoute: AdminChecklistRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminContratosRoute: AdminContratosRoute,
-  AdminDepreciacaoRoute: AdminDepreciacaoRoute,
   AdminLogsRoute: AdminLogsRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
   AdminVeiculosRoute: AdminVeiculosRoute,
@@ -661,28 +562,22 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface VendedorRouteChildren {
-  VendedorAjudaRoute: typeof VendedorAjudaRoute
   VendedorBoasVindasRoute: typeof VendedorBoasVindasRoute
   VendedorCadastrarRoute: typeof VendedorCadastrarRoute
-  VendedorContratoRoute: typeof VendedorContratoRoute
   VendedorDocumentosRoute: typeof VendedorDocumentosRoute
   VendedorOnboardingRoute: typeof VendedorOnboardingRoute
   VendedorPerfilRoute: typeof VendedorPerfilRoute
-  VendedorPropostasRoute: typeof VendedorPropostasRoute
   VendedorVeiculosRoute: typeof VendedorVeiculosRoute
   VendedorIndexRoute: typeof VendedorIndexRoute
   VendedorVeiculoIdRoute: typeof VendedorVeiculoIdRoute
 }
 
 const VendedorRouteChildren: VendedorRouteChildren = {
-  VendedorAjudaRoute: VendedorAjudaRoute,
   VendedorBoasVindasRoute: VendedorBoasVindasRoute,
   VendedorCadastrarRoute: VendedorCadastrarRoute,
-  VendedorContratoRoute: VendedorContratoRoute,
   VendedorDocumentosRoute: VendedorDocumentosRoute,
   VendedorOnboardingRoute: VendedorOnboardingRoute,
   VendedorPerfilRoute: VendedorPerfilRoute,
-  VendedorPropostasRoute: VendedorPropostasRoute,
   VendedorVeiculosRoute: VendedorVeiculosRoute,
   VendedorIndexRoute: VendedorIndexRoute,
   VendedorVeiculoIdRoute: VendedorVeiculoIdRoute,
