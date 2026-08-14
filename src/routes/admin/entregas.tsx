@@ -6,7 +6,7 @@ import {
   registrarNaoComparecimentoFn, decidirDivergenciaFn, adicionarObservacaoEntregaFn, regerarCodigoFn,
 } from "@/lib/entregas.functions";
 import { useAuth } from "@/hooks/use-auth";
-import { StatusEntrega, ROTULO_ENTREGA, ITENS_CHECKLIST } from "@/components/entrega/status-entrega";
+import { StatusEntrega, ITENS_CHECKLIST } from "@/components/entrega/status-entrega";
 import { brl } from "@/components/negociacao/prazo-pagamento";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -391,4 +391,3 @@ function Campo({ rotulo, children, className }: { rotulo: string; children: Reac
   );
 }
 
-export { ROTULO_ENTREGA };
