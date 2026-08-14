@@ -341,41 +341,186 @@ function ComunicacoesPage() {
                     <div className="py-4 space-y-4">
                       {wizardStep === 1 && (
                         <div className="space-y-4">
+                          <div className="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-lg border border-amber-100 dark:border-amber-900/50 flex gap-3">
+                            <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                            <div className="text-sm text-amber-900 dark:text-amber-200">
+                              <p className="font-semibold">Regras da Meta:</p>
+                              <ul className="list-disc list-inside mt-1 space-y-1 opacity-80">
+                                <li>Nome: Apenas letras minúsculas e underscores.</li>
+                                <li>Não pode conter espaços ou caracteres especiais.</li>
+                                <li>Uma vez enviado, a aprovação leva de 2h a 24h.</li>
+                              </ul>
+                            </div>
+                          </div>
                           <div>
-                            <Label>Nome Interno</Label>
-                            <Input value={newTemplate.name} onChange={e => setNewTemplate({...newTemplate, name: e.target.value})} placeholder="ex: notificacao_leilao" />
+                            <Label>Nome do Template (Meta Name)</Label>
+                            <Input 
+                              value={newTemplate.name} 
+                              onChange={e => setNewTemplate({...newTemplate, name: e.target.value.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')})} 
+                              placeholder="ex: boas_vindas_comprador" 
+                            />
+                            <p className="text-[10px] text-muted-foreground mt-1">Sugestão: use prefixos como bo_ (boas vindas), nv_ (novo veículo).</p>
                           </div>
                           <div>
                             <Label>Categoria</Label>
                             <Select value={newTemplate.category} onValueChange={v => setNewTemplate({...newTemplate, category: v})}>
                               <SelectTrigger><SelectValue /></SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="MARKETING">Marketing</SelectItem>
-                                <SelectItem value="UTILITY">Utilitário</SelectItem>
-                                <SelectItem value="AUTHENTICATION">Autenticação</SelectItem>
+                                <SelectItem value="MARKETING">Marketing (Promoções, anúncios)</SelectItem>
+                                <SelectItem value="UTILITY">Utilitário (Alertas, pós-venda, entregas)</SelectItem>
+                                <SelectItem value="AUTHENTICATION">Autenticação (Códigos de acesso)</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
                         </div>
                       )}
-                      
-                      {wizardStep === 4 && (
-                        <div>
-                          <Label>Corpo do Template</Label>
-                          <Textarea 
-                            className="h-32" 
-                            value={newTemplate.components[0].text} 
+
+                      {wizardStep === 2 && (
+                        <div className="space-y-6">
+                          <Label>Estrutura do Template</Label>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="border rounded-lg p-4 cursor-pointer hover:border-teal-500 bg-teal-50/50">
+                              <h4 className="font-semibold flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-teal-600" />
+                                Apenas Texto
+                              </h4>
+                              <p className="text-xs text-muted-foreground mt-1">Ideal para mensagens informativas simples.</p>
+                            </div>
+                            <div className="border rounded-lg p-4 opacity-50 cursor-not-allowed grayscale">
+                              <h4 className="font-semibold flex items-center gap-2">
+                                <Layout className="w-4 h-4" />
+                                Texto + Mídia
+                              </h4>
+                              <p className="text-xs text-muted-foreground mt-1">Imagens, Vídeos ou Documentos no topo.</p>
+                              <Badge variant="outline" className="mt-2 text-[10px]">Em breve</Badge>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {wizardStep === 3 && (
+                        <div className="space-y-4">
+                          <Label>Cabeçalho (Opcional)</Label>
+                          <Input 
+                            placeholder="Título em negrito no topo da mensagem" 
                             onChange={e => {
-                                const comps = [...newTemplate.components];
-                                comps[0].text = e.target.value;
-                                setNewTemplate({...newTemplate, components: comps});
+                              const comps = newTemplate.components.filter((c: any) => c.type !== 'HEADER');
+                              if (e.target.value) {
+                                comps.push({ type: 'HEADER', format: 'TEXT', text: e.target.value });
+                              }
+                              setNewTemplate({...newTemplate, components: comps});
                             }}
-                            placeholder="Olá {{1}}, seu veículo {{2}} foi aprovado!" 
                           />
+                          <p className="text-xs text-muted-foreground">Máximo 60 caracteres.</p>
                         </div>
                       )}
                       
-                      {/* Outras etapas omitidas para brevidade */}
+                      {wizardStep === 4 && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-4">
+                            <div>
+                              <Label>Corpo da Mensagem (Obrigatório)</Label>
+                              <Textarea 
+                                className="h-48 font-mono text-sm" 
+                                value={newTemplate.components.find((c: any) => c.type === 'BODY')?.text || ''} 
+                                onChange={e => {
+                                    const comps = [...newTemplate.components];
+                                    const bodyIdx = comps.findIndex(c => c.type === 'BODY');
+                                    comps[bodyIdx].text = e.target.value;
+                                    setNewTemplate({...newTemplate, components: comps});
+                                }}
+                                placeholder="Olá {{1}}, vimos que você se interessou no {{2}}..." 
+                              />
+                            </div>
+                            <div className="p-3 bg-muted rounded text-xs space-y-2">
+                              <p className="font-semibold flex items-center gap-1">
+                                <Terminal className="w-3 h-3" /> Dica de Variáveis
+                              </p>
+                              <p>Use <code>{"{{1}}"}</code>, <code>{"{{2}}"}</code> para dados dinâmicos como nome, marca, valor.</p>
+                            </div>
+                          </div>
+
+                          <div className="border rounded-xl p-4 bg-zinc-100 dark:bg-zinc-900 overflow-hidden">
+                            <div className="flex items-center gap-2 mb-4 border-b pb-2">
+                              <Smartphone className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Preview WhatsApp</span>
+                            </div>
+                            <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm p-3 relative max-w-[90%] ml-0">
+                                <div className="absolute top-2 -left-2 w-0 h-0 border-t-[8px] border-t-transparent border-r-[12px] border-r-white dark:border-r-zinc-800 border-b-[8px] border-b-transparent"></div>
+                                {newTemplate.components.find((c: any) => c.type === 'HEADER') && (
+                                  <p className="font-bold text-sm mb-1">{newTemplate.components.find((c: any) => c.type === 'HEADER').text}</p>
+                                )}
+                                <p className="text-sm whitespace-pre-wrap">
+                                  {newTemplate.components.find((c: any) => c.type === 'BODY')?.text || 'Digite o conteúdo...'}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground text-right mt-1">10:45</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {wizardStep === 5 && (
+                        <div className="space-y-4">
+                          <Label>Rodapé (Opcional)</Label>
+                          <Input 
+                            placeholder="Texto curto em cinza no final" 
+                            onChange={e => {
+                              const comps = newTemplate.components.filter((c: any) => c.type !== 'FOOTER');
+                              if (e.target.value) {
+                                comps.push({ type: 'FOOTER', text: e.target.value });
+                              }
+                              setNewTemplate({...newTemplate, components: comps});
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {wizardStep === 6 && (
+                        <div className="space-y-6">
+                          <Label>Botões de Ação</Label>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="border rounded-lg p-4 opacity-50 grayscale cursor-not-allowed">
+                              <h4 className="font-semibold flex items-center gap-2">
+                                <ChevronRight className="w-4 h-4" />
+                                Resposta Rápida
+                              </h4>
+                              <p className="text-xs text-muted-foreground mt-1">Até 3 botões de texto.</p>
+                            </div>
+                            <div className="border rounded-lg p-4 opacity-50 grayscale cursor-not-allowed">
+                              <h4 className="font-semibold flex items-center gap-2">
+                                <Globe className="w-4 h-4" />
+                                Call to Action
+                              </h4>
+                              <p className="text-xs text-muted-foreground mt-1">Botão para Site ou Telefone.</p>
+                            </div>
+                          </div>
+                          <div className="p-4 bg-teal-50 dark:bg-teal-900/10 rounded-lg text-center">
+                            <p className="text-xs text-teal-700 dark:text-teal-300">Suporte a botões interativos em breve nesta versão.</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {wizardStep === 7 && (
+                        <div className="space-y-4">
+                          <div className="p-4 bg-teal-50 dark:bg-teal-900/10 rounded-lg border border-teal-100 dark:border-teal-900/50 flex gap-3">
+                            <CheckCircle2 className="w-5 h-5 text-teal-600 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-semibold text-teal-900 dark:text-teal-200">Quase lá!</p>
+                              <p className="text-xs text-teal-700 dark:text-teal-300 mt-1">
+                                O template <strong>{newTemplate.name}</strong> será enviado para análise da Meta agora.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="border rounded-lg p-6 space-y-4">
+                            <h4 className="font-semibold text-sm">Resumo do Conteúdo:</h4>
+                            <div className="bg-muted p-4 rounded font-mono text-xs whitespace-pre-wrap">
+                              {JSON.stringify(newTemplate, null, 2)}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                     </div>
 
                     <DialogFooter>
