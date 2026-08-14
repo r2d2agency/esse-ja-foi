@@ -64,11 +64,35 @@ function DashboardVendedor() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Card cadastro */}
         <section className="rounded-2xl border border-slate-200 bg-white p-6">
-          {completo ? (
+          {profile.cadastro_completo === true ? (
             <div className="flex items-center gap-3">
               <CheckCircle2 className="h-6 w-6 text-emerald-600" />
               <p className="text-lg font-bold text-slate-900">Cadastro verificado</p>
             </div>
+          ) : profile.cadastro_completo === false && pct > 80 ? (
+            <>
+              <div className="flex items-start justify-between gap-3">
+                <h2 className="text-lg font-bold text-slate-900">Cadastro em análise</h2>
+                <StatusBadge status="analise" />
+              </div>
+              <p className="mt-2 text-sm text-slate-500">
+                Recebemos suas informações e estamos fazendo a validação.
+              </p>
+              <div className="mt-5 space-y-4">
+                 <div className="flex items-center gap-3">
+                    <div className="h-6 w-6 flex items-center justify-center rounded-full bg-emerald-600 text-white text-[10px]"><CheckCircle2 className="w-3 h-3" /></div>
+                    <span className="text-sm text-slate-600">Dados enviados</span>
+                 </div>
+                 <div className="flex items-center gap-3">
+                    <div className="h-6 w-6 flex items-center justify-center rounded-full bg-teal-100 text-teal-700 text-[10px] animate-pulse">●</div>
+                    <span className="text-sm text-slate-900 font-bold">Em análise</span>
+                 </div>
+                 <div className="flex items-center gap-3">
+                    <div className="h-6 w-6 flex items-center justify-center rounded-full bg-slate-100 text-slate-300 text-[10px]">○</div>
+                    <span className="text-sm text-slate-400">Cadastro aprovado</span>
+                 </div>
+              </div>
+            </>
           ) : (
             <>
               <div className="flex items-start justify-between gap-3">
