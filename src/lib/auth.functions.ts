@@ -33,7 +33,7 @@ export const loginWithPassword = createServerFn({ method: "POST" })
   });
 
 export const solicitarResetSenha = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => z.object({ email: z.string().email() }).parse(data))
+  .inputValidator(z.object({ email: z.string().email() }))
   .handler(async ({ data }) => {
     try {
       const { db } = await import("@/db/index");
