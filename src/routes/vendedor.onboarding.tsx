@@ -16,13 +16,13 @@ export const Route = createFileRoute('/vendedor/onboarding')({
 });
 
 function VendedorOnboarding() {
-  const { user, initialized } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const updateDocs = useServerFn(atualizarDocumentosVendedorFn);
 
-  if (!initialized) {
+  if (authLoading) {
     return <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">Carregando...</div>;
   }
 

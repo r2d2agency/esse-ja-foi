@@ -13,11 +13,11 @@ export const Route = createFileRoute('/vendedor')({
 });
 
 function DashboardVendedor() {
-  const { user, logout, initialized } = useAuth();
+  const { user, logout, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const listarVeiculos = useServerFn(listarMeusVeiculosFn);
 
-  const { data: veiculosResult, isLoading } = useSuspenseQuery({
+  const { data: veiculosResult, isLoading: veiculosLoading } = useSuspenseQuery({
     queryKey: ['meus-veiculos', user?.id],
     queryFn: () => listarVeiculos({ data: { perfilId: user?.id || "" } }),
   });
@@ -25,7 +25,7 @@ function DashboardVendedor() {
   const veiculos = veiculosResult?.data || [];
   const profile = (veiculosResult as any)?.profile;
 
-  if (!initialized || isLoading) {
+  if (authLoading || veiculosLoading) {
     return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
   }
 
