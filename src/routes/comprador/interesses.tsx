@@ -3,21 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
-  Heart, 
   Car, 
   Tags, 
-  MapPin, 
   MessageSquare, 
   Save, 
-  Loader2,
-  CheckCircle2
+  Loader2
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { getInteressesFn, updateInteressesFn } from "@/lib/comprador.functions";
-import { MARCAS_VEICULOS, CATEGORIAS_VEICULOS } from "@/lib/constants-veiculos";
+import { TODAS_MARCAS, CATEGORIAS_VEICULOS } from "@/lib/constants-veiculos";
 
 export const Route = createFileRoute("/comprador/interesses")({
   component: CompradorInteressesPage,
@@ -79,7 +76,6 @@ function CompradorInteressesPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Tipos de Veículos */}
         <Card className="border-slate-200 shadow-none">
           <CardHeader>
             <div className="flex items-center gap-2 mb-2">
@@ -90,7 +86,7 @@ function CompradorInteressesPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
-              {CATEGORIAS_VEICULOS.map((cat) => (
+              {CATEGORIAS_VEICULOS.map((cat: string) => (
                 <div key={cat} className="flex items-center space-x-2">
                   <Checkbox 
                     id={`cat-${cat}`} 
@@ -104,7 +100,6 @@ function CompradorInteressesPage() {
           </CardContent>
         </Card>
 
-        {/* Marcas */}
         <Card className="border-slate-200 shadow-none">
           <CardHeader>
             <div className="flex items-center gap-2 mb-2">
@@ -115,7 +110,7 @@ function CompradorInteressesPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4 max-h-[200px] overflow-y-auto pr-2">
-              {MARCAS_VEICULOS.map((marca) => (
+              {TODAS_MARCAS.map((marca: string) => (
                 <div key={marca} className="flex items-center space-x-2">
                   <Checkbox 
                     id={`marca-${marca}`} 
@@ -129,7 +124,6 @@ function CompradorInteressesPage() {
           </CardContent>
         </Card>
 
-        {/* Comunicações */}
         <Card className="border-slate-200 shadow-none md:col-span-2">
           <CardHeader>
             <div className="flex items-center gap-2 mb-2">

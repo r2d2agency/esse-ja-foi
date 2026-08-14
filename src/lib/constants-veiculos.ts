@@ -54,6 +54,10 @@ export const RELACOES_PROPRIETARIO = ["Cônjuge", "Familiar", "Sócio", "Empresa
 
 export const BANCOS_COMUNS = ["Banco do Brasil", "Itaú", "Bradesco", "Santander", "Caixa Econômica", "BV Financeira", "Safra", "Pan", "Nubank", "Outro"];
 
+export const CATEGORIAS_VEICULOS = [
+  "Hatch", "Sedan", "SUV", "Picape", "Utilitário", "Premium", "Esportivo", "Antigo", "Outros"
+];
+
 export const UFS = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"
 ];
