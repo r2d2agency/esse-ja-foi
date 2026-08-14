@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Car, Loader2, ArrowRight, Save, Camera, Check, User, MapPin, FileCheck } from 'lucide-react';
+import { Car, Loader2, ArrowRight, Save, Camera, Check, User, MapPin, FileCheck, Search } from 'lucide-react';
+import { ComboboxSearch } from '@/components/ui/combobox-search';
+import { ESTADOS_CIVIS, PROFISSOES, UFS } from '@/lib/constants-veiculos';
 import { useState, useEffect, useRef } from 'react';
 import { useServerFn } from '@tanstack/react-start';
 import { toast } from 'sonner';
@@ -187,12 +189,13 @@ function VendedorOnboarding() {
                   </div>
                   <div className="space-y-2">
                     <Label>Estado civil</Label>
-                    <Input value={personalData.estadoCivil} onChange={e => setPersonalData({...personalData, estadoCivil: e.target.value})} />
+                    <ComboboxSearch options={ESTADOS_CIVIS} value={personalData.estadoCivil} onChange={v => setPersonalData({...personalData, estadoCivil: v})} placeholder="Selecione" allowOther />
                   </div>
                   <div className="space-y-2">
                     <Label>Profissão</Label>
-                    <Input value={personalData.profissao} onChange={e => setPersonalData({...personalData, profissao: e.target.value})} />
+                    <ComboboxSearch options={PROFISSOES} value={personalData.profissao} onChange={v => setPersonalData({...personalData, profissao: v})} placeholder="Selecione" allowOther />
                   </div>
+
                   <div className="space-y-2">
                     <Label>Nome da mãe</Label>
                     <Input value={personalData.nomeMae} onChange={e => setPersonalData({...personalData, nomeMae: e.target.value})} />
@@ -242,8 +245,9 @@ function VendedorOnboarding() {
                       </div>
                       <div className="space-y-2">
                          <Label>UF *</Label>
-                         <Input maxLength={2} value={addressData.uf} onChange={e => setAddressData({...addressData, uf: e.target.value.toUpperCase()})} />
+                         <ComboboxSearch options={UFS} value={addressData.uf} onChange={v => setAddressData({...addressData, uf: v})} placeholder="UF" />
                       </div>
+
                     </div>
                   </div>
                 </div>
