@@ -80,7 +80,7 @@ export async function ensureLaudoSchema() {
   await d.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS laudo_acessorios_uidx ON laudo_acessorios (laudo_id, acessorio_id);`);
 
   await d.execute(sql`
-    CREATE TABLE IF NOT EXISTS depreciacao_regras (
+    CREATE TABLE IF NOT EXISTS public.depreciacao_regras (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       item_id uuid, -- liga ao checklist_itens.id
       resposta text, -- 'OK', 'AVARIA', 'NA' ou nulo para regra de km/geral
@@ -95,9 +95,9 @@ export async function ensureLaudoSchema() {
   `);
 
   await d.execute(sql`
-    CREATE TABLE IF NOT EXISTS depreciacao_calculos (
+    CREATE TABLE IF NOT EXISTS public.depreciacao_calculos (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      laudo_id uuid NOT NULL REFERENCES laudos(id) ON DELETE CASCADE,
+      laudo_id uuid NOT NULL REFERENCES public.laudos(id) ON DELETE CASCADE,
       veiculo_id uuid NOT NULL,
       usuario_id uuid,
       valor_fipe numeric(14,2) NOT NULL,
@@ -107,7 +107,14 @@ export async function ensureLaudoSchema() {
       criado_em timestamptz NOT NULL DEFAULT now()
     );
   `);
-  await d.execute(sql`CREATE INDEX IF NOT EXISTS depreciacao_calculos_veiculo_idx ON depreciacao_calculos (veiculo_id);`);
+  await d.execute(sql`CREATE INDEX IF NOT EXISTS depreciacao_calculos_veiculo_idx ON public.depreciacao_calculos (veiculo_id);`);
+
+  // Garantir permissões
+  await d.execute(sql`GRANT ALL PRIVILEGES ON public.depreciacao_regras TO authenticated;`);
+  await d.execute(sql`GRANT ALL PRIVILEGES ON public.depreciacao_regras TO service_role;`);
+  await d.execute(sql`GRANT ALL PRIVILEGES ON public.depreciacao_calculos TO authenticated;`);
+  await d.execute(sql`GRANT ALL PRIVILEGES ON public.depreciacao_calculos TO service_role;`);
+
 
   await d.execute(sql`
     CREATE TABLE IF NOT EXISTS configuracoes (

@@ -36,7 +36,7 @@ export async function ensureAdminTables() {
 
     // Tabela depreciacao_regras (se não existir)
     await d.execute(sql`
-      CREATE TABLE IF NOT EXISTS depreciacao_regras (
+      CREATE TABLE IF NOT EXISTS public.depreciacao_regras (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         item_id uuid,
         resposta text,
@@ -49,6 +49,31 @@ export async function ensureAdminTables() {
         criado_em timestamptz NOT NULL DEFAULT now()
       );
     `);
+
+    // Tabela depreciacao_calculos (se não existir)
+    await d.execute(sql`
+      CREATE TABLE IF NOT EXISTS public.depreciacao_calculos (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        laudo_id uuid,
+        veiculo_id uuid,
+        usuario_id uuid,
+        valor_fipe numeric(14,2),
+        valor_final numeric(14,2),
+        detalhamento jsonb,
+        fora_da_curva boolean DEFAULT false,
+        criado_em timestamptz NOT NULL DEFAULT now(),
+        atualizado_em timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+
+    // Garantir permissões básicas nas tabelas admin
+    await d.execute(sql`GRANT ALL PRIVILEGES ON TABLE public.depreciacao_regras TO authenticated;`);
+    await d.execute(sql`GRANT ALL PRIVILEGES ON TABLE public.depreciacao_regras TO service_role;`);
+    await d.execute(sql`GRANT ALL PRIVILEGES ON TABLE public.depreciacao_calculos TO authenticated;`);
+    await d.execute(sql`GRANT ALL PRIVILEGES ON TABLE public.depreciacao_calculos TO service_role;`);
+    await d.execute(sql`GRANT ALL PRIVILEGES ON TABLE public.configuracoes_sistema TO authenticated;`);
+    await d.execute(sql`GRANT ALL PRIVILEGES ON TABLE public.configuracoes_sistema TO service_role;`);
+
 
     // Sementes iniciais
     await d.execute(sql`
