@@ -26,6 +26,7 @@ import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configura
 import { Route as AdminDepreciacaoRouteImport } from './routes/admin/depreciacao'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
 import { Route as AdminUsuariosRouteImport } from './routes/admin/usuarios'
+import { Route as AdminVendedoresRouteImport } from './routes/admin/vendedores'
 import { Route as CompradorIndexRouteImport } from './routes/comprador/index'
 import { Route as OperacaoAgendaRouteImport } from './routes/operacao/agenda'
 import { Route as OperacaoBiRouteImport } from './routes/operacao/bi'
@@ -131,6 +132,11 @@ const AdminLogsRoute = AdminLogsRouteImport.update({
 const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminVendedoresRoute = AdminVendedoresRouteImport.update({
+  id: '/vendedores',
+  path: '/vendedores',
   getParentRoute: () => AdminRoute,
 } as any)
 const CompradorIndexRoute = CompradorIndexRouteImport.update({
@@ -256,6 +262,7 @@ export interface FileRoutesByFullPath {
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
+  '/admin/vendedores': typeof AdminVendedoresRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/bi': typeof OperacaoBiRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
@@ -292,6 +299,7 @@ export interface FileRoutesByTo {
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
+  '/admin/vendedores': typeof AdminVendedoresRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/bi': typeof OperacaoBiRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
@@ -333,6 +341,7 @@ export interface FileRoutesById {
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
+  '/admin/vendedores': typeof AdminVendedoresRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/bi': typeof OperacaoBiRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
@@ -375,6 +384,7 @@ export interface FileRouteTypes {
     | '/admin/depreciacao'
     | '/admin/logs'
     | '/admin/usuarios'
+    | '/admin/vendedores'
     | '/operacao/agenda'
     | '/operacao/bi'
     | '/operacao/clientes'
@@ -411,6 +421,7 @@ export interface FileRouteTypes {
     | '/admin/depreciacao'
     | '/admin/logs'
     | '/admin/usuarios'
+    | '/admin/vendedores'
     | '/operacao/agenda'
     | '/operacao/bi'
     | '/operacao/clientes'
@@ -451,6 +462,7 @@ export interface FileRouteTypes {
     | '/admin/depreciacao'
     | '/admin/logs'
     | '/admin/usuarios'
+    | '/admin/vendedores'
     | '/operacao/agenda'
     | '/operacao/bi'
     | '/operacao/clientes'
@@ -610,6 +622,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsuariosRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/vendedores': {
+      id: '/admin/vendedores'
+      path: '/vendedores'
+      fullPath: '/admin/vendedores'
+      preLoaderRoute: typeof AdminVendedoresRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/comprador/': {
       id: '/comprador/'
       path: '/'
@@ -766,6 +785,7 @@ interface AdminRouteChildren {
   AdminDepreciacaoRoute: typeof AdminDepreciacaoRoute
   AdminLogsRoute: typeof AdminLogsRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
+  AdminVendedoresRoute: typeof AdminVendedoresRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -775,6 +795,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDepreciacaoRoute: AdminDepreciacaoRoute,
   AdminLogsRoute: AdminLogsRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
+  AdminVendedoresRoute: AdminVendedoresRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
