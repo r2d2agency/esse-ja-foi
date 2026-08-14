@@ -149,7 +149,10 @@ export const duplicarRegraDepreciacaoFn = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
     try {
+      const m = await import("@/db/admin.server");
+      await m.ensureAdminTables();
       const d = requireDb();
+
       await d.execute(sql`
         INSERT INTO depreciacao_regras (item_id, resposta, tipo_desconto, valor, fator_leve, fator_media, fator_grave, ativo)
         SELECT item_id, resposta, tipo_desconto, valor, fator_leve, fator_media, fator_grave, ativo
