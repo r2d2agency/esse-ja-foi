@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate, useParams, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
-import { Car, ArrowLeft, Check, DollarSign } from 'lucide-react';
+import { Car, ArrowLeft, Check, DollarSign, Megaphone, ExternalLink } from 'lucide-react';
 import { listarMeusVeiculosFn } from '@/lib/vendedor.functions';
+import { getAnuncioVeiculoVendedor } from '@/lib/anuncios-vendedor.functions';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
