@@ -3,11 +3,13 @@ import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Car, Camera, CheckCircle2, FileText, User, ArrowRight, Upload, Loader2, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useServerFn } from '@tanstack/react-start';
 import { toast } from 'sonner';
 import { atualizarDocumentosVendedorFn } from '@/lib/vendedor.functions';
+import { buscarCep } from '@/lib/brasil';
 
 export const Route = createFileRoute('/vendedor/onboarding')({
   component: VendedorOnboarding,
