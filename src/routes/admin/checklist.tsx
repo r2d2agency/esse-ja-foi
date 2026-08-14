@@ -152,8 +152,15 @@ function ChecklistAdmin() {
                     {!m['ativo'] && (
                       <button
                         onClick={async () => {
-                          await ativarModeloFn({ data: { id: String(m['id']) } });
-                          void carregar();
+                          const loadingToast = toast.loading("Ativando modelo...");
+                          const res = await ativarModeloFn({ data: { id: String(m['id']) } });
+                          toast.dismiss(loadingToast);
+                          if (res.ok) {
+                            toast.success("Modelo ativado!");
+                            void carregar();
+                          } else {
+                            toast.error(res.message);
+                          }
                         }}
                         className="mr-3 text-slate-600 hover:underline"
                       >
@@ -162,8 +169,12 @@ function ChecklistAdmin() {
                     )}
                     <button
                       onClick={async () => {
+                        if (!confirm("Tem certeza que deseja excluir este modelo?")) return;
+                        const loadingToast = toast.loading("Excluindo...");
                         const res = await excluirModeloFn({ data: { id: String(m['id']) } });
+                        toast.dismiss(loadingToast);
                         if (!res.ok) toast.error(res.message);
+                        else toast.success("Modelo excluído.");
                         void carregar();
                       }}
                       className="text-red-600 hover:underline"

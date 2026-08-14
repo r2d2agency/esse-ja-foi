@@ -27,6 +27,13 @@ export function BackofficeLayout({ children }: BackofficeLayoutProps) {
           <Link to="/admin/depreciacao" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Depreciação</Link>
           <Link to="/admin/usuarios" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Vendedores</Link>
           <Link to="/admin/configuracoes" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Configurações</Link>
+          <div className="pt-4 pb-2 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Operação</div>
+          <Link to="/operacao/leads" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Leads</Link>
+          <Link to="/operacao/veiculos" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Veículos</Link>
+          <Link to="/operacao/clientes" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Clientes</Link>
+          <Link to="/operacao/agenda" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Agenda</Link>
+          <Link to="/operacao/laudos" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Laudos</Link>
+          <Link to="/operacao/bi" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">BI Analytics</Link>
           <Link to="/operacao/bi" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Dashboard BI</Link>
 
           <Link to="/comprador" className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded [&.active]:bg-teal-50 [&.active]:text-teal-900">Leilões</Link>

@@ -80,13 +80,28 @@ function DepreciacaoAdminPage() {
   useEffect(() => { void carregar(); }, [carregar]);
 
   const salvar = async () => {
-    const res = await salvarRegraDepreciacaoFn({ data: { ...form, valor: Number(form.valor), fatorLeve: Number(form.fatorLeve), fatorMedia: Number(form.fatorMedia), fatorGrave: Number(form.fatorGrave) } });
-    if (res.ok) {
-      toast.success("Regra salva com sucesso");
-      setOpen(false);
-      void carregar();
-    } else {
-      toast.error(res.message);
+    const loadingToast = toast.loading("Salvando regra...");
+    try {
+      const res = await salvarRegraDepreciacaoFn({ 
+        data: { 
+          ...form, 
+          valor: Number(form.valor), 
+          fatorLeve: Number(form.fatorLeve), 
+          fatorMedia: Number(form.fatorMedia), 
+          fatorGrave: Number(form.fatorGrave) 
+        } 
+      });
+      toast.dismiss(loadingToast);
+      if (res.ok) {
+        toast.success("Regra salva com sucesso");
+        setOpen(false);
+        void carregar();
+      } else {
+        toast.error(res.message || "Erro ao salvar regra.");
+      }
+    } catch (err) {
+      toast.dismiss(loadingToast);
+      toast.error("Erro na comunicação.");
     }
   };
 
