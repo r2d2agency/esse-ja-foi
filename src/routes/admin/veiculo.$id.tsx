@@ -140,13 +140,22 @@ function DetalheVeiculoAdminPage() {
             <XCircle className="mr-2 h-4 w-4" /> Reprovar
           </Button>
           
-          <Button 
-            className="bg-slate-950 hover:bg-slate-900 text-white font-bold"
-            disabled={v.status_analise === 'PRONTO_PARA_VISTORIA'}
-            onClick={() => handleMudarStatus('PRONTO_PARA_VISTORIA')}
-          >
-            <CheckCircle2 className="mr-2 h-4 w-4" /> Liberar para vistoria
-          </Button>
+          {v.status_analise === 'PRONTO_PARA_VISTORIA' ? (
+            <Button 
+              className="bg-teal-600 hover:bg-teal-700 text-white font-bold"
+              onClick={() => setActiveTab("analise")} // Ou abre o modal de agendamento
+            >
+              <Calendar className="mr-2 h-4 w-4" /> Agendar vistoria
+            </Button>
+          ) : (
+            <Button 
+              className="bg-slate-950 hover:bg-slate-900 text-white font-bold"
+              disabled={v.status_analise === 'PRONTO_PARA_VISTORIA'}
+              onClick={() => handleMudarStatus('PRONTO_PARA_VISTORIA')}
+            >
+              <CheckCircle2 className="mr-2 h-4 w-4" /> Liberar para vistoria
+            </Button>
+          )}
         </div>
       </div>
 
