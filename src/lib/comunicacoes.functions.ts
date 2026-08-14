@@ -94,7 +94,5 @@ export const gerarNovoVerifyTokenFn = createServerFn({ method: "POST" })
 
 export const getWebhookLogsFn = createServerFn({ method: "GET" })
   .handler(async () => {
-    // Implementar busca de logs em comunicacoes.server.ts
-    // Por enquanto retorno vazio
-    return [];
+    return db.getWebhookLogs();
   });
