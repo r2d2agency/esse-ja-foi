@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { db } from '@/db';
 import { sql } from 'drizzle-orm';
-import { crypto } from 'crypto';
+import crypto from 'crypto';
 
 export const Route = createFileRoute('/api/public/webhooks/whatsapp')({
   server: {

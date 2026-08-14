@@ -74,7 +74,7 @@ export default function ComunicacoesPage() {
   };
 
   return (
-    <AdminLayout title="Comunicações">
+    <AdminLayout>
       <div className="space-y-6">
         {/* Header com Indicadores */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

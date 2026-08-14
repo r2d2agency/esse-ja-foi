@@ -2,15 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { db } from "../db/index";
 import { sql } from "drizzle-orm";
+import { hashPassword } from "./auth.server";
 
 export const updateInteressesFn = createServerFn({ method: "POST" })
   .validator((data: any) => data)
   .handler(async ({ data, context }) => {
-    // Aqui usaria o context do usuário logado para atualizar seu profile
-    // Por enquanto simulamos a lógica de banco
     if (!db) throw new Error("DB offline");
-    
-    // Supondo que temos o userId no context (requireSupabaseAuth deve estar configurado)
     const userId = (context as any).userId;
     if (!userId) throw new Error("Não autorizado");
 
@@ -38,4 +35,62 @@ export const getInteressesFn = createServerFn({ method: "GET" })
     `);
     
     return (res as any).rows?.[0] || {};
+  });
+
+export const cadastrarCompradorFn = createServerFn({ method: "POST" })
+  .validator((data: any) => data)
+  .handler(async ({ data }) => {
+    if (!db) throw new Error("DB offline");
+    
+    const senhaHash = await hashPassword(data.senha);
+    
+    const res = await db.execute(sql`
+      INSERT INTO profiles (nome, email, whatsapp, cpf, role, senha_hash, tipo_pessoa, cep, endereco, cidade, uf)
+      VALUES (
+        ${data.nome}, 
+        ${data.email}, 
+        ${data.whatsapp}, 
+        ${data.cpf || data.cnpj}, 
+        'comprador', 
+        ${senhaHash},
+        ${data.tipoPessoa},
+        ${data.cep},
+        ${data.endereco},
+        ${data.cidade},
+        ${data.uf}
+      )
+      RETURNING id
+    `);
+    
+    return { id: (res as any).rows?.[0]?.id };
+  });
+
+export const getStatusCompradorFn = createServerFn({ method: "GET" })
+  .handler(async ({ context }) => {
+    if (!db) throw new Error("DB offline");
+    const userId = (context as any).userId;
+    if (!userId) throw new Error("Não autorizado");
+
+    const res = await db.execute(sql`
+      SELECT cadastro_completo, ativo, status_whatsapp FROM profiles WHERE id = ${userId}::uuid
+    `);
+    return (res as any).rows?.[0];
+  });
+
+export const enviarDocumentoCompradorFn = createServerFn({ method: "POST" })
+  .validator((data: any) => data)
+  .handler(async ({ data, context }) => {
+    if (!db) throw new Error("DB offline");
+    const userId = (context as any).userId;
+    if (!userId) throw new Error("Não autorizado");
+
+    // Lógica para salvar documento (simplificada)
+    const column = data.tipo === 'CNH' ? 'documento_cnh_url' : 
+                   data.tipo === 'CRLV' ? 'documento_crlv_url' : 'documento_selfie_url';
+
+    await db.execute(sql.raw(`
+      UPDATE profiles SET ${column} = '${data.url}', atualizado_em = now() WHERE id = '${userId}'
+    `));
+
+    return { ok: true };
   });
