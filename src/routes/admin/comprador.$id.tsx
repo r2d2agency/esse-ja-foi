@@ -5,7 +5,8 @@ import { obterDetalheCompradorFn, aprovarCompradorFn } from "@/lib/admin-comprad
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, User, Building2, CheckCircle2, AlertTriangle, Eye } from "lucide-react";
+import { ArrowLeft, User, Building2, CheckCircle2, AlertTriangle, Eye, FileText } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 import { useState } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -71,27 +72,69 @@ function DetalheCompradorPage() {
         </Card>
 
         <Card>
+          <CardHeader>
+            <CardTitle className="text-xs font-black uppercase text-slate-400">Ações de Compliance</CardTitle>
+          </CardHeader>
           <CardContent className="p-6 space-y-4">
-            <Button className="w-full bg-teal-600 hover:bg-teal-700" onClick={handleAprovar} disabled={comprador.status_compliance === 'APROVADO'}>
-              <CheckCircle2 className="mr-2 h-4 w-4" /> Aprovar Cadastro
+            <Button 
+              className="w-full bg-teal-600 hover:bg-teal-700 text-slate-950 font-bold" 
+              onClick={handleAprovar} 
+              disabled={comprador.status_compliance === 'APROVADO'}
+            >
+              <CheckCircle2 className="mr-2 h-4 w-4" /> Aprovar Comprador
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="w-full border-red-200 text-red-600 hover:bg-red-50 font-bold"
+              onClick={() => toast.error("Funcionalidade de pendência em desenvolvimento.")}
+            >
+              <AlertTriangle className="mr-2 h-4 w-4" /> Solicitar Correção
             </Button>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader><CardTitle>Documentos</CardTitle></CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {comprador.documentos.map((doc: any) => (
-            <div key={doc.id} className="aspect-video bg-slate-100 rounded-lg flex items-center justify-center relative group border">
-              <img src={doc.url} alt={doc.tipo} className="w-full h-full object-cover rounded-lg" />
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-lg">
-                <Button size="sm" onClick={() => setSelectedDoc({ url: doc.url, tipo: doc.tipo })}>
-                  <Eye className="h-4 w-4" />
-                </Button>
-              </div>
+      <Card className="border-slate-200 shadow-none">
+        <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+          <CardTitle className="text-sm font-black uppercase text-slate-950 tracking-wider">Documentação Enviada</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          {!comprador.documentos || comprador.documentos.length === 0 ? (
+            <div className="py-12 text-center text-slate-400 font-medium italic">
+              Nenhum documento enviado até o momento.
             </div>
-          ))}
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {comprador.documentos.map((doc: any) => (
+                <div key={doc.id} className="flex flex-col gap-3">
+                  <div className="aspect-video bg-slate-100 rounded-xl flex items-center justify-center relative group border border-slate-200 overflow-hidden shadow-sm">
+                    {doc.url.endsWith('.pdf') ? (
+                      <div className="flex flex-col items-center gap-2 text-slate-400">
+                        <FileText className="h-10 w-10" />
+                        <span className="text-[10px] font-bold uppercase">Documento PDF</span>
+                      </div>
+                    ) : (
+                      <img src={doc.url} alt={doc.tipo} className="w-full h-full object-cover" />
+                    )}
+                    <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
+                      <Button 
+                        size="sm" 
+                        className="bg-white text-slate-950 hover:bg-slate-100 font-bold"
+                        onClick={() => setSelectedDoc({ url: doc.url, tipo: doc.tipo })}
+                      >
+                        <Eye className="h-4 w-4 mr-2" /> Ampliar
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{doc.tipo}</span>
+                    <Badge variant="outline" className="text-[9px] font-black border-slate-200">{formatDate(doc.criado_em)}</Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

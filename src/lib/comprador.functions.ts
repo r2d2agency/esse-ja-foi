@@ -12,21 +12,21 @@ const compradorSchema = z.object({
 });
 
 export const cadastrarCompradorFn = createServerFn({ method: "POST" })
-  .inputValidator((data: any) => compradorSchema.parse(data))
+  .validator((data: any) => compradorSchema.parse(data))
   .handler(async ({ data }) => {
     const { cadastrarComprador } = await import("../db/comprador.server");
     return cadastrarComprador(data);
   });
 
 export const getStatusCompradorFn = createServerFn({ method: "GET" })
-  .inputValidator((id: string) => z.string().uuid().parse(id))
+  .validator((id: string) => z.string().uuid().parse(id))
   .handler(async ({ data: id }) => {
     const { getStatusComprador } = await import("../db/comprador.server");
     return getStatusComprador(id);
   });
 
 export const atualizarDadosCompradorFn = createServerFn({ method: "POST" })
-  .inputValidator((data: any) => z.object({
+  .validator((data: any) => z.object({
     id: z.string().uuid(),
     dados: z.any()
   }).parse(data))
@@ -36,7 +36,7 @@ export const atualizarDadosCompradorFn = createServerFn({ method: "POST" })
   });
 
 export const enviarDocumentoCompradorFn = createServerFn({ method: "POST" })
-  .inputValidator((data: any) => z.object({
+  .validator((data: any) => z.object({
     compradorId: z.string().uuid(),
     tipo: z.string(),
     url: z.string()

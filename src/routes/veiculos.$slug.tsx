@@ -2,8 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getAnuncioPublico } from "@/lib/vitrine.functions";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, MapPin, Gauge, Lock, ArrowLeft, Fuel, Settings2, Info } from "lucide-react";
+import { ShieldCheck, MapPin, Fuel, Settings2, Info, Lock, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
+
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/veiculos/$slug")({
   component: DetalheVeiculoPublico,
@@ -11,6 +14,7 @@ export const Route = createFileRoute("/veiculos/$slug")({
 
 function DetalheVeiculoPublico() {
   const { slug } = Route.useParams();
+  const { user, isAuthenticated } = useAuth();
   const { data: anuncio, isLoading } = useQuery({
     queryKey: ["anuncio-publico", slug],
     queryFn: () => getAnuncioPublico({ data: slug }),
@@ -142,22 +146,57 @@ function DetalheVeiculoPublico() {
               </div>
 
               <div className="bg-white/5 border border-white/10 rounded-3xl p-6 mb-8 text-center">
-                <div className="flex justify-center mb-3">
-                  <div className="w-12 h-12 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
-                    <Lock className="h-6 w-6" />
+                {!isAuthenticated ? (
+                  <>
+                    <div className="flex justify-center mb-3">
+                      <div className="w-12 h-12 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
+                        <Lock className="h-6 w-6" />
+                      </div>
+                    </div>
+                    <h3 className="font-bold text-lg mb-1">Valores Restritos</h3>
+                    <p className="text-sm text-slate-400 mb-6">Acesse sua conta para visualizar as condições e participar desta oferta.</p>
+                    
+                    <Link to="/login">
+                      <Button className="w-full h-12 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl mb-3">
+                        Entrar para participar
+                      </Button>
+                    </Link>
+                    <div className="text-xs text-slate-500">
+                      Ainda não possui cadastro? <Link to="/comprador/cadastro" className="text-teal-400 hover:underline">Criar conta de comprador</Link>
+                    </div>
+                  </>
+                ) : user?.role === 'comprador' && !user?.pode_ver_valores ? (
+                  <>
+                    <div className="flex justify-center mb-3">
+                      <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">
+                        <ShieldCheck className="h-6 w-6" />
+                      </div>
+                    </div>
+                    <h3 className="font-bold text-lg mb-1">Aguardando Aprovação</h3>
+                    <p className="text-sm text-slate-400 mb-6">Seu cadastro está em análise. Você será notificado assim que seu acesso for liberado.</p>
+                    
+                    <Link to="/comprador/documentos">
+                      <Button variant="outline" className="w-full h-12 border-teal-500/50 text-teal-400 hover:bg-teal-500/10 font-bold rounded-xl">
+                        Ver status dos documentos
+                      </Button>
+                    </Link>
+                  </>
+                ) : (
+                  <div className="space-y-4 py-2">
+                    <div className="flex justify-between items-end border-b border-white/10 pb-4">
+                      <div className="text-left">
+                        <span className="text-[10px] font-bold text-teal-500 uppercase tracking-widest">Valor de Venda</span>
+                        <div className="text-3xl font-black text-white leading-none mt-1">
+                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(anuncio.valor_base || 0)}
+                        </div>
+                      </div>
+                      <Badge className="bg-teal-600 text-[10px] font-black shadow-lg">OPORTUNIDADE</Badge>
+                    </div>
+                    <Button className="w-full h-14 bg-teal-600 hover:bg-teal-700 text-white text-base font-black uppercase rounded-2xl shadow-xl shadow-teal-900/20">
+                      Fazer Proposta Agora
+                    </Button>
                   </div>
-                </div>
-                <h3 className="font-bold text-lg mb-1">Valores Restritos</h3>
-                <p className="text-sm text-slate-400 mb-6">Acesse sua conta para visualizar as condições e participar desta oferta.</p>
-                
-                <Link to="/login">
-                  <Button className="w-full h-12 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl mb-3">
-                    Entrar para participar
-                  </Button>
-                </Link>
-                <div className="text-xs text-slate-500">
-                  Ainda não possui cadastro? <Link to="/vender" className="text-teal-400 hover:underline">Criar conta</Link>
-                </div>
+                )}
               </div>
 
               <div className="space-y-4">
@@ -177,10 +216,3 @@ function DetalheVeiculoPublico() {
   );
 }
 
-function CheckCircle2(props: any) {
-  return (
-    <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-    </svg>
-  );
-}

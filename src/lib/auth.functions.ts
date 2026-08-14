@@ -13,10 +13,10 @@ export const seedSuperAdmin = createServerFn({ method: "POST" }).handler(async (
 });
 
 export const loginWithPassword = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ 
+  .validator((data: any) => z.object({ 
     email: z.string().email(), 
     password: z.string().min(1) 
-  }))
+  }).parse(data))
   .handler(async ({ data }) => {
     const { authenticate, issueToken } = await import("@/db/auth.server");
     try {
@@ -47,7 +47,7 @@ export const loginWithPassword = createServerFn({ method: "POST" })
   });
 
 export const solicitarResetSenha = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ email: z.string().email() }))
+  .validator((data: any) => z.object({ email: z.string().email() }).parse(data))
   .handler(async ({ data }) => {
     try {
       const { db } = await import("@/db/index");

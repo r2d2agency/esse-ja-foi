@@ -275,6 +275,8 @@ export async function authenticate(email: string, password: string) {
       nome: user.nome ?? user.email,
       email: user.email as string,
       role: user.role as any,
+      pode_ver_valores: !!(user as any).pode_ver_valores,
+      tipo_pessoa: (user as any).tipo_pessoa,
     };
   } catch (err) {
     console.error("[auth.server] Erro durante autenticação:", err);
