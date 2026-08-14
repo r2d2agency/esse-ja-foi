@@ -13,6 +13,7 @@ interface FileUploadProps {
   onChange: (url: string | null) => void;
   onCameraClick?: () => void;
   className?: string;
+  disabled?: boolean;
 }
 
 const STATUS_CONFIG: Record<UploadStatus, { label: string; className: string; icon: any }> = {
@@ -24,7 +25,7 @@ const STATUS_CONFIG: Record<UploadStatus, { label: string; className: string; ic
   recusado: { label: "Recusado", className: "border-rose-200 bg-rose-50 text-rose-600", icon: X },
 };
 
-export function FileUpload({ label, description, value, status = "vazio", onChange, onCameraClick, className }: FileUploadProps) {
+export function FileUpload({ label, description, value, status = "vazio", onChange, onCameraClick, className, disabled }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -61,7 +62,8 @@ export function FileUpload({ label, description, value, status = "vazio", onChan
         className={cn(
           "relative min-h-[140px] flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed transition-all p-4 text-center",
           config.className,
-          isUploading && "animate-pulse cursor-wait"
+          isUploading && "animate-pulse cursor-wait",
+          disabled && "opacity-50 cursor-not-allowed"
         )}
       >
         {value ? (
@@ -75,24 +77,26 @@ export function FileUpload({ label, description, value, status = "vazio", onChan
                 </div>
              </div>
              
-             <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="h-8 rounded-lg text-xs"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <RefreshCw className="mr-1.5 h-3 w-3" /> Trocar arquivo
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 rounded-lg text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                  onClick={() => onChange(null)}
-                >
-                  <Trash2 className="mr-1.5 h-3 w-3" /> Excluir
-                </Button>
-             </div>
+             {!disabled && (
+              <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 rounded-lg text-xs"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <RefreshCw className="mr-1.5 h-3 w-3" /> Trocar arquivo
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 rounded-lg text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                    onClick={() => onChange(null)}
+                  >
+                    <Trash2 className="mr-1.5 h-3 w-3" /> Excluir
+                  </Button>
+              </div>
+             )}
           </div>
         ) : (
           <>
@@ -107,35 +111,39 @@ export function FileUpload({ label, description, value, status = "vazio", onChan
               <p className="text-xs text-slate-400">JPG, PNG ou PDF (máx. 10MB)</p>
             </div>
 
-            <div className="flex gap-2 mt-2">
-               <Button 
-                 variant="outline" 
-                 size="sm" 
-                 className="rounded-xl h-9 px-4 font-semibold border-slate-200"
-                 onClick={() => fileInputRef.current?.click()}
-                 disabled={isUploading}
-               >
-                 <Upload className="mr-2 h-4 w-4" /> Arquivo
-               </Button>
-               <Button 
-                 variant="outline" 
-                 size="sm" 
-                 className="rounded-xl h-9 px-4 font-semibold border-slate-200"
-                 onClick={onCameraClick}
-                 disabled={isUploading}
-               >
-                 <Camera className="mr-2 h-4 w-4" /> Câmera
-               </Button>
-            </div>
+            {!disabled && (
+              <div className="flex gap-2 mt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-xl h-9 px-4 font-semibold border-slate-200"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
+                  <Upload className="mr-2 h-4 w-4" /> Arquivo
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-xl h-9 px-4 font-semibold border-slate-200"
+                  onClick={onCameraClick}
+                  disabled={isUploading}
+                >
+                  <Camera className="mr-2 h-4 w-4" /> Câmera
+                </Button>
+              </div>
+            )}
           </>
         )}
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          className="hidden" 
-          accept="image/*,application/pdf"
-          onChange={handleFileChange}
-        />
+        {!disabled && (
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            accept="image/*,application/pdf"
+            onChange={handleFileChange}
+          />
+        )}
       </div>
     </div>
   );
