@@ -1,12 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAnuncioPublico } from "@/lib/vitrine.functions";
+import { getLeilaoInfo, darLanceFn } from "@/lib/leilao.functions";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, MapPin, Fuel, Settings2, Info, Lock, ArrowLeft, CheckCircle2 } from "lucide-react";
-import { useState } from "react";
-
+import { ShieldCheck, MapPin, Fuel, Settings2, Info, Lock, ArrowLeft, CheckCircle2, Gavel, Clock, TrendingUp } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/veiculos/$slug")({
   component: DetalheVeiculoPublico,
@@ -15,19 +18,71 @@ export const Route = createFileRoute("/veiculos/$slug")({
 function DetalheVeiculoPublico() {
   const { slug } = Route.useParams();
   const { user, isAuthenticated } = useAuth();
-  const { data: anuncio, isLoading } = useQuery({
+  const queryClient = useQueryClient();
+
+  const { data: anuncio, isLoading: loadingAnuncio } = useQuery({
     queryKey: ["anuncio-publico", slug],
     queryFn: () => getAnuncioPublico({ data: slug }),
   });
 
-  const [activePhoto, setActivePhoto] = useState(0);
+  // Buscamos info do leilão em tempo real se o anúncio for carregado e o usuário puder ver
+  const { data: leilao, isLoading: loadingLeilao } = useQuery({
+    queryKey: ["leilao-veiculo", anuncio?.id],
+    queryFn: () => getLeilaoInfo({ data: anuncio?.leilao_id }),
+    enabled: !!anuncio?.leilao_id && isAuthenticated && user?.pode_ver_valores,
+    refetchInterval: 5000,
+  });
 
-  if (isLoading) return <div className="p-10 text-center">Carregando veículo...</div>;
+  const darLanceMutation = useMutation({
+    mutationFn: (valor: number) => darLanceFn({ 
+      data: { 
+        leilaoId: anuncio?.leilao_id, 
+        valor, 
+        compradorId: user?.id 
+      } 
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leilao-veiculo"] });
+      toast.success("Lance registrado com sucesso!");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Erro ao registrar lance.");
+    }
+  });
+
+  const [activePhoto, setActivePhoto] = useState(0);
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    if (!leilao?.fim_em) return;
+    
+    const interval = setInterval(() => {
+      const now = new Date();
+      const end = new Date(leilao.fim_em);
+      const diff = end.getTime() - now.getTime();
+      
+      if (diff <= 0) {
+        setTimeLeft("Encerrado");
+        clearInterval(interval);
+      } else {
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [leilao?.fim_em]);
+
+  if (loadingAnuncio) return <div className="p-10 text-center">Carregando veículo...</div>;
   if (!anuncio) return <div className="p-10 text-center">Veículo não encontrado.</div>;
+
+  const lanceAtual = Number(leilao?.ultimo_lance?.valor || leilao?.lance_inicial || 0);
+  const proximoLanceMinimo = lanceAtual + Number(leilao?.incremento_minimo || 0);
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900">
-      {/* HEADER SIMPLES */}
       <header className="border-b border-slate-100 py-4 px-6 sticky top-0 bg-white z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link to="/veiculos" className="text-sm font-medium text-slate-500 hover:text-slate-900 flex items-center gap-2">
@@ -43,9 +98,7 @@ function DetalheVeiculoPublico() {
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-12">
           
-          {/* LADO ESQUERDO: GALERIA E INFO */}
           <div className="space-y-8">
-            {/* GALERIA */}
             <div className="space-y-4">
               <div className="aspect-video bg-slate-100 rounded-3xl overflow-hidden relative">
                 {anuncio.fotos?.length > 0 ? (
@@ -77,7 +130,6 @@ function DetalheVeiculoPublico() {
               </div>
             </div>
 
-            {/* SOBRE O VEICULO */}
             <div className="bg-slate-50 rounded-3xl p-8 space-y-6">
               <h2 className="text-xl font-black uppercase tracking-tight">Sobre o Veículo</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-8">
@@ -107,36 +159,8 @@ function DetalheVeiculoPublico() {
                 </div>
               </div>
             </div>
-
-            {/* VISTORIA */}
-            <div className="border border-slate-200 rounded-3xl p-8 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center text-teal-600">
-                  <ShieldCheck className="h-6 w-6" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-black uppercase tracking-tight">Veículo Vistoriado</h2>
-                  <p className="text-sm text-slate-500">Avaliação física realizada por peritos credenciados.</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl text-sm font-medium">
-                  <CheckCircle2 className="h-4 w-4 text-teal-600" /> Quilometragem conferida
-                </div>
-                <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl text-sm font-medium">
-                  <CheckCircle2 className="h-4 w-4 text-teal-600" /> Estrutura analisada
-                </div>
-                <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl text-sm font-medium">
-                  <CheckCircle2 className="h-4 w-4 text-teal-600" /> Documentação validada
-                </div>
-                <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl text-sm font-medium">
-                  <CheckCircle2 className="h-4 w-4 text-teal-600" /> Funcionamento mecânico testado
-                </div>
-              </div>
-            </div>
           </div>
 
-          {/* LADO DIREITO: COMERCIAL */}
           <div className="lg:sticky lg:top-24 h-fit">
             <div className="bg-slate-950 text-white rounded-[2.5rem] p-8 md:p-10 shadow-2xl">
               <div className="mb-8">
@@ -145,74 +169,106 @@ function DetalheVeiculoPublico() {
                 <p className="text-slate-400 mt-2 text-sm leading-relaxed">{anuncio.descricao}</p>
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 mb-8 text-center">
-                {!isAuthenticated ? (
-                  <>
-                    <div className="flex justify-center mb-3">
-                      <div className="w-12 h-12 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
-                        <Lock className="h-6 w-6" />
+              {!isAuthenticated ? (
+                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 mb-8 text-center">
+                  <div className="flex justify-center mb-3">
+                    <div className="w-12 h-12 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
+                      <Lock className="h-6 w-6" />
+                    </div>
+                  </div>
+                  <h3 className="font-bold text-lg mb-1">Valores Restritos</h3>
+                  <p className="text-sm text-slate-400 mb-6">Acesse sua conta para visualizar as condições e participar desta oferta.</p>
+                  <Link to="/login">
+                    <Button className="w-full h-12 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl mb-3">
+                      Entrar para participar
+                    </Button>
+                  </Link>
+                  <div className="text-xs text-slate-500">
+                    Ainda não possui cadastro? <Link to="/comprador/cadastro" className="text-teal-400 hover:underline">Criar conta de comprador</Link>
+                  </div>
+                </div>
+              ) : user?.role === 'comprador' && !user?.pode_ver_valores ? (
+                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 mb-8 text-center">
+                  <div className="flex justify-center mb-3">
+                    <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">
+                      <ShieldCheck className="h-6 w-6" />
+                    </div>
+                  </div>
+                  <h3 className="font-bold text-lg mb-1">Aguardando Aprovação</h3>
+                  <p className="text-sm text-slate-400 mb-6">Seu cadastro está em análise. Você será notificado assim que seu acesso for liberado.</p>
+                </div>
+              ) : anuncio.leilao_id ? (
+                <div className="space-y-6">
+                  <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-6">
+                    <div className="flex justify-between items-end">
+                      <div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Lance Atual</div>
+                        <div className="text-3xl font-black text-teal-400">R$ {lanceAtual.toLocaleString('pt-BR')}</div>
                       </div>
-                    </div>
-                    <h3 className="font-bold text-lg mb-1">Valores Restritos</h3>
-                    <p className="text-sm text-slate-400 mb-6">Acesse sua conta para visualizar as condições e participar desta oferta.</p>
-                    
-                    <Link to="/login">
-                      <Button className="w-full h-12 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl mb-3">
-                        Entrar para participar
-                      </Button>
-                    </Link>
-                    <div className="text-xs text-slate-500">
-                      Ainda não possui cadastro? <Link to="/comprador/cadastro" className="text-teal-400 hover:underline">Criar conta de comprador</Link>
-                    </div>
-                  </>
-                ) : user?.role === 'comprador' && !user?.pode_ver_valores ? (
-                  <>
-                    <div className="flex justify-center mb-3">
-                      <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400">
-                        <ShieldCheck className="h-6 w-6" />
-                      </div>
-                    </div>
-                    <h3 className="font-bold text-lg mb-1">Aguardando Aprovação</h3>
-                    <p className="text-sm text-slate-400 mb-6">Seu cadastro está em análise. Você será notificado assim que seu acesso for liberado.</p>
-                    
-                    <Link to="/comprador/documentos">
-                      <Button variant="outline" className="w-full h-12 border-teal-500/50 text-teal-400 hover:bg-teal-500/10 font-bold rounded-xl">
-                        Ver status dos documentos
-                      </Button>
-                    </Link>
-                  </>
-                ) : (
-                  <div className="space-y-4 py-2">
-                    <div className="flex justify-between items-end border-b border-white/10 pb-4">
-                      <div className="text-left">
-                        <span className="text-[10px] font-bold text-teal-500 uppercase tracking-widest">Valor de Venda</span>
-                        <div className="text-3xl font-black text-white leading-none mt-1">
-                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(anuncio.valor_base || 0)}
+                      <div className="text-right">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tempo Restante</div>
+                        <div className="text-xl font-black text-white flex items-center gap-2 justify-end">
+                          <Clock className="h-4 w-4 text-amber-400" /> {timeLeft}
                         </div>
                       </div>
-                      <Badge className="bg-teal-600 text-[10px] font-black shadow-lg">OPORTUNIDADE</Badge>
                     </div>
-                    <Button className="w-full h-14 bg-teal-600 hover:bg-teal-700 text-white text-base font-black uppercase rounded-2xl shadow-xl shadow-teal-900/20">
-                      Fazer Proposta Agora
-                    </Button>
-                  </div>
-                )}
-              </div>
 
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 text-slate-500 shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-slate-500 leading-relaxed">
-                    A Esse Já Foi garante a veracidade das informações da vistoria, mas recomenda a leitura atenta do laudo completo após a habilitação da sua conta.
-                  </p>
+                    {leilao?.ultimo_lance?.comprador_id === user?.id && (
+                      <div className="bg-teal-500/10 border border-teal-500/20 rounded-xl p-3 flex items-center gap-3">
+                        <TrendingUp className="h-5 w-5 text-teal-400" />
+                        <span className="text-xs font-bold text-teal-400 uppercase">Você é o líder deste leilão!</span>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <Button 
+                        onClick={() => darLanceMutation.mutate(proximoLanceMinimo)}
+                        disabled={darLanceMutation.isPending || leilao?.status === 'ENCERRADO'}
+                        className="h-14 bg-teal-600 hover:bg-teal-700 text-white font-black text-xs uppercase rounded-2xl shadow-lg shadow-teal-900/20"
+                      >
+                        Dar Lance R$ {proximoLanceMinimo.toLocaleString('pt-BR')}
+                      </Button>
+                      <Button 
+                        onClick={() => darLanceMutation.mutate(proximoLanceMinimo + Number(leilao?.incremento_minimo || 0))}
+                        disabled={darLanceMutation.isPending || leilao?.status === 'ENCERRADO'}
+                        variant="outline"
+                        className="h-14 border-white/10 text-white hover:bg-white/5 font-black text-xs uppercase rounded-2xl"
+                      >
+                        Lance R$ {(proximoLanceMinimo + Number(leilao?.incremento_minimo || 0)).toLocaleString('pt-BR')}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <Gavel className="h-3.5 w-3.5" /> Últimos Lances
+                    </div>
+                    <div className="space-y-3">
+                      {(leilao?.historico || []).slice(0, 3).map((lance: any, i: number) => (
+                        <div key={i} className="flex justify-between items-center text-sm py-2 border-b border-white/5 last:border-0">
+                          <span className="text-slate-400 font-medium">Comprador {lance.comprador_id.substring(0,4)}***</span>
+                          <span className="font-bold text-white">R$ {Number(lance.valor).toLocaleString('pt-BR')}</span>
+                        </div>
+                      ))}
+                      {(leilao?.historico || []).length === 0 && (
+                        <div className="text-center py-4 text-xs text-slate-500 font-bold italic">Nenhum lance ainda</div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 text-center">
+                  <div className="text-3xl font-black text-white mb-2">R$ {Number(anuncio.valor_comercial).toLocaleString('pt-BR')}</div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Valor Comercial</div>
+                  <Button className="w-full h-12 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl">
+                    Tenho Interesse
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
-
         </div>
       </main>
     </div>
   );
 }
-
