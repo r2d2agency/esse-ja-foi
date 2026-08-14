@@ -310,6 +310,56 @@ export async function registrarEventoPagamento(evento: {
   });
 }
 
+/**
+ * Registro manual de pagamento (TED, Depósito, Dinheiro).
+ * Permite que o administrativo baixe uma negociação que foi paga fora da plataforma.
+ */
+export async function confirmarPagamentoManual(params: {
+  negociacao_id: string;
+  valor: number;
+  referencia: string;
+  admin_id: string;
+}) {
+  const d = requireDb();
+  
+  return await d.transaction(async (tx) => {
+    const negRes = await tx.execute(sql`
+      SELECT n.*, a.veiculo_id FROM negociacoes n 
+      JOIN anuncios_veiculo a ON a.id = n.anuncio_id
+      WHERE n.id = ${params.negociacao_id}::uuid FOR UPDATE
+    `);
+    const neg = (negRes as any).rows?.[0];
+    if (!neg) throw new Error("Negociação não encontrada.");
+    
+    // 1. Atualizar Negociação
+    await tx.execute(sql`
+      UPDATE negociacoes SET status = 'PAGAMENTO_CONFIRMADO', atualizado_em = now()
+      WHERE id = ${params.negociacao_id}::uuid
+    `);
+    
+    // 2. Atualizar Veículo
+    await tx.execute(sql`
+      UPDATE veiculos SET status = 'AGUARDANDO_ENTREGA' WHERE id = ${neg.veiculo_id}::uuid
+    `);
+    
+    // 3. Ledger - Entrada Manual
+    await tx.execute(sql`
+      INSERT INTO financeiro_ledger (negociacao_id, tipo, direcao, valor, referencia_externa, detalhe)
+      VALUES (${params.negociacao_id}::uuid, 'ENTRADA_MANUAL', 'ENTRADA', ${params.valor}, ${params.referencia}, 'Pagamento informado manualmente pelo administrativo.')
+    `);
+    
+    // 4. Timeline
+    await timeline(tx, params.negociacao_id, "Pagamento confirmado manualmente.", `Referência: ${params.referencia} • Valor: R$ ${params.valor.toFixed(2)}`);
+    
+    // 5. Notificações
+    await notificar(tx, params.negociacao_id, "COMPRADOR", neg.comprador_id, "Seu pagamento manual foi confirmado.", "O administrativo confirmou o recebimento do seu pagamento.");
+    await notificar(tx, params.negociacao_id, "VENDEDOR", neg.vendedor_id, "Pagamento do veículo confirmado.", "O comprador realizou o pagamento via TED/Depósito e o sistema foi atualizado.");
+    await notificar(tx, params.negociacao_id, "ADMIN", null, "Pagamento manual registrado", `Negociação ${neg.codigo} baixada manualmente por ${params.admin_id}.`);
+
+    return { ok: true };
+  });
+}
+
 /** Expira cobranças e negociações vencidas (horário do servidor como fonte da verdade). */
 export async function expirarCobrancasVencidas() {
   const d = requireDb();
