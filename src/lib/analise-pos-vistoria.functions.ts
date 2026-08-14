@@ -59,6 +59,8 @@ export const responderPropostaVendedorFn = createServerFn({ method: "POST" })
     const { db } = await import("@/db/index");
     const { sql } = await import("drizzle-orm");
     
+    if (!db) throw new Error("Banco de dados indisponível.");
+    
     try {
       const status = data.aceite ? 'ACEITA' : 'RECUSADA';
       const veiculoStatusAnalise = data.aceite ? 'PRONTO_PARA_ANUNCIO' : 'VALOR_RECUSADO';
