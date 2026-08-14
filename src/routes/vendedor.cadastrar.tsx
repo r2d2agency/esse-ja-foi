@@ -433,33 +433,36 @@ function CadastrarVeiculo() {
             <OpcaoBotoes label="Existe algum problema conhecido no câmbio?" opcoes={['Não', 'Sim', 'Não sei']} value={form.cambioProblema} onChange={(v) => set({ cambioProblema: v })} colunas={3} />
 
 
-            <OpcaoBotoes label="Como você considera a condição da lataria?" opcoes={['Excelente', 'Boa', 'Possui pequenos detalhes', 'Possui avarias relevantes']} value={form.lataria} onChange={(v) => set({ lataria: v })} />
-            {form.lataria === 'Possui avarias relevantes' && (
-              <Textarea placeholder="Comente brevemente as avarias" value={form.latariaObs} onChange={(e) => set({ latariaObs: e.target.value })} className="rounded-xl" />
+            <OpcaoBotoes label="Como está a lataria?" opcoes={['Excelente', 'Boa', 'Pequenos detalhes', 'Possui avarias']} value={form.lataria} onChange={(v) => set({ lataria: v })} colunas={2} />
+            {form.lataria === 'Possui avarias' && (
+              <Textarea placeholder="Conte brevemente" value={form.latariaObs} onChange={(e) => set({ latariaObs: e.target.value })} className="rounded-xl" />
             )}
 
-            <OpcaoBotoes label="Como está o interior do veículo?" opcoes={['Excelente', 'Bom', 'Possui sinais de uso', 'Possui avarias']} value={form.interior} onChange={(v) => set({ interior: v })} />
-            <OpcaoBotoes label="Como estão os pneus?" opcoes={['Bons', 'Meia vida', 'Precisam de substituição', 'Não sei informar']} value={form.pneus} onChange={(v) => set({ pneus: v })} />
+            <OpcaoBotoes label="Como está o interior do veículo?" opcoes={['Excelente', 'Bom', 'Sinais de uso', 'Possui avarias']} value={form.interior} onChange={(v) => set({ interior: v })} colunas={2} />
+            <OpcaoBotoes label="Como estão os pneus?" opcoes={['Bons', 'Meia vida', 'Substituição', 'Não sei']} value={form.pneus} onChange={(v) => set({ pneus: v })} colunas={2} />
+
 
             <div className="space-y-5 border-t border-slate-100 pt-6">
               <p className="text-sm text-slate-500">Essas informações serão verificadas durante a análise do veículo.</p>
-              <OpcaoBotoes label="O veículo já sofreu acidente?" opcoes={['Não', 'Sim', 'Não sei informar']} value={form.acidente} onChange={(v) => set({ acidente: v })} colunas={3} />
-              <OpcaoBotoes label="O veículo já passou por leilão?" opcoes={['Não', 'Sim', 'Não sei informar']} value={form.leilao} onChange={(v) => set({ leilao: v })} colunas={3} />
-              <OpcaoBotoes label="Possui histórico de sinistro?" opcoes={['Não', 'Sim', 'Não sei informar']} value={form.sinistro} onChange={(v) => set({ sinistro: v })} colunas={3} />
-              <OpcaoBotoes label="Possui alguma restrição conhecida?" opcoes={['Não', 'Sim', 'Não sei informar']} value={form.restricao} onChange={(v) => set({ restricao: v })} colunas={3} />
+              <OpcaoBotoes label="Já sofreu acidente?" opcoes={['Não', 'Sim', 'Não sei']} value={form.acidente} onChange={(v) => set({ acidente: v })} colunas={3} />
+              <OpcaoBotoes label="Já passou por leilão?" opcoes={['Não', 'Sim', 'Não sei']} value={form.leilao} onChange={(v) => set({ leilao: v })} colunas={3} />
+              <OpcaoBotoes label="Possui sinistro conhecido?" opcoes={['Não', 'Sim', 'Não sei']} value={form.sinistro} onChange={(v) => set({ sinistro: v })} colunas={3} />
+              <OpcaoBotoes label="Possui alguma restrição conhecida?" opcoes={['Não', 'Sim', 'Não sei']} value={form.restricao} onChange={(v) => set({ restricao: v })} colunas={3} />
               {[form.acidente, form.leilao, form.sinistro, form.restricao].includes('Sim') && (
-                <Textarea placeholder="Observações sobre o histórico" value={form.historicoObs} onChange={(e) => set({ historicoObs: e.target.value })} className="rounded-xl" />
+                <Textarea placeholder="Complemente o histórico se necessário" value={form.historicoObs} onChange={(e) => set({ historicoObs: e.target.value })} className="rounded-xl" />
               )}
+
             </div>
 
             <div className="space-y-5 border-t border-slate-100 pt-6">
-              <OpcaoBotoes label="Possui chave reserva?" opcoes={['Sim', 'Não']} value={form.chaveReserva} onChange={(v) => set({ chaveReserva: v })} />
-              <OpcaoBotoes label="Possui manual?" opcoes={['Sim', 'Não']} value={form.manual} onChange={(v) => set({ manual: v })} />
-              <OpcaoBotoes label="Possui estepe?" opcoes={['Sim', 'Não']} value={form.estepe} onChange={(v) => set({ estepe: v })} />
+              <OpcaoBotoes label="Chave reserva?" opcoes={['Sim', 'Não']} value={form.chaveReserva} onChange={(v) => set({ chaveReserva: v })} />
+              <OpcaoBotoes label="Manual?" opcoes={['Sim', 'Não']} value={form.manual} onChange={(v) => set({ manual: v })} />
+              <OpcaoBotoes label="Estepe?" opcoes={['Sim', 'Não']} value={form.estepe} onChange={(v) => set({ estepe: v })} />
               <OpcaoBotoes label="Possui acessórios adicionais?" opcoes={['Sim', 'Não']} value={form.acessorios} onChange={(v) => set({ acessorios: v })} />
               {form.acessorios === 'Sim' && (
-                <Campo label="Quais?" value={form.acessoriosQuais} onChange={(v) => set({ acessoriosQuais: v })} />
+                <Textarea placeholder="Quais acessórios?" value={form.acessoriosQuais} onChange={(e) => set({ acessoriosQuais: e.target.value })} className="rounded-xl" />
               )}
+
             </div>
           </div>
         )}
