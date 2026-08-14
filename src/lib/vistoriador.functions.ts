@@ -47,8 +47,8 @@ export const salvarItemChecklistFn = createServerFn({ method: "POST" })
     etapa: z.string(),
     item_chave: z.string(),
     status: z.string(),
-    observacao: z.string().optional().nullable(),
-    foto_url: z.string().optional().nullable()
+    observacao: z.string().optional().nullable().default(null),
+    foto_url: z.string().optional().nullable().default(null)
   }).parse(d))
   .handler(async ({ data }) => {
     const { salvarItemChecklist } = await import("@/db/vistorias.server");
