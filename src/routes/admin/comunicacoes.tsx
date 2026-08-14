@@ -49,8 +49,11 @@ import {
   Smartphone,
   Info,
   ChevronLeft,
-  Check
+  Check,
+  Car,
+  Megaphone
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { 
