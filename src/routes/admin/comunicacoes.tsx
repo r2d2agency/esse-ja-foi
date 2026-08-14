@@ -51,7 +51,11 @@ import {
 } from '@/lib/comunicacoes.functions';
 import { toast } from 'sonner';
 
-export default function ComunicacoesPage() {
+export const Route = createFileRoute('/admin/comunicacoes')({
+  component: ComunicacoesPage,
+});
+
+function ComunicacoesPage() {
   const queryClient = useQueryClient();
   const getIndicadores = useServerFn(getIndicadoresComunicacoesFn);
   const listarCampanhas = useServerFn(listarCampanhasFn);
