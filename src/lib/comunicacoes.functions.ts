@@ -7,7 +7,6 @@ export const getWhatsappConfigFn = createServerFn({ method: "GET" })
   .handler(async () => {
     const config = await db.getWhatsappConfig();
     if (config) {
-      // Mascarar campos sensíveis
       return {
         ...config,
         app_secret: config.app_secret ? "••••••••••••" : null,
@@ -21,7 +20,6 @@ export const getWhatsappConfigFn = createServerFn({ method: "GET" })
 export const updateWhatsappConfigFn = createServerFn({ method: "POST" })
   .validator((data: any) => data)
   .handler(async ({ data }) => {
-    // Se vier mascarado, não atualizar o campo
     const existing = await db.getWhatsappConfig();
     const updateData = { ...data };
     
@@ -83,7 +81,6 @@ export const buscarDadosAutomaticosFn = createServerFn({ method: "POST" })
 export const gerarNovoVerifyTokenFn = createServerFn({ method: "POST" })
   .handler(async () => {
     const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    // Salvar no banco
     const existing = await db.getWhatsappConfig();
     await db.updateWhatsappConfig({
       ...existing,
@@ -96,4 +93,14 @@ export const getWebhookLogsFn = createServerFn({ method: "GET" })
   .handler(async () => {
     const logs = await db.getWebhookLogs();
     return logs as any[];
+  });
+
+export const criarTemplateMetaFn = createServerFn({ method: "POST" })
+  .validator((data: any) => data)
+  .handler(async ({ data }) => {
+    try {
+      return await metaService.criarTemplate(data);
+    } catch (error: any) {
+      return { ok: false, error: error.message };
+    }
   });
