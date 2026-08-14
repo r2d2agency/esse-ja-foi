@@ -78,7 +78,7 @@ export const cancelarNegociacaoFn = createServerFn({ method: "POST" })
       admin_id: z.string().uuid(),
     }).parse(data),
   )
-  .handler(async ({ data }) => cancelarNegociacao(data));
+  .handler(async ({ data }) => cancelarNegociacao(data as any));
 
 export const salvarPrazoPagamentoFn = createServerFn({ method: "POST" })
   .validator((horas: number) => z.number().int().positive().max(240).parse(horas))

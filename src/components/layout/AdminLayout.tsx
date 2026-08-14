@@ -9,6 +9,7 @@ import {
   Camera, 
   Megaphone, 
   Gavel, 
+  Handshake,
   ShoppingBag, 
   DollarSign, 
   Truck, 

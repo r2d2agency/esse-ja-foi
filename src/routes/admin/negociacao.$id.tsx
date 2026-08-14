@@ -79,9 +79,9 @@ function AdminNegociacaoDetalhe() {
               <CardTitle className="text-xs font-black uppercase text-slate-400">Resumo da negociação</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-6 pt-6 md:grid-cols-3">
-              <Info label="Veículo" valor={`${n.titulo}`} sub={n.codigo_publico} />
-              <Info label="Vendedor" valor={n.vendedor_nome} />
-              <Info label="Comprador vencedor" valor={n.comprador_nome} />
+              <Info label="Veículo" valor={String(n.titulo ?? "")} sub={n.codigo_publico ?? undefined} />
+              <Info label="Vendedor" valor={String(n.vendedor_nome ?? "")} />
+              <Info label="Comprador vencedor" valor={String(n.comprador_nome ?? "")} />
               <Info label="Lance vencedor" valor={brl(n.valor_venda)} destaque />
               <Info label="Comissão prevista" valor={brl(n.valor_comissao)} />
               <Info label="Valor previsto ao vendedor" valor={brl(n.valor_previsto_vendedor)} />
