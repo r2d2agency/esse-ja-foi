@@ -144,9 +144,26 @@ function CadastrarVeiculo() {
     setVeiculoEncontrado(null);
     // Estrutura pronta para integração futura com API de consulta veicular.
     await new Promise((r) => setTimeout(r, 1200));
+    
+    // Simulação de preenchimento automático via placa
+    set({
+      marca: 'Volkswagen',
+      modelo: 'T-Cross',
+      versao: 'Highline 250 TSI',
+      anoFabricacao: '2023',
+      anoModelo: '2024',
+      combustivel: 'Flex',
+      cambio: 'Automático',
+      portas: '4',
+      cor: 'Branco',
+    });
+
     setBuscando(false);
     setBuscaFeita(true);
+    toast.success("Dados do veículo localizados!");
+    avancar();
   };
+
 
   const avancar = () => { setStep((s) => Math.min(7, s + 1)); window.scrollTo(0, 0); };
   const voltar = () => { setStep((s) => Math.max(1, s - 1)); window.scrollTo(0, 0); };
