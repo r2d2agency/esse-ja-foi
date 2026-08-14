@@ -19,7 +19,9 @@ export const getLeilaoInfo = createServerFn({ method: "GET" })
   .validator((id: string) => z.string().uuid().parse(id))
   .handler(async ({ data: leilaoId }) => {
     await processarCicloLeiloes();
-    return getEstadoLeilao(leilaoId);
+    const info = await getEstadoLeilao(leilaoId);
+    if (!info) return null;
+    return info;
   });
 
 export const darLanceFn = createServerFn({ method: "POST" })
