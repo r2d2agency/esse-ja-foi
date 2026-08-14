@@ -111,7 +111,7 @@ function AdminDashboard() {
                 {[
                   { label: "Documentos aguardando análise", count: dashboard?.stats?.compliance_analise ?? 0, to: "/admin/usuarios?status=EM_COMPLIANCE" },
                   { label: "Contratos pendentes de assinatura", count: dashboard?.stats?.contratos_pendentes ?? 0, to: "/admin/contratos?status=PENDENTES" },
-                  { label: "Veículos aguardando análise", count: dashboard?.stats?.veiculos_analise ?? 0, to: "/operacao/veiculos" },
+                  { label: "Veículos aguardando análise", count: dashboard?.stats?.veiculos_analise ?? 0, to: "/admin/veiculos" },
                 ].map((item, idx) => (
                   <Link key={idx} to={(item as any).to || "/admin"} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors group">
                     <div>

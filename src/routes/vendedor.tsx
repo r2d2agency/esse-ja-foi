@@ -11,16 +11,13 @@ export const Route = createFileRoute('/vendedor')({
 const MENU = [
   { to: '/vendedor', label: 'Início', icon: Home, exact: true },
   { to: '/vendedor/veiculos', label: 'Meus veículos', icon: Car },
-  { to: '/vendedor/propostas', label: 'Propostas', icon: Handshake },
   { to: '/vendedor/documentos', label: 'Documentos', icon: FileText },
   { to: '/vendedor/perfil', label: 'Perfil', icon: User },
-  { to: '/vendedor/ajuda', label: 'Ajuda', icon: HelpCircle },
 ] as const;
 
 const MOBILE = [
   { to: '/vendedor', label: 'Início', icon: Home, exact: true },
   { to: '/vendedor/veiculos', label: 'Veículos', icon: Car },
-  { to: '/vendedor/propostas', label: 'Propostas', icon: Handshake },
   { to: '/vendedor/perfil', label: 'Perfil', icon: User },
 ] as const;
 

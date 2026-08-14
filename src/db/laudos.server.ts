@@ -1,8 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "./index";
 import { RegraNegocioError, type Row } from "./cadastro.server";
-import { ensureAgendaSchema } from "./agendamentos.server";
-import { ensureChecklistSchema, modeloAtivo } from "./checklist.server";
 import { normalizePlaca } from "@/lib/validators";
 
 function requireDb() {
@@ -14,10 +12,9 @@ let prepared = false;
 
 export async function ensureLaudoSchema(silent = true) {
   if (prepared) return;
-  await ensureAgendaSchema();
-  await ensureChecklistSchema();
   const d = requireDb();
   if (!silent && process.env['NODE_ENV'] === 'development') console.log("[laudos.server] Garantindo schema laudos...");
+
 
 
   await d.execute(sql`
@@ -216,16 +213,14 @@ export async function criarLaudo(input: { agendamentoId: string; vistoriadorId: 
   `)) as unknown as Array<Row>;
   if (existentes[0]) return existentes[0];
 
-  const modelo = await modeloAtivo();
-  if (!modelo) throw new RegraNegocioError("Nenhum modelo de checklist ativo. Peça ao admin para cadastrar um.", 422);
-
   const rows = (await d.execute(sql`
     INSERT INTO laudos (agendamento_id, veiculo_id, vistoriador_id, modelo_id, modelo_versao, status, placa_confirmada)
     VALUES (${input.agendamentoId}::uuid, ${String(agendamento['veiculo_id'])}::uuid, ${input.vistoriadorId}::uuid,
-            ${String(modelo['id'])}::uuid, ${Number(modelo['versao'] ?? 1)}, 'RASCUNHO',
+            gen_random_uuid(), 1, 'RASCUNHO',
             ${input.placaConfirmada ? normalizePlaca(input.placaConfirmada) : null})
     RETURNING *;
   `)) as unknown as Array<Row>;
+
   const laudo = rows[0]!;
 
   await d.execute(sql`
@@ -236,7 +231,7 @@ export async function criarLaudo(input: { agendamentoId: string; vistoriadorId: 
   `);
   await d.execute(sql`
     INSERT INTO logs (entidade, entidade_id, acao, para, detalhe)
-    VALUES ('laudo', ${String(laudo['id'])}, 'Laudo iniciado', 'EM_VISTORIA', ${`Modelo ${modelo['nome']} v${modelo['versao']}`});
+    VALUES ('laudo', ${String(laudo['id'])}, 'Laudo iniciado', 'EM_VISTORIA', 'Modelo base v1');
   `);
   return laudo;
 }

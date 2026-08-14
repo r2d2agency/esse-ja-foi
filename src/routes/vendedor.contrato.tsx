@@ -1,24 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { useAuth } from "@/hooks/use-auth";
+import { FileText, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import { format } from "date-fns";
-import { ArrowLeft, CheckCircle2, FileSignature } from "lucide-react";
-import { contratoDoVendedorFn, marcarContratoVisualizadoFn, registrarRetornoAssinaturaFn } from "@/lib/contratos.functions";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { StatusContrato } from "@/components/contratos/StatusContrato";
-import { useAuth } from "@/hooks/use-auth";
+import { contratoDoVendedorFn } from "@/lib/contratos.functions";
 
 export const Route = createFileRoute("/vendedor/contrato")({
   head: () => ({
-    meta: [
-      { title: "Meu contrato | ESSE JÁ FOI" },
-      { name: "description", content: "Visualize e assine o contrato de intermediação de venda do seu veículo." },
-      { property: "og:title", content: "Meu contrato | ESSE JÁ FOI" },
-      { property: "og:description", content: "Assine seu contrato para avançar com a venda do veículo." },
-    ],
+    meta: [{ title: "Contrato — ESSE JÁ FOI" }],
   }),
   component: ContratoVendedorPage,
 });
@@ -26,96 +15,74 @@ export const Route = createFileRoute("/vendedor/contrato")({
 function ContratoVendedorPage() {
   const { user } = useAuth();
   const carregar = useServerFn(contratoDoVendedorFn);
-  const visualizar = useServerFn(marcarContratoVisualizadoFn);
-  const retorno = useServerFn(registrarRetornoAssinaturaFn);
-  const [recusando, setRecusando] = useState(false);
-  const [comentario, setComentario] = useState("");
-
-  const { data: res, refetch } = useQuery({
-    queryKey: ["portal-contrato-detalhe", user?.id],
-    queryFn: () => carregar({ data: { vendedorId: user?.id || "" } }),
+  
+  const { data: res, isLoading } = useQuery({
+    queryKey: ["portal-contrato", user?.id],
+    queryFn: () => carregar({ data: { vendedorId: user!.id } }),
     enabled: !!user?.id,
   });
 
   const contrato = (res as any)?.ok ? (res as any).data.contratoAtual : null;
 
-  useEffect(() => {
-    if (contrato?.id && contrato.status === "ENVIADO") {
-      visualizar({ data: { contratoId: contrato.id } }).then(() => refetch());
-    }
-  }, [contrato?.id, contrato?.status]);
+  if (isLoading) {
+    return <div className="flex h-64 items-center justify-center text-slate-400">Carregando contrato...</div>;
+  }
 
   if (!contrato) {
     return (
-      <div className="mx-auto max-w-3xl p-6">
-        <p className="text-slate-500">Nenhum contrato disponível no momento.</p>
-        <Button asChild variant="outline" className="mt-4"><Link to="/vendedor">Voltar</Link></Button>
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <AlertCircle className="h-12 w-12 text-slate-300" />
+        <h2 className="mt-4 text-xl font-bold text-slate-900">Nenhum contrato encontrado</h2>
+        <p className="mt-2 text-slate-500">Seu contrato ainda não foi gerado pela nossa equipe.</p>
       </div>
     );
   }
 
-  const assinar = async () => {
-    const t = toast.loading("Registrando assinatura...");
-    try {
-      const r: any = await retorno({ data: { contratoId: contrato.id, evento: "ASSINADO", provedor: "PORTAL" } });
-      if (r?.ok === false) toast.error(r.message);
-      else toast.success("Contrato assinado com sucesso.");
-      refetch();
-    } finally {
-      toast.dismiss(t);
-    }
-  };
-
-  const recusar = async () => {
-    const t = toast.loading("Registrando recusa...");
-    try {
-      await retorno({ data: { contratoId: contrato.id, evento: "RECUSADO", provedor: "PORTAL", comentario } });
-      toast.success("Recusa registrada.");
-      setRecusando(false);
-      refetch();
-    } finally {
-      toast.dismiss(t);
-    }
-  };
-
   return (
-    <div className="mx-auto max-w-4xl p-6 space-y-6">
-      <div className="flex items-center gap-3">
-        <Button asChild variant="ghost" size="icon"><Link to="/vendedor"><ArrowLeft className="h-4 w-4" /></Link></Button>
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Contrato {contrato.identificador}</h1>
-          <p className="text-sm text-slate-500">{contrato.modelo_nome} — versão {contrato.versao}</p>
-        </div>
-        <StatusContrato status={contrato.status} className="ml-auto" />
-      </div>
+    <div className="space-y-6">
+      <header className="flex flex-col gap-1">
+        <h1 className="text-2xl font-black tracking-tight text-slate-900">Contrato de Intermediação</h1>
+        <p className="text-slate-500">Visualize e acompanhe o status do seu contrato.</p>
+      </header>
 
-      {contrato.status === "ASSINADO" && (
-        <div className="rounded-2xl border border-teal-200 bg-teal-50 p-5">
-          <p className="font-bold text-slate-900 flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-teal-700" /> Contrato assinado</p>
-          <p className="text-sm text-slate-600 mt-1">Esta etapa foi concluída com sucesso.</p>
-          <p className="text-xs text-slate-500 mt-2">Assinado em {format(new Date(contrato.assinado_em), "dd/MM/yyyy 'às' HH:mm")}</p>
-        </div>
-      )}
-
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 max-h-[60vh] overflow-auto">
-        <pre className="whitespace-pre-wrap font-serif text-slate-800 text-sm">{contrato.conteudo}</pre>
-      </div>
-
-      {["ENVIADO", "VISUALIZADO"].includes(contrato.status) && (
-        <div className="space-y-4">
-          <Button onClick={assinar} className="h-12 w-full rounded-xl bg-teal-700 font-semibold text-white hover:bg-teal-800">
-            <FileSignature className="mr-2 h-4 w-4" /> Assinar contrato
-          </Button>
-          {!recusando ? (
-            <Button variant="ghost" className="w-full text-slate-500" onClick={() => setRecusando(true)}>Recusar contrato</Button>
-          ) : (
-            <div className="space-y-3 rounded-xl border border-slate-200 p-4">
-              <Textarea value={comentario} onChange={(e) => setComentario(e.target.value)} rows={3} placeholder="Conte o motivo da recusa (opcional)" />
-              <Button variant="destructive" className="w-full" onClick={recusar}>Confirmar recusa</Button>
+      <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+        <div className="rounded-2xl border border-slate-200 bg-white p-8">
+          <div className="prose prose-slate max-w-none">
+            <div className="mb-8 flex items-center justify-between border-b pb-6">
+              <div className="text-sm font-black uppercase tracking-widest">Esse Já Foi</div>
+              <div className="text-right">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Número do Contrato</div>
+                <div className="font-mono text-sm font-bold">{contrato.numero}</div>
+              </div>
             </div>
-          )}
+            
+            <div className="whitespace-pre-wrap font-serif leading-relaxed text-slate-800">
+              {contrato.conteudo || "Carregando conteúdo do contrato..."}
+            </div>
+          </div>
         </div>
-      )}
+
+        <aside className="space-y-6">
+          <section className="rounded-2xl border border-slate-200 bg-white p-6">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Status Atual</h3>
+            <div className="mt-3 flex items-center gap-2">
+              {contrato.status === "ASSINADO" ? (
+                <CheckCircle2 className="h-5 w-5 text-teal-600" />
+              ) : (
+                <Clock className="h-5 w-5 text-amber-500" />
+              )}
+              <span className="font-bold text-slate-900">{contrato.status}</span>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-6">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Ações</h3>
+            <p className="mt-2 text-xs text-slate-500">
+              Caso ainda não tenha assinado, você receberá um link via e-mail ou WhatsApp para realizar a assinatura digital.
+            </p>
+          </section>
+        </aside>
+      </div>
     </div>
   );
 }
