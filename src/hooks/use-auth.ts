@@ -15,7 +15,8 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
-  isLoading: boolean;
+   isLoading: boolean;
+   initialized: boolean;
   login: (data: { user: User; accessToken: string; refreshToken: string }) => void;
   logout: () => void;
   setLoading: (loading: boolean) => void;
@@ -28,7 +29,8 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
-      isLoading: true,
+       isLoading: true,
+       initialized: false,
       login: (data) =>
         set({
           user: data.user,
@@ -52,6 +54,9 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "auth-storage",
+      onRehydrateStorage: () => (state) => {
+        if (state) state.initialized = true;
+      },
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
@@ -70,6 +75,7 @@ export function useAuth() {
     isAuthenticated: store.isAuthenticated,
     isLoading: store.isLoading,
     login: store.login,
-    logout: store.logout
+    logout: store.logout,
+    initialized: store.initialized
   };
 }
