@@ -369,7 +369,7 @@ export async function iniciarCheckin(data: { vistoriaId: string; usuarioId: stri
   return { ok: true, laudoId };
 }
 
-export async function salvarItemChecklist(data: { laudoId: string; etapa: string; item_chave: string; status: string; observacao?: string; foto_url?: string }) {
+export async function salvarItemChecklist(data: { laudoId: string; etapa: string; item_chave: string; status: string; observacao?: string | null; foto_url?: string | null }) {
   const d = requireDb();
   await ensureVistoriaSchema();
 
