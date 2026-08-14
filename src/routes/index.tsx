@@ -69,8 +69,8 @@ function LandingVendedor() {
             <a href="#como-funciona" className="text-sm text-slate-500 transition-colors hover:text-slate-900">
               Como funciona
             </a>
-            <Link to="/comprador" className="text-sm text-slate-500 transition-colors hover:text-slate-900">
-              Quero comprar
+            <Link to="/vender" className="text-sm text-slate-500 transition-colors hover:text-slate-900">
+              Quero vender
             </Link>
             <Link to="/login" className="text-sm text-slate-500 transition-colors hover:text-slate-900">
               Entrar
