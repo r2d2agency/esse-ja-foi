@@ -31,7 +31,8 @@ import {
   RotateCcw,
   Maximize2,
   Calendar,
-  Gavel
+  Gavel,
+  MessageSquare
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
