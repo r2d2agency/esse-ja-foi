@@ -40,11 +40,12 @@ function VistoriasAdminPage() {
   
   const getVistorias = useServerFn(getVistoriasAdminFn);
   const getAguardando = useServerFn(getVeiculosAguardandoVistoriaFn);
+  const getFilaPosVistoria = useServerFn(getFilaAnalisePosVistoriaFn);
 
   const { data: vistoriasRes, isLoading: loadingVistorias } = useQuery({
     queryKey: ["admin-vistorias", activeTab],
-    queryFn: () => getVistorias({ data: { status: activeTab === 'aguardando' ? undefined : activeTab.toUpperCase() } }),
-    enabled: activeTab !== 'aguardando'
+    queryFn: () => getVistorias({ data: { status: activeTab.toUpperCase() } }),
+    enabled: !['aguardando', 'aguardando_analise', 'agenda', 'hoje'].includes(activeTab)
   });
 
   const { data: aguardandoRes, isLoading: loadingAguardando } = useQuery({
@@ -53,8 +54,15 @@ function VistoriasAdminPage() {
     enabled: activeTab === 'aguardando'
   });
 
+  const { data: posVistoriaRes, isLoading: loadingPosVistoria } = useQuery({
+    queryKey: ["admin-veiculos-aguardando-analise-pos"],
+    queryFn: () => getFilaPosVistoria(),
+    enabled: activeTab === 'aguardando_analise'
+  });
+
   const vistorias = vistoriasRes?.data || [];
   const aguardando = aguardandoRes?.data || [];
+  const filaPosVistoria = posVistoriaRes?.data || [];
 
   return (
     <div className="p-8 space-y-8 max-w-7xl mx-auto">
