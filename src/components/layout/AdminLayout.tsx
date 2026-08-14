@@ -24,7 +24,7 @@ import {
   Menu,
   X
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -57,7 +57,12 @@ const MENU_ITEMS = [
   { label: "Configurações", icon: Settings, to: "/admin/configuracoes" },
 ];
 
-export function AdminLayout() {
+interface AdminLayoutProps {
+  children?: ReactNode;
+}
+
+export function AdminLayout({ children }: AdminLayoutProps) {
+
   const { user, isAuthenticated, initialized, logout } = useAuth();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -172,7 +177,7 @@ export function AdminLayout() {
 
         {/* Page Area */}
         <main className="flex-1 overflow-y-auto bg-slate-50">
-          <Outlet />
+          {children || <Outlet />}
         </main>
       </div>
     </div>

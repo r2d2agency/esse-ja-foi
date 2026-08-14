@@ -3,7 +3,10 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 
 export const Route = createFileRoute("/admin")({
   component: () => (
-    <AdminLayout />
+    <AdminLayout>
+      <Outlet />
+    </AdminLayout>
+
   ),
 
 });
