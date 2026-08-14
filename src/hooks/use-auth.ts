@@ -10,6 +10,7 @@ interface User {
   role: Role;
   whatsapp?: string;
   cpf?: string;
+  pode_ver_valores?: boolean;
 }
 
 interface AuthState {
