@@ -60,37 +60,37 @@ export async function ensureSuperAdmin() {
   // Garante que uma instalação nova consiga autenticar mesmo antes de qualquer
   // acesso à aplicação. Todas as operações são idempotentes.
   try {
-    // Tenta adicionar o valor 'vendedor' ao enum app_role
+    // Garante que o enum app_role exista e tenha todos os valores necessários
     await db.execute(sql`
       DO $$ 
       BEGIN
         IF NOT EXISTS (SELECT 1 FROM pg_type t WHERE t.typname = 'app_role') THEN
           CREATE TYPE app_role AS ENUM ('admin', 'operacao', 'vistoriador', 'comprador', 'vendedor');
         ELSE
-          BEGIN
-            ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'admin';
-          EXCEPTION WHEN duplicate_object THEN NULL; END;
-          
-          BEGIN
-            ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'operacao';
-          EXCEPTION WHEN duplicate_object THEN NULL; END;
-          
-          BEGIN
-            ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'vistoriador';
-          EXCEPTION WHEN duplicate_object THEN NULL; END;
-          
-          BEGIN
-            ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'comprador';
-          EXCEPTION WHEN duplicate_object THEN NULL; END;
-          
-          BEGIN
-            ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'vendedor';
-          EXCEPTION WHEN duplicate_object THEN NULL; END;
+          -- Garante que cada valor exista individualmente
+          IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'app_role' AND e.enumlabel = 'admin') THEN
+            ALTER TYPE app_role ADD VALUE 'admin';
+          END IF;
+          IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'app_role' AND e.enumlabel = 'operacao') THEN
+            ALTER TYPE app_role ADD VALUE 'operacao';
+          END IF;
+          IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'app_role' AND e.enumlabel = 'vistoriador') THEN
+            ALTER TYPE app_role ADD VALUE 'vistoriador';
+          END IF;
+          IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'app_role' AND e.enumlabel = 'comprador') THEN
+            ALTER TYPE app_role ADD VALUE 'comprador';
+          END IF;
+          IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'app_role' AND e.enumlabel = 'vendedor') THEN
+            ALTER TYPE app_role ADD VALUE 'vendedor';
+          END IF;
         END IF;
+      EXCEPTION 
+        WHEN duplicate_object THEN NULL;
+        WHEN others THEN RAISE NOTICE 'Erro ao atualizar app_role: %', SQLERRM;
       END $$;
     `);
   } catch (e) {
-    console.error("Erro ao garantir app_role enum:", e);
+    console.error("Erro crítico ao garantir app_role enum:", e);
   }
 
   try {
