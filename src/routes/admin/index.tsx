@@ -37,12 +37,12 @@ function AdminDashboard() {
   const dashboard = res?.data;
 
   const stats = [
-    { label: "Novos vendedores", value: dashboard?.stats?.novos_vendedores ?? 0, icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-    { label: "Compliance em análise", value: dashboard?.stats?.compliance_analise ?? 0, icon: ShieldCheck, color: "text-amber-600", bg: "bg-amber-50" },
-    { label: "Pendências", value: dashboard?.stats?.pendencias ?? 0, icon: AlertCircle, color: "text-red-600", bg: "bg-red-50" },
-    { label: "Veículos em análise", value: dashboard?.stats?.veiculos_analise ?? 0, icon: Car, color: "text-teal-600", bg: "bg-teal-50" },
-    { label: "Prontos para vistoria", value: dashboard?.stats?.prontos_vistoria ?? 0, icon: Camera, color: "text-purple-600", bg: "bg-purple-50" },
-    { label: "Contratos pendentes", value: dashboard?.stats?.contratos_pendentes ?? 0, icon: FileText, color: "text-orange-600", bg: "bg-orange-50", to: "/admin/contratos" },
+    { label: "Veículos totais", value: dashboard?.stats?.veiculos ?? 0, icon: Car, color: "text-blue-600", bg: "bg-blue-50" },
+    { label: "Prontos para vistoria", value: dashboard?.stats?.prontos_vistoria ?? 0, icon: Camera, color: "text-amber-600", bg: "bg-amber-50" },
+    { label: "Vistorias de hoje", value: dashboard?.stats?.vistorias_hoje ?? 0, icon: Calendar, color: "text-teal-600", bg: "bg-teal-50" },
+    { label: "Aguardando confirmação", value: dashboard?.stats?.aguardando_confirmacao ?? 0, icon: Clock, color: "text-orange-600", bg: "bg-orange-50" },
+    { label: "Vendidos", value: dashboard?.stats?.vendidos ?? 0, icon: ShieldCheck, color: "text-green-600", bg: "bg-green-50" },
+    { label: "Compradores", value: dashboard?.stats?.clientes ?? 0, icon: Users, color: "text-purple-600", bg: "bg-purple-50" },
   ];
 
   const funnel = [

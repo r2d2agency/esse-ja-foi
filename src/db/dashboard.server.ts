@@ -42,30 +42,32 @@ export async function ensureLeilaoSchema() {
 export async function indicadoresAdmin() {
   return safe(async () => {
     const { ensureCadastroSchema } = await import("./cadastro.server");
+    const { ensureVistoriaSchema } = await import("./vistorias.server");
     await ensureCadastroSchema();
     await ensureLeilaoSchema();
+    await ensureVistoriaSchema();
     const rows = (await db!.execute(sql`
       SELECT
         (SELECT count(*) FROM veiculos) AS veiculos,
-        (SELECT count(*) FROM veiculos WHERE upper(status) = 'EM_VISTORIA') AS em_vistoria,
-        (SELECT count(*) FROM veiculos WHERE upper(status) = 'EM_AVALIACAO') AS aguardando_laudo,
-        (SELECT count(*) FROM veiculos WHERE upper(status) = 'EM_LEILAO') AS em_leilao,
+        (SELECT count(*) FROM veiculos WHERE upper(status_analise) = 'PRONTO_PARA_VISTORIA') AS prontos_vistoria,
+        (SELECT count(*) FROM vistorias WHERE upper(status) = 'AGUARDANDO_CONFIRMACAO') AS aguardando_confirmacao,
+        (SELECT count(*) FROM vistorias WHERE data_vistoria = CURRENT_DATE) AS vistorias_hoje,
         (SELECT count(*) FROM veiculos WHERE upper(status) = 'VENDIDO') AS vendidos,
-        (SELECT count(*) FROM clientes) AS clientes,
+        (SELECT count(*) FROM profiles WHERE role = 'comprador') AS clientes,
         (SELECT count(*) FROM leiloes WHERE upper(status) = 'ABERTO') AS leiloes_ativos
     `)) as unknown as Array<Record<string, string>>;
     const r = rows[0] ?? {};
     return {
       veiculos: num(r['veiculos']),
-      emVistoria: num(r['em_vistoria']),
-      aguardandoLaudo: num(r['aguardando_laudo']),
-      emLeilao: num(r['em_leilao']),
+      prontosVistoria: num(r['prontos_vistoria']),
+      aguardandoConfirmacao: num(r['aguardando_confirmacao']),
+      vistoriasHoje: num(r['vistorias_hoje']),
       vendidos: num(r['vendidos']),
       clientes: num(r['clientes']),
       leiloesAtivos: num(r['leiloes_ativos']),
     };
   }, {
-    veiculos: 0, emVistoria: 0, aguardandoLaudo: 0, emLeilao: 0, vendidos: 0, clientes: 0, leiloesAtivos: 0,
+    veiculos: 0, prontosVistoria: 0, aguardandoConfirmacao: 0, vistoriasHoje: 0, vendidos: 0, clientes: 0, leiloesAtivos: 0,
   });
 }
 

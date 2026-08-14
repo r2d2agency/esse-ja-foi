@@ -179,6 +179,7 @@ function DashboardVendedor() {
         </section>
       </div>
 
+      {user?.id && <CardVistoriaVendedor vendedorId={user.id} />}
       {user?.id && <CardContratoVendedor vendedorId={user.id} />}
 
       {/* Como funciona */}

@@ -144,7 +144,7 @@ function DetalheVeiculoAdminPage() {
           {v.status_analise === 'PRONTO_PARA_VISTORIA' ? (
             <Button 
               className="bg-teal-600 hover:bg-teal-700 text-white font-bold"
-              onClick={() => setActiveTab("analise")} // Ou abre o modal de agendamento
+              onClick={() => navigate({ to: "/admin/vistorias" })}
             >
               <Calendar className="mr-2 h-4 w-4" /> Agendar vistoria
             </Button>
