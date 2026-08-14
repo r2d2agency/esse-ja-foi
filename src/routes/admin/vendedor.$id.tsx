@@ -30,7 +30,6 @@ import {
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { AbaContratoVendedor } from "@/components/contratos/AbaContratoVendedor";
-import { FileSignature } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
