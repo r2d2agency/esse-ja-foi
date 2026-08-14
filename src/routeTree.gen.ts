@@ -26,6 +26,7 @@ import { Route as AdminCompradoresRouteImport } from './routes/admin/compradores
 import { Route as AdminComunicacoesRouteImport } from './routes/admin/comunicacoes'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configuracoes'
 import { Route as AdminContratosRouteImport } from './routes/admin/contratos'
+import { Route as AdminConversasRouteImport } from './routes/admin/conversas'
 import { Route as AdminEntregasRouteImport } from './routes/admin/entregas'
 import { Route as AdminLeiloesRouteImport } from './routes/admin/leiloes'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
@@ -159,6 +160,11 @@ const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
 const AdminContratosRoute = AdminContratosRouteImport.update({
   id: '/contratos',
   path: '/contratos',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminConversasRoute = AdminConversasRouteImport.update({
+  id: '/conversas',
+  path: '/conversas',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminEntregasRoute = AdminEntregasRouteImport.update({
@@ -427,6 +433,7 @@ export interface FileRoutesByFullPath {
   '/admin/comunicacoes': typeof AdminComunicacoesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/contratos': typeof AdminContratosRoute
+  '/admin/conversas': typeof AdminConversasRoute
   '/admin/entregas': typeof AdminEntregasRoute
   '/admin/leiloes': typeof AdminLeiloesRouteWithChildren
   '/admin/logs': typeof AdminLogsRoute
@@ -490,6 +497,7 @@ export interface FileRoutesByTo {
   '/admin/comunicacoes': typeof AdminComunicacoesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/contratos': typeof AdminContratosRoute
+  '/admin/conversas': typeof AdminConversasRoute
   '/admin/entregas': typeof AdminEntregasRoute
   '/admin/leiloes': typeof AdminLeiloesRouteWithChildren
   '/admin/logs': typeof AdminLogsRoute
@@ -559,6 +567,7 @@ export interface FileRoutesById {
   '/admin/comunicacoes': typeof AdminComunicacoesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/contratos': typeof AdminContratosRoute
+  '/admin/conversas': typeof AdminConversasRoute
   '/admin/entregas': typeof AdminEntregasRoute
   '/admin/leiloes': typeof AdminLeiloesRouteWithChildren
   '/admin/logs': typeof AdminLogsRoute
@@ -629,6 +638,7 @@ export interface FileRouteTypes {
     | '/admin/comunicacoes'
     | '/admin/configuracoes'
     | '/admin/contratos'
+    | '/admin/conversas'
     | '/admin/entregas'
     | '/admin/leiloes'
     | '/admin/logs'
@@ -692,6 +702,7 @@ export interface FileRouteTypes {
     | '/admin/comunicacoes'
     | '/admin/configuracoes'
     | '/admin/contratos'
+    | '/admin/conversas'
     | '/admin/entregas'
     | '/admin/leiloes'
     | '/admin/logs'
@@ -760,6 +771,7 @@ export interface FileRouteTypes {
     | '/admin/comunicacoes'
     | '/admin/configuracoes'
     | '/admin/contratos'
+    | '/admin/conversas'
     | '/admin/entregas'
     | '/admin/leiloes'
     | '/admin/logs'
@@ -947,6 +959,13 @@ declare module '@tanstack/react-router' {
       path: '/contratos'
       fullPath: '/admin/contratos'
       preLoaderRoute: typeof AdminContratosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/conversas': {
+      id: '/admin/conversas'
+      path: '/conversas'
+      fullPath: '/admin/conversas'
+      preLoaderRoute: typeof AdminConversasRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/entregas': {
@@ -1325,6 +1344,7 @@ interface AdminRouteChildren {
   AdminComunicacoesRoute: typeof AdminComunicacoesRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminContratosRoute: typeof AdminContratosRoute
+  AdminConversasRoute: typeof AdminConversasRoute
   AdminEntregasRoute: typeof AdminEntregasRoute
   AdminLeiloesRoute: typeof AdminLeiloesRouteWithChildren
   AdminLogsRoute: typeof AdminLogsRoute
@@ -1350,6 +1370,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminComunicacoesRoute: AdminComunicacoesRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminContratosRoute: AdminContratosRoute,
+  AdminConversasRoute: AdminConversasRoute,
   AdminEntregasRoute: AdminEntregasRoute,
   AdminLeiloesRoute: AdminLeiloesRouteWithChildren,
   AdminLogsRoute: AdminLogsRoute,
