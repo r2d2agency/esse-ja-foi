@@ -109,11 +109,8 @@ export async function ensureLaudoSchema() {
   `);
   await d.execute(sql`CREATE INDEX IF NOT EXISTS depreciacao_calculos_veiculo_idx ON public.depreciacao_calculos (veiculo_id);`);
 
-  // Garantir permissões
-  await d.execute(sql`GRANT ALL PRIVILEGES ON public.depreciacao_regras TO authenticated;`);
-  await d.execute(sql`GRANT ALL PRIVILEGES ON public.depreciacao_regras TO service_role;`);
-  await d.execute(sql`GRANT ALL PRIVILEGES ON public.depreciacao_calculos TO authenticated;`);
-  await d.execute(sql`GRANT ALL PRIVILEGES ON public.depreciacao_calculos TO service_role;`);
+  // Permissions are managed via Supabase migrations
+
 
 
   await d.execute(sql`
