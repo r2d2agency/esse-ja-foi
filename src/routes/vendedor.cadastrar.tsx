@@ -24,7 +24,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { cadastrarMeuVeiculoFn, listarMeusVeiculosFn } from '@/lib/vendedor.functions';
 import { maskPlaca, formatCurrency } from '@/lib/brasil';
 import { montarEtapas, percentual } from '@/components/vendedor/ProgressoCadastro';
-import { TODAS_MARCAS, MARCAS_POPULARES, MODELOS_POR_MARCA, CORES, COMBUSTIVEIS, CAMBIOS, PORTAS, UFS } from '@/lib/constants-veiculos';
+import { TODAS_MARCAS, MARCAS_POPULARES, MODELOS_POR_MARCA, CORES, COMBUSTIVEIS, CAMBIOS, PORTAS, UFS, RELACOES_PROPRIETARIO, BANCOS_COMUNS } from '@/lib/constants-veiculos';
 
 export const Route = createFileRoute('/vendedor/cadastrar')({
   component: CadastrarVeiculo,
@@ -349,17 +349,19 @@ function CadastrarVeiculo() {
                 <>
                   <OpcaoBotoes
                     label="Qual sua relação com o proprietário?"
-                    opcoes={['Cônjuge', 'Familiar', 'Empresa', 'Procurador', 'Outro']}
+                    opcoes={RELACOES_PROPRIETARIO}
                     value={form.relacaoProprietario}
                     onChange={(v) => set({ relacaoProprietario: v })}
                     colunas={3}
                   />
-                  <Textarea
-                    placeholder="Explique brevemente"
-                    value={form.relacaoDescricao}
-                    onChange={(e) => set({ relacaoDescricao: e.target.value })}
-                    className="rounded-xl"
-                  />
+                  {form.relacaoProprietario === 'Outro' && (
+                    <Textarea
+                      placeholder="Descreva sua relação com o proprietário"
+                      value={form.relacaoDescricao}
+                      onChange={(e) => set({ relacaoDescricao: e.target.value })}
+                      className="rounded-xl"
+                    />
+                  )}
                 </>
               )}
             </div>
@@ -367,13 +369,16 @@ function CadastrarVeiculo() {
             <div className="space-y-5 border-t border-slate-100 pt-6">
               <OpcaoBotoes
                 label="O veículo está financiado?"
-                opcoes={['Não, está quitado', 'Sim, ainda possui financiamento']}
-                value={form.financiado}
+                opcoes={['Sim', 'Não']}
+                value={form.financiado === 'Sim' ? 'Sim' : 'Não'}
                 onChange={(v) => set({ financiado: v })}
               />
-              {form.financiado.startsWith('Sim') && (
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Campo label="Instituição financeira" value={form.instituicao} onChange={(v) => set({ instituicao: v })} />
+              {form.financiado === 'Sim' && (
+                <div className="grid gap-4 md:grid-cols-2 animate-in fade-in duration-300">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-bold text-slate-900">Instituição financeira</Label>
+                    <ComboboxSearch options={BANCOS_COMUNS} value={form.instituicao} onChange={(v) => set({ instituicao: v })} placeholder="Selecione o banco" allowOther />
+                  </div>
                   <Campo label="Saldo aproximado para quitação" value={form.saldoQuitacao} onChange={(v) => set({ saldoQuitacao: moeda(v) })} placeholder="R$ 0,00" />
                   <p className="text-xs text-slate-500 md:col-span-2">
                     Esse valor será confirmado posteriormente antes da conclusão da venda.
@@ -381,6 +386,7 @@ function CadastrarVeiculo() {
                 </div>
               )}
             </div>
+
           </div>
         )}
 
@@ -419,12 +425,13 @@ function CadastrarVeiculo() {
               <Textarea placeholder="Conte brevemente o que acontece" value={form.funcionamentoObs} onChange={(e) => set({ funcionamentoObs: e.target.value })} className="rounded-xl" />
             )}
 
-            <OpcaoBotoes label="Existe algum problema conhecido no motor?" opcoes={['Não', 'Sim']} value={form.motor} onChange={(v) => set({ motor: v })} />
+            <OpcaoBotoes label="Existe algum problema conhecido no motor?" opcoes={['Não', 'Sim', 'Não sei']} value={form.motor} onChange={(v) => set({ motor: v })} colunas={3} />
             {form.motor === 'Sim' && (
-              <Textarea placeholder="Descreva o problema do motor" value={form.motorObs} onChange={(e) => set({ motorObs: e.target.value })} className="rounded-xl" />
+              <Textarea placeholder="Qual problema?" value={form.motorObs} onChange={(e) => set({ motorObs: e.target.value })} className="rounded-xl" />
             )}
 
-            <OpcaoBotoes label="Existe algum problema conhecido no câmbio?" opcoes={['Não', 'Sim']} value={form.cambioProblema} onChange={(v) => set({ cambioProblema: v })} />
+            <OpcaoBotoes label="Existe algum problema conhecido no câmbio?" opcoes={['Não', 'Sim', 'Não sei']} value={form.cambioProblema} onChange={(v) => set({ cambioProblema: v })} colunas={3} />
+
 
             <OpcaoBotoes label="Como você considera a condição da lataria?" opcoes={['Excelente', 'Boa', 'Possui pequenos detalhes', 'Possui avarias relevantes']} value={form.lataria} onChange={(v) => set({ lataria: v })} />
             {form.lataria === 'Possui avarias relevantes' && (
