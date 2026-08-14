@@ -14,7 +14,7 @@ export type FipeData = {
 export async function buscarPrecoFipe(marca: string, modelo: string, ano: string): Promise<FipeData | null> {
   // Simulação de chamada a API externa (ex: BrasilAPI)
   // Em produção, aqui seria um fetch real
-  console.log(`[FIPE] Buscando ${marca} ${modelo} ${ano}`);
+  // Silenced log
   
   // Mock de retorno
   return {

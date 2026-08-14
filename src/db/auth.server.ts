@@ -232,7 +232,7 @@ export async function ensureSuperAdmin(silent = true) {
 
 export async function authenticate(email: string, password: string) {
   if (!db) throw new Error("Banco de dados indisponível.");
-  console.log("[auth.server] Autenticando:", email);
+  // Silenced log to prevent cluttering stdout during requests
   try {
     await ensureSuperAdmin();
     const rows: any = await db.execute(sql`
@@ -257,7 +257,7 @@ export async function authenticate(email: string, password: string) {
       console.warn("[auth.server] Senha incorreta para:", email);
       return null;
     }
-    console.log("[auth.server] Autenticação OK para:", email);
+    // Silenced log to prevent cluttering stdout during requests
     return {
       id: String(user.id),
       nome: user.nome ?? user.email,
