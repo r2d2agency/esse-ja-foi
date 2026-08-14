@@ -19,8 +19,11 @@ import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
-    title: "Visão Geral | ESSE JÁ FOI",
+    meta: [
+      { title: "Visão Geral | ESSE JÁ FOI" }
+    ],
   }),
+
   component: AdminDashboard,
 });
 

@@ -152,7 +152,7 @@ export function AdminLayout() {
                 <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/admin/perfil" className="flex items-center gap-2 cursor-pointer">
+                  <Link to="/admin/usuarios" className="flex items-center gap-2 cursor-pointer">
                     <User className="h-4 w-4" /> Meu perfil
                   </Link>
                 </DropdownMenuItem>
