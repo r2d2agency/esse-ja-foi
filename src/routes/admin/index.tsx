@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getAdminDashboardDataFn } from "@/lib/admin-dashboard.functions";
@@ -42,7 +42,7 @@ function AdminDashboard() {
     { label: "Pendências", value: dashboard?.stats?.pendencias ?? 0, icon: AlertCircle, color: "text-red-600", bg: "bg-red-50" },
     { label: "Veículos em análise", value: dashboard?.stats?.veiculos_analise ?? 0, icon: Car, color: "text-teal-600", bg: "bg-teal-50" },
     { label: "Prontos para vistoria", value: dashboard?.stats?.prontos_vistoria ?? 0, icon: Camera, color: "text-purple-600", bg: "bg-purple-50" },
-    { label: "Contratos pendentes", value: dashboard?.stats?.contratos_pendentes ?? 0, icon: FileText, color: "text-orange-600", bg: "bg-orange-50" },
+    { label: "Contratos pendentes", value: dashboard?.stats?.contratos_pendentes ?? 0, icon: FileText, color: "text-orange-600", bg: "bg-orange-50", to: "/admin/contratos" },
   ];
 
   const funnel = [
@@ -65,8 +65,9 @@ function AdminDashboard() {
       {/* Indicadores Compactos */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {stats.map((stat) => (
-          <button 
-            key={stat.label} 
+          <Link
+            key={stat.label}
+            to={(stat as any).to ?? "/admin"}
             className="flex flex-col p-4 bg-white border border-slate-200 rounded-xl hover:border-teal-500 transition-all text-left group"
           >
             <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center mb-3 transition-colors", stat.bg)}>
@@ -74,7 +75,7 @@ function AdminDashboard() {
             </div>
             <p className="text-2xl font-black text-slate-950">{isLoading ? "..." : stat.value}</p>
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1">{stat.label}</p>
-          </button>
+          </Link>
         ))}
       </div>
 
