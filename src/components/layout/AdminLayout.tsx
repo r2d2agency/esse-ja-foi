@@ -45,6 +45,15 @@ const MENU_ITEMS = [
   { label: "Veículos", icon: Car, to: "/admin/veiculos" },
   { label: "Compliance", icon: ShieldCheck, to: "/admin/vendedores" },
   { label: "Contratos", icon: FileText, to: "/admin/contratos" },
+  { label: "Vistorias", icon: Camera, to: "/admin/vistorias" },
+  { label: "Anúncios", icon: Megaphone, to: "/admin/anuncios" },
+  { label: "Leilões", icon: Gavel, to: "/admin/leiloes" },
+  { label: "Compradores", icon: ShoppingBag, to: "/admin/compradores" },
+  { label: "Financeiro", icon: DollarSign, to: "/admin/financeiro" },
+  { label: "Entregas", icon: Truck, to: "/admin/entregas" },
+  { label: "Comunicações", icon: MessageSquare, to: "/admin/comunicacoes" },
+  { label: "Relatórios", icon: BarChart3, to: "/admin/relatorios" },
+  { label: "Usuários", icon: UserCog, to: "/admin/usuarios" },
   { label: "Configurações", icon: Settings, to: "/admin/configuracoes" },
 ];
 
