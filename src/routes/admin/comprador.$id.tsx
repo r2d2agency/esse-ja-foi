@@ -5,7 +5,8 @@ import { obterDetalheCompradorFn, aprovarCompradorFn } from "@/lib/admin-comprad
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, User, Building2, CheckCircle2, AlertTriangle, Eye } from "lucide-react";
+import { ArrowLeft, User, Building2, CheckCircle2, AlertTriangle, Eye, FileText } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 import { useState } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
