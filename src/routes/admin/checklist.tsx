@@ -83,22 +83,29 @@ function ChecklistAdmin() {
 
   const salvar = async () => {
     if (!editando) return;
-    const res = await salvarModeloFn({
-      data: {
-        ...(editando.id ? { id: editando.id } : {}),
-        codigo: editando.codigo,
-        nome: editando.nome,
-        descricao: editando.descricao || null,
-        itens: editando.itens.filter((i) => i.titulo.trim()),
-      },
-    });
-    if (!res.ok || !res.data) {
-      toast.error(res.message);
-      return;
+    const loadingToast = toast.loading("Salvando...");
+    try {
+      const res = await salvarModeloFn({
+        data: {
+          ...(editando.id ? { id: editando.id } : {}),
+          codigo: editando.codigo,
+          nome: editando.nome,
+          descricao: editando.descricao || null,
+          itens: editando.itens.filter((i) => i.titulo.trim()),
+        },
+      });
+      toast.dismiss(loadingToast);
+      if (!res.ok || !res.data) {
+        toast.error(res.message || "Erro ao salvar.");
+        return;
+      }
+      toast.success(res.data.novaVersao ? "Modelo em uso: nova versão criada." : "Modelo salvo.");
+      setEditando(null);
+      void carregar();
+    } catch (err) {
+      toast.dismiss(loadingToast);
+      toast.error("Erro técnico ao salvar.");
     }
-    toast.success(res.data.novaVersao ? "Modelo em uso: nova versão criada." : "Modelo salvo.");
-    setEditando(null);
-    void carregar();
   };
 
   return (
