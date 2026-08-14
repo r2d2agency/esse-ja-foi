@@ -16,11 +16,24 @@ export const Route = createFileRoute('/vendedor/onboarding')({
 });
 
 function VendedorOnboarding() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const updateDocs = useServerFn(atualizarDocumentosVendedorFn);
+
+  if (authLoading) {
+    return <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">Carregando...</div>;
+  }
+
+  if (!user || user.role !== 'vendedor') {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 text-center">
+        <p className="mb-4 text-slate-600">Acesso restrito. Faça login para continuar.</p>
+        <Button onClick={() => navigate({ to: '/' })}>Ir para Home</Button>
+      </div>
+    );
+  }
 
   const [personalData, setPersonalData] = useState({
     cpf: '',
@@ -111,9 +124,6 @@ function VendedorOnboarding() {
     }
   };
 
-  if (!user || user.role !== 'vendedor') {
-    return <div className="p-8 text-center">Acesso restrito.</div>;
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">

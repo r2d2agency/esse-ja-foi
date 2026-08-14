@@ -121,7 +121,8 @@ export async function ensureSuperAdmin() {
         marca text NOT NULL,
         modelo text NOT NULL,
         status text NOT NULL DEFAULT 'cadastrado',
-        criado_em timestamp NOT NULL DEFAULT now()
+        criado_em timestamp NOT NULL DEFAULT now(),
+        perfil_id uuid REFERENCES profiles(id)
       );
     `);
 

@@ -77,10 +77,10 @@ function CompradorIndex() {
     setIsSubmitting(true);
     try {
       const result = await loginFn({ 
-        data: { 
+        data: {
           email: formData.email, 
           password: formData.password 
-        } 
+        }
       });
       
       if (result.ok) {
@@ -154,7 +154,7 @@ function CompradorIndex() {
       const { cadastrarVendedorFn } = await import("@/lib/vendedor.functions");
       const result = await cadastrarVendedorFn({
         data: {
-          data: { 
+          data: {
             nome: formData.nome,
             email: formData.email,
             password: formData.password || "123456",

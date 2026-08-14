@@ -125,9 +125,9 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
     })
   }).parse(d))
   .handler(async ({ data: { data } }) => {
-    const { db: database } = await import("@/db/index");
-    if (!database) throw new Error("Banco de dados indisponível");
-    const db = database;
+    const { db } = await import("@/db/index");
+    const { sql } = await import("drizzle-orm");
+    if (!db) throw new Error("Banco de dados indisponível");
     
     await db.execute(sql`
       UPDATE profiles 
