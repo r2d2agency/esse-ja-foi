@@ -109,11 +109,11 @@ function AdminDashboard() {
             <Card className="border-slate-200 shadow-none overflow-hidden">
               <CardContent className="p-0 divide-y divide-slate-100">
                 {[
-                  { label: "Documentos aguardando análise", count: dashboard?.stats?.compliance_analise ?? 0 },
-                  { label: "Veículos aguardando análise", count: dashboard?.stats?.veiculos_analise ?? 0 },
-                  { label: "Veículos prontos para vistoria", count: dashboard?.stats?.prontos_vistoria ?? 0 },
+                  { label: "Documentos aguardando análise", count: dashboard?.stats?.compliance_analise ?? 0, to: "/admin/usuarios?status=EM_COMPLIANCE" },
+                  { label: "Contratos pendentes de assinatura", count: dashboard?.stats?.contratos_pendentes ?? 0, to: "/admin/contratos?status=PENDENTES" },
+                  { label: "Veículos aguardando análise", count: dashboard?.stats?.veiculos_analise ?? 0, to: "/operacao/veiculos" },
                 ].map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors group">
+                  <Link key={idx} to={(item as any).to || "/admin"} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors group">
                     <div>
                       <p className="text-sm font-bold text-slate-700">{item.label}</p>
                       <p className="text-xs text-slate-400 font-medium">{item.count} pendências</p>
@@ -121,7 +121,7 @@ function AdminDashboard() {
                     <Button variant="ghost" size="sm" className="text-teal-600 font-bold text-xs group-hover:bg-teal-50">
                       Ver fila <ChevronRight className="ml-1 h-3 w-3" />
                     </Button>
-                  </div>
+                  </Link>
                 ))}
               </CardContent>
             </Card>
