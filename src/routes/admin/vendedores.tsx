@@ -1,22 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listarVendedoresFn } from "@/lib/vendedores-compliance.functions";
 import { useState } from "react";
 import { 
   Search, 
-  Filter, 
   ChevronRight, 
-  MoreHorizontal,
-  UserCheck,
-  ShieldCheck,
-  AlertCircle,
-  XCircle,
-  Clock,
   User as UserIcon,
-  Phone,
-  Mail,
-  Calendar
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -30,24 +20,18 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { cn, formatDate } from "@/lib/utils";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/admin/vendedores")({
   component: VendedoresPage,
 });
 
 const STATUS_CONFIG: Record<string, { label: string, color: string, bg: string }> = {
-  'AGUARDANDO_ANALISE': { label: 'Aguardando Análise', color: 'text-amber-600', bg: 'bg-amber-50' },
-  'EM_COMPLIANCE': { label: 'Em Compliance', color: 'text-blue-600', bg: 'bg-blue-50' },
-  'PENDENCIA': { label: 'Pendência', color: 'text-red-600', bg: 'bg-red-50' },
-  'APROVADO': { label: 'Aprovado', color: 'text-teal-600', bg: 'bg-teal-50' },
-  'REPROVADO': { label: 'Reprovado', color: 'text-slate-600', bg: 'bg-slate-50' },
-  'INCOMPLETO': { label: 'Cadastro Incompleto', color: 'text-slate-400', bg: 'bg-slate-50' },
+  'AGUARDANDO_ANALISE': { label: 'Aguardando Análise', color: 'text-amber-600', bg: 'bg-amber-500' },
+  'EM_COMPLIANCE': { label: 'Em Compliance', color: 'text-blue-600', bg: 'bg-blue-500' },
+  'PENDENCIA': { label: 'Pendência', color: 'text-red-600', bg: 'bg-red-500' },
+  'APROVADO': { label: 'Aprovado', color: 'text-teal-600', bg: 'bg-teal-500' },
+  'REPROVADO': { label: 'Reprovado', color: 'text-slate-600', bg: 'bg-slate-500' },
+  'INCOMPLETO': { label: 'Cadastro Incompleto', color: 'text-slate-400', bg: 'bg-slate-400' },
 };
 
 function VendedoresPage() {
@@ -81,7 +65,6 @@ function VendedoresPage() {
         </div>
       </div>
 
-      {/* Filtros e Busca */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
@@ -118,7 +101,6 @@ function VendedoresPage() {
         </div>
       </div>
 
-      {/* Tabela de Vendedores */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
         <Table>
           <TableHeader className="bg-slate-50">
@@ -126,7 +108,6 @@ function VendedoresPage() {
               <TableHead className="text-[11px] font-black text-slate-400 uppercase tracking-wider py-4">Vendedor</TableHead>
               <TableHead className="text-[11px] font-black text-slate-400 uppercase tracking-wider py-4">CPF</TableHead>
               <TableHead className="text-[11px] font-black text-slate-400 uppercase tracking-wider py-4">Contato</TableHead>
-              <TableHead className="text-[11px] font-black text-slate-400 uppercase tracking-wider py-4 text-center">Cadastro</TableHead>
               <TableHead className="text-[11px] font-black text-slate-400 uppercase tracking-wider py-4">Compliance</TableHead>
               <TableHead className="text-[11px] font-black text-slate-400 uppercase tracking-wider py-4 text-center">Veículos</TableHead>
               <TableHead className="text-[11px] font-black text-slate-400 uppercase tracking-wider py-4">Atualização</TableHead>
@@ -137,12 +118,12 @@ function VendedoresPage() {
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i} className="animate-pulse">
-                  <TableCell colSpan={8} className="h-16 bg-slate-50/50" />
+                  <TableCell colSpan={7} className="h-16 bg-slate-50/50" />
                 </TableRow>
               ))
             ) : vendedores.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-32 text-center text-slate-400 font-medium italic">
+                <TableCell colSpan={7} className="h-32 text-center text-slate-400 font-medium italic">
                   Nenhum vendedor encontrado com os filtros aplicados.
                 </TableCell>
               </TableRow>
@@ -164,16 +145,11 @@ function VendedoresPage() {
                       <span className="text-[10px] text-slate-400">{v.email || 'Sem e-mail'}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant="outline" className="text-[10px] font-bold uppercase border-slate-200 text-slate-500 bg-slate-50">
-                      Completo
-                    </Badge>
-                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div className={cn(
                         "w-2 h-2 rounded-full",
-                        v.compliance_status ? STATUS_CONFIG[v.compliance_status]?.bg.replace('bg-', 'bg-') : 'bg-amber-500'
+                        v.compliance_status ? STATUS_CONFIG[v.compliance_status]?.bg : 'bg-amber-500'
                       )} />
                       <span className={cn(
                         "text-xs font-bold",
@@ -193,9 +169,11 @@ function VendedoresPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" className="text-teal-600 font-bold text-xs group">
-                      Ver cadastro <ChevronRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-                    </Button>
+                    <Link to="/admin/vendedor/$id" params={{ id: v.id }}>
+                      <Button variant="ghost" size="sm" className="text-teal-600 font-bold text-xs group">
+                        Ver cadastro <ChevronRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                      </Button>
+                    </Link>
                   </TableCell>
                 </TableRow>
               ))
@@ -206,4 +184,5 @@ function VendedoresPage() {
     </div>
   );
 }
+
 
