@@ -193,10 +193,28 @@ function ComunicacoesPage() {
     queryFn: () => getAnuncios({ data: 'PUBLICADO' })
   });
 
+  const { data: automacoes } = useQuery({
+    queryKey: ['wa-automacoes'],
+    queryFn: () => getAutomacoes()
+  });
+
+  const handleSalvarAutomacao = async () => {
+    toast.promise(salvarAutomacao({ data: novaAutomacao }), {
+      loading: 'Salvando automação...',
+      success: () => {
+        setIsAutomacaoWizardOpen(false);
+        queryClient.invalidateQueries({ queryKey: ['wa-automacoes'] });
+        return 'Automação salva!';
+      },
+      error: (err) => `Erro: ${err.message}`
+    });
+  };
+
   const handleEstimar = async () => {
     const res = await estimarPublico({ data: novaCampanha.filtros });
     setEstimativa(res);
   };
+
 
   const handleSalvarCampanha = async (enviarAgora = false) => {
     toast.promise(criarCampanha({ data: novaCampanha }), {
