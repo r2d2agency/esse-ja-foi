@@ -572,7 +572,106 @@ function ComunicacoesPage() {
               </Button>
             </div>
             <Card>
-              <div className="overflow-x-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {[
+                { title: 'Boas-vindas', desc: 'Envio automático após cadastro.', icon: Smartphone, color: 'bg-blue-50 text-blue-600' },
+                { title: 'Novo Veículo', desc: 'Alerta de nova oportunidade.', icon: MessageSquare, color: 'bg-teal-50 text-teal-600' },
+                { title: 'Lance Superado', desc: 'Retenção em tempo real.', icon: Activity, color: 'bg-amber-50 text-amber-600' },
+                { title: 'Aviso de Vencimento', desc: 'Pagamento pendente.', icon: History, color: 'bg-purple-50 text-purple-600' }
+              ].map((item, idx) => (
+                <Card key={idx} className="hover:border-teal-500 transition-colors cursor-pointer group">
+                  <CardContent className="pt-6">
+                    <div className={`w-10 h-10 ${item.color} rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                      <item.icon className="w-5 h-5" />
+                    </div>
+                    <h3 className="font-semibold text-sm">{item.title}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
+                    <Button variant="ghost" size="sm" className="w-full mt-4 text-[10px] h-7">Usar Modelo</Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <Card>
+              <div className="p-0">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-muted/50 text-muted-foreground font-medium border-b">
+                    <tr>
+                      <th className="px-4 py-3">Nome</th>
+                      <th className="px-4 py-3">Categoria</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Idioma</th>
+                      <th className="px-4 py-3 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {templates?.length ? templates.map((t: any) => (
+                      <tr key={t.id} className="border-b hover:bg-muted/30 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="font-medium">{t.nome_interno}</div>
+                          <div className="text-[10px] text-muted-foreground font-mono">{t.meta_id}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge variant="outline" className="text-[10px] uppercase">{t.categoria}</Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge 
+                            className="text-[10px]"
+                            variant={
+                              t.status === 'APPROVED' ? 'success' : 
+                              t.status === 'REJECTED' ? 'destructive' : 
+                              'secondary'
+                            }
+                          >
+                            {t.status === 'APPROVED' ? 'Aprovado' : 
+                             t.status === 'PENDING' ? 'Pendente' : 
+                             t.status === 'REJECTED' ? 'Rejeitado' : t.status}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">{t.idioma}</td>
+                        <td className="px-4 py-3 text-right">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
+                          Nenhum template encontrado. Clique em Sincronizar para buscar da Meta.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="contatos" className="mt-6 space-y-4">
+             <Card>
+               <CardHeader>
+                 <CardTitle>Compradores Disponíveis</CardTitle>
+                 <CardDescription>Lista de contatos elegíveis para receber mensagens</CardDescription>
+               </CardHeader>
+               <CardContent className="py-10 text-center text-muted-foreground">
+                 Funcionalidade de gestão de contatos em desenvolvimento.
+               </CardContent>
+             </Card>
+          </TabsContent>
+
+          <TabsContent value="segmentos" className="mt-6 space-y-4">
+             <Card>
+               <CardHeader>
+                 <CardTitle>Segmentos de Envio</CardTitle>
+                 <CardDescription>Filtros dinâmicos baseados no comportamento do comprador</CardDescription>
+               </CardHeader>
+               <CardContent className="py-10 text-center text-muted-foreground">
+                 Gestão de segmentos dinâmicos disponível na próxima versão.
+               </CardContent>
+             </Card>
+          </TabsContent>
+
                 <table className="w-full text-sm text-left">
                   <thead className="bg-muted/50 text-muted-foreground font-medium border-b">
                     <tr>
