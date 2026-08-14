@@ -40,7 +40,9 @@ function ChecklistAdmin() {
 
   const carregar = useCallback(async () => {
     try {
+      console.log("[admin/checklist] Carregando modelos...");
       const res = await listarModelosFn();
+      console.log("[admin/checklist] Resposta:", res);
       if (res.ok) {
         setModelos(res.data ?? []);
         setAcessorios(res.acessorios ?? []);
@@ -48,6 +50,7 @@ function ChecklistAdmin() {
         toast.error(res.message || "Erro ao carregar dados.");
       }
     } catch (err: any) {
+      console.error("[admin/checklist] Erro:", err);
       toast.error("Falha na comunicação com o servidor.");
     }
   }, []);

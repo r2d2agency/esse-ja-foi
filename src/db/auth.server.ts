@@ -106,7 +106,8 @@ export async function ensureSuperAdmin() {
         email text NOT NULL UNIQUE,
         role app_role NOT NULL DEFAULT 'comprador',
         ativo boolean NOT NULL DEFAULT true,
-        criado_em timestamp NOT NULL DEFAULT now()
+        criado_em timestamp NOT NULL DEFAULT now(),
+        atualizado_em timestamp NOT NULL DEFAULT now()
       );
     `);
     

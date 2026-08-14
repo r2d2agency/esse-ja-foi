@@ -22,13 +22,16 @@ function UsuariosAdminPage() {
   const carregar = useCallback(async () => {
     setLoading(true);
     try {
+      console.log("[admin/usuarios] Carregando vendedores...");
       const res = await listarVendedoresFn();
+      console.log("[admin/usuarios] Resposta:", res);
       if (res.ok) {
         setVendedores(res.data);
       } else {
         toast.error(res.message || "Erro ao carregar vendedores.");
       }
     } catch (err) {
+      console.error("[admin/usuarios] Erro:", err);
       toast.error("Falha na rede.");
     } finally {
       setLoading(false);
