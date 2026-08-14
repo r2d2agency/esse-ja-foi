@@ -224,7 +224,7 @@ function ComunicacoesPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6 pb-20">
+      <div className="p-6 space-y-6 pb-20">
         {/* Header com Indicadores */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
