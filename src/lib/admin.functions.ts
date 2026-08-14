@@ -79,7 +79,10 @@ export const salvarConfiguracaoFn = createServerFn({ method: "POST" })
 export const listarRegrasDepreciacaoFn = createServerFn({ method: "GET" })
   .handler(async () => {
     try {
+      const m = await import("@/db/admin.server");
+      await m.ensureAdminTables();
       const d = requireDb();
+
       const regras = await d.execute(sql`
         SELECT r.*, i.titulo as item_titulo, i.categoria as item_categoria
         FROM depreciacao_regras r
@@ -113,7 +116,10 @@ export const salvarRegraDepreciacaoFn = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data }) => {
     try {
+      const m = await import("@/db/admin.server");
+      await m.ensureAdminTables();
       const d = requireDb();
+
       if (data.id) {
         await d.execute(sql`
           UPDATE depreciacao_regras SET
@@ -143,7 +149,10 @@ export const duplicarRegraDepreciacaoFn = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
     try {
+      const m = await import("@/db/admin.server");
+      await m.ensureAdminTables();
       const d = requireDb();
+
       await d.execute(sql`
         INSERT INTO depreciacao_regras (item_id, resposta, tipo_desconto, valor, fator_leve, fator_media, fator_grave, ativo)
         SELECT item_id, resposta, tipo_desconto, valor, fator_leve, fator_media, fator_grave, ativo
