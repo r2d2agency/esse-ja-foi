@@ -34,7 +34,7 @@ export async function listarVeiculosAdmin(filtros: {
   const rows = await d.execute(sql`
     SELECT 
       v.id, v.marca, v.modelo, v.placa, v.ano_modelo, v.valor_interesse_cliente, 
-      v.status_analise, v.atualizado_em,
+      v.status_analise, v.atualizado_em, v.cor, v.km,
       p.nome as vendedor_nome,
       resp.nome as responsavel_nome
     FROM veiculos v
@@ -43,7 +43,7 @@ export async function listarVeiculosAdmin(filtros: {
     WHERE 1=1
       ${status ? sql`AND v.status_analise = ${status}` : sql``}
       ${termo ? sql`AND (v.placa ILIKE ${termo} OR v.marca ILIKE ${termo} OR v.modelo ILIKE ${termo} OR p.nome ILIKE ${termo})` : sql``}
-    ORDER BY v.atualizado_em DESC
+    ORDER BY v.criado_em DESC
     LIMIT 100
   `);
   
