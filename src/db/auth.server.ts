@@ -68,7 +68,8 @@ export async function ensureSuperAdmin() {
   }
   console.log("[auth.server] ensureSuperAdmin iniciado...");
   try {
-    const { ensureAdminTables } = await import("./admin.server");
+    const adminModule = await import("./admin.server");
+    const ensureAdminTables = adminModule.ensureAdminTables;
     console.log("[auth.server] Garantindo tabelas e roles...");
     // Garante que uma instalação nova consiga autenticar mesmo antes de qualquer
     // acesso à aplicação. Todas as operações são idempotentes.
@@ -205,8 +206,8 @@ export async function ensureSuperAdmin() {
   }
 
   const senha = await hashPassword(SUPERADMIN_PASSWORD);
-  const { ensureAdminTables } = await import("./admin.server");
-  const { ensureCadastroSchema } = await import("./cadastro.server");
+  const cadastroModule = await import("./cadastro.server");
+  const ensureCadastroSchema = cadastroModule.ensureCadastroSchema;
   
   await ensureCadastroSchema();
   await ensureAdminTables();
