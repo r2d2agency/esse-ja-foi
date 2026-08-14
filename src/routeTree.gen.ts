@@ -63,6 +63,7 @@ import { Route as VendedorVeiculoIdRouteImport } from './routes/vendedor.veiculo
 import { Route as VistoriadorExecucaoIdRouteImport } from './routes/vistoriador.execucao.$id'
 import { Route as VistoriadorVistoriaIdRouteImport } from './routes/vistoriador.vistoria.$id'
 import { Route as AdminAnunciosNovoRouteImport } from './routes/admin/anuncios.novo.'
+import { Route as ApiPublicWebhooksPagamentosRouteImport } from './routes/api/public/webhooks/pagamentos'
 import { Route as VendedorVeiculoIdPropostaRouteImport } from './routes/vendedor.veiculo.$id.proposta'
 
 const IndexRoute = IndexRouteImport.update({
@@ -335,6 +336,12 @@ const AdminAnunciosNovoRoute = AdminAnunciosNovoRouteImport.update({
   path: '/novo/',
   getParentRoute: () => AdminAnunciosRoute,
 } as any)
+const ApiPublicWebhooksPagamentosRoute =
+  ApiPublicWebhooksPagamentosRouteImport.update({
+    id: '/api/public/webhooks/pagamentos',
+    path: '/api/public/webhooks/pagamentos',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const VendedorVeiculoIdPropostaRoute =
   VendedorVeiculoIdPropostaRouteImport.update({
     id: '/proposta',
@@ -397,6 +404,7 @@ export interface FileRoutesByFullPath {
   '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
   '/admin/anuncios/novo/': typeof AdminAnunciosNovoRoute
+  '/api/public/webhooks/pagamentos': typeof ApiPublicWebhooksPagamentosRoute
   '/vendedor/veiculo/$id/proposta': typeof VendedorVeiculoIdPropostaRoute
 }
 export interface FileRoutesByTo {
@@ -449,6 +457,7 @@ export interface FileRoutesByTo {
   '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
   '/admin/anuncios/novo': typeof AdminAnunciosNovoRoute
+  '/api/public/webhooks/pagamentos': typeof ApiPublicWebhooksPagamentosRoute
   '/vendedor/veiculo/$id/proposta': typeof VendedorVeiculoIdPropostaRoute
 }
 export interface FileRoutesById {
@@ -507,6 +516,7 @@ export interface FileRoutesById {
   '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
   '/admin/anuncios/novo/': typeof AdminAnunciosNovoRoute
+  '/api/public/webhooks/pagamentos': typeof ApiPublicWebhooksPagamentosRoute
   '/vendedor/veiculo/$id/proposta': typeof VendedorVeiculoIdPropostaRoute
 }
 export interface FileRouteTypes {
@@ -566,6 +576,7 @@ export interface FileRouteTypes {
     | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
     | '/admin/anuncios/novo/'
+    | '/api/public/webhooks/pagamentos'
     | '/vendedor/veiculo/$id/proposta'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -618,6 +629,7 @@ export interface FileRouteTypes {
     | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
     | '/admin/anuncios/novo'
+    | '/api/public/webhooks/pagamentos'
     | '/vendedor/veiculo/$id/proposta'
   id:
     | '__root__'
@@ -675,6 +687,7 @@ export interface FileRouteTypes {
     | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
     | '/admin/anuncios/novo/'
+    | '/api/public/webhooks/pagamentos'
     | '/vendedor/veiculo/$id/proposta'
   fileRoutesById: FileRoutesById
 }
@@ -690,6 +703,7 @@ export interface RootRouteChildren {
   VendedorRoute: typeof VendedorRouteWithChildren
   VenderRoute: typeof VenderRoute
   VistoriadorRoute: typeof VistoriadorRouteWithChildren
+  ApiPublicWebhooksPagamentosRoute: typeof ApiPublicWebhooksPagamentosRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1072,6 +1086,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAnunciosNovoRouteImport
       parentRoute: typeof AdminAnunciosRoute
     }
+    '/api/public/webhooks/pagamentos': {
+      id: '/api/public/webhooks/pagamentos'
+      path: '/api/public/webhooks/pagamentos'
+      fullPath: '/api/public/webhooks/pagamentos'
+      preLoaderRoute: typeof ApiPublicWebhooksPagamentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vendedor/veiculo/$id/proposta': {
       id: '/vendedor/veiculo/$id/proposta'
       path: '/proposta'
@@ -1259,6 +1280,7 @@ const rootRouteChildren: RootRouteChildren = {
   VendedorRoute: VendedorRouteWithChildren,
   VenderRoute: VenderRoute,
   VistoriadorRoute: VistoriadorRouteWithChildren,
+  ApiPublicWebhooksPagamentosRoute: ApiPublicWebhooksPagamentosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
