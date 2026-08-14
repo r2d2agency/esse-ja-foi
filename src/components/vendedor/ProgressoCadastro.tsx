@@ -11,10 +11,10 @@ export function montarEtapas(profile: any): EtapaCadastro[] {
   const p = profile || {};
   return [
     { id: "conta", label: "Conta criada", concluida: true },
-    { id: "dados", label: "Dados pessoais", concluida: Boolean(p.cpf && p.whatsapp) },
+    { id: "dados", label: "Dados pessoais", concluida: Boolean(p.cpf) },
     { id: "endereco", label: "Endereço", concluida: Boolean(p.cidade && p.uf) },
-    { id: "documentos", label: "Documentos", concluida: Boolean(p.cnh_frente_url || p.doc_frente_url) },
-    { id: "validacao", label: "Validação", concluida: Boolean(p.cadastro_completo) },
+    { id: "documentos", label: "Documentos", concluida: Boolean(p.documento_cnh_url) },
+    { id: "validacao", label: "Validação", concluida: Boolean(p.documento_selfie_url) },
   ];
 }
 
