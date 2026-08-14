@@ -110,14 +110,23 @@ function PerfilVendedor() {
 
   function submeterDados(e: React.FormEvent) {
     e.preventDefault();
-    if (form.nome.trim().length < 3) return toast.error('Informe seu nome completo.');
+    if (form.nome.trim().length < 3) {
+      toast.error('Informe seu nome completo.');
+      return;
+    }
     salvar.mutate();
   }
 
   function submeterSenha(e: React.FormEvent) {
     e.preventDefault();
-    if (senhas.nova.length < 6) return toast.error('A nova senha deve ter pelo menos 6 caracteres.');
-    if (senhas.nova !== senhas.confirmar) return toast.error('A confirmação da nova senha não confere.');
+    if (senhas.nova.length < 6) {
+      toast.error('A nova senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+    if (senhas.nova !== senhas.confirmar) {
+      toast.error('A confirmação da nova senha não confere.');
+      return;
+    }
     trocarSenha.mutate();
   }
 
