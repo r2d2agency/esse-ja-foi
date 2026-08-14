@@ -70,8 +70,9 @@ export const Route = createFileRoute('/api/public/webhooks/whatsapp')({
           // 4. Lógica de Negócio (Idempotente)
           if (value?.messages) {
              // Mensagens recebidas
+             const { processarMensagemRecebida } = await import("@/db/conversas.server");
              for (const msg of value.messages) {
-               // ... processar mensagem ...
+               await processarMensagemRecebida(msg.from, msg);
              }
           }
 
