@@ -39,7 +39,11 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
         RETURNING id, nome, email, role;
       `);
       const user = (rows as any).rows?.[0] || (rows as any)[0];
-      return { ok: true as const, user };
+      
+      const { issueToken } = await import("@/db/auth.server");
+      const accessToken = await issueToken(user.id);
+      
+      return { ok: true as const, user, accessToken };
     } catch (error: any) {
       console.error("Erro ao cadastrar vendedor:", error);
       if (error.message?.includes("unique constraint") || error.message?.includes("already exists") || error.code === '23505') {
@@ -67,7 +71,16 @@ export const listarMeusVeiculosFn = createServerFn({ method: "GET" })
       WHERE perfil_id = ${data.perfilId}::uuid 
       ORDER BY criado_em DESC;
     `);
-    return { ok: true as const, data: (rows as any).rows || rows };
+    
+    const profileRows = await db.execute(sql`
+      SELECT cadastro_completo FROM profiles WHERE id = ${data.perfilId}::uuid;
+    `);
+    
+    return { 
+      ok: true as const, 
+      data: (rows as any).rows || rows,
+      profile: (profileRows as any).rows?.[0] || (profileRows as any)[0]
+    };
   });
 
 export const cadastrarMeuVeiculoFn = createServerFn({ method: "POST" })
@@ -94,4 +107,32 @@ export const cadastrarMeuVeiculoFn = createServerFn({ method: "POST" })
       status: 'AGUARDANDO_APROVACAO',
       observacoes: `Opcionais: ${(data.opcionais || []).join(', ')}. ${data.observacoes || ''}`
     } as any);
+  });
+
+export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({
+    data: z.object({
+      perfilId: z.string().uuid(),
+      cnhUrl: z.string().optional(),
+      crlvUrl: z.string().optional(),
+      selfieUrl: z.string().optional(),
+      finalizar: z.boolean().optional(),
+    })
+  }).parse(d))
+  .handler(async ({ data: { data } }) => {
+    const { db: database } = await import("@/db/index");
+    if (!database) throw new Error("Banco de dados indisponível");
+    const db = database;
+    
+    await db.execute(sql`
+      UPDATE profiles 
+      SET 
+        documento_cnh_url = COALESCE(${data.cnhUrl ?? null}, documento_cnh_url),
+        documento_crlv_url = COALESCE(${data.crlvUrl ?? null}, documento_crlv_url),
+        documento_selfie_url = COALESCE(${data.selfieUrl ?? null}, documento_selfie_url),
+        cadastro_completo = CASE WHEN ${data.finalizar ?? false} THEN true ELSE cadastro_completo END
+      WHERE id = ${data.perfilId}::uuid;
+    `);
+    
+    return { ok: true as const };
   });

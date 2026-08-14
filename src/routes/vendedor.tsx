@@ -17,10 +17,13 @@ function DashboardVendedor() {
   const navigate = useNavigate();
   const listarVeiculos = useServerFn(listarMeusVeiculosFn);
 
-  const { data: veiculos } = useSuspenseQuery({
+  const { data: veiculosResult } = useSuspenseQuery({
     queryKey: ['meus-veiculos', user?.id],
     queryFn: () => listarVeiculos({ data: { perfilId: user?.id || "" } }),
   });
+  
+  const veiculos = veiculosResult?.data || [];
+  const profile = (veiculosResult as any)?.profile; // Assumindo que a API pode retornar dados do perfil tbm, ou faremos outra query
 
   if (!user || user.role !== 'vendedor') {
     return (
@@ -63,6 +66,28 @@ function DashboardVendedor() {
       </header>
 
       <main className="max-w-5xl mx-auto py-8 px-6">
+        {!profile?.cadastro_completo && (
+          <Card className="mb-8 border-amber-200 bg-amber-50 shadow-sm">
+            <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-amber-900 text-sm">Seu cadastro não está finalizado!</h4>
+                  <p className="text-amber-800/70 text-xs">Ainda falta 1 passo: envie fotos dos seus documentos para liberar as vendas.</p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => navigate({ to: '/vendedor/onboarding' })}
+                className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs"
+              >
+                Concluir Agora
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-2xl font-bold text-teal-900">Meus Veículos</h1>
@@ -73,7 +98,7 @@ function DashboardVendedor() {
           </Button>
         </div>
 
-        {veiculos?.data?.length === 0 ? (
+        {veiculos?.length === 0 ? (
           <Card className="border-dashed border-2 bg-slate-50/50">
             <CardContent className="flex flex-col items-center py-12 text-center">
               <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
@@ -87,7 +112,7 @@ function DashboardVendedor() {
           </Card>
         ) : (
           <div className="grid gap-4">
-            {veiculos?.data?.map((v: any) => (
+            {veiculos?.map((v: any) => (
               <Card key={v.id} className="overflow-hidden hover:shadow-md transition-shadow">
                 <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div className="flex items-center gap-4">
