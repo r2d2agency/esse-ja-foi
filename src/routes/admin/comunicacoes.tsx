@@ -285,13 +285,13 @@ function ComunicacoesPage() {
         </div>
 
         <Tabs defaultValue="campanhas" className="w-full">
-          <TabsList className="flex w-full overflow-x-auto bg-muted/50 p-1 mb-6">
-            <TabsTrigger value="campanhas" className="flex-1">Campanhas</TabsTrigger>
-            <TabsTrigger value="segmentos" className="flex-1">Segmentos</TabsTrigger>
-            <TabsTrigger value="templates" className="flex-1">Templates</TabsTrigger>
-            <TabsTrigger value="contatos" className="flex-1">Contatos</TabsTrigger>
-            <TabsTrigger value="logs" className="flex-1">Logs</TabsTrigger>
-            <TabsTrigger value="config" className="flex-1">Configurações</TabsTrigger>
+          <TabsList className="flex w-full overflow-x-auto bg-muted/50 p-1 mb-6 border-b rounded-none justify-start h-auto gap-2">
+            <TabsTrigger value="campanhas" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Campanhas</TabsTrigger>
+            <TabsTrigger value="segmentos" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Segmentos</TabsTrigger>
+            <TabsTrigger value="templates" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Templates</TabsTrigger>
+            <TabsTrigger value="contatos" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Contatos</TabsTrigger>
+            <TabsTrigger value="logs" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Logs</TabsTrigger>
+            <TabsTrigger value="config" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Configurações</TabsTrigger>
           </TabsList>
 
           {/* Campanhas */}
