@@ -243,3 +243,167 @@ export async function getIndicadoresComunicacoes() {
   `);
   return (res as any).rows?.[0] || {};
 }
+
+export async function estimarPublico(filtros: any) {
+  const d = requireDb();
+  let whereClause = "WHERE p.role = 'comprador'";
+
+  if (filtros.tipo === 'PF') whereClause += " AND p.tipo_pessoa = 'PF'";
+  if (filtros.tipo === 'PJ') whereClause += " AND p.tipo_pessoa = 'PJ'";
+  
+  if (filtros.status === 'APROVADO') whereClause += " AND p.status_compliance = 'APROVADO'";
+  
+  if (filtros.uf) whereClause += ` AND p.uf = '${filtros.uf}'`;
+  if (filtros.cidade) whereClause += ` AND p.cidade = '${filtros.cidade}'`;
+
+  // Estimativa baseada no banco
+  const query = sql.raw(`
+    SELECT 
+      count(*) as total,
+      count(*) FILTER (WHERE pode_receber_comunicacoes = true AND whatsapp_status = 'ATIVO') as elegiveis,
+      count(*) FILTER (WHERE pode_receber_comunicacoes = false OR whatsapp_status != 'ATIVO') as nao_elegiveis
+    FROM profiles p
+    ${whereClause}
+  `);
+
+  const res = await d.execute(query);
+  return (res as any).rows?.[0] || { total: 0, elegiveis: 0, nao_elegiveis: 0 };
+}
+
+export async function criarCampanha(data: any, usuarioId: string) {
+  const d = requireDb();
+  
+  // 1. Criar a campanha
+  const resCampanha = await d.execute(sql`
+    INSERT INTO whatsapp_campanhas (
+      nome, veiculo_id, template_id, status, agendado_para, criado_por
+    ) VALUES (
+      ${data.nome}, 
+      ${data.veiculo_id ? sql`${data.veiculo_id}::uuid` : null}, 
+      ${data.template_id}::uuid, 
+      ${data.agendado_para ? 'AGENDADA' : 'RASCUNHO'}, 
+      ${data.agendado_para ? sql`${data.agendado_para}::timestamptz` : null},
+      ${usuarioId}::uuid
+    ) RETURNING id
+  `);
+  
+  const campanhaId = (resCampanha as any).rows[0].id;
+
+  // 2. Buscar destinatários elegíveis baseados nos filtros
+  let whereClause = "WHERE p.role = 'comprador' AND p.pode_receber_comunicacoes = true AND p.whatsapp_status = 'ATIVO'";
+  if (data.filtros?.tipo === 'PF') whereClause += " AND p.tipo_pessoa = 'PF'";
+  if (data.filtros?.tipo === 'PJ') whereClause += " AND p.tipo_pessoa = 'PJ'";
+  if (data.filtros?.uf) whereClause += ` AND p.uf = '${data.filtros.uf}'`;
+  
+  const destinatarios = await d.execute(sql.raw(`
+    SELECT id, telefone, nome FROM profiles p ${whereClause}
+  `));
+
+  // 3. Popular a fila de mensagens
+  const rows = (destinatarios as any).rows || [];
+  for (const dest of rows) {
+    await d.execute(sql`
+      INSERT INTO whatsapp_mensagens (campanha_id, comprador_id, telefone, payload)
+      VALUES (
+        ${campanhaId}::uuid, 
+        ${dest.id}::uuid, 
+        ${dest.telefone}, 
+        ${JSON.stringify(data.mapeamento_variaveis)}::jsonb
+      )
+    `);
+  }
+
+  // Atualizar total
+  await d.execute(sql`
+    UPDATE whatsapp_campanhas SET total_destinatarios = ${rows.length} WHERE id = ${campanhaId}::uuid
+  `);
+
+  return { id: campanhaId, total: rows.length };
+}
+
+export async function getCampanhaDetalhes(id: string) {
+  const d = requireDb();
+  const res = await d.execute(sql`
+    SELECT c.*, v.marca, v.modelo, t.meta_name, t.idioma, t.conteudo as template_conteudo
+    FROM whatsapp_campanhas c
+    LEFT JOIN veiculos v ON v.id = c.veiculo_id
+    LEFT JOIN whatsapp_templates t ON t.id = c.template_id
+    WHERE c.id = ${id}::uuid
+  `);
+  
+  const campanha = (res as any).rows?.[0];
+  if (!campanha) return null;
+
+  const mensagensRes = await d.execute(sql`
+    SELECT m.*, p.nome as comprador_nome
+    FROM whatsapp_mensagens m
+    LEFT JOIN profiles p ON p.id = m.comprador_id
+    WHERE m.campanha_id = ${id}::uuid
+    ORDER BY m.criado_em ASC
+    LIMIT 100
+  `);
+
+  return { 
+    ...campanha, 
+    mensagens: (mensagensRes as any).rows || [] 
+  };
+}
+
+export async function processarEnvioCampanha(campanhaId: string) {
+  const d = requireDb();
+  
+  // Mudar status da campanha
+  await d.execute(sql`UPDATE whatsapp_campanhas SET status = 'PROCESSANDO', iniciado_em = now() WHERE id = ${campanhaId}::uuid`);
+
+  const detalhes = await getCampanhaDetalhes(campanhaId);
+  if (!detalhes) throw new Error("Campanha não encontrada");
+
+  const mensagens = await d.execute(sql`
+    SELECT * FROM whatsapp_mensagens WHERE campanha_id = ${campanhaId}::uuid AND status = 'NA_FILA'
+  `);
+
+  const rows = (mensagens as any).rows || [];
+  let sucessos = 0;
+  let falhas = 0;
+
+  for (const msg of rows) {
+    try {
+      // Aqui chamaríamos a MetaService
+      // Como estamos no sandbox, simularemos o envio ou usaremos a real se houver config
+      const res = await metaService.enviarMensagem(
+        msg.telefone,
+        detalhes.meta_name,
+        detalhes.idioma,
+        [] // TODO: Mapear variáveis do payload para componentes Meta
+      );
+
+      await d.execute(sql`
+        UPDATE whatsapp_mensagens SET 
+          status = 'ENVIADA', 
+          enviado_em = now(),
+          meta_message_id = ${res.messages?.[0]?.id}
+        WHERE id = ${msg.id}::uuid
+      `);
+      sucessos++;
+    } catch (e: any) {
+      await d.execute(sql`
+        UPDATE whatsapp_mensagens SET 
+          status = 'FALHOU', 
+          erro_mensagem = ${e.message}
+        WHERE id = ${msg.id}::uuid
+      `);
+      falhas++;
+    }
+  }
+
+  await d.execute(sql`
+    UPDATE whatsapp_campanhas SET 
+      status = 'CONCLUIDA', 
+      concluido_em = now(),
+      total_enviados = ${sucessos},
+      total_falhas = ${falhas}
+    WHERE id = ${campanhaId}::uuid
+  `);
+
+  return { sucessos, falhas };
+}
