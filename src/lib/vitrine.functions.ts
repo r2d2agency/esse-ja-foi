@@ -8,7 +8,7 @@ export const getVitrine = createServerFn({ method: "GET" })
   });
 
 export const getAnuncioPublico = createServerFn({ method: "GET" })
-  .inputValidator((slug: string) => z.string().parse(slug))
+  .validator((slug: string) => z.string().parse(slug))
   .handler(async ({ data: slug }) => {
     return getDetalheAnuncioPublico(slug);
   });

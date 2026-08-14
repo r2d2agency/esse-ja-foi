@@ -49,7 +49,7 @@ function falha(error: unknown) {
 }
 
 export const listarClientesFn = createServerFn({ method: "GET" })
-  .inputValidator((d: unknown) => z.object({ busca: z.string().optional() }).parse(d ?? {}))
+  .validator((d: unknown) => z.object({ busca: z.string().optional() }).parse(d ?? {}))
   .handler(async ({ data }) => {
     const m = await import("@/db/cadastro.server");
     try {
@@ -60,7 +60,7 @@ export const listarClientesFn = createServerFn({ method: "GET" })
   });
 
 export const salvarClienteFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => clienteSchema.parse(d))
+  .validator((d: unknown) => clienteSchema.parse(d))
   .handler(async ({ data }) => {
     const m = await import("@/db/cadastro.server");
     try {
@@ -71,7 +71,7 @@ export const salvarClienteFn = createServerFn({ method: "POST" })
   });
 
 export const removerClienteFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     const m = await import("@/db/cadastro.server");
     try {
@@ -83,7 +83,7 @@ export const removerClienteFn = createServerFn({ method: "POST" })
   });
 
 export const listarVeiculosFn = createServerFn({ method: "GET" })
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         status: z.string().nullish(),
@@ -103,7 +103,7 @@ export const listarVeiculosFn = createServerFn({ method: "GET" })
   });
 
 export const salvarVeiculoFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => veiculoSchema.parse(d))
+  .validator((d: unknown) => veiculoSchema.parse(d))
   .handler(async ({ data }) => {
     const m = await import("@/db/cadastro.server");
     try {
@@ -114,7 +114,7 @@ export const salvarVeiculoFn = createServerFn({ method: "POST" })
   });
 
 export const alterarStatusVeiculoFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: z.string().uuid(), status: z.string(), usuario: z.string().nullish() }).parse(d),
   )
   .handler(async ({ data }) => {
@@ -127,7 +127,7 @@ export const alterarStatusVeiculoFn = createServerFn({ method: "POST" })
   });
 
 export const timelineVeiculoFn = createServerFn({ method: "GET" })
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     const m = await import("@/db/cadastro.server");
     try {
@@ -138,7 +138,7 @@ export const timelineVeiculoFn = createServerFn({ method: "GET" })
   });
 
 export const removerVeiculoFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     const m = await import("@/db/cadastro.server");
     try {

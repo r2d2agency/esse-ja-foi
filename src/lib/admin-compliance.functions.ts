@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 export const getComplianceVendedorFn = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ vendedorId: z.string().uuid() }))
+  .validator(z.object({ vendedorId: z.string().uuid() }))
   .handler(async ({ data }) => {
     const { db } = await import("@/db/index");
     const { sql } = await import("drizzle-orm");
@@ -18,7 +18,7 @@ export const getComplianceVendedorFn = createServerFn({ method: "GET" })
   });
 
 export const atualizarComplianceFn = createServerFn({ method: "POST" })
-  .inputValidator(z.object({
+  .validator(z.object({
     vendedorId: z.string().uuid(),
     status: z.string(),
     observacoes: z.string().optional(),
@@ -55,7 +55,7 @@ export const atualizarComplianceFn = createServerFn({ method: "POST" })
   });
 
 export const getDocumentosVeiculoFn = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ veiculoId: z.string().uuid() }))
+  .validator(z.object({ veiculoId: z.string().uuid() }))
   .handler(async ({ data }) => {
     const { db } = await import("@/db/index");
     const { sql } = await import("drizzle-orm");

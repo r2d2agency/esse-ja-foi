@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 export const getVistoriasAdminFn = createServerFn({ method: "GET" })
-  .inputValidator((d) => z.object({ status: z.string().optional() }).parse(d))
+  .validator((d) => z.object({ status: z.string().optional() }).parse(d))
   .handler(async ({ data }) => {
     const { listarVistoriasAdmin } = await import("@/db/vistorias.server");
     try {
@@ -25,7 +25,7 @@ export const getVeiculosAguardandoVistoriaFn = createServerFn({ method: "GET" })
   });
 
 export const getUnidadesDisponiveisFn = createServerFn({ method: "GET" })
-  .inputValidator((d) => z.object({ cidade: z.string().optional() }).parse(d))
+  .validator((d) => z.object({ cidade: z.string().optional() }).parse(d))
   .handler(async ({ data }) => {
     const { listarUnidadesDisponiveis } = await import("@/db/vistorias.server");
     try {
@@ -37,7 +37,7 @@ export const getUnidadesDisponiveisFn = createServerFn({ method: "GET" })
   });
 
 export const getVistoriadoresUnidadeFn = createServerFn({ method: "GET" })
-  .inputValidator((d) => z.object({ unidadeId: z.string() }).parse(d))
+  .validator((d) => z.object({ unidadeId: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { listarVistoriadoresUnidade } = await import("@/db/vistorias.server");
     try {
@@ -49,7 +49,7 @@ export const getVistoriadoresUnidadeFn = createServerFn({ method: "GET" })
   });
 
 export const criarAgendamentoVistoriaFn = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({
+  .validator((d) => z.object({
     veiculo_id: z.string(),
     vendedor_id: z.string(),
     unidade_id: z.string(),
@@ -68,7 +68,7 @@ export const criarAgendamentoVistoriaFn = createServerFn({ method: "POST" })
   });
 
 export const getVistoriaVendedorFn = createServerFn({ method: "GET" })
-  .inputValidator((d) => z.object({ vendedorId: z.string() }).parse(d))
+  .validator((d) => z.object({ vendedorId: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { getVistoriaVendedor } = await import("@/db/vistorias.server");
     try {
@@ -80,7 +80,7 @@ export const getVistoriaVendedorFn = createServerFn({ method: "GET" })
   });
 
 export const confirmarPresencaVistoriaFn = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ vistoriaId: z.string(), vendedorId: z.string() }).parse(d))
+  .validator((d) => z.object({ vistoriaId: z.string(), vendedorId: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { confirmarVistoriaVendedor } = await import("@/db/vistorias.server");
     try {

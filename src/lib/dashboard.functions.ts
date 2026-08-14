@@ -20,7 +20,7 @@ export const dashboardOperacaoFn = createServerFn({ method: "GET" }).handler(asy
 });
 
 export const dashboardCompradorFn = createServerFn({ method: "GET" })
-  .inputValidator((d: unknown) => z.object({ email: z.string().email().or(z.literal("")) }).parse(d ?? { email: "" }))
+  .validator((d: unknown) => z.object({ email: z.string().email().or(z.literal("")) }).parse(d ?? { email: "" }))
   .handler(async ({ data }) => {
     const m = await import("@/db/dashboard.server");
     const [abertos, lances] = await Promise.all([

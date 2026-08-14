@@ -16,13 +16,13 @@ export const getProntosParaAnuncio = createServerFn({ method: "GET" })
   });
 
 export const getAnunciosAdmin = createServerFn({ method: "GET" })
-  .inputValidator((s: string | undefined) => z.string().optional().parse(s))
+  .validator((s: string | undefined) => z.string().optional().parse(s))
   .handler(async ({ data: status }) => {
     return listarAnuncios(status);
   });
 
 export const getDadosParaNovoAnuncio = createServerFn({ method: "GET" })
-  .inputValidator((id: string) => z.string().uuid().parse(id))
+  .validator((id: string) => z.string().uuid().parse(id))
   .handler(async ({ data: veiculoId }) => {
     const d = db;
     if (!d) throw new Error("DB offline");
@@ -51,7 +51,7 @@ export const getDadosParaNovoAnuncio = createServerFn({ method: "GET" })
   });
 
 export const criarAnuncio = createServerFn({ method: "POST" })
-  .inputValidator((data: any) => z.object({
+  .validator((data: any) => z.object({
     veiculo_id: z.string().uuid(),
     titulo: z.string(),
     descricao: z.string(),

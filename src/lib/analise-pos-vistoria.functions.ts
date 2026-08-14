@@ -13,7 +13,7 @@ export const getFilaAnalisePosVistoriaFn = createServerFn({ method: "GET" })
   });
 
 export const getDetalheAnaliseVistoriaFn = createServerFn({ method: "GET" })
-  .inputValidator((d) => z.object({ veiculoId: z.string() }).parse(d))
+  .validator((d) => z.object({ veiculoId: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { getDetalheAnaliseVistoria } = await import("@/db/analise-pos-vistoria.server");
     try {
@@ -25,7 +25,7 @@ export const getDetalheAnaliseVistoriaFn = createServerFn({ method: "GET" })
   });
 
 export const enviarPropostaVendedorFn = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({
+  .validator((d) => z.object({
     veiculo_id: z.string(),
     valor_referencia: z.number(),
     valor_minimo_acordado: z.number(),
@@ -47,7 +47,7 @@ export const enviarPropostaVendedorFn = createServerFn({ method: "POST" })
   });
 
 export const responderPropostaVendedorFn = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({
+  .validator((d) => z.object({
     veiculo_id: z.string(),
     proposta_id: z.string(),
     aceite: z.boolean(),

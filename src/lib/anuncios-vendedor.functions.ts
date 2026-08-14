@@ -4,7 +4,7 @@ import { db } from "../db";
 import { sql } from "drizzle-orm";
 
 export const getAnuncioVeiculoVendedor = createServerFn({ method: "GET" })
-  .inputValidator((id: string) => z.string().uuid().parse(id))
+  .validator((id: string) => z.string().uuid().parse(id))
   .handler(async ({ data: veiculoId }) => {
     const d = db;
     if (!d) return null;
