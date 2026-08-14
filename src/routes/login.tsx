@@ -62,16 +62,14 @@ function LoginPage() {
 
       switch (user.role) {
         case "admin":
+        case "operacao":
           navigate({ to: "/admin" });
           break;
-        case "operacao":
-          navigate({ to: "/operacao" });
-          break;
         case "vistoriador":
-          navigate({ to: "/vistoria" });
+          navigate({ to: "/admin/veiculos" });
           break;
         case "comprador":
-          navigate({ to: "/comprador" });
+          navigate({ to: "/vender" });
           break;
         case "vendedor":
           navigate({ to: "/vendedor" });
