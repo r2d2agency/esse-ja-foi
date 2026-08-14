@@ -174,8 +174,6 @@ function ComunicacoesPage() {
   
   const [estimativa, setEstimativa] = useState<any>({ total: 0, elegiveis: 0, nao_elegiveis: 0 });
 
-  const [estimativa, setEstimativa] = useState<any>({ total: 0, elegiveis: 0, nao_elegiveis: 0 });
-
 
   const { data: indicadores } = useQuery({
     queryKey: ['wa-indicadores'],
