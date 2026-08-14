@@ -53,7 +53,7 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
       // Sanitiza a mensagem de erro para o usuário não ver a query SQL bruta em caso de falha genérica
       let userMessage = "Erro no servidor ao processar o cadastro.";
       if (error.message?.includes("app_role")) {
-        userMessage = "Erro na configuração de permissões do sistema. Contate o suporte.";
+        userMessage = "Erro na configuração de permissões do sistema. Contate o suporte. ao tentar fazer um cadastro como vendedor";
       }
       
       return { ok: false as const, message: userMessage };
