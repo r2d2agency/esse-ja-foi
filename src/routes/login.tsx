@@ -1,74 +1,65 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Gavel, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/hooks/use-auth";
 import { loginWithPassword } from "@/lib/auth.functions";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-
-const loginSchema = z.object({
-  email: z.string().email("E-mail inválido"),
-  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
+import { Checkbox } from "@/components/ui/checkbox";
+import heroCar from "@/assets/hero-car.jpg";
 
 export const Route = createFileRoute("/login")({
+  head: () => ({
+    meta: [
+      { title: "Entrar — ESSE JÁ FOI" },
+      {
+        name: "description",
+        content: "Entre na sua conta ESSE JÁ FOI para acompanhar seus veículos e suas negociações.",
+      },
+      { property: "og:title", content: "Bem-vindo de volta — ESSE JÁ FOI" },
+      { property: "og:description", content: "Acompanhe seus veículos e suas negociações." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: LoginPage,
 });
 
 function LoginPage() {
-  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuthStore();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [identificador, setIdentificador] = useState("");
+  const [password, setPassword] = useState("");
+  const [erro, setErro] = useState("");
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-
-  async function onSubmit(values: LoginFormValues) {
-    setIsLoading(true);
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const valor = identificador.trim();
+    if (!valor.includes("@")) {
+      setErro("Por enquanto o acesso é feito com o seu e-mail.");
+      return;
+    }
+    setErro("");
+    setLoading(true);
     try {
-      const result = await loginWithPassword({ data: values });
-
+      const result = await loginWithPassword({ data: { email: valor, password } });
       if (!result.ok) {
-        toast.error(result.message);
+        setErro("E-mail ou senha incorretos.");
         return;
       }
 
       const { user, accessToken } = result;
-      login({ 
-        user: {
-          id: user.id,
-          nome: user.nome,
-          email: user.email,
-          role: user.role as any
-        }, 
-        accessToken, 
-        refreshToken: accessToken 
+      login({
+        user: { id: user.id, nome: user.nome, email: user.email, role: user.role as any },
+        accessToken,
+        refreshToken: accessToken,
       });
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", accessToken);
-
       toast.success(`Bem-vindo, ${user.nome}!`);
-      
-      // Redirect based on role
+
       switch (user.role) {
         case "admin":
           navigate({ to: "/admin" });
@@ -88,70 +79,74 @@ function LoginPage() {
         default:
           navigate({ to: "/" });
       }
-    } catch (error) {
-      console.error(error);
-      toast.error("Erro ao realizar login. Tente novamente.");
+    } catch {
+      setErro("Não foi possível entrar agora. Tente novamente em instantes.");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6">
-      <div className="w-full max-w-md space-y-8 rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="flex flex-col items-center gap-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-teal-900">
-            <Gavel className="h-6 w-6 text-amber-500" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">ESSE JÁ FOI</h1>
-          <p className="text-sm text-slate-500 text-center">
-            Entre na sua conta para gerenciar leilões e vistorias
-          </p>
-        </div>
+    <div className="min-h-screen bg-white lg:grid lg:grid-cols-[1fr_0.9fr]">
+      <div className="flex flex-col px-6 py-10 lg:px-16 lg:py-14">
+        <Link to="/" className="text-center text-sm font-black uppercase tracking-[0.18em] lg:text-left">
+          Esse<span className="text-teal-700">JáFoi</span>
+        </Link>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>E-mail</FormLabel>
-                  <FormControl>
-                    <Input placeholder="seu@email.com.br" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+        <div className="mx-auto mt-16 w-full max-w-md lg:mt-28">
+          <h1 className="text-3xl font-black leading-tight tracking-tight">Bem-vindo de volta</h1>
+          <p className="mt-3 text-slate-500">Entre para acompanhar seus veículos e suas negociações.</p>
+
+          <form onSubmit={onSubmit} className="mt-8 space-y-4">
+            <Input
+              required
+              placeholder="CPF ou e-mail"
+              aria-label="CPF ou e-mail"
+              className="h-14 rounded-xl text-base"
+              value={identificador}
+              onChange={(e) => setIdentificador(e.target.value)}
             />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex items-center justify-between">
-                    <FormLabel>Senha</FormLabel>
-                    <a href="/esqueci-minha-senha" className="text-xs text-teal-700 hover:underline">
-                      Esqueceu a senha?
-                    </a>
-                  </div>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <Input
+              required
+              type="password"
+              placeholder="Senha"
+              aria-label="Senha"
+              className="h-14 rounded-xl text-base"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
-            <Button 
-              type="submit" 
-              className="w-full bg-teal-900 hover:bg-teal-950 text-white" 
-              disabled={isLoading}
+            {erro && <p className="text-sm text-rose-600">{erro}</p>}
+
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center gap-2 text-sm text-slate-600">
+                <Checkbox defaultChecked /> Lembrar meu acesso
+              </label>
+              <Link to="/esqueci-minha-senha" className="text-sm text-teal-700 hover:underline">
+                Esqueci minha senha
+              </Link>
+            </div>
+
+            <Button
+              disabled={loading}
+              className="h-14 w-full rounded-xl bg-teal-700 text-base font-bold text-white transition-colors hover:bg-teal-800"
             >
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Entrar
             </Button>
           </form>
-        </Form>
+
+          <p className="mt-6 text-center text-sm text-slate-500">
+            Ainda não possui conta?{" "}
+            <Link to="/cadastro" className="font-semibold text-teal-700 underline-offset-4 hover:underline">
+              Criar cadastro
+            </Link>
+          </p>
+        </div>
+      </div>
+
+      <div className="relative hidden lg:block">
+        <img src={heroCar} alt="Veículo premium" className="h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-slate-950/45" />
       </div>
     </div>
   );
