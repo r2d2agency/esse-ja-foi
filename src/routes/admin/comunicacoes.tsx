@@ -64,8 +64,13 @@ import {
   getWebhookLogsFn,
   buscarDadosAutomaticosFn,
   listarTemplatesFn,
-  criarTemplateMetaFn
+  criarTemplateMetaFn,
+  estimarPublicoFn,
+  criarCampanhaFn,
+  enviarTesteFn,
+  processarEnvioCampanhaFn
 } from '@/lib/comunicacoes.functions';
+import { getAnunciosAdmin } from '@/lib/anuncios.functions';
 import { toast } from 'sonner';
 
 export const Route = createFileRoute('/admin/comunicacoes')({
