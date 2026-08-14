@@ -112,7 +112,10 @@ function ComunicacoesPage() {
   const enviarTeste = useServerFn(enviarTesteFn);
   const getAnuncios = useServerFn(getAnunciosAdmin);
   const processarEnvio = useServerFn(processarEnvioCampanhaFn);
+  const getAutomacoes = useServerFn(listarAutomacoesFn);
+  const salvarAutomacao = useServerFn(salvarAutomacaoFn);
 
+  const [activeTab, setActiveTab] = useState('campanhas');
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<any>({});
   
@@ -144,7 +147,21 @@ function ComunicacoesPage() {
     agendado_para: null
   });
 
+  // Wizard Automação State
+  const [isAutomacaoWizardOpen, setIsAutomacaoWizardOpen] = useState(false);
+  const [automacaoStep, setAutomacaoStep] = useState(1);
+  const [novaAutomacao, setNovaAutomacao] = useState<any>({
+    nome: '',
+    evento: '',
+    publico: '',
+    template_id: '',
+    status: 'RASCUNHO',
+    config_envio: { momento: 'IMEDIATO' },
+    mapeamento_variaveis: []
+  });
+
   const [estimativa, setEstimativa] = useState<any>({ total: 0, elegiveis: 0, nao_elegiveis: 0 });
+
 
   const { data: indicadores } = useQuery({
     queryKey: ['wa-indicadores'],
