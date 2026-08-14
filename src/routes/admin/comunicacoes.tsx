@@ -15,6 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { 
   Dialog,
   DialogContent,
@@ -163,32 +170,9 @@ function ComunicacoesPage() {
     mapeamento_variaveis: []
   });
 
-  const { data: automacoes, refetch: refetchAutomacoes } = useQuery({
-    queryKey: ['automacoes'],
-    queryFn: () => getAutomacoes(),
-    enabled: activeTab === 'automacoes'
-  });
-
-  const { data: execucoesAutomacao } = useQuery({
-    queryKey: ['automacao-execucoes', selectedAutomacao?.id],
-    queryFn: () => getExecucoes(selectedAutomacao?.id),
-    enabled: !!selectedAutomacao?.id && isExecucoesOpen
-  });
-
-  const mutationSalvarAutomacao = useMutation({
-    mutationFn: salvarAutomacao,
-    onSuccess: () => {
-      toast.success("Automação salva com sucesso!");
-      setIsAutomacaoWizardOpen(false);
-      refetchAutomacoes();
-      setAutomacaoStep(1);
-    },
-    onError: () => toast.error("Erro ao salvar automação")
-  });
-
-  const handleSalvarAutomacao = () => {
-    mutationSalvarAutomacao.mutate(novaAutomacao);
-  };
+  // Removido duplicado handleSalvarAutomacao e automacoes query aqui
+  
+  const [estimativa, setEstimativa] = useState<any>({ total: 0, elegiveis: 0, nao_elegiveis: 0 });
 
   const [estimativa, setEstimativa] = useState<any>({ total: 0, elegiveis: 0, nao_elegiveis: 0 });
 
@@ -223,9 +207,16 @@ function ComunicacoesPage() {
     queryFn: () => getAnuncios({ data: 'PUBLICADO' })
   });
 
-  const { data: automacoes } = useQuery({
+  const { data: automacoes, refetch: refetchAutomacoes } = useQuery({
     queryKey: ['wa-automacoes'],
-    queryFn: () => getAutomacoes()
+    queryFn: () => getAutomacoes(),
+    enabled: activeTab === 'automacoes'
+  });
+
+  const { data: execucoesAutomacao } = useQuery({
+    queryKey: ['automacao-execucoes', selectedAutomacao?.id],
+    queryFn: () => getExecucoes(selectedAutomacao?.id),
+    enabled: !!selectedAutomacao?.id && isExecucoesOpen
   });
 
   const handleSalvarAutomacao = async () => {
@@ -233,7 +224,8 @@ function ComunicacoesPage() {
       loading: 'Salvando automação...',
       success: () => {
         setIsAutomacaoWizardOpen(false);
-        queryClient.invalidateQueries({ queryKey: ['wa-automacoes'] });
+        refetchAutomacoes();
+        setAutomacaoStep(1);
         return 'Automação salva!';
       },
       error: (err) => `Erro: ${err.message}`
