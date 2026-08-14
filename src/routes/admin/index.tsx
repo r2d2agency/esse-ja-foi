@@ -15,6 +15,7 @@ import {
   Calendar
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
+import { listarNegociacoesAdminFn } from "@/lib/negociacoes.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
