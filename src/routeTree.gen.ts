@@ -22,6 +22,7 @@ import { Route as VistoriaRouteImport } from './routes/vistoria'
 import { Route as AdminChecklistRouteImport } from './routes/admin/checklist'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configuracoes'
 import { Route as AdminDepreciacaoRouteImport } from './routes/admin/depreciacao'
+import { Route as AdminLogsRouteImport } from './routes/admin/logs'
 import { Route as AdminUsuariosRouteImport } from './routes/admin/usuarios'
 import { Route as CompradorIndexRouteImport } from './routes/comprador/index'
 import { Route as OperacaoAgendaRouteImport } from './routes/operacao/agenda'
@@ -100,6 +101,11 @@ const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
 const AdminDepreciacaoRoute = AdminDepreciacaoRouteImport.update({
   id: '/depreciacao',
   path: '/depreciacao',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLogsRoute = AdminLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
@@ -187,6 +193,7 @@ export interface FileRoutesByFullPath {
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
+  '/admin/logs': typeof AdminLogsRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/bi': typeof OperacaoBiRoute
@@ -214,6 +221,7 @@ export interface FileRoutesByTo {
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
+  '/admin/logs': typeof AdminLogsRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/bi': typeof OperacaoBiRoute
@@ -244,6 +252,7 @@ export interface FileRoutesById {
   '/admin/checklist': typeof AdminChecklistRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
+  '/admin/logs': typeof AdminLogsRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/bi': typeof OperacaoBiRoute
@@ -275,6 +284,7 @@ export interface FileRouteTypes {
     | '/admin/checklist'
     | '/admin/configuracoes'
     | '/admin/depreciacao'
+    | '/admin/logs'
     | '/admin/usuarios'
     | '/operacao/agenda'
     | '/operacao/bi'
@@ -302,6 +312,7 @@ export interface FileRouteTypes {
     | '/admin/checklist'
     | '/admin/configuracoes'
     | '/admin/depreciacao'
+    | '/admin/logs'
     | '/admin/usuarios'
     | '/operacao/agenda'
     | '/operacao/bi'
@@ -331,6 +342,7 @@ export interface FileRouteTypes {
     | '/admin/checklist'
     | '/admin/configuracoes'
     | '/admin/depreciacao'
+    | '/admin/logs'
     | '/admin/usuarios'
     | '/operacao/agenda'
     | '/operacao/bi'
@@ -453,6 +465,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDepreciacaoRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/logs': {
+      id: '/admin/logs'
+      path: '/logs'
+      fullPath: '/admin/logs'
+      preLoaderRoute: typeof AdminLogsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/usuarios': {
       id: '/admin/usuarios'
       path: '/usuarios'
@@ -558,6 +577,7 @@ interface AdminRouteChildren {
   AdminChecklistRoute: typeof AdminChecklistRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminDepreciacaoRoute: typeof AdminDepreciacaoRoute
+  AdminLogsRoute: typeof AdminLogsRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
 }
 
@@ -565,6 +585,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminChecklistRoute: AdminChecklistRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminDepreciacaoRoute: AdminDepreciacaoRoute,
+  AdminLogsRoute: AdminLogsRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
 }
 
