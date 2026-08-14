@@ -34,8 +34,14 @@ import { Route as OperacaoLaudosRouteImport } from './routes/operacao/laudos'
 import { Route as OperacaoLeadsRouteImport } from './routes/operacao/leads'
 import { Route as OperacaoVeiculosRouteImport } from './routes/operacao/veiculos'
 import { Route as VendedorIndexRouteImport } from './routes/vendedor.index'
+import { Route as VendedorAjudaRouteImport } from './routes/vendedor.ajuda'
+import { Route as VendedorBoasVindasRouteImport } from './routes/vendedor.boas-vindas'
 import { Route as VendedorCadastrarRouteImport } from './routes/vendedor.cadastrar'
+import { Route as VendedorDocumentosRouteImport } from './routes/vendedor.documentos'
 import { Route as VendedorOnboardingRouteImport } from './routes/vendedor.onboarding'
+import { Route as VendedorPerfilRouteImport } from './routes/vendedor.perfil'
+import { Route as VendedorPropostasRouteImport } from './routes/vendedor.propostas'
+import { Route as VendedorVeiculosRouteImport } from './routes/vendedor.veiculos'
 import { Route as VistoriaIndexRouteImport } from './routes/vistoria/index'
 import { Route as VistoriaAgendamentoIdRouteImport } from './routes/vistoria/$agendamentoId'
 import { Route as CompradorLeilaoIdRouteImport } from './routes/comprador/leilao.$id'
@@ -166,14 +172,44 @@ const VendedorIndexRoute = VendedorIndexRouteImport.update({
   path: '/',
   getParentRoute: () => VendedorRoute,
 } as any)
+const VendedorAjudaRoute = VendedorAjudaRouteImport.update({
+  id: '/ajuda',
+  path: '/ajuda',
+  getParentRoute: () => VendedorRoute,
+} as any)
+const VendedorBoasVindasRoute = VendedorBoasVindasRouteImport.update({
+  id: '/boas-vindas',
+  path: '/boas-vindas',
+  getParentRoute: () => VendedorRoute,
+} as any)
 const VendedorCadastrarRoute = VendedorCadastrarRouteImport.update({
   id: '/cadastrar',
   path: '/cadastrar',
   getParentRoute: () => VendedorRoute,
 } as any)
+const VendedorDocumentosRoute = VendedorDocumentosRouteImport.update({
+  id: '/documentos',
+  path: '/documentos',
+  getParentRoute: () => VendedorRoute,
+} as any)
 const VendedorOnboardingRoute = VendedorOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => VendedorRoute,
+} as any)
+const VendedorPerfilRoute = VendedorPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => VendedorRoute,
+} as any)
+const VendedorPropostasRoute = VendedorPropostasRouteImport.update({
+  id: '/propostas',
+  path: '/propostas',
+  getParentRoute: () => VendedorRoute,
+} as any)
+const VendedorVeiculosRoute = VendedorVeiculosRouteImport.update({
+  id: '/veiculos',
+  path: '/veiculos',
   getParentRoute: () => VendedorRoute,
 } as any)
 const VistoriaIndexRoute = VistoriaIndexRouteImport.update({
@@ -220,8 +256,14 @@ export interface FileRoutesByFullPath {
   '/operacao/laudos': typeof OperacaoLaudosRoute
   '/operacao/leads': typeof OperacaoLeadsRoute
   '/operacao/veiculos': typeof OperacaoVeiculosRoute
+  '/vendedor/ajuda': typeof VendedorAjudaRoute
+  '/vendedor/boas-vindas': typeof VendedorBoasVindasRoute
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
+  '/vendedor/documentos': typeof VendedorDocumentosRoute
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
+  '/vendedor/perfil': typeof VendedorPerfilRoute
+  '/vendedor/propostas': typeof VendedorPropostasRoute
+  '/vendedor/veiculos': typeof VendedorVeiculosRoute
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
   '/admin/': typeof AdminIndexRoute
   '/comprador/': typeof CompradorIndexRoute
@@ -249,8 +291,14 @@ export interface FileRoutesByTo {
   '/operacao/laudos': typeof OperacaoLaudosRoute
   '/operacao/leads': typeof OperacaoLeadsRoute
   '/operacao/veiculos': typeof OperacaoVeiculosRoute
+  '/vendedor/ajuda': typeof VendedorAjudaRoute
+  '/vendedor/boas-vindas': typeof VendedorBoasVindasRoute
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
+  '/vendedor/documentos': typeof VendedorDocumentosRoute
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
+  '/vendedor/perfil': typeof VendedorPerfilRoute
+  '/vendedor/propostas': typeof VendedorPropostasRoute
+  '/vendedor/veiculos': typeof VendedorVeiculosRoute
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
   '/admin': typeof AdminIndexRoute
   '/comprador': typeof CompradorIndexRoute
@@ -283,8 +331,14 @@ export interface FileRoutesById {
   '/operacao/laudos': typeof OperacaoLaudosRoute
   '/operacao/leads': typeof OperacaoLeadsRoute
   '/operacao/veiculos': typeof OperacaoVeiculosRoute
+  '/vendedor/ajuda': typeof VendedorAjudaRoute
+  '/vendedor/boas-vindas': typeof VendedorBoasVindasRoute
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
+  '/vendedor/documentos': typeof VendedorDocumentosRoute
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
+  '/vendedor/perfil': typeof VendedorPerfilRoute
+  '/vendedor/propostas': typeof VendedorPropostasRoute
+  '/vendedor/veiculos': typeof VendedorVeiculosRoute
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
   '/admin/': typeof AdminIndexRoute
   '/comprador/': typeof CompradorIndexRoute
@@ -318,8 +372,14 @@ export interface FileRouteTypes {
     | '/operacao/laudos'
     | '/operacao/leads'
     | '/operacao/veiculos'
+    | '/vendedor/ajuda'
+    | '/vendedor/boas-vindas'
     | '/vendedor/cadastrar'
+    | '/vendedor/documentos'
     | '/vendedor/onboarding'
+    | '/vendedor/perfil'
+    | '/vendedor/propostas'
+    | '/vendedor/veiculos'
     | '/vistoria/$agendamentoId'
     | '/admin/'
     | '/comprador/'
@@ -347,8 +407,14 @@ export interface FileRouteTypes {
     | '/operacao/laudos'
     | '/operacao/leads'
     | '/operacao/veiculos'
+    | '/vendedor/ajuda'
+    | '/vendedor/boas-vindas'
     | '/vendedor/cadastrar'
+    | '/vendedor/documentos'
     | '/vendedor/onboarding'
+    | '/vendedor/perfil'
+    | '/vendedor/propostas'
+    | '/vendedor/veiculos'
     | '/vistoria/$agendamentoId'
     | '/admin'
     | '/comprador'
@@ -380,8 +446,14 @@ export interface FileRouteTypes {
     | '/operacao/laudos'
     | '/operacao/leads'
     | '/operacao/veiculos'
+    | '/vendedor/ajuda'
+    | '/vendedor/boas-vindas'
     | '/vendedor/cadastrar'
+    | '/vendedor/documentos'
     | '/vendedor/onboarding'
+    | '/vendedor/perfil'
+    | '/vendedor/propostas'
+    | '/vendedor/veiculos'
     | '/vistoria/$agendamentoId'
     | '/admin/'
     | '/comprador/'
@@ -582,6 +654,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendedorIndexRouteImport
       parentRoute: typeof VendedorRoute
     }
+    '/vendedor/ajuda': {
+      id: '/vendedor/ajuda'
+      path: '/ajuda'
+      fullPath: '/vendedor/ajuda'
+      preLoaderRoute: typeof VendedorAjudaRouteImport
+      parentRoute: typeof VendedorRoute
+    }
+    '/vendedor/boas-vindas': {
+      id: '/vendedor/boas-vindas'
+      path: '/boas-vindas'
+      fullPath: '/vendedor/boas-vindas'
+      preLoaderRoute: typeof VendedorBoasVindasRouteImport
+      parentRoute: typeof VendedorRoute
+    }
     '/vendedor/cadastrar': {
       id: '/vendedor/cadastrar'
       path: '/cadastrar'
@@ -589,11 +675,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendedorCadastrarRouteImport
       parentRoute: typeof VendedorRoute
     }
+    '/vendedor/documentos': {
+      id: '/vendedor/documentos'
+      path: '/documentos'
+      fullPath: '/vendedor/documentos'
+      preLoaderRoute: typeof VendedorDocumentosRouteImport
+      parentRoute: typeof VendedorRoute
+    }
     '/vendedor/onboarding': {
       id: '/vendedor/onboarding'
       path: '/onboarding'
       fullPath: '/vendedor/onboarding'
       preLoaderRoute: typeof VendedorOnboardingRouteImport
+      parentRoute: typeof VendedorRoute
+    }
+    '/vendedor/perfil': {
+      id: '/vendedor/perfil'
+      path: '/perfil'
+      fullPath: '/vendedor/perfil'
+      preLoaderRoute: typeof VendedorPerfilRouteImport
+      parentRoute: typeof VendedorRoute
+    }
+    '/vendedor/propostas': {
+      id: '/vendedor/propostas'
+      path: '/propostas'
+      fullPath: '/vendedor/propostas'
+      preLoaderRoute: typeof VendedorPropostasRouteImport
+      parentRoute: typeof VendedorRoute
+    }
+    '/vendedor/veiculos': {
+      id: '/vendedor/veiculos'
+      path: '/veiculos'
+      fullPath: '/vendedor/veiculos'
+      preLoaderRoute: typeof VendedorVeiculosRouteImport
       parentRoute: typeof VendedorRoute
     }
     '/vistoria/': {
@@ -684,14 +798,26 @@ const OperacaoRouteWithChildren = OperacaoRoute._addFileChildren(
 )
 
 interface VendedorRouteChildren {
+  VendedorAjudaRoute: typeof VendedorAjudaRoute
+  VendedorBoasVindasRoute: typeof VendedorBoasVindasRoute
   VendedorCadastrarRoute: typeof VendedorCadastrarRoute
+  VendedorDocumentosRoute: typeof VendedorDocumentosRoute
   VendedorOnboardingRoute: typeof VendedorOnboardingRoute
+  VendedorPerfilRoute: typeof VendedorPerfilRoute
+  VendedorPropostasRoute: typeof VendedorPropostasRoute
+  VendedorVeiculosRoute: typeof VendedorVeiculosRoute
   VendedorIndexRoute: typeof VendedorIndexRoute
 }
 
 const VendedorRouteChildren: VendedorRouteChildren = {
+  VendedorAjudaRoute: VendedorAjudaRoute,
+  VendedorBoasVindasRoute: VendedorBoasVindasRoute,
   VendedorCadastrarRoute: VendedorCadastrarRoute,
+  VendedorDocumentosRoute: VendedorDocumentosRoute,
   VendedorOnboardingRoute: VendedorOnboardingRoute,
+  VendedorPerfilRoute: VendedorPerfilRoute,
+  VendedorPropostasRoute: VendedorPropostasRoute,
+  VendedorVeiculosRoute: VendedorVeiculosRoute,
   VendedorIndexRoute: VendedorIndexRoute,
 }
 

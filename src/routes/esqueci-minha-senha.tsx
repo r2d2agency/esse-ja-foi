@@ -1,122 +1,137 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Gavel, Loader2, ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { solicitarResetSenha } from "@/lib/auth.functions";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
-const forgotSchema = z.object({
-  email: z.string().email("E-mail inválido"),
-});
-
-type ForgotFormValues = z.infer<typeof forgotSchema>;
-
 export const Route = createFileRoute("/esqueci-minha-senha")({
-  component: ForgotPasswordPage,
+  head: () => ({
+    meta: [
+      { title: "Recuperar acesso — ESSE JÁ FOI" },
+      {
+        name: "description",
+        content: "Recupere o acesso à sua conta ESSE JÁ FOI por WhatsApp ou e-mail.",
+      },
+      { property: "og:title", content: "Recuperar acesso — ESSE JÁ FOI" },
+      { property: "og:description", content: "Informe seu CPF ou e-mail para receber as instruções." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: RecuperarAcesso,
 });
 
-function ForgotPasswordPage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSent, setIsSent] = useState(false);
-  const navigate = useNavigate();
+function mascararEmail(email: string) {
+  const [nome, dominio] = email.split("@");
+  if (!dominio || !nome) return "a*****@email.com";
+  return `${nome.slice(0, 1)}*****@${dominio}`;
+}
+
+function RecuperarAcesso() {
+  const [etapa, setEtapa] = useState<"identificar" | "canal" | "enviado">("identificar");
+  const [valor, setValor] = useState("");
+  const [erro, setErro] = useState("");
+  const [loading, setLoading] = useState(false);
   const solicitar = useServerFn(solicitarResetSenha);
 
-  const form = useForm<ForgotFormValues>({
-    resolver: zodResolver(forgotSchema),
-    defaultValues: { email: "" },
-  });
-
-  async function onSubmit(values: ForgotFormValues) {
-    setIsLoading(true);
-    try {
-      const res = await solicitar({ data: values });
-      if (!res.ok) {
-        toast.error(res.message);
-        return;
-      }
-      setIsSent(true);
-      toast.success("Solicitação registrada! A equipe administrativa fará o contato.");
-    } catch (error) {
-      console.error(error);
-      toast.error("Não foi possível registrar a solicitação. Tente novamente.");
-    } finally {
-      setIsLoading(false);
+  const continuar = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (valor.trim().length < 5) {
+      setErro("Informe um CPF ou e-mail válido.");
+      return;
     }
-  }
+    setErro("");
+    setEtapa("canal");
+  };
+
+  const enviarPorEmail = async () => {
+    setLoading(true);
+    try {
+      if (valor.includes("@")) await solicitar({ data: { email: valor } });
+      setEtapa("enviado");
+    } catch {
+      toast.error("Não foi possível enviar agora. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6">
-      <div className="w-full max-w-md space-y-8 rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="flex flex-col items-center gap-2">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-teal-900">
-            <Gavel className="h-6 w-6 text-amber-500" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Recuperar Senha</h1>
-          <p className="text-sm text-slate-500 text-center">
-            {isSent 
-              ? "Instruções enviadas para o seu e-mail." 
-              : "Informe seu e-mail para receber as instruções de recuperação."}
-          </p>
-        </div>
+    <div className="flex min-h-screen flex-col bg-white px-6 py-10">
+      <Link to="/login" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900">
+        <ArrowLeft className="h-4 w-4" /> Voltar para o login
+      </Link>
 
-        {!isSent ? (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>E-mail</FormLabel>
-                    <FormControl>
-                      <Input placeholder="seu@email.com.br" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+      <div className="mx-auto mt-16 w-full max-w-md">
+        {etapa === "identificar" && (
+          <>
+            <h1 className="text-3xl font-black leading-tight tracking-tight">Recuperar acesso</h1>
+            <p className="mt-3 text-slate-500">
+              Informe seu CPF ou e-mail para receber as instruções de recuperação.
+            </p>
+            <form onSubmit={continuar} className="mt-8 space-y-4">
+              <Input
+                placeholder="CPF ou e-mail"
+                aria-label="CPF ou e-mail"
+                className="h-14 rounded-xl text-base"
+                value={valor}
+                onChange={(e) => setValor(e.target.value)}
               />
-              <Button 
-                type="submit" 
-                className="w-full bg-teal-900 hover:bg-teal-950 text-white" 
-                disabled={isLoading}
-              >
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Enviar instruções
+              {erro && <p className="text-sm text-rose-600">{erro}</p>}
+              <Button className="h-14 w-full rounded-xl bg-teal-700 text-base font-bold text-white hover:bg-teal-800">
+                Continuar
               </Button>
             </form>
-          </Form>
-        ) : (
-          <Button 
-            variant="outline" 
-            className="w-full" 
-            onClick={() => navigate({ to: "/login" })}
-          >
-            Voltar para o Login
-          </Button>
+          </>
         )}
-        
-        <div className="text-center">
-          <a 
-            href="/login" 
-            className="inline-flex items-center text-sm text-teal-700 hover:underline"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar ao login
-          </a>
-        </div>
+
+        {etapa === "canal" && (
+          <div className="animate-in fade-in duration-300">
+            <h1 className="text-3xl font-black leading-tight tracking-tight">Como deseja receber?</h1>
+            <p className="mt-3 text-slate-500">Escolha por onde enviamos as instruções de recuperação.</p>
+
+            <div className="mt-8 space-y-3">
+              <button
+                onClick={() => {
+                  toast.success("Instruções enviadas pelo WhatsApp.");
+                  setEtapa("enviado");
+                }}
+                className="w-full rounded-2xl border border-slate-200 p-5 text-left transition-colors hover:border-teal-600"
+              >
+                <p className="font-semibold text-slate-900">WhatsApp</p>
+                <p className="mt-1 text-sm text-slate-500">(**) *****-4832</p>
+              </button>
+              <button
+                onClick={enviarPorEmail}
+                disabled={loading}
+                className="w-full rounded-2xl border border-slate-200 p-5 text-left transition-colors hover:border-teal-600"
+              >
+                <p className="flex items-center gap-2 font-semibold text-slate-900">
+                  E-mail {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  {valor.includes("@") ? mascararEmail(valor) : "a*****@gmail.com"}
+                </p>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {etapa === "enviado" && (
+          <div className="animate-in fade-in py-16 text-center duration-300">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-teal-50 text-3xl text-teal-700">
+              ✓
+            </div>
+            <h1 className="mt-6 text-2xl font-bold">Instruções enviadas</h1>
+            <p className="mt-2 text-slate-500">Confira sua caixa de entrada ou seu WhatsApp para continuar.</p>
+            <Button asChild className="mt-8 h-14 w-full rounded-xl bg-teal-700 text-white hover:bg-teal-800">
+              <Link to="/login">Voltar para o login</Link>
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
