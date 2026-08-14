@@ -66,8 +66,8 @@ function VendedorOnboarding() {
         ...prev,
         nomeCompleto: user.nome || '',
         email: user.email || '',
-        whatsapp: user.whatsapp || '',
-        cpf: user.cpf || '',
+        whatsapp: (user as any).whatsapp || '',
+        cpf: (user as any).cpf || '',
       }));
     }
   }, [user]);
@@ -83,7 +83,7 @@ function VendedorOnboarding() {
           endereco: `${addressData.endereco}, ${addressData.numero}${addressData.complemento ? ` - ${addressData.complemento}` : ""} - ${addressData.bairro}`,
           cidade: addressData.cidade,
           uf: addressData.uf,
-          cnhUrl: files.cnhFrente, // Simplified for now
+          cnhUrl: files.cnhFrente || undefined, // Simplified for now
           crlvUrl: files.crlv || undefined,
           selfieUrl: files.selfie || undefined,
           finalizar
