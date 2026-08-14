@@ -116,7 +116,10 @@ export const salvarRegraDepreciacaoFn = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data }) => {
     try {
+      const m = await import("@/db/admin.server");
+      await m.ensureAdminTables();
       const d = requireDb();
+
       if (data.id) {
         await d.execute(sql`
           UPDATE depreciacao_regras SET
