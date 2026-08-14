@@ -34,6 +34,22 @@ export async function ensureAdminTables() {
       );
     `);
 
+    // Tabela depreciacao_regras (se não existir)
+    await d.execute(sql`
+      CREATE TABLE IF NOT EXISTS depreciacao_regras (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        item_id uuid,
+        resposta text,
+        tipo_desconto text NOT NULL DEFAULT 'PERCENTUAL',
+        valor numeric(14,2) NOT NULL DEFAULT 0,
+        fator_leve numeric(14,2) DEFAULT 0.6,
+        fator_media numeric(14,2) DEFAULT 1.0,
+        fator_grave numeric(14,2) DEFAULT 1.8,
+        ativo boolean NOT NULL DEFAULT true,
+        criado_em timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+
     // Sementes iniciais
     await d.execute(sql`
       INSERT INTO configuracoes_sistema (chave, valor, descricao)
