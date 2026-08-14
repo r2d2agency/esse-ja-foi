@@ -83,7 +83,8 @@ function VendedorOnboarding() {
   const finalizeOnboarding = async () => {
     setIsSubmitting(true);
     try {
-      await updateDocs({
+      console.log("[Onboarding] Finalizando para perfil:", user?.id);
+      const res = await updateDocs({
         data: {
           perfilId: user?.id || "",
           cnhUrl: files.cnh || undefined,
@@ -92,8 +93,14 @@ function VendedorOnboarding() {
           finalizar: true
         }
       });
-      toast.success("Onboarding finalizado com sucesso!");
-      navigate({ to: '/vendedor' });
+      
+      if (res.ok) {
+        toast.success("Onboarding finalizado com sucesso!");
+        navigate({ to: '/vendedor' });
+      } else {
+        toast.error("Não foi possível finalizar o cadastro.");
+      }
+
     } catch (error: any) {
       toast.error(error.message || "Erro ao finalizar onboarding.");
     } finally {
