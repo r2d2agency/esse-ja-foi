@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getAnuncioPublico } from "@/lib/vitrine.functions";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, MapPin, Gauge, Lock, ArrowLeft, Fuel, Settings2, Info, CheckCircle2 } from "lucide-react";
+import { ShieldCheck, MapPin, Gauge, Lock, ArrowLeft, Fuel, Settings2, Info } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/veiculos/$slug")({
@@ -13,7 +13,7 @@ function DetalheVeiculoPublico() {
   const { slug } = Route.useParams();
   const { data: anuncio, isLoading } = useQuery({
     queryKey: ["anuncio-publico", slug],
-    queryFn: () => getAnuncioPublico(slug),
+    queryFn: () => getAnuncioPublico({ data: slug }),
   });
 
   const [activePhoto, setActivePhoto] = useState(0);
