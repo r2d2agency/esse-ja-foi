@@ -236,17 +236,17 @@ export async function getIndicadoresEntrega() {
 export async function agendarEntrega(params: {
   entrega_id: string;
   tipo_local: string;
-  local_nome?: string;
-  cep?: string; endereco?: string; numero?: string; complemento?: string;
-  bairro?: string; cidade?: string; uf?: string;
-  responsavel_recebimento?: string;
-  telefone_contato?: string;
-  orientacao?: string;
+  local_nome?: string | undefined;
+  cep?: string | undefined; endereco?: string | undefined; numero?: string | undefined; complemento?: string | undefined;
+  bairro?: string | undefined; cidade?: string | undefined; uf?: string | undefined;
+  responsavel_recebimento?: string | undefined;
+  telefone_contato?: string | undefined;
+  orientacao?: string | undefined;
   data_entrega: string;
   hora_inicio: string;
   hora_fim: string;
   admin_id: string;
-  motivo?: string;
+  motivo?: string | undefined;
 }) {
   const d = requireDb();
   const atual = await d.execute(sql`SELECT * FROM entregas WHERE id = ${params.entrega_id}::uuid`);
@@ -384,7 +384,7 @@ export async function listarEntregasVendedor(vendedorId: string) {
   return ((res as any).rows || []).map(semCodigo);
 }
 
-export async function iniciarEntrega(entregaId: string, vendedorId: string, coords?: { lat?: number; lng?: number }) {
+export async function iniciarEntrega(entregaId: string, vendedorId: string, coords?: { lat?: number | undefined; lng?: number | undefined }) {
   const d = requireDb();
   await d.execute(sql`
     UPDATE entregas SET status = 'EM_PROCESSO_DE_ENTREGA', iniciada_em = COALESCE(iniciada_em, now()), atualizado_em = now()
