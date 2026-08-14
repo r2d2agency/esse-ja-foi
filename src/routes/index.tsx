@@ -52,7 +52,7 @@ function LandingPage() {
               </Button>
             ) : (
               <>
-                <Link to="/auth">
+                <Link to="/login">
                   <Button variant="ghost" className="text-slate-600">Entrar</Button>
                 </Link>
                 <Link to="/comprador/cadastro">
