@@ -79,7 +79,10 @@ export const salvarConfiguracaoFn = createServerFn({ method: "POST" })
 export const listarRegrasDepreciacaoFn = createServerFn({ method: "GET" })
   .handler(async () => {
     try {
+      const m = await import("@/db/admin.server");
+      await m.ensureAdminTables();
       const d = requireDb();
+
       const regras = await d.execute(sql`
         SELECT r.*, i.titulo as item_titulo, i.categoria as item_categoria
         FROM depreciacao_regras r
