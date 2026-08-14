@@ -66,14 +66,11 @@ export async function ensureSuperAdmin(silent = true) {
   if (!db) {
     throw new Error("DATABASE_URL ausente.");
   }
-  if (!silent && process.env['NODE_ENV'] === 'development') console.log("[auth.server] ensureSuperAdmin iniciado...");
+  
   try {
     const adminModule = await import("./admin.server");
     const ensureAdminTables = adminModule.ensureAdminTables;
-    if (!silent && process.env['NODE_ENV'] === 'development') console.log("[auth.server] Garantindo tabelas e roles...");
-    // Garante que uma instalação nova consiga autenticar mesmo antes de qualquer
-    // acesso à aplicação. Todas as operações são idempotentes.
-    try {
+
     // Garante que o enum app_role exista e tenha todos os valores necessários
     await db.execute(sql`
       DO $$ 
@@ -99,18 +96,11 @@ export async function ensureSuperAdmin(silent = true) {
           END IF;
         END IF;
       EXCEPTION 
-        WHEN duplicate_object THEN NULL;
         WHEN others THEN 
           RAISE NOTICE 'Erro ao atualizar app_role: %', SQLERRM;
-          -- Tenta criar um por um se o bloco DO falhar
-          EXECUTE 'CREATE TYPE app_role AS ENUM (''admin'', ''operacao'', ''vistoriador'', ''comprador'', ''vendedor'')';
       END $$;
     `);
-  } catch (e) {
-    console.error("Erro crítico ao garantir app_role enum:", e);
-  }
 
-  try {
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS profiles (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -121,33 +111,20 @@ export async function ensureSuperAdmin(silent = true) {
         role app_role NOT NULL DEFAULT 'comprador',
         ativo boolean NOT NULL DEFAULT true,
         criado_em timestamp NOT NULL DEFAULT now(),
-        atualizado_em timestamp NOT NULL DEFAULT now()
+        atualizado_em timestamp NOT NULL DEFAULT now(),
+        senha_hash text,
+        protegido boolean NOT NULL DEFAULT false,
+        cpf text,
+        cep text,
+        endereco text,
+        cidade text,
+        uf text,
+        documento_cnh_url text,
+        documento_crlv_url text,
+        documento_selfie_url text,
+        cadastro_completo boolean NOT NULL DEFAULT false
       );
     `);
-    
-    const profileColumns = [
-      ["senha_hash", "text"],
-      ["protegido", "boolean NOT NULL DEFAULT false"],
-      ["cpf", "text"],
-      ["cep", "text"],
-      ["endereco", "text"],
-      ["cidade", "text"],
-      ["uf", "text"],
-      ["documento_cnh_url", "text"],
-      ["documento_crlv_url", "text"],
-      ["documento_selfie_url", "text"],
-      ["cadastro_completo", "boolean NOT NULL DEFAULT false"]
-    ];
-
-    for (const [name, type] of profileColumns) {
-      try {
-        await db.execute(sql.raw(`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ${name} ${type};`));
-      } catch (e) {
-        if (e instanceof Error && !e.message?.includes("already exists")) {
-          console.error(`Erro ao adicionar coluna ${name} em profiles:`, e);
-        }
-      }
-    }
   } catch (e) {
     console.error("Erro ao garantir tabela profiles:", e);
   }
@@ -161,26 +138,12 @@ export async function ensureSuperAdmin(silent = true) {
         modelo text NOT NULL,
         status text NOT NULL DEFAULT 'cadastrado',
         criado_em timestamp NOT NULL DEFAULT now(),
-        perfil_id uuid REFERENCES profiles(id)
+        perfil_id uuid REFERENCES profiles(id),
+        km integer,
+        valor_interesse_cliente numeric,
+        observacoes text
       );
     `);
-
-    const veiculoColumns = [
-      ["perfil_id", "uuid"],
-      ["km", "integer"],
-      ["valor_interesse_cliente", "numeric"],
-      ["observacoes", "text"]
-    ];
-
-    for (const [name, type] of veiculoColumns) {
-      try {
-        await db.execute(sql.raw(`ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS ${name} ${type};`));
-      } catch (e) {
-        if (e instanceof Error && !e.message?.includes("already exists")) {
-          console.error(`Erro ao adicionar coluna ${name} em veiculos:`, e);
-        }
-      }
-    }
   } catch (e) {
     console.error("Erro ao garantir tabela veiculos:", e);
   }
