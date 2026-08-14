@@ -75,9 +75,14 @@ function AdminDashboard() {
             { header: "Recebido em", accessor: (row) => (row['criado_em'] ? formatDate(row['criado_em']) : "—") },
           ]}
         />
-        <Link to="/operacao/leads" className="inline-block text-sm font-medium text-teal-700 hover:underline">
-          Ver todos os leads →
-        </Link>
+        <div className="flex gap-4">
+          <Link to="/operacao/leads" className="inline-block text-sm font-medium text-teal-700 hover:underline">
+            Ver todos os leads →
+          </Link>
+          <Link to="/admin/usuarios" className="inline-block text-sm font-medium text-amber-700 hover:underline">
+            Aprovar novos vendedores →
+          </Link>
+        </div>
 
         <DataTable
           title="Veículos recentes"

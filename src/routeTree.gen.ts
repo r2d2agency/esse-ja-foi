@@ -20,7 +20,9 @@ import { Route as VendedorRouteImport } from './routes/vendedor'
 import { Route as VenderRouteImport } from './routes/vender'
 import { Route as VistoriaRouteImport } from './routes/vistoria'
 import { Route as AdminChecklistRouteImport } from './routes/admin/checklist'
+import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configuracoes'
 import { Route as AdminDepreciacaoRouteImport } from './routes/admin/depreciacao'
+import { Route as AdminUsuariosRouteImport } from './routes/admin/usuarios'
 import { Route as CompradorIndexRouteImport } from './routes/comprador/index'
 import { Route as OperacaoAgendaRouteImport } from './routes/operacao/agenda'
 import { Route as OperacaoBiRouteImport } from './routes/operacao/bi'
@@ -89,9 +91,19 @@ const AdminChecklistRoute = AdminChecklistRouteImport.update({
   path: '/checklist',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminDepreciacaoRoute = AdminDepreciacaoRouteImport.update({
   id: '/depreciacao',
   path: '/depreciacao',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
   getParentRoute: () => AdminRoute,
 } as any)
 const CompradorIndexRoute = CompradorIndexRouteImport.update({
@@ -167,7 +179,9 @@ export interface FileRoutesByFullPath {
   '/vender': typeof VenderRoute
   '/vistoria': typeof VistoriaRouteWithChildren
   '/admin/checklist': typeof AdminChecklistRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/bi': typeof OperacaoBiRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
@@ -191,7 +205,9 @@ export interface FileRoutesByTo {
   '/vendedor': typeof VendedorRouteWithChildren
   '/vender': typeof VenderRoute
   '/admin/checklist': typeof AdminChecklistRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/bi': typeof OperacaoBiRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
@@ -218,7 +234,9 @@ export interface FileRoutesById {
   '/vender': typeof VenderRoute
   '/vistoria': typeof VistoriaRouteWithChildren
   '/admin/checklist': typeof AdminChecklistRoute
+  '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/bi': typeof OperacaoBiRoute
   '/operacao/clientes': typeof OperacaoClientesRoute
@@ -246,7 +264,9 @@ export interface FileRouteTypes {
     | '/vender'
     | '/vistoria'
     | '/admin/checklist'
+    | '/admin/configuracoes'
     | '/admin/depreciacao'
+    | '/admin/usuarios'
     | '/operacao/agenda'
     | '/operacao/bi'
     | '/operacao/clientes'
@@ -270,7 +290,9 @@ export interface FileRouteTypes {
     | '/vendedor'
     | '/vender'
     | '/admin/checklist'
+    | '/admin/configuracoes'
     | '/admin/depreciacao'
+    | '/admin/usuarios'
     | '/operacao/agenda'
     | '/operacao/bi'
     | '/operacao/clientes'
@@ -296,7 +318,9 @@ export interface FileRouteTypes {
     | '/vender'
     | '/vistoria'
     | '/admin/checklist'
+    | '/admin/configuracoes'
     | '/admin/depreciacao'
+    | '/admin/usuarios'
     | '/operacao/agenda'
     | '/operacao/bi'
     | '/operacao/clientes'
@@ -403,11 +427,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminChecklistRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/configuracoes': {
+      id: '/admin/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/admin/configuracoes'
+      preLoaderRoute: typeof AdminConfiguracoesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/depreciacao': {
       id: '/admin/depreciacao'
       path: '/depreciacao'
       fullPath: '/admin/depreciacao'
       preLoaderRoute: typeof AdminDepreciacaoRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/usuarios': {
+      id: '/admin/usuarios'
+      path: '/usuarios'
+      fullPath: '/admin/usuarios'
+      preLoaderRoute: typeof AdminUsuariosRouteImport
       parentRoute: typeof AdminRoute
     }
     '/comprador/': {
@@ -499,12 +537,16 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminChecklistRoute: typeof AdminChecklistRoute
+  AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminDepreciacaoRoute: typeof AdminDepreciacaoRoute
+  AdminUsuariosRoute: typeof AdminUsuariosRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminChecklistRoute: AdminChecklistRoute,
+  AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminDepreciacaoRoute: AdminDepreciacaoRoute,
+  AdminUsuariosRoute: AdminUsuariosRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
