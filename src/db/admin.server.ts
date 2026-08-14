@@ -10,27 +10,34 @@ function requireDb() {
 
 export async function ensureAdminTables() {
   const d = requireDb();
-  await d.execute(sql`
-    CREATE TABLE IF NOT EXISTS configuracoes_sistema (
-      chave text PRIMARY KEY,
-      valor text NOT NULL,
-      descricao text,
-      atualizado_em timestamptz NOT NULL DEFAULT now()
-    );
-  `);
+  console.log("[admin.server] Garantindo tabelas admin...");
+  try {
+    await d.execute(sql`
+      CREATE TABLE IF NOT EXISTS configuracoes_sistema (
+        chave text PRIMARY KEY,
+        valor text NOT NULL,
+        descricao text,
+        atualizado_em timestamptz NOT NULL DEFAULT now()
+      );
+    `);
 
-  // Sementes iniciais
-  await d.execute(sql`
-    INSERT INTO configuracoes_sistema (chave, valor, descricao)
-    VALUES 
-      ('smtp_host', '', 'Host do servidor SMTP'),
-      ('smtp_port', '587', 'Porta do servidor SMTP'),
-      ('smtp_user', '', 'Usuário do servidor SMTP'),
-      ('smtp_pass', '', 'Senha do servidor SMTP'),
-      ('openai_api_key', '', 'Chave de API da OpenAI'),
-      ('openai_model', 'gpt-4o', 'Modelo da OpenAI a ser utilizado')
-    ON CONFLICT (chave) DO NOTHING;
-  `);
+    // Sementes iniciais
+    await d.execute(sql`
+      INSERT INTO configuracoes_sistema (chave, valor, descricao)
+      VALUES 
+        ('smtp_host', '', 'Host do servidor SMTP'),
+        ('smtp_port', '587', 'Porta do servidor SMTP'),
+        ('smtp_user', '', 'Usuário do servidor SMTP'),
+        ('smtp_pass', '', 'Senha do servidor SMTP'),
+        ('openai_api_key', '', 'Chave de API da OpenAI'),
+        ('openai_model', 'gpt-4o', 'Modelo da OpenAI a ser utilizado')
+      ON CONFLICT (chave) DO NOTHING;
+    `);
+    console.log("[admin.server] Tabelas admin OK.");
+  } catch (err) {
+    console.error("[admin.server] Erro ao garantir tabelas admin:", err);
+    throw err;
+  }
 }
 
 export async function listarVendedoresPendentes() {
