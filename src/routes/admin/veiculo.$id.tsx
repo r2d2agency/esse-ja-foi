@@ -66,7 +66,7 @@ function DetalheVeiculoAdminPage() {
         toast.success("Você agora é o responsável por esta análise.", { id: toastId });
         refetch();
       } else {
-        toast.error(res.message, { id: toastId });
+        toast.error("Erro ao assumir análise", { id: toastId });
       }
     } catch (err) {
       toast.error("Erro técnico ao assumir análise.", { id: toastId });
