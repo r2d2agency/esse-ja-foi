@@ -392,6 +392,27 @@ export type Database = {
         }
         Relationships: []
       }
+      configuracoes_sistema: {
+        Row: {
+          atualizado_em: string
+          chave: string
+          descricao: string | null
+          valor: string
+        }
+        Insert: {
+          atualizado_em?: string
+          chave: string
+          descricao?: string | null
+          valor: string
+        }
+        Update: {
+          atualizado_em?: string
+          chave?: string
+          descricao?: string | null
+          valor?: string
+        }
+        Relationships: []
+      }
       lances: {
         Row: {
           comprador_id: string | null
