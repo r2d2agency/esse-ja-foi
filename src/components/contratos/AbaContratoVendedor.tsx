@@ -154,7 +154,7 @@ export function AbaContratoVendedor({ vendedorId }: { vendedorId: string }) {
   );
 }
 
-function Info({ titulo, valor }: { titulo: string; valor?: string | null }) {
+function Info({ titulo, valor }: { titulo: string; valor?: string | null | undefined }) {
   return (
     <div>
       <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{titulo}</p>
