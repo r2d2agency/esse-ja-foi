@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 
-export const Route = createFileRoute("/vendedor/veiculo//proposta")({
+export const Route = createFileRoute("/vendedor/veiculo/$id/proposta")({
   component: PropostaVendedorPage,
 });
 
