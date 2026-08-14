@@ -27,6 +27,7 @@ import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configura
 import { Route as AdminContratosRouteImport } from './routes/admin/contratos'
 import { Route as AdminLeiloesRouteImport } from './routes/admin/leiloes'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
+import { Route as AdminNegociacoesRouteImport } from './routes/admin/negociacoes'
 import { Route as AdminUsuariosRouteImport } from './routes/admin/usuarios'
 import { Route as AdminVeiculosRouteImport } from './routes/admin/veiculos'
 import { Route as AdminVendedoresRouteImport } from './routes/admin/vendedores'
@@ -34,6 +35,7 @@ import { Route as AdminVistoriasRouteImport } from './routes/admin/vistorias'
 import { Route as CompradorIndexRouteImport } from './routes/comprador/index'
 import { Route as CompradorCadastroRouteImport } from './routes/comprador.cadastro'
 import { Route as CompradorDocumentosRouteImport } from './routes/comprador/documentos'
+import { Route as CompradorNegociacoesRouteImport } from './routes/comprador/negociacoes'
 import { Route as CompradorPerfilRouteImport } from './routes/comprador/perfil'
 import { Route as VeiculosIndexRouteImport } from './routes/veiculos.index'
 import { Route as VeiculosSlugRouteImport } from './routes/veiculos.$slug'
@@ -53,6 +55,7 @@ import { Route as AdminAnaliseVistoriaIdRouteImport } from './routes/admin/anali
 import { Route as AdminCompradorIdRouteImport } from './routes/admin/comprador.$id'
 import { Route as AdminContratoIdRouteImport } from './routes/admin/contrato.$id'
 import { Route as AdminLeiloesIdRouteImport } from './routes/admin/leiloes.$id'
+import { Route as AdminNegociacaoIdRouteImport } from './routes/admin/negociacao.$id'
 import { Route as AdminVeiculoIdRouteImport } from './routes/admin/veiculo.$id'
 import { Route as AdminVendedorIdRouteImport } from './routes/admin/vendedor.$id'
 import { Route as VendedorVeiculoRouteImport } from './routes/vendedor.veiculo.'
@@ -152,6 +155,11 @@ const AdminLogsRoute = AdminLogsRouteImport.update({
   path: '/logs',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminNegociacoesRoute = AdminNegociacoesRouteImport.update({
+  id: '/negociacoes',
+  path: '/negociacoes',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
@@ -185,6 +193,11 @@ const CompradorCadastroRoute = CompradorCadastroRouteImport.update({
 const CompradorDocumentosRoute = CompradorDocumentosRouteImport.update({
   id: '/documentos',
   path: '/documentos',
+  getParentRoute: () => CompradorRoute,
+} as any)
+const CompradorNegociacoesRoute = CompradorNegociacoesRouteImport.update({
+  id: '/negociacoes',
+  path: '/negociacoes',
   getParentRoute: () => CompradorRoute,
 } as any)
 const CompradorPerfilRoute = CompradorPerfilRouteImport.update({
@@ -282,6 +295,11 @@ const AdminLeiloesIdRoute = AdminLeiloesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AdminLeiloesRoute,
 } as any)
+const AdminNegociacaoIdRoute = AdminNegociacaoIdRouteImport.update({
+  id: '/negociacao/$id',
+  path: '/negociacao/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminVeiculoIdRoute = AdminVeiculoIdRouteImport.update({
   id: '/veiculo/$id',
   path: '/veiculo/$id',
@@ -342,12 +360,14 @@ export interface FileRoutesByFullPath {
   '/admin/contratos': typeof AdminContratosRoute
   '/admin/leiloes': typeof AdminLeiloesRouteWithChildren
   '/admin/logs': typeof AdminLogsRoute
+  '/admin/negociacoes': typeof AdminNegociacoesRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
   '/admin/vistorias': typeof AdminVistoriasRoute
   '/comprador/cadastro': typeof CompradorCadastroRoute
   '/comprador/documentos': typeof CompradorDocumentosRoute
+  '/comprador/negociacoes': typeof CompradorNegociacoesRoute
   '/comprador/perfil': typeof CompradorPerfilRoute
   '/veiculos/$slug': typeof VeiculosSlugRoute
   '/vendedor/boas-vindas': typeof VendedorBoasVindasRoute
@@ -370,6 +390,7 @@ export interface FileRoutesByFullPath {
   '/admin/comprador/$id': typeof AdminCompradorIdRoute
   '/admin/contrato/$id': typeof AdminContratoIdRoute
   '/admin/leiloes/$id': typeof AdminLeiloesIdRoute
+  '/admin/negociacao/$id': typeof AdminNegociacaoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRouteWithChildren
@@ -391,12 +412,14 @@ export interface FileRoutesByTo {
   '/admin/contratos': typeof AdminContratosRoute
   '/admin/leiloes': typeof AdminLeiloesRouteWithChildren
   '/admin/logs': typeof AdminLogsRoute
+  '/admin/negociacoes': typeof AdminNegociacoesRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
   '/admin/vistorias': typeof AdminVistoriasRoute
   '/comprador/cadastro': typeof CompradorCadastroRoute
   '/comprador/documentos': typeof CompradorDocumentosRoute
+  '/comprador/negociacoes': typeof CompradorNegociacoesRoute
   '/comprador/perfil': typeof CompradorPerfilRoute
   '/veiculos/$slug': typeof VeiculosSlugRoute
   '/vendedor/boas-vindas': typeof VendedorBoasVindasRoute
@@ -419,6 +442,7 @@ export interface FileRoutesByTo {
   '/admin/comprador/$id': typeof AdminCompradorIdRoute
   '/admin/contrato/$id': typeof AdminContratoIdRoute
   '/admin/leiloes/$id': typeof AdminLeiloesIdRoute
+  '/admin/negociacao/$id': typeof AdminNegociacaoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRouteWithChildren
@@ -446,12 +470,14 @@ export interface FileRoutesById {
   '/admin/contratos': typeof AdminContratosRoute
   '/admin/leiloes': typeof AdminLeiloesRouteWithChildren
   '/admin/logs': typeof AdminLogsRoute
+  '/admin/negociacoes': typeof AdminNegociacoesRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
   '/admin/vistorias': typeof AdminVistoriasRoute
   '/comprador/cadastro': typeof CompradorCadastroRoute
   '/comprador/documentos': typeof CompradorDocumentosRoute
+  '/comprador/negociacoes': typeof CompradorNegociacoesRoute
   '/comprador/perfil': typeof CompradorPerfilRoute
   '/veiculos/$slug': typeof VeiculosSlugRoute
   '/vendedor/boas-vindas': typeof VendedorBoasVindasRoute
@@ -474,6 +500,7 @@ export interface FileRoutesById {
   '/admin/comprador/$id': typeof AdminCompradorIdRoute
   '/admin/contrato/$id': typeof AdminContratoIdRoute
   '/admin/leiloes/$id': typeof AdminLeiloesIdRoute
+  '/admin/negociacao/$id': typeof AdminNegociacaoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRouteWithChildren
@@ -502,12 +529,14 @@ export interface FileRouteTypes {
     | '/admin/contratos'
     | '/admin/leiloes'
     | '/admin/logs'
+    | '/admin/negociacoes'
     | '/admin/usuarios'
     | '/admin/veiculos'
     | '/admin/vendedores'
     | '/admin/vistorias'
     | '/comprador/cadastro'
     | '/comprador/documentos'
+    | '/comprador/negociacoes'
     | '/comprador/perfil'
     | '/veiculos/$slug'
     | '/vendedor/boas-vindas'
@@ -530,6 +559,7 @@ export interface FileRouteTypes {
     | '/admin/comprador/$id'
     | '/admin/contrato/$id'
     | '/admin/leiloes/$id'
+    | '/admin/negociacao/$id'
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
     | '/vendedor/veiculo/$id'
@@ -551,12 +581,14 @@ export interface FileRouteTypes {
     | '/admin/contratos'
     | '/admin/leiloes'
     | '/admin/logs'
+    | '/admin/negociacoes'
     | '/admin/usuarios'
     | '/admin/veiculos'
     | '/admin/vendedores'
     | '/admin/vistorias'
     | '/comprador/cadastro'
     | '/comprador/documentos'
+    | '/comprador/negociacoes'
     | '/comprador/perfil'
     | '/veiculos/$slug'
     | '/vendedor/boas-vindas'
@@ -579,6 +611,7 @@ export interface FileRouteTypes {
     | '/admin/comprador/$id'
     | '/admin/contrato/$id'
     | '/admin/leiloes/$id'
+    | '/admin/negociacao/$id'
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
     | '/vendedor/veiculo/$id'
@@ -605,12 +638,14 @@ export interface FileRouteTypes {
     | '/admin/contratos'
     | '/admin/leiloes'
     | '/admin/logs'
+    | '/admin/negociacoes'
     | '/admin/usuarios'
     | '/admin/veiculos'
     | '/admin/vendedores'
     | '/admin/vistorias'
     | '/comprador/cadastro'
     | '/comprador/documentos'
+    | '/comprador/negociacoes'
     | '/comprador/perfil'
     | '/veiculos/$slug'
     | '/vendedor/boas-vindas'
@@ -633,6 +668,7 @@ export interface FileRouteTypes {
     | '/admin/comprador/$id'
     | '/admin/contrato/$id'
     | '/admin/leiloes/$id'
+    | '/admin/negociacao/$id'
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
     | '/vendedor/veiculo/$id'
@@ -784,6 +820,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLogsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/negociacoes': {
+      id: '/admin/negociacoes'
+      path: '/negociacoes'
+      fullPath: '/admin/negociacoes'
+      preLoaderRoute: typeof AdminNegociacoesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/usuarios': {
       id: '/admin/usuarios'
       path: '/usuarios'
@@ -831,6 +874,13 @@ declare module '@tanstack/react-router' {
       path: '/documentos'
       fullPath: '/comprador/documentos'
       preLoaderRoute: typeof CompradorDocumentosRouteImport
+      parentRoute: typeof CompradorRoute
+    }
+    '/comprador/negociacoes': {
+      id: '/comprador/negociacoes'
+      path: '/negociacoes'
+      fullPath: '/comprador/negociacoes'
+      preLoaderRoute: typeof CompradorNegociacoesRouteImport
       parentRoute: typeof CompradorRoute
     }
     '/comprador/perfil': {
@@ -966,6 +1016,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLeiloesIdRouteImport
       parentRoute: typeof AdminLeiloesRoute
     }
+    '/admin/negociacao/$id': {
+      id: '/admin/negociacao/$id'
+      path: '/negociacao/$id'
+      fullPath: '/admin/negociacao/$id'
+      preLoaderRoute: typeof AdminNegociacaoIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/veiculo/$id': {
       id: '/admin/veiculo/$id'
       path: '/veiculo/$id'
@@ -1056,6 +1113,7 @@ interface AdminRouteChildren {
   AdminContratosRoute: typeof AdminContratosRoute
   AdminLeiloesRoute: typeof AdminLeiloesRouteWithChildren
   AdminLogsRoute: typeof AdminLogsRoute
+  AdminNegociacoesRoute: typeof AdminNegociacoesRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminVeiculosRoute: typeof AdminVeiculosRoute
   AdminVendedoresRoute: typeof AdminVendedoresRoute
@@ -1064,6 +1122,7 @@ interface AdminRouteChildren {
   AdminAnaliseVistoriaIdRoute: typeof AdminAnaliseVistoriaIdRoute
   AdminCompradorIdRoute: typeof AdminCompradorIdRoute
   AdminContratoIdRoute: typeof AdminContratoIdRoute
+  AdminNegociacaoIdRoute: typeof AdminNegociacaoIdRoute
   AdminVeiculoIdRoute: typeof AdminVeiculoIdRoute
   AdminVendedorIdRoute: typeof AdminVendedorIdRoute
 }
@@ -1075,6 +1134,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminContratosRoute: AdminContratosRoute,
   AdminLeiloesRoute: AdminLeiloesRouteWithChildren,
   AdminLogsRoute: AdminLogsRoute,
+  AdminNegociacoesRoute: AdminNegociacoesRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
   AdminVeiculosRoute: AdminVeiculosRoute,
   AdminVendedoresRoute: AdminVendedoresRoute,
@@ -1083,6 +1143,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAnaliseVistoriaIdRoute: AdminAnaliseVistoriaIdRoute,
   AdminCompradorIdRoute: AdminCompradorIdRoute,
   AdminContratoIdRoute: AdminContratoIdRoute,
+  AdminNegociacaoIdRoute: AdminNegociacaoIdRoute,
   AdminVeiculoIdRoute: AdminVeiculoIdRoute,
   AdminVendedorIdRoute: AdminVendedorIdRoute,
 }
@@ -1092,6 +1153,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 interface CompradorRouteChildren {
   CompradorCadastroRoute: typeof CompradorCadastroRoute
   CompradorDocumentosRoute: typeof CompradorDocumentosRoute
+  CompradorNegociacoesRoute: typeof CompradorNegociacoesRoute
   CompradorPerfilRoute: typeof CompradorPerfilRoute
   CompradorIndexRoute: typeof CompradorIndexRoute
 }
@@ -1099,6 +1161,7 @@ interface CompradorRouteChildren {
 const CompradorRouteChildren: CompradorRouteChildren = {
   CompradorCadastroRoute: CompradorCadastroRoute,
   CompradorDocumentosRoute: CompradorDocumentosRoute,
+  CompradorNegociacoesRoute: CompradorNegociacoesRoute,
   CompradorPerfilRoute: CompradorPerfilRoute,
   CompradorIndexRoute: CompradorIndexRoute,
 }

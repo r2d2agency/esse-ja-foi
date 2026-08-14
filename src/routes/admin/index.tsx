@@ -15,6 +15,7 @@ import {
   Calendar
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
+import { listarNegociacoesAdminFn } from "@/lib/negociacoes.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -80,7 +81,10 @@ function AdminDashboard() {
         ))}
       </div>
 
+      <IndicadoresNegociacao />
+
       {/* Funil Operacional */}
+
       <section className="space-y-4">
         <h2 className="text-sm font-black text-slate-950 uppercase tracking-wider flex items-center gap-2">
           Fluxo da operação
@@ -183,6 +187,33 @@ function AdminDashboard() {
           </Card>
         </section>
       </div>
+    </div>
+  );
+}
+
+function IndicadoresNegociacao() {
+  const { data } = useQuery({
+    queryKey: ["admin-indicadores-negociacao"],
+    queryFn: async () => (await listarNegociacoesAdminFn({ data: undefined })) as any,
+    refetchInterval: 60000,
+  });
+  const ind = data?.indicadores || {};
+  const cards = [
+    { label: "Aguardando pagamento", value: ind.aguardando_pagamento ?? 0, cor: "text-amber-600" },
+    { label: "Pagamentos vencidos", value: ind.pagamentos_vencidos ?? 0, cor: "text-red-600" },
+  ];
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      {cards.map((c) => (
+        <Link
+          key={c.label}
+          to="/admin/negociacoes"
+          className="flex flex-col rounded-xl border border-slate-200 bg-white p-4 transition-all hover:border-teal-500"
+        >
+          <p className={cn("text-2xl font-black", c.cor)}>{c.value}</p>
+          <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">{c.label}</p>
+        </Link>
+      ))}
     </div>
   );
 }
