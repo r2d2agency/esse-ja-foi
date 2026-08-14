@@ -63,48 +63,35 @@ export async function ensureCadastroSchema(silent = true) {
       marca text NOT NULL,
       modelo text NOT NULL,
       status text NOT NULL DEFAULT 'CADASTRADO',
-      criado_em timestamptz NOT NULL DEFAULT now()
+      perfil_id uuid,
+      cliente_id uuid,
+      ano_fabricacao text,
+      ano_modelo text,
+      versao text,
+      cor text,
+      km integer,
+      combustivel text,
+      cambio text,
+      valor_fipe numeric(12,2),
+      valor_interesse_cliente numeric(12,2),
+      tipo_expectativa text,
+      percentual_sobre_fipe numeric(8,2),
+      alerta_expectativa boolean NOT NULL DEFAULT false,
+      ciente_expectativa boolean NOT NULL DEFAULT false,
+      cep text,
+      endereco text,
+      cidade text,
+      uf text,
+      latitude numeric(10,7),
+      longitude numeric(10,7),
+      observacoes text,
+      fotos jsonb,
+      atualizado_em timestamptz NOT NULL DEFAULT now(),
+      criado_em timestamptz NOT NULL DEFAULT now(),
+      status_analise text DEFAULT 'AGUARDANDO_ANALISE'
     );
   `);
-
-  const cols: Array<[string, string]> = [
-    ["perfil_id", "uuid"],
-    ["cliente_id", "uuid"],
-    ["ano_fabricacao", "text"],
-    ["ano_modelo", "text"],
-    ["versao", "text"],
-    ["cor", "text"],
-    ["km", "integer"],
-    ["combustivel", "text"],
-    ["cambio", "text"],
-    ["valor_fipe", "numeric(12,2)"],
-    ["valor_interesse_cliente", "numeric(12,2)"],
-    ["tipo_expectativa", "text"],
-    ["percentual_sobre_fipe", "numeric(8,2)"],
-    ["alerta_expectativa", "boolean NOT NULL DEFAULT false"],
-    ["ciente_expectativa", "boolean NOT NULL DEFAULT false"],
-    ["cep", "text"],
-    ["endereco", "text"],
-    ["cidade", "text"],
-    ["uf", "text"],
-    ["latitude", "numeric(10,7)"],
-    ["longitude", "numeric(10,7)"],
-    ["observacoes", "text"],
-    ["fotos", "jsonb"],
-    ["atualizado_em", "timestamptz NOT NULL DEFAULT now()"],
-  ];
   
-  // Use a transaction for stability and catch errors per column to avoid halting on existing ones
-  for (const [name, type] of cols) {
-    try {
-      await d.execute(sql.raw(`ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS ${name} ${type};`));
-    } catch (e) {
-      // Silenciar erros de "already exists" (PostgreSQL 9.6+ supports IF NOT EXISTS, but just in case)
-      if (e instanceof Error && !e.message?.includes("already exists")) {
-        console.error(`Erro ao adicionar coluna ${name}:`, e);
-      }
-    }
-  }
   await d.execute(sql`ALTER TABLE veiculos ALTER COLUMN status SET DEFAULT 'CADASTRADO';`);
   await d.execute(sql`UPDATE veiculos SET placa = upper(placa) WHERE placa <> upper(placa);`);
   await d.execute(sql`UPDATE veiculos SET status = upper(status) WHERE status <> upper(status);`);
