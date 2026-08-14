@@ -84,22 +84,20 @@ export const listarMeusVeiculosFn = createServerFn({ method: "GET" })
   });
 
 export const cadastrarMeuVeiculoFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => z.object({
-    data: z.object({
-      perfilId: z.string().uuid(),
-      placa: z.string().min(7),
-      marca: z.string().min(2),
-      modelo: z.string().min(2),
-      anoFabricacao: z.string().optional(),
-      anoModelo: z.string().optional(),
-      km: z.number().optional(),
-      valorInteresse: z.number().optional(),
-      opcionais: z.array(z.string()).optional(),
-      observacoes: z.string().optional(),
-      fotos: z.array(z.string()).optional(),
-    })
-  }).parse(d))
-  .handler(async ({ data: { data } }) => {
+  .inputValidator(z.object({
+    perfilId: z.string().uuid(),
+    placa: z.string().min(7),
+    marca: z.string().min(2),
+    modelo: z.string().min(2),
+    anoFabricacao: z.string().optional(),
+    anoModelo: z.string().optional(),
+    km: z.number().optional(),
+    valorInteresse: z.number().optional(),
+    opcionais: z.array(z.string()).optional(),
+    observacoes: z.string().optional(),
+    fotos: z.array(z.string()).optional(),
+  }))
+  .handler(async ({ data }) => {
     const { salvarVeiculo } = await import("@/db/cadastro.server");
     return await salvarVeiculo({
       ...data,
