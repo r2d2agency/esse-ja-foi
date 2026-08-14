@@ -7,7 +7,7 @@ import {
   getEstadoLeilao, 
   processarCicloLeiloes,
   listarLeiloesAdmin
-} from "./leilao.server";
+} from "../db/leilao.server";
 
 export const initLeilaoModule = createServerFn({ method: "POST" })
   .handler(async () => {
@@ -28,14 +28,13 @@ export const darLanceFn = createServerFn({ method: "POST" })
     valor: z.number().positive(),
   }).parse(data))
   .handler(async ({ data, request }) => {
-    // Pegar ID do usuário do contexto de auth (simulado aqui pois middleware de auth não foi passado no prompt)
-    // Em uma app real, usaríamos o middleware que anexa o user ao contexto
-    // Por enquanto, vamos assumir que o frontend envia o ID ou pegamos do cookie/header se disponível
-    // Mas a instrução diz "Não alterar os módulos já desenvolvidos", então usaremos o que temos.
-    
-    // Em TanStack Start, podemos acessar os headers
-    const userId = request.headers.get("x-user-id"); // Exemplo
-    if (!userId) throw new Error("Usuário não autenticado");
+    // Pegar ID do usuário dos headers ou cookies
+    // Em TanStack Start, podemos acessar o request
+    const userId = request.headers.get("x-user-id"); 
+    if (!userId) {
+      // Tentar buscar da sessão se possível, ou retornar erro
+      throw new Error("Usuário não autenticado ou ID não enviado");
+    }
 
     const ip = request.headers.get("x-forwarded-for") || "unknown";
     const ua = request.headers.get("user-agent") || "unknown";
