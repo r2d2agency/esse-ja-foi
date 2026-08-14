@@ -31,7 +31,8 @@ let prepared = false;
 export async function ensureCadastroSchema(silent = true) {
   if (prepared) return;
   const d = requireDb();
-  if (!silent) console.log("[cadastro.server] Garantindo schema cadastro...");
+  // Silenciando logs de inicialização de schema por padrão
+  if (!silent && process.env.NODE_ENV === 'development') console.log("[cadastro.server] Garantindo schema cadastro...");
 
 
   await d.execute(sql`
@@ -98,8 +99,8 @@ export async function ensureCadastroSchema(silent = true) {
     try {
       await d.execute(sql.raw(`ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS ${name} ${type};`));
     } catch (e) {
-      // Ignore "already exists" errors (PostgreSQL 9.6+ supports IF NOT EXISTS, but just in case)
-      if (!(e as any).message?.includes("already exists")) {
+      // Silenciar erros de "already exists" (PostgreSQL 9.6+ supports IF NOT EXISTS, but just in case)
+      if (e instanceof Error && !e.message?.includes("already exists")) {
         console.error(`Erro ao adicionar coluna ${name}:`, e);
       }
     }
