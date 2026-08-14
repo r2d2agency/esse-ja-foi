@@ -164,7 +164,7 @@ function CompradoresPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Link to="/admin/comprador/$id" params={{ id: c.id }}>
+                    <Link to="/admin/comprador/$id" params={{ id: c.id } as any}>
                       <Button variant="ghost" size="sm" className="text-teal-600 font-bold text-xs group">
                         Ver detalhes <ChevronRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
                       </Button>

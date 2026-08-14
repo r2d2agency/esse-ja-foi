@@ -135,9 +135,15 @@ function LoginPage() {
 
           <p className="mt-6 text-center text-sm text-slate-500">
             Ainda não possui conta?{" "}
-            <Link to="/cadastro" className="font-semibold text-teal-700 underline-offset-4 hover:underline">
-              Criar cadastro
-            </Link>
+            <div className="flex justify-center gap-4 mt-2">
+              <Link to="/cadastro" className="font-semibold text-teal-700 underline-offset-4 hover:underline">
+                Vendedor
+              </Link>
+              <span className="text-slate-300">|</span>
+              <Link to="/comprador/cadastro" className="font-semibold text-teal-700 underline-offset-4 hover:underline">
+                Comprador
+              </Link>
+            </div>
           </p>
         </div>
       </div>
