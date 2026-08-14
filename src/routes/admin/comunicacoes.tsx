@@ -767,6 +767,98 @@ function ComunicacoesPage() {
             </div>
           </TabsContent>
 
+          {/* Segmentos */}
+          <TabsContent value="segmentos" className="mt-6 space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-semibold">Segmentos de Compradores</h2>
+                <p className="text-sm text-muted-foreground">Crie públicos dinâmicos baseados em filtros ou listas manuais</p>
+              </div>
+              <Button className="bg-teal-600 hover:bg-teal-700">
+                <Plus className="w-4 h-4 mr-2" /> Novo Segmento
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-md">Segmentos Ativos</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-50 border-b">
+                        <tr>
+                          <th className="px-4 py-3 text-left">Nome</th>
+                          <th className="px-4 py-3 text-left">Tipo</th>
+                          <th className="px-4 py-3 text-right">Contatos</th>
+                          <th className="px-4 py-3 text-right">Elegíveis</th>
+                          <th className="px-4 py-3"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        <tr className="hover:bg-slate-50">
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col">
+                              <span className="font-bold">Lojistas VIP - São Paulo</span>
+                              <span className="text-[10px] text-muted-foreground">Filtro: PJ + SP</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3"><Badge variant="outline">Dinâmico</Badge></td>
+                          <td className="px-4 py-3 text-right">142</td>
+                          <td className="px-4 py-3 text-right text-teal-600 font-bold">128</td>
+                          <td className="px-4 py-3 text-right">
+                            <Button variant="ghost" size="icon"><ChevronRight className="w-4 h-4" /></Button>
+                          </td>
+                        </tr>
+                        <tr className="hover:bg-slate-50">
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col">
+                              <span className="font-bold">Interessados SUVs Premium</span>
+                              <span className="text-[10px] text-muted-foreground">Filtro: Interesse SUV + > 2018</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3"><Badge variant="outline">Dinâmico</Badge></td>
+                          <td className="px-4 py-3 text-right">86</td>
+                          <td className="px-4 py-3 text-right text-teal-600 font-bold">74</td>
+                          <td className="px-4 py-3 text-right">
+                            <Button variant="ghost" size="icon"><ChevronRight className="w-4 h-4" /></Button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-md">Bibliotecas de Filtros</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium">Por Tipo</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary" className="cursor-pointer">Lojista</Badge>
+                        <Badge variant="secondary" className="cursor-pointer">Pessoa Física</Badge>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium">Por Interesse</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary" className="cursor-pointer">SUV</Badge>
+                        <Badge variant="secondary" className="cursor-pointer">Sedan</Badge>
+                        <Badge variant="secondary" className="cursor-pointer">Hatch</Badge>
+                        <Badge variant="secondary" className="cursor-pointer">Picape</Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+
           {/* Templates */}
           <TabsContent value="templates" className="mt-6 space-y-4">
             <div className="flex justify-between items-center">
