@@ -337,81 +337,65 @@ function CompradorIndex() {
                     </form>
                   ) : (
                     <div className="space-y-6">
-                      {wizardStep === 1 && (
-                        <form onSubmit={handleCadastro} className="space-y-4">
+                      <form onSubmit={handleCadastro} className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Nome Completo</label>
+                          <Input 
+                            required
+                            value={formData.nome}
+                            onChange={(e) => setFormData({...formData, nome: e.target.value})}
+                            placeholder="Seu nome" 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">WhatsApp</label>
+                          <Input 
+                            required
+                            value={formData.whatsapp}
+                            onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
+                            placeholder="(00) 00000-0000" 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">E-mail</label>
+                          <Input 
+                            required
+                            type="email"
+                            value={formData.email}
+                            onChange={(e) => setFormData({...formData, email: e.target.value})}
+                            placeholder="seu@email.com" 
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <label className="text-sm font-medium">Nome Completo</label>
+                            <label className="text-sm font-medium">Criar Senha</label>
                             <Input 
                               required
-                              value={formData.nome}
-                              onChange={(e) => setFormData({...formData, nome: e.target.value})}
-                              placeholder="Seu nome" 
+                              type="password"
+                              value={formData.password}
+                              onChange={(e) => setFormData({...formData, password: e.target.value})}
+                              placeholder="••••••••" 
                             />
                           </div>
                           <div className="space-y-2">
-                            <label className="text-sm font-medium">WhatsApp</label>
+                            <label className="text-sm font-medium">Confirmar Senha</label>
                             <Input 
                               required
-                              value={formData.whatsapp}
-                              onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
-                              placeholder="(00) 00000-0000" 
+                              type="password"
+                              placeholder="••••••••" 
                             />
                           </div>
-                          <Button className="w-full bg-teal-900 hover:bg-teal-950 text-white font-bold h-12">
-                            Próximo Passo
-                          </Button>
-                        </form>
-                      )}
-
-                      {wizardStep === 2 && (
-                        <form onSubmit={handleCadastro} className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">CPF</label>
-                              <Input 
-                                required
-                                value={formData.cpf}
-                                onChange={(e) => setFormData({...formData, cpf: e.target.value})}
-                                placeholder="000.000.000-00" 
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">E-mail</label>
-                              <Input 
-                                required
-                                type="email"
-                                value={formData.email}
-                                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                                placeholder="seu@email.com" 
-                              />
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-2 col-span-1">
-                              <label className="text-sm font-medium">CEP</label>
-                              <Input 
-                                required
-                                value={formData.cep}
-                                onChange={(e) => handleCepChange(e.target.value)}
-                                placeholder="00000-000" 
-                              />
-                            </div>
-                            <div className="space-y-2 col-span-2">
-                              <label className="text-sm font-medium">Logradouro</label>
-                              <Input 
-                                required
-                                value={formData.endereco}
-                                onChange={(e) => setFormData({...formData, endereco: e.target.value})}
-                                placeholder="Rua, Av, etc" 
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-4 gap-4">
-                            <div className="space-y-2 col-span-1">
-                              <label className="text-sm font-medium">Número</label>
-                              <Input 
+                        </div>
+                        
+                        <Button 
+                          disabled={isSubmitting}
+                          className="w-full bg-teal-900 hover:bg-teal-950 text-white font-bold h-12"
+                        >
+                          {isSubmitting ? "Processando..." : "Criar Minha Conta"}
+                        </Button>
+                      </form>
+                    </div>
+                  )}
                                 required
                                 value={formData.numero}
                                 onChange={(e) => setFormData({...formData, numero: e.target.value})}
