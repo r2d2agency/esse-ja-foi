@@ -1,13 +1,17 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getVeiculoDetalheAdminFn, assumirAnaliseVeiculoFn, atualizarStatusAnaliseFn } from "@/lib/admin-veiculo-detalhe.functions";
+import { salvarConfiguracaoLeilao } from "@/lib/leilao.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Car, 
@@ -26,7 +30,8 @@ import {
   Eye,
   RotateCcw,
   Maximize2,
-  Calendar
+  Calendar,
+  Gavel
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -241,7 +246,12 @@ function DetalheVeiculoAdminPage() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {v.status_analise === 'APROVADO' && (
+                  <AuctionConfigCard veiculo={v} />
+                )}
               </TabsContent>
+
 
               <TabsContent value="dados" className="mt-0">
                 <Card className="border-slate-200 shadow-none">
@@ -434,5 +444,98 @@ function DetalheVeiculoAdminPage() {
         </Tabs>
       </div>
     </div>
+  );
+}
+
+function AuctionConfigCard({ veiculo }: { veiculo: any }) {
+  const queryClient = useQueryClient();
+  const [config, setConfig] = useState({
+    lance_inicial: veiculo.valor_anuncio || 0,
+    incremento_minimo: 500,
+    inicio_em: new Date().toISOString().slice(0, 16),
+    fim_em: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+    prorrogacao_ativa: true,
+    prorrogacao_janela_segundos: 120,
+    prorrogacao_tempo_segundos: 120,
+  });
+
+  const mutation = useMutation({
+    mutationFn: (data: any) => salvarConfiguracaoLeilao({ data }),
+    onSuccess: () => {
+      toast.success("Leilão configurado com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["admin-veiculo-detalhe", veiculo.id] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Erro ao configurar leilão.");
+    }
+  });
+
+  return (
+    <Card className="border-teal-100 bg-teal-50/30 shadow-none mt-6">
+      <CardHeader className="pb-3 border-b border-teal-100/50">
+        <CardTitle className="text-xs font-black uppercase text-teal-600 flex items-center gap-2">
+          <Gavel className="h-3 w-3" /> Configurar Leilão Competitivo
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-6 space-y-6">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label className="text-[10px] font-bold uppercase text-slate-500">Lance Inicial (R$)</Label>
+            <Input 
+              type="number" 
+              value={config.lance_inicial} 
+              onChange={e => setConfig({...config, lance_inicial: Number(e.target.value)})}
+              className="bg-white"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-[10px] font-bold uppercase text-slate-500">Incremento Mínimo (R$)</Label>
+            <Input 
+              type="number" 
+              value={config.incremento_minimo} 
+              onChange={e => setConfig({...config, incremento_minimo: Number(e.target.value)})}
+              className="bg-white"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-[10px] font-bold uppercase text-slate-500">Início</Label>
+            <Input 
+              type="datetime-local" 
+              value={config.inicio_em} 
+              onChange={e => setConfig({...config, inicio_em: e.target.value})}
+              className="bg-white"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-[10px] font-bold uppercase text-slate-500">Encerramento</Label>
+            <Input 
+              type="datetime-local" 
+              value={config.fim_em} 
+              onChange={e => setConfig({...config, fim_em: e.target.value})}
+              className="bg-white"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-teal-100">
+          <div className="space-y-0.5">
+            <Label className="text-xs font-bold text-slate-700">Prorrogação Automática (Anti-Sniping)</Label>
+            <p className="text-[10px] text-slate-500">Adiciona tempo se houver lances no final.</p>
+          </div>
+          <Switch 
+            checked={config.prorrogacao_ativa} 
+            onCheckedChange={checked => setConfig({...config, prorrogacao_ativa: checked})} 
+          />
+        </div>
+
+        <Button 
+          onClick={() => mutation.mutate({ ...config, anuncio_id: veiculo.anuncio_id || veiculo.id })}
+          disabled={mutation.isPending}
+          className="w-full bg-teal-600 hover:bg-teal-700 text-white font-black uppercase tracking-tight h-12"
+        >
+          {mutation.isPending ? "Configurando..." : "Ativar Leilão Agora"}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
