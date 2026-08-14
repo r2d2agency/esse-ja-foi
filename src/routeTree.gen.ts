@@ -27,6 +27,7 @@ import { Route as AdminContratosRouteImport } from './routes/admin/contratos'
 import { Route as AdminDepreciacaoRouteImport } from './routes/admin/depreciacao'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
 import { Route as AdminUsuariosRouteImport } from './routes/admin/usuarios'
+import { Route as AdminVeiculosRouteImport } from './routes/admin/veiculos'
 import { Route as AdminVendedoresRouteImport } from './routes/admin/vendedores'
 import { Route as CompradorIndexRouteImport } from './routes/comprador/index'
 import { Route as OperacaoAgendaRouteImport } from './routes/operacao/agenda'
@@ -141,6 +142,11 @@ const AdminLogsRoute = AdminLogsRouteImport.update({
 const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminVeiculosRoute = AdminVeiculosRouteImport.update({
+  id: '/veiculos',
+  path: '/veiculos',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminVendedoresRoute = AdminVendedoresRouteImport.update({
@@ -287,6 +293,7 @@ export interface FileRoutesByFullPath {
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
+  '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/bi': typeof OperacaoBiRoute
@@ -328,6 +335,7 @@ export interface FileRoutesByTo {
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
+  '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/bi': typeof OperacaoBiRoute
@@ -374,6 +382,7 @@ export interface FileRoutesById {
   '/admin/depreciacao': typeof AdminDepreciacaoRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
+  '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
   '/operacao/agenda': typeof OperacaoAgendaRoute
   '/operacao/bi': typeof OperacaoBiRoute
@@ -421,6 +430,7 @@ export interface FileRouteTypes {
     | '/admin/depreciacao'
     | '/admin/logs'
     | '/admin/usuarios'
+    | '/admin/veiculos'
     | '/admin/vendedores'
     | '/operacao/agenda'
     | '/operacao/bi'
@@ -462,6 +472,7 @@ export interface FileRouteTypes {
     | '/admin/depreciacao'
     | '/admin/logs'
     | '/admin/usuarios'
+    | '/admin/veiculos'
     | '/admin/vendedores'
     | '/operacao/agenda'
     | '/operacao/bi'
@@ -507,6 +518,7 @@ export interface FileRouteTypes {
     | '/admin/depreciacao'
     | '/admin/logs'
     | '/admin/usuarios'
+    | '/admin/veiculos'
     | '/admin/vendedores'
     | '/operacao/agenda'
     | '/operacao/bi'
@@ -675,6 +687,13 @@ declare module '@tanstack/react-router' {
       path: '/usuarios'
       fullPath: '/admin/usuarios'
       preLoaderRoute: typeof AdminUsuariosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/veiculos': {
+      id: '/admin/veiculos'
+      path: '/veiculos'
+      fullPath: '/admin/veiculos'
+      preLoaderRoute: typeof AdminVeiculosRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/vendedores': {
@@ -862,6 +881,7 @@ interface AdminRouteChildren {
   AdminDepreciacaoRoute: typeof AdminDepreciacaoRoute
   AdminLogsRoute: typeof AdminLogsRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
+  AdminVeiculosRoute: typeof AdminVeiculosRoute
   AdminVendedoresRoute: typeof AdminVendedoresRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminContratoIdRoute: typeof AdminContratoIdRoute
@@ -875,6 +895,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDepreciacaoRoute: AdminDepreciacaoRoute,
   AdminLogsRoute: AdminLogsRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
+  AdminVeiculosRoute: AdminVeiculosRoute,
   AdminVendedoresRoute: AdminVendedoresRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminContratoIdRoute: AdminContratoIdRoute,

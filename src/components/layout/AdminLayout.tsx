@@ -42,7 +42,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 const MENU_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, to: "/admin" },
   { label: "Vendedores", icon: Users, to: "/admin/vendedores" },
-  { label: "Veículos", icon: Car, to: "/operacao/veiculos" },
+  { label: "Veículos", icon: Car, to: "/admin/veiculos" },
   { label: "Compliance", icon: ShieldCheck, to: "/admin/vendedores" },
   { label: "Contratos", icon: FileText, to: "/admin/contratos" },
   { label: "Configurações", icon: Settings, to: "/admin/configuracoes" },

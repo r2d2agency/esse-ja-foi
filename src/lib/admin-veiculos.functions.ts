@@ -9,7 +9,10 @@ export const getVeiculosAdminFn = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { listarVeiculosAdmin, ensureVeiculosAdminSchema } = await import("@/db/admin-veiculos.server");
     await ensureVeiculosAdminSchema();
-    const veiculos = await listarVeiculosAdmin(data);
+    const veiculos = await listarVeiculosAdmin({
+      busca: data.busca ?? undefined,
+      status_analise: data.status_analise ?? undefined,
+    });
     return { ok: true as const, data: veiculos };
   });
 
