@@ -135,7 +135,7 @@ function DetalheVeiculoAdminPage() {
           <Button 
             variant="outline" 
             className="font-bold border-teal-200 text-teal-700 hover:bg-teal-50"
-            onClick={() => navigate({ to: "/admin/comunicacoes" })}
+            onClick={() => navigate({ to: "/admin/comunicacoes" as any })}
           >
             <MessageSquare className="mr-2 h-4 w-4" /> Divulgar no WhatsApp
           </Button>
