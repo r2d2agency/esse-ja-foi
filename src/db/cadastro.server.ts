@@ -386,7 +386,7 @@ export async function salvarVeiculo(input: VeiculoInput) {
   const rows = (await d.execute(sql`
     INSERT INTO veiculos (placa, marca, modelo, versao, cor, km, ano_fabricacao, ano_modelo, combustivel, cambio,
       cliente_id, valor_fipe, valor_interesse_cliente, tipo_expectativa, percentual_sobre_fipe, alerta_expectativa,
-      ciente_expectativa, cep, endereco, cidade, uf, latitude, longitude, observacoes, perfil_id, fotos, status)
+      ciente_expectativa, cep, endereco, cidade, uf, latitude, longitude, observacoes, perfil_id, fotos, status, status_analise)
     VALUES (${base.placa}, ${base.marca}, ${base.modelo}, ${base.versao}, ${base.cor}, ${base.km},
       ${base.anoFabricacao}, ${base.anoModelo}, ${base.combustivel}, ${base.cambio}, ${base.clienteId},
       ${base.fipe}, ${base.interesse}, ${base.tipoExpectativa}, ${base.percentual}, ${base.alerta},
