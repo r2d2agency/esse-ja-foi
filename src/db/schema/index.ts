@@ -91,3 +91,12 @@ export const lancesRelations = relations(lances, ({ one }) => ({
   }),
 }));
 
+
+export const veiculoTimeline = pgTable('veiculo_timeline', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  veiculo_id: uuid('veiculo_id').references(() => veiculos.id).notNull(),
+  tipo: text('tipo').notNull(),
+  descricao: text('descricao').notNull(),
+  responsavel_id: uuid('responsavel_id').references(() => profiles.id),
+  criado_em: timestamp('criado_em').defaultNow().notNull(),
+});
