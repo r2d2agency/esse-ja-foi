@@ -154,6 +154,54 @@ function ComunicacoesPage() {
     queryFn: () => getTemplates()
   });
 
+  const { data: anuncios } = useQuery({
+    queryKey: ['anuncios-ativos'],
+    queryFn: () => getAnuncios('PUBLICADO')
+  });
+
+  const handleEstimar = async () => {
+    const res = await estimarPublico(novaCampanha.filtros);
+    setEstimativa(res);
+  };
+
+  const handleSalvarCampanha = async (enviarAgora = false) => {
+    toast.promise(criarCampanha(novaCampanha), {
+      loading: 'Salvando campanha...',
+      success: (res: any) => {
+        if (res.id) {
+          setIsCampanhaWizardOpen(false);
+          queryClient.invalidateQueries({ queryKey: ['wa-campanhas'] });
+          if (enviarAgora) {
+            handleProcessarEnvio(res.id);
+          }
+          return 'Campanha salva com sucesso!';
+        }
+        throw new Error(res.error || 'Erro ao salvar');
+      },
+      error: (err) => `Falha: ${err.message}`
+    });
+  };
+
+  const handleProcessarEnvio = async (id: string) => {
+    toast.promise(processarEnvio(id), {
+      loading: 'Processando fila de envio...',
+      success: 'Envio concluído!',
+      error: (err) => `Erro no processamento: ${err.message}`
+    });
+  };
+
+  const handleEnviarTeste = async () => {
+    toast.promise(enviarTeste({
+      telefone: '5517999999999', // Número de teste hardcoded ou dinâmico
+      template_id: novaCampanha.template_id,
+      variaveis: novaCampanha.mapeamento_variaveis
+    }), {
+      loading: 'Enviando teste...',
+      success: 'Teste enviado!',
+      error: (err) => `Erro: ${err.message}`
+    });
+  };
+
   const handleSincronizar = async () => {
     toast.promise(sincronizarTemplates(), {
       loading: 'Sincronizando com a Meta...',
