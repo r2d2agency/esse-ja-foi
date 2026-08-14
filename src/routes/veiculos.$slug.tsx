@@ -28,8 +28,11 @@ function DetalheVeiculoPublico() {
   // Buscamos info do leilão em tempo real se o anúncio for carregado e o usuário puder ver
   const { data: leilao, isLoading: loadingLeilao } = useQuery({
     queryKey: ["leilao-veiculo", anuncio?.id],
-    queryFn: () => getLeilaoInfo({ data: anuncio?.leilao_id }),
-    enabled: !!anuncio?.leilao_id && isAuthenticated && user?.pode_ver_valores,
+    queryFn: async () => {
+      const res = await getLeilaoInfo({ data: anuncio?.leilao_id });
+      return res as any;
+    },
+    enabled: !!(anuncio?.leilao_id && isAuthenticated && user?.pode_ver_valores),
     refetchInterval: 5000,
   });
 
