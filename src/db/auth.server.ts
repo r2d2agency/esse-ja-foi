@@ -140,7 +140,13 @@ export async function ensureSuperAdmin(silent = true) {
     ];
 
     for (const [name, type] of profileColumns) {
-      await db.execute(sql.raw(`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ${name} ${type};`));
+      try {
+        await db.execute(sql.raw(`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ${name} ${type};`));
+      } catch (e) {
+        if (e instanceof Error && !e.message?.includes("already exists")) {
+          console.error(`Erro ao adicionar coluna ${name} em profiles:`, e);
+        }
+      }
     }
   } catch (e) {
     console.error("Erro ao garantir tabela profiles:", e);
@@ -167,7 +173,13 @@ export async function ensureSuperAdmin(silent = true) {
     ];
 
     for (const [name, type] of veiculoColumns) {
-      await db.execute(sql.raw(`ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS ${name} ${type};`));
+      try {
+        await db.execute(sql.raw(`ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS ${name} ${type};`));
+      } catch (e) {
+        if (e instanceof Error && !e.message?.includes("already exists")) {
+          console.error(`Erro ao adicionar coluna ${name} em veiculos:`, e);
+        }
+      }
     }
   } catch (e) {
     console.error("Erro ao garantir tabela veiculos:", e);

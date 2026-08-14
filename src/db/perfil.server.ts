@@ -35,6 +35,6 @@ export async function ensurePerfilSchema() {
     }
     pronto = true;
   } catch (e) {
-    console.error('Falha ao garantir colunas de profiles:', e);
+    if (process.env['NODE_ENV'] === 'development') console.error('Falha ao garantir colunas de profiles:', e);
   }
 }
