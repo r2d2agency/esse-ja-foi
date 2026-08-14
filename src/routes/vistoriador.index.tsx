@@ -101,7 +101,7 @@ function VistoriasHojePage() {
                 asChild
                 className="mt-5 w-full h-12 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800"
               >
-                <Link to={`/vistoriador/vistoria/${vistoria.id}`}>
+                <Link to="/vistoriador/vistoria/$id" params={{ id: vistoria.id }}>
                   Ver vistoria
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </Link>

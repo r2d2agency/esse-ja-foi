@@ -35,10 +35,14 @@ import { Route as VendedorOnboardingRouteImport } from './routes/vendedor.onboar
 import { Route as VendedorPerfilRouteImport } from './routes/vendedor.perfil'
 import { Route as VendedorVeiculosRouteImport } from './routes/vendedor.veiculos'
 import { Route as VistoriadorIndexRouteImport } from './routes/vistoriador.index'
+import { Route as VistoriadorAgendaRouteImport } from './routes/vistoriador.agenda'
+import { Route as VistoriadorHistoricoRouteImport } from './routes/vistoriador.historico'
+import { Route as VistoriadorPerfilRouteImport } from './routes/vistoriador.perfil'
 import { Route as AdminContratoIdRouteImport } from './routes/admin/contrato.$id'
 import { Route as AdminVeiculoIdRouteImport } from './routes/admin/veiculo.$id'
 import { Route as AdminVendedorIdRouteImport } from './routes/admin/vendedor.$id'
 import { Route as VendedorVeiculoIdRouteImport } from './routes/vendedor.veiculo.$id'
+import { Route as VistoriadorExecucaoIdRouteImport } from './routes/vistoriador.execucao.$id'
 import { Route as VistoriadorVistoriaIdRouteImport } from './routes/vistoriador.vistoria.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -171,6 +175,21 @@ const VistoriadorIndexRoute = VistoriadorIndexRouteImport.update({
   path: '/',
   getParentRoute: () => VistoriadorRoute,
 } as any)
+const VistoriadorAgendaRoute = VistoriadorAgendaRouteImport.update({
+  id: '/agenda',
+  path: '/agenda',
+  getParentRoute: () => VistoriadorRoute,
+} as any)
+const VistoriadorHistoricoRoute = VistoriadorHistoricoRouteImport.update({
+  id: '/historico',
+  path: '/historico',
+  getParentRoute: () => VistoriadorRoute,
+} as any)
+const VistoriadorPerfilRoute = VistoriadorPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => VistoriadorRoute,
+} as any)
 const AdminContratoIdRoute = AdminContratoIdRouteImport.update({
   id: '/contrato/$id',
   path: '/contrato/$id',
@@ -190,6 +209,11 @@ const VendedorVeiculoIdRoute = VendedorVeiculoIdRouteImport.update({
   id: '/veiculo/$id',
   path: '/veiculo/$id',
   getParentRoute: () => VendedorRoute,
+} as any)
+const VistoriadorExecucaoIdRoute = VistoriadorExecucaoIdRouteImport.update({
+  id: '/execucao/$id',
+  path: '/execucao/$id',
+  getParentRoute: () => VistoriadorRoute,
 } as any)
 const VistoriadorVistoriaIdRoute = VistoriadorVistoriaIdRouteImport.update({
   id: '/vistoria/$id',
@@ -221,6 +245,9 @@ export interface FileRoutesByFullPath {
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
   '/vendedor/perfil': typeof VendedorPerfilRoute
   '/vendedor/veiculos': typeof VendedorVeiculosRoute
+  '/vistoriador/agenda': typeof VistoriadorAgendaRoute
+  '/vistoriador/historico': typeof VistoriadorHistoricoRoute
+  '/vistoriador/perfil': typeof VistoriadorPerfilRoute
   '/admin/': typeof AdminIndexRoute
   '/vendedor/': typeof VendedorIndexRoute
   '/vistoriador/': typeof VistoriadorIndexRoute
@@ -228,6 +255,7 @@ export interface FileRoutesByFullPath {
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRoute
+  '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
 }
 export interface FileRoutesByTo {
@@ -251,6 +279,9 @@ export interface FileRoutesByTo {
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
   '/vendedor/perfil': typeof VendedorPerfilRoute
   '/vendedor/veiculos': typeof VendedorVeiculosRoute
+  '/vistoriador/agenda': typeof VistoriadorAgendaRoute
+  '/vistoriador/historico': typeof VistoriadorHistoricoRoute
+  '/vistoriador/perfil': typeof VistoriadorPerfilRoute
   '/admin': typeof AdminIndexRoute
   '/vendedor': typeof VendedorIndexRoute
   '/vistoriador': typeof VistoriadorIndexRoute
@@ -258,6 +289,7 @@ export interface FileRoutesByTo {
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRoute
+  '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
 }
 export interface FileRoutesById {
@@ -285,6 +317,9 @@ export interface FileRoutesById {
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
   '/vendedor/perfil': typeof VendedorPerfilRoute
   '/vendedor/veiculos': typeof VendedorVeiculosRoute
+  '/vistoriador/agenda': typeof VistoriadorAgendaRoute
+  '/vistoriador/historico': typeof VistoriadorHistoricoRoute
+  '/vistoriador/perfil': typeof VistoriadorPerfilRoute
   '/admin/': typeof AdminIndexRoute
   '/vendedor/': typeof VendedorIndexRoute
   '/vistoriador/': typeof VistoriadorIndexRoute
@@ -292,6 +327,7 @@ export interface FileRoutesById {
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRoute
+  '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
 }
 export interface FileRouteTypes {
@@ -320,6 +356,9 @@ export interface FileRouteTypes {
     | '/vendedor/onboarding'
     | '/vendedor/perfil'
     | '/vendedor/veiculos'
+    | '/vistoriador/agenda'
+    | '/vistoriador/historico'
+    | '/vistoriador/perfil'
     | '/admin/'
     | '/vendedor/'
     | '/vistoriador/'
@@ -327,6 +366,7 @@ export interface FileRouteTypes {
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
     | '/vendedor/veiculo/$id'
+    | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -350,6 +390,9 @@ export interface FileRouteTypes {
     | '/vendedor/onboarding'
     | '/vendedor/perfil'
     | '/vendedor/veiculos'
+    | '/vistoriador/agenda'
+    | '/vistoriador/historico'
+    | '/vistoriador/perfil'
     | '/admin'
     | '/vendedor'
     | '/vistoriador'
@@ -357,6 +400,7 @@ export interface FileRouteTypes {
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
     | '/vendedor/veiculo/$id'
+    | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
   id:
     | '__root__'
@@ -383,6 +427,9 @@ export interface FileRouteTypes {
     | '/vendedor/onboarding'
     | '/vendedor/perfil'
     | '/vendedor/veiculos'
+    | '/vistoriador/agenda'
+    | '/vistoriador/historico'
+    | '/vistoriador/perfil'
     | '/admin/'
     | '/vendedor/'
     | '/vistoriador/'
@@ -390,6 +437,7 @@ export interface FileRouteTypes {
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
     | '/vendedor/veiculo/$id'
+    | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
   fileRoutesById: FileRoutesById
 }
@@ -589,6 +637,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VistoriadorIndexRouteImport
       parentRoute: typeof VistoriadorRoute
     }
+    '/vistoriador/agenda': {
+      id: '/vistoriador/agenda'
+      path: '/agenda'
+      fullPath: '/vistoriador/agenda'
+      preLoaderRoute: typeof VistoriadorAgendaRouteImport
+      parentRoute: typeof VistoriadorRoute
+    }
+    '/vistoriador/historico': {
+      id: '/vistoriador/historico'
+      path: '/historico'
+      fullPath: '/vistoriador/historico'
+      preLoaderRoute: typeof VistoriadorHistoricoRouteImport
+      parentRoute: typeof VistoriadorRoute
+    }
+    '/vistoriador/perfil': {
+      id: '/vistoriador/perfil'
+      path: '/perfil'
+      fullPath: '/vistoriador/perfil'
+      preLoaderRoute: typeof VistoriadorPerfilRouteImport
+      parentRoute: typeof VistoriadorRoute
+    }
     '/admin/contrato/$id': {
       id: '/admin/contrato/$id'
       path: '/contrato/$id'
@@ -616,6 +685,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/vendedor/veiculo/$id'
       preLoaderRoute: typeof VendedorVeiculoIdRouteImport
       parentRoute: typeof VendedorRoute
+    }
+    '/vistoriador/execucao/$id': {
+      id: '/vistoriador/execucao/$id'
+      path: '/execucao/$id'
+      fullPath: '/vistoriador/execucao/$id'
+      preLoaderRoute: typeof VistoriadorExecucaoIdRouteImport
+      parentRoute: typeof VistoriadorRoute
     }
     '/vistoriador/vistoria/$id': {
       id: '/vistoriador/vistoria/$id'
@@ -686,12 +762,20 @@ const VendedorRouteWithChildren = VendedorRoute._addFileChildren(
 )
 
 interface VistoriadorRouteChildren {
+  VistoriadorAgendaRoute: typeof VistoriadorAgendaRoute
+  VistoriadorHistoricoRoute: typeof VistoriadorHistoricoRoute
+  VistoriadorPerfilRoute: typeof VistoriadorPerfilRoute
   VistoriadorIndexRoute: typeof VistoriadorIndexRoute
+  VistoriadorExecucaoIdRoute: typeof VistoriadorExecucaoIdRoute
   VistoriadorVistoriaIdRoute: typeof VistoriadorVistoriaIdRoute
 }
 
 const VistoriadorRouteChildren: VistoriadorRouteChildren = {
+  VistoriadorAgendaRoute: VistoriadorAgendaRoute,
+  VistoriadorHistoricoRoute: VistoriadorHistoricoRoute,
+  VistoriadorPerfilRoute: VistoriadorPerfilRoute,
   VistoriadorIndexRoute: VistoriadorIndexRoute,
+  VistoriadorExecucaoIdRoute: VistoriadorExecucaoIdRoute,
   VistoriadorVistoriaIdRoute: VistoriadorVistoriaIdRoute,
 }
 

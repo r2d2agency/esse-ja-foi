@@ -127,7 +127,7 @@ function DetalheVistoriaPage() {
               asChild
               className="h-16 w-full rounded-2xl bg-teal-600 text-lg font-black text-white shadow-lg hover:bg-teal-700"
             >
-              <Link to={`/vistoriador/execucao/${id}`}>
+              <Link to="/vistoriador/execucao/$id" params={{ id }}>
                 Continuar vistoria
               </Link>
             </Button>
@@ -143,7 +143,7 @@ function DetalheVistoriaPage() {
               asChild
               className="h-16 w-full rounded-2xl bg-slate-900 text-lg font-black text-white shadow-lg hover:bg-slate-800"
             >
-              <Link to={`/vistoriador/execucao/${id}`}>
+              <Link to="/vistoriador/execucao/$id" params={{ id }}>
                 <ShieldCheck className="mr-2 h-6 w-6" />
                 Iniciar check-in
               </Link>
