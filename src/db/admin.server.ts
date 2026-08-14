@@ -67,8 +67,33 @@ export async function ensureAdminTables(silent = true) {
       );
     `);
 
-    // Permissions are managed via Supabase migrations to avoid runtime failures
-    // in environments where the app user lacks DDL/GRANT privileges on the public schema.
+    // Tabela de compliance
+    await d.execute(sql`
+      CREATE TABLE IF NOT EXISTS public.compliance_analise (
+        vendedor_id uuid PRIMARY KEY REFERENCES profiles(id),
+        status text NOT NULL DEFAULT 'PENDENTE',
+        observacoes text,
+        responsavel_id uuid REFERENCES profiles(id),
+        criado_em timestamptz NOT NULL DEFAULT now(),
+        atualizado_em timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+
+    // Tabela de documentos genérica
+    await d.execute(sql`
+      CREATE TABLE IF NOT EXISTS public.documentos (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        entidade text NOT NULL, -- 'vendedor', 'veiculo'
+        entidade_id uuid NOT NULL,
+        tipo text NOT NULL, -- 'CNH', 'CRLV', 'SELFIE', 'FOTO_VEICULO'
+        url text NOT NULL,
+        status text NOT NULL DEFAULT 'PENDENTE',
+        observacoes text,
+        criado_em timestamptz NOT NULL DEFAULT now(),
+        atualizado_em timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+
 
 
 
