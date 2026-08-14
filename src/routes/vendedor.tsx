@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router';
 import { useAuth } from '@/hooks/use-auth';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery, useQuery } from '@tanstack/react-query';
+
 import { useServerFn } from '@tanstack/react-start';
 import { listarMeusVeiculosFn } from '@/lib/vendedor.functions';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,9 @@ function DashboardVendedor() {
   }
 
   // Só tenta buscar veículos se tivermos um usuário logado
-  const { data: veiculosResult, isLoading: veiculosLoading } = useSuspenseQuery({
+  // Usamos useQuery em vez de useSuspenseQuery aqui para evitar problemas de hidratação
+  // e permitir o uso do 'enabled' baseado na presença do usuário.
+  const { data: veiculosResult, isLoading: veiculosLoading } = useQuery({
     queryKey: ['meus-veiculos', user?.id],
     queryFn: () => listarVeiculos({ 
       data: { perfilId: user?.id || "" } 
@@ -37,6 +40,7 @@ function DashboardVendedor() {
   if (veiculosLoading) {
     return <div className="flex items-center justify-center min-h-screen">Carregando veículos...</div>;
   }
+
 
 
   if (!user || user.role !== 'vendedor') {
