@@ -77,8 +77,10 @@ function CompradorIndex() {
     setIsSubmitting(true);
     try {
       const result = await loginFn({ 
-        email: formData.email, 
-        password: formData.password 
+        data: {
+          email: formData.email, 
+          password: formData.password 
+        }
       });
       
       if (result.ok) {
