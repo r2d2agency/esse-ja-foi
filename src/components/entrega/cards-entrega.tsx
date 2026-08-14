@@ -13,7 +13,7 @@ function data(e: any) {
   return e.data_entrega ? format(new Date(`${String(e.data_entrega).slice(0, 10)}T12:00:00`), "dd 'de' MMMM", { locale: ptBR }) : "A agendar";
 }
 
-export function CardsEntregaVendedor({ vendedorId }: { vendedorId?: string }) {
+export function CardsEntregaVendedor({ vendedorId }: { vendedorId?: string | undefined }) {
   const { data: lista } = useQuery({
     queryKey: ["entregas-vendedor", vendedorId],
     queryFn: async () => (await listarEntregasVendedorFn({ data: vendedorId! })) as any[],
@@ -40,7 +40,7 @@ export function CardsEntregaVendedor({ vendedorId }: { vendedorId?: string }) {
   );
 }
 
-export function CardsEntregaComprador({ compradorId }: { compradorId?: string }) {
+export function CardsEntregaComprador({ compradorId }: { compradorId?: string | undefined }) {
   const { data: lista } = useQuery({
     queryKey: ["entregas-comprador", compradorId],
     queryFn: async () => (await listarEntregasCompradorFn({ data: compradorId! })) as any[],
