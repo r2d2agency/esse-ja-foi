@@ -89,6 +89,7 @@ export async function ensureCadastroSchema(silent = false) {
     ["latitude", "numeric(10,7)"],
     ["longitude", "numeric(10,7)"],
     ["observacoes", "text"],
+    ["fotos", "jsonb"],
     ["atualizado_em", "timestamptz NOT NULL DEFAULT now()"],
   ];
   for (const [name, type] of cols) {
@@ -270,6 +271,9 @@ export type VeiculoInput = {
   latitude?: number | null;
   longitude?: number | null;
   observacoes?: string | null;
+  perfilId?: string | null;
+  fotos?: string[] | null;
+  status?: string | null;
 };
 
 export async function listarVeiculos(filtros: {
@@ -348,6 +352,9 @@ export async function salvarVeiculo(input: VeiculoInput) {
     latitude: input.latitude ?? null,
     longitude: input.longitude ?? null,
     observacoes: input.observacoes ?? null,
+    perfilId: input.perfilId ?? null,
+    fotos: input.fotos && input.fotos.length > 0 ? JSON.stringify(input.fotos) : null,
+    status: (input.status ?? "CADASTRADO").toUpperCase(),
   };
 
   if (input.id) {
@@ -369,16 +376,16 @@ export async function salvarVeiculo(input: VeiculoInput) {
   const rows = (await d.execute(sql`
     INSERT INTO veiculos (placa, marca, modelo, versao, cor, km, ano_fabricacao, ano_modelo, combustivel, cambio,
       cliente_id, valor_fipe, valor_interesse_cliente, tipo_expectativa, percentual_sobre_fipe, alerta_expectativa,
-      ciente_expectativa, cep, endereco, cidade, uf, latitude, longitude, observacoes, status)
+      ciente_expectativa, cep, endereco, cidade, uf, latitude, longitude, observacoes, perfil_id, fotos, status)
     VALUES (${base.placa}, ${base.marca}, ${base.modelo}, ${base.versao}, ${base.cor}, ${base.km},
       ${base.anoFabricacao}, ${base.anoModelo}, ${base.combustivel}, ${base.cambio}, ${base.clienteId},
       ${base.fipe}, ${base.interesse}, ${base.tipoExpectativa}, ${base.percentual}, ${base.alerta},
       ${base.ciente}, ${base.cep}, ${base.endereco}, ${base.cidade}, ${base.uf}, ${base.latitude},
-      ${base.longitude}, ${base.observacoes}, 'CADASTRADO')
+      ${base.longitude}, ${base.observacoes}, ${base.perfilId}::uuid, ${base.fotos}::jsonb, ${base.status})
     RETURNING id;
   `)) as unknown as Array<{ id: string }>;
   const id = rows[0]?.id as string;
-  await registrarLog({ entidade: "veiculo", entidadeId: id, acao: "CRIADO", para: "CADASTRADO", detalhe: `Placa ${placa}` });
+  await registrarLog({ entidade: "veiculo", entidadeId: id, acao: "CRIADO", para: base.status, detalhe: `Placa ${placa}` });
   return { id, percentualSobreFipe: percentual, alertaExpectativa: alerta, percentualAlerta: limite };
 }
 
