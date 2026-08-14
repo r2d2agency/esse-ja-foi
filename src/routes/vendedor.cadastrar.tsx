@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ComboboxSearch } from '@/components/ui/combobox-search';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -23,6 +24,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { cadastrarMeuVeiculoFn, listarMeusVeiculosFn } from '@/lib/vendedor.functions';
 import { maskPlaca, formatCurrency } from '@/lib/brasil';
 import { montarEtapas, percentual } from '@/components/vendedor/ProgressoCadastro';
+import { TODAS_MARCAS, MARCAS_POPULARES, MODELOS_POR_MARCA, CORES, COMBUSTIVEIS, CAMBIOS, PORTAS, UFS } from '@/lib/constants-veiculos';
 
 export const Route = createFileRoute('/vendedor/cadastrar')({
   component: CadastrarVeiculo,
@@ -284,23 +286,61 @@ function CadastrarVeiculo() {
               <p className="mt-1 text-sm text-slate-500">Ajuste o que for necessário.</p>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <Campo label="Marca *" value={form.marca} onChange={(v) => set({ marca: v })} />
-              <Campo label="Modelo *" value={form.modelo} onChange={(v) => set({ modelo: v })} />
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">Marca</Label>
+                <ComboboxSearch 
+                  options={TODAS_MARCAS} 
+                  popularOptions={MARCAS_POPULARES}
+                  value={form.marca} 
+                  onChange={(v) => set({ marca: v, modelo: '' })}
+                  placeholder="Selecione a marca"
+                  allowOther
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">Modelo</Label>
+                <ComboboxSearch 
+                  options={MODELOS_POR_MARCA[form.marca] || ['Outro']} 
+                  value={form.modelo} 
+                  onChange={(v) => set({ modelo: v })}
+                  placeholder={form.marca ? "Selecione o modelo" : "Selecione a marca antes"}
+                  allowOther
+                />
+              </div>
               <Campo label="Versão" value={form.versao} onChange={(v) => set({ versao: v })} />
-              <Campo label="Cor" value={form.cor} onChange={(v) => set({ cor: v })} />
-              <Campo label="Ano de fabricação" value={form.anoFabricacao} onChange={(v) => set({ anoFabricacao: soDigitos(v).slice(0, 4) })} />
-              <Campo label="Ano modelo" value={form.anoModelo} onChange={(v) => set({ anoModelo: soDigitos(v).slice(0, 4) })} />
-              <Campo label="Combustível" value={form.combustivel} onChange={(v) => set({ combustivel: v })} />
-              <Campo label="Câmbio" value={form.cambio} onChange={(v) => set({ cambio: v })} />
-              <Campo label="Número de portas" value={form.portas} onChange={(v) => set({ portas: soDigitos(v).slice(0, 1) })} />
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">Cor</Label>
+                <ComboboxSearch options={CORES} value={form.cor} onChange={(v) => set({ cor: v })} placeholder="Selecione a cor" allowOther />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">Ano de fabricação</Label>
+                <ComboboxSearch options={Array.from({length: 40}, (_, i) => String(new Date().getFullYear() - i))} value={form.anoFabricacao} onChange={(v) => set({ anoFabricacao: v })} placeholder="Ano" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">Ano modelo</Label>
+                <ComboboxSearch options={Array.from({length: 40}, (_, i) => String(new Date().getFullYear() - i + 1))} value={form.anoModelo} onChange={(v) => set({ anoModelo: v })} placeholder="Ano" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">Combustível</Label>
+                <ComboboxSearch options={COMBUSTIVEIS} value={form.combustivel} onChange={(v) => set({ combustivel: v })} placeholder="Selecione" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">Câmbio</Label>
+                <ComboboxSearch options={CAMBIOS} value={form.cambio} onChange={(v) => set({ cambio: v })} placeholder="Selecione" />
+              </div>
+              <OpcaoBotoes label="Portas" opcoes={PORTAS} value={form.portas} onChange={(v) => set({ portas: v })} />
               <Campo
                 label="Quilometragem atual"
-                value={form.km ? `${Number(soDigitos(form.km)).toLocaleString('pt-BR')} km` : ''}
+                value={form.km ? `${Number(form.km).toLocaleString('pt-BR')} km` : ''}
                 onChange={(v) => set({ km: soDigitos(v) })}
-                placeholder="42.850 km"
+                placeholder="0 km"
               />
-              <Campo label="Município onde o veículo está" value={form.cidade} onChange={(v) => set({ cidade: v })} />
-              <Campo label="Estado" value={form.uf} onChange={(v) => set({ uf: v.toUpperCase().slice(0, 2) })} />
+              <Campo label="Município" value={form.cidade} onChange={(v) => set({ cidade: v })} />
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">Estado</Label>
+                <ComboboxSearch options={UFS} value={form.uf} onChange={(v) => set({ uf: v })} placeholder="UF" />
+              </div>
+
             </div>
 
             <div className="space-y-5 border-t border-slate-100 pt-6">
