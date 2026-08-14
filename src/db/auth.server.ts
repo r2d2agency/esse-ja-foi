@@ -66,11 +66,11 @@ export async function ensureSuperAdmin(silent = true) {
   if (!db) {
     throw new Error("DATABASE_URL ausente.");
   }
-  if (!silent) console.log("[auth.server] ensureSuperAdmin iniciado...");
+  if (!silent && process.env['NODE_ENV'] === 'development') console.log("[auth.server] ensureSuperAdmin iniciado...");
   try {
     const adminModule = await import("./admin.server");
     const ensureAdminTables = adminModule.ensureAdminTables;
-    if (!silent) console.log("[auth.server] Garantindo tabelas e roles...");
+    if (!silent && process.env['NODE_ENV'] === 'development') console.log("[auth.server] Garantindo tabelas e roles...");
     // Garante que uma instalação nova consiga autenticar mesmo antes de qualquer
     // acesso à aplicação. Todas as operações são idempotentes.
     try {
@@ -224,7 +224,7 @@ export async function ensureSuperAdmin(silent = true) {
           senha_hash = COALESCE(profiles.senha_hash, EXCLUDED.senha_hash);
   `);
 
-  if (!silent) console.log("✅ Superadmin garantido:", SUPERADMIN_EMAIL);
+  if (!silent && process.env['NODE_ENV'] === 'development') console.log("✅ Superadmin garantido:", SUPERADMIN_EMAIL);
 } catch (err) {
   console.error("[auth.server] Erro fatal no ensureSuperAdmin:", err);
 }

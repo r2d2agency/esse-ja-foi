@@ -10,7 +10,7 @@ function requireDb() {
 
 export async function ensureAdminTables(silent = true) {
   const d = requireDb();
-  if (!silent) console.log("[admin.server] Garantindo tabelas admin...");
+  if (!silent && process.env['NODE_ENV'] === 'development') console.log("[admin.server] Garantindo tabelas admin...");
 
   try {
     // Tabela de configurações
@@ -84,7 +84,7 @@ export async function ensureAdminTables(silent = true) {
         ('openai_model', 'gpt-4o', 'Modelo da OpenAI a ser utilizado')
       ON CONFLICT (chave) DO NOTHING;
     `);
-    if (!silent) console.log("[admin.server] Tabelas admin OK.");
+    if (!silent && process.env['NODE_ENV'] === 'development') console.log("[admin.server] Tabelas admin OK.");
   } catch (err) {
     console.error("[admin.server] Erro ao garantir tabelas admin:", err);
     throw err;
