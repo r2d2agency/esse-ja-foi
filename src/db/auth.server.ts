@@ -173,34 +173,43 @@ export async function ensureSuperAdmin() {
   }
 
   // Bloqueia exclusão e rebaixamento do superadmin diretamente no banco
-  await db.execute(sql`
-    CREATE OR REPLACE FUNCTION protege_superadmin() RETURNS trigger AS $$
-    BEGIN
-      IF TG_OP = 'DELETE' THEN
-        IF OLD.protegido THEN
-          RAISE EXCEPTION 'Este usuário é protegido e não pode ser excluído.';
+  try {
+    await db.execute(sql`
+      CREATE OR REPLACE FUNCTION protege_superadmin() RETURNS trigger AS $$
+      BEGIN
+        IF TG_OP = 'DELETE' THEN
+          IF OLD.protegido THEN
+            RAISE EXCEPTION 'Este usuário é protegido e não pode ser excluído.';
+          END IF;
+          RETURN OLD;
+        ELSE
+          IF OLD.protegido THEN
+            NEW.protegido := true;
+            NEW.role := 'admin';
+            NEW.ativo := true;
+            NEW.email := OLD.email;
+          END IF;
+          RETURN NEW;
         END IF;
-        RETURN OLD;
-      ELSE
-        IF OLD.protegido THEN
-          NEW.protegido := true;
-          NEW.role := 'admin';
-          NEW.ativo := true;
-          NEW.email := OLD.email;
-        END IF;
-        RETURN NEW;
-      END IF;
-    END;
-    $$ LANGUAGE plpgsql;
-  `);
-  await db.execute(sql`DROP TRIGGER IF EXISTS trg_protege_superadmin ON profiles;`);
-  await db.execute(sql`
-    CREATE TRIGGER trg_protege_superadmin
-    BEFORE UPDATE OR DELETE ON profiles
-    FOR EACH ROW EXECUTE FUNCTION protege_superadmin();
-  `);
+      END;
+      $$ LANGUAGE plpgsql;
+    `);
+    await db.execute(sql`DROP TRIGGER IF EXISTS trg_protege_superadmin ON profiles;`);
+    await db.execute(sql`
+      CREATE TRIGGER trg_protege_superadmin
+      BEFORE UPDATE OR DELETE ON profiles
+      FOR EACH ROW EXECUTE FUNCTION protege_superadmin();
+    `);
+  } catch (e) {
+    console.warn("[auth.server] Erro ao criar gatilho de proteção (pode ser falta de privilégio superuser):", (e as Error).message);
+  }
 
   const senha = await hashPassword(SUPERADMIN_PASSWORD);
+  const { ensureAdminTables } = await import("./admin.server");
+  const { ensureCadastroSchema } = await import("./cadastro.server");
+  
+  await ensureCadastroSchema();
+  await ensureAdminTables();
 
   // Garante que o enum seja criado antes de qualquer tentativa de inserção
   // e remove qualquer ambiguidade de tipo.
