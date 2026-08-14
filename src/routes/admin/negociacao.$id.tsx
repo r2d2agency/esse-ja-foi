@@ -85,7 +85,7 @@ function AdminNegociacaoDetalhe() {
               <Info label="Lance vencedor" valor={brl(n.valor_venda)} destaque />
               <Info label="Comissão prevista" valor={brl(n.valor_comissao)} />
               <Info label="Valor previsto ao vendedor" valor={brl(n.valor_previsto_vendedor)} />
-              <Info label="Status" valor={STATUS_LABEL[n.status]} />
+              <Info label="Status" valor={STATUS_LABEL[n.status] ?? n.status} />
               <Info label="Prazo" valor={format(new Date(n.prazo_pagamento_em), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })} />
               <Info label="Criada em" valor={format(new Date(n.criado_em), "dd/MM/yyyy HH:mm", { locale: ptBR })} />
             </CardContent>
