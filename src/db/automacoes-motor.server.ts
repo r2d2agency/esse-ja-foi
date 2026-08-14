@@ -2,8 +2,8 @@ import { sql } from "drizzle-orm";
 import { db } from "./index";
 import { metaService } from "./meta-whatsapp.server";
 
-// Mapeamento de variáveis por evento
-const EVENT_VARIABLES: Record<string, string[]> = {
+// Variáveis disponíveis por contexto
+export const EVENT_VARIABLES: Record<string, string[]> = {
   'VEICULO_PUBLICADO': ['comprador.nome', 'veiculo.marca', 'veiculo.modelo', 'veiculo.ano', 'anuncio.url', 'veiculo.foto_url'],
   'LANCE_SUPERADO': ['comprador.nome', 'veiculo.marca', 'veiculo.modelo', 'lance.valor_atual', 'leilao.url'],
   'VISTORIA_AGENDADA': ['vendedor.nome', 'veiculo.placa', 'vistoria.data', 'vistoria.horario', 'vistoria.local'],
@@ -16,30 +16,36 @@ export async function processarEventoSistema(evento: string, contexto: any) {
   try {
     // 1. Buscar automações ativas para este evento
     const automacoes = await db.execute(sql`
-      SELECT a.*, t.meta_name, t.idioma, t.conteudo as template_conteudo
+      SELECT a.*, t.meta_name, t.idioma, t.conteudo as template_conteudo, t.status as template_meta_status
       FROM whatsapp_automacoes a
       JOIN whatsapp_templates t ON t.id = a.template_id
-      WHERE a.evento = ${evento} AND a.status = 'ATIVA' AND t.status = 'APPROVED'
+      WHERE a.evento = ${evento} AND a.status = 'ATIVA'
     `);
 
     const rows = (automacoes as any).rows || [];
     
     for (const auto of rows) {
+      // Validação de template na Meta
+      if (auto.template_meta_status !== 'APPROVED') {
+        await db.execute(sql`UPDATE whatsapp_automacoes SET status = 'TEMPLATE_INDISPONIVEL' WHERE id = ${auto.id}::uuid`);
+        continue;
+      }
+
       // 2. Identificar destinatário baseado no público
       const destinatario = await identificarDestinatario(auto.publico, contexto);
       if (!destinatario || !destinatario.telefone || destinatario.whatsapp_status !== 'ATIVO') continue;
 
-      // 3. Verificar idempotência
+      // 3. Verificar idempotência (Evitar spam e duplicidade)
       const identificador = `${auto.id}:${evento}:${destinatario.id}:${contexto.referencia_id || 'global'}`;
       const jaExiste = await db.execute(sql`
         SELECT 1 FROM whatsapp_automacoes_execucoes WHERE identificador_unico = ${identificador}
       `);
       if ((jaExiste as any).rows.length > 0) continue;
 
-      // 4. Preencher variáveis
+      // 4. Preencher variáveis (Mapeamento dinâmico)
       const componentes = mapearVariaveis(auto.mapeamento_variaveis, contexto);
 
-      // 5. Criar registro de execução e enviar
+      // 5. Criar registro de execução e enviar para a fila Meta
       const resExec = await db.execute(sql`
         INSERT INTO whatsapp_automacoes_execucoes (automacao_id, evento_id, destinatario_id, status, identificador_unico)
         VALUES (${auto.id}::uuid, ${contexto.referencia_id || 'N/A'}, ${destinatario.id}::uuid, 'PENDENTE', ${identificador})
@@ -56,7 +62,7 @@ export async function processarEventoSistema(evento: string, contexto: any) {
           componentes
         );
 
-        // 6. Registrar mensagem e atualizar execução
+        // 6. Registrar mensagem e atualizar execução/estatísticas
         const msgRes = await db.execute(sql`
           INSERT INTO whatsapp_mensagens (comprador_id, telefone, status, meta_message_id, payload)
           VALUES (${destinatario.id}::uuid, ${destinatario.telefone}, 'ENVIADA', ${resMeta.messages?.[0]?.id}, ${JSON.stringify(componentes)}::jsonb)
@@ -88,6 +94,7 @@ async function identificarDestinatario(publico: string, contexto: any) {
   if (publico === 'VENDEDOR') userId = contexto.vendedor_id;
   if (publico === 'COMPRADOR_VENCEDOR') userId = contexto.comprador_id;
   if (publico === 'COMPRADOR_SUPERADO') userId = contexto.comprador_superado_id;
+  if (publico === 'VISTORIADOR') userId = contexto.vistoriador_id;
   
   if (!userId) return null;
 
@@ -97,15 +104,16 @@ async function identificarDestinatario(publico: string, contexto: any) {
     WHERE id = ${userId}::uuid
   `);
   
-  return (res as any).rows[0] || null;
+  const user = (res as any).rows[0];
+  return (user && user.pode_receber_comunicacoes) ? user : null;
 }
 
-function mapearVariaveis(config: any[], contexto: any) {
-  // Converte a configuração da automação em componentes para a Meta API
-  // Simplificado: apenas corpo (BODY) com parâmetros de texto
-  const bodyParams = config.map((c: any) => ({
+function mapearVariaveis(mapeamento: any[], contexto: any) {
+  if (!mapeamento || !Array.isArray(mapeamento)) return [];
+  
+  const bodyParams = mapeamento.map((m: any) => ({
     type: "text",
-    text: resolveOrigem(c.origem, contexto)
+    text: resolveOrigem(m.origem, contexto)
   }));
 
   return [
@@ -117,7 +125,6 @@ function mapearVariaveis(config: any[], contexto: any) {
 }
 
 function resolveOrigem(origem: string, contexto: any) {
-  // Resolve "veiculo.marca" -> contexto.veiculo.marca
   const parts = origem.split('.');
   let current = contexto;
   for (const part of parts) {
