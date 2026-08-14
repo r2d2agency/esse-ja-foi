@@ -33,6 +33,7 @@ export const iniciarCheckinFn = createServerFn({ method: "POST" })
     localizacao: z.any()
   }).parse(d))
   .handler(async ({ data }) => {
+    const { iniciarCheckin } = await import("@/db/vistorias.server");
     try {
       const res = await iniciarCheckin(data);
       return res;
@@ -83,6 +84,7 @@ export const concluirVistoriaAppFn = createServerFn({ method: "POST" })
     declaracao: z.boolean()
   }).parse(d))
   .handler(async ({ data }) => {
+    const { concluirVistoriaApp } = await import("@/db/vistorias.server");
     try {
       const res = await concluirVistoriaApp(data);
       return res;
