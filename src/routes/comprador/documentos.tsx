@@ -104,18 +104,37 @@ function CompradorDocumentosPage() {
         {docs.map((doc) => (
           <Card key={doc.id} className="border-slate-200 shadow-none overflow-hidden group">
             <div className="aspect-[4/3] bg-slate-50 flex flex-col items-center justify-center text-slate-400 p-6 text-center border-b relative">
-              <doc.icon className="h-10 w-10 mb-3 opacity-20 group-hover:opacity-40 transition-opacity" />
-              <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{doc.label}</p>
+              {status?.documentos?.some((d: any) => d.tipo === doc.id) ? (
+                <div className="flex flex-col items-center">
+                  <CheckCircle2 className="h-10 w-10 mb-3 text-teal-600" />
+                  <p className="text-xs font-black text-teal-700 uppercase tracking-tight">Enviado</p>
+                </div>
+              ) : (
+                <>
+                  <doc.icon className="h-10 w-10 mb-3 opacity-20 group-hover:opacity-40 transition-opacity" />
+                  <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{doc.label}</p>
+                </>
+              )}
               {doc.required && <span className="absolute top-3 right-3 text-[9px] font-black bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full">OBRIGATÓRIO</span>}
             </div>
             <CardContent className="p-4">
-              <Button 
-                className="w-full bg-teal-600 hover:bg-teal-700 font-bold text-xs h-10"
-                onClick={() => triggerUpload(doc.id)}
-                disabled={mutation.isPending}
-              >
-                {mutation.isPending && selectedType === doc.id ? "Enviando..." : "Enviar agora"}
-              </Button>
+              {mutation.isPending && selectedType === doc.id ? (
+                <Button disabled className="w-full bg-slate-100 text-slate-400 font-bold text-xs h-10 border-none shadow-none">
+                  Enviando...
+                </Button>
+              ) : (
+                <Button 
+                  className={cn(
+                    "w-full font-bold text-xs h-10",
+                    status?.documentos?.some((d: any) => d.tipo === doc.id)
+                      ? "bg-slate-100 text-slate-600 hover:bg-slate-200" 
+                      : "bg-teal-600 hover:bg-teal-700 text-white"
+                  )}
+                  onClick={() => triggerUpload(doc.id)}
+                >
+                  {status?.documentos?.some((d: any) => d.tipo === doc.id) ? "Reenviar documento" : "Enviar agora"}
+                </Button>
+              )}
             </CardContent>
           </Card>
         ))}
