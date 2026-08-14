@@ -28,6 +28,7 @@ import { Route as AdminContratosRouteImport } from './routes/admin/contratos'
 import { Route as AdminLeiloesRouteImport } from './routes/admin/leiloes'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
 import { Route as AdminNegociacoesRouteImport } from './routes/admin/negociacoes'
+import { Route as AdminPagamentosRouteImport } from './routes/admin/pagamentos'
 import { Route as AdminUsuariosRouteImport } from './routes/admin/usuarios'
 import { Route as AdminVeiculosRouteImport } from './routes/admin/veiculos'
 import { Route as AdminVendedoresRouteImport } from './routes/admin/vendedores'
@@ -58,11 +59,13 @@ import { Route as AdminLeiloesIdRouteImport } from './routes/admin/leiloes.$id'
 import { Route as AdminNegociacaoIdRouteImport } from './routes/admin/negociacao.$id'
 import { Route as AdminVeiculoIdRouteImport } from './routes/admin/veiculo.$id'
 import { Route as AdminVendedorIdRouteImport } from './routes/admin/vendedor.$id'
+import { Route as CompradorPagamentoIdRouteImport } from './routes/comprador/pagamento.$id'
 import { Route as VendedorVeiculoRouteImport } from './routes/vendedor.veiculo.'
 import { Route as VendedorVeiculoIdRouteImport } from './routes/vendedor.veiculo.$id'
 import { Route as VistoriadorExecucaoIdRouteImport } from './routes/vistoriador.execucao.$id'
 import { Route as VistoriadorVistoriaIdRouteImport } from './routes/vistoriador.vistoria.$id'
 import { Route as AdminAnunciosNovoRouteImport } from './routes/admin/anuncios.novo.'
+import { Route as ApiPublicWebhooksPagamentosRouteImport } from './routes/api/public/webhooks/pagamentos'
 import { Route as VendedorVeiculoIdPropostaRouteImport } from './routes/vendedor.veiculo.$id.proposta'
 
 const IndexRoute = IndexRouteImport.update({
@@ -158,6 +161,11 @@ const AdminLogsRoute = AdminLogsRouteImport.update({
 const AdminNegociacoesRoute = AdminNegociacoesRouteImport.update({
   id: '/negociacoes',
   path: '/negociacoes',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPagamentosRoute = AdminPagamentosRouteImport.update({
+  id: '/pagamentos',
+  path: '/pagamentos',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
@@ -310,6 +318,11 @@ const AdminVendedorIdRoute = AdminVendedorIdRouteImport.update({
   path: '/vendedor/$id',
   getParentRoute: () => AdminRoute,
 } as any)
+const CompradorPagamentoIdRoute = CompradorPagamentoIdRouteImport.update({
+  id: '/pagamento/$id',
+  path: '/pagamento/$id',
+  getParentRoute: () => CompradorRoute,
+} as any)
 const VendedorVeiculoRoute = VendedorVeiculoRouteImport.update({
   id: '/veiculo/',
   path: '/veiculo/',
@@ -335,6 +348,12 @@ const AdminAnunciosNovoRoute = AdminAnunciosNovoRouteImport.update({
   path: '/novo/',
   getParentRoute: () => AdminAnunciosRoute,
 } as any)
+const ApiPublicWebhooksPagamentosRoute =
+  ApiPublicWebhooksPagamentosRouteImport.update({
+    id: '/api/public/webhooks/pagamentos',
+    path: '/api/public/webhooks/pagamentos',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const VendedorVeiculoIdPropostaRoute =
   VendedorVeiculoIdPropostaRouteImport.update({
     id: '/proposta',
@@ -361,6 +380,7 @@ export interface FileRoutesByFullPath {
   '/admin/leiloes': typeof AdminLeiloesRouteWithChildren
   '/admin/logs': typeof AdminLogsRoute
   '/admin/negociacoes': typeof AdminNegociacoesRoute
+  '/admin/pagamentos': typeof AdminPagamentosRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
@@ -393,10 +413,12 @@ export interface FileRoutesByFullPath {
   '/admin/negociacao/$id': typeof AdminNegociacaoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
+  '/comprador/pagamento/$id': typeof CompradorPagamentoIdRoute
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRouteWithChildren
   '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
   '/admin/anuncios/novo/': typeof AdminAnunciosNovoRoute
+  '/api/public/webhooks/pagamentos': typeof ApiPublicWebhooksPagamentosRoute
   '/vendedor/veiculo/$id/proposta': typeof VendedorVeiculoIdPropostaRoute
 }
 export interface FileRoutesByTo {
@@ -413,6 +435,7 @@ export interface FileRoutesByTo {
   '/admin/leiloes': typeof AdminLeiloesRouteWithChildren
   '/admin/logs': typeof AdminLogsRoute
   '/admin/negociacoes': typeof AdminNegociacoesRoute
+  '/admin/pagamentos': typeof AdminPagamentosRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
@@ -445,10 +468,12 @@ export interface FileRoutesByTo {
   '/admin/negociacao/$id': typeof AdminNegociacaoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
+  '/comprador/pagamento/$id': typeof CompradorPagamentoIdRoute
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRouteWithChildren
   '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
   '/admin/anuncios/novo': typeof AdminAnunciosNovoRoute
+  '/api/public/webhooks/pagamentos': typeof ApiPublicWebhooksPagamentosRoute
   '/vendedor/veiculo/$id/proposta': typeof VendedorVeiculoIdPropostaRoute
 }
 export interface FileRoutesById {
@@ -471,6 +496,7 @@ export interface FileRoutesById {
   '/admin/leiloes': typeof AdminLeiloesRouteWithChildren
   '/admin/logs': typeof AdminLogsRoute
   '/admin/negociacoes': typeof AdminNegociacoesRoute
+  '/admin/pagamentos': typeof AdminPagamentosRoute
   '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
@@ -503,10 +529,12 @@ export interface FileRoutesById {
   '/admin/negociacao/$id': typeof AdminNegociacaoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
+  '/comprador/pagamento/$id': typeof CompradorPagamentoIdRoute
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRouteWithChildren
   '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
   '/admin/anuncios/novo/': typeof AdminAnunciosNovoRoute
+  '/api/public/webhooks/pagamentos': typeof ApiPublicWebhooksPagamentosRoute
   '/vendedor/veiculo/$id/proposta': typeof VendedorVeiculoIdPropostaRoute
 }
 export interface FileRouteTypes {
@@ -530,6 +558,7 @@ export interface FileRouteTypes {
     | '/admin/leiloes'
     | '/admin/logs'
     | '/admin/negociacoes'
+    | '/admin/pagamentos'
     | '/admin/usuarios'
     | '/admin/veiculos'
     | '/admin/vendedores'
@@ -562,10 +591,12 @@ export interface FileRouteTypes {
     | '/admin/negociacao/$id'
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
+    | '/comprador/pagamento/$id'
     | '/vendedor/veiculo/$id'
     | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
     | '/admin/anuncios/novo/'
+    | '/api/public/webhooks/pagamentos'
     | '/vendedor/veiculo/$id/proposta'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -582,6 +613,7 @@ export interface FileRouteTypes {
     | '/admin/leiloes'
     | '/admin/logs'
     | '/admin/negociacoes'
+    | '/admin/pagamentos'
     | '/admin/usuarios'
     | '/admin/veiculos'
     | '/admin/vendedores'
@@ -614,10 +646,12 @@ export interface FileRouteTypes {
     | '/admin/negociacao/$id'
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
+    | '/comprador/pagamento/$id'
     | '/vendedor/veiculo/$id'
     | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
     | '/admin/anuncios/novo'
+    | '/api/public/webhooks/pagamentos'
     | '/vendedor/veiculo/$id/proposta'
   id:
     | '__root__'
@@ -639,6 +673,7 @@ export interface FileRouteTypes {
     | '/admin/leiloes'
     | '/admin/logs'
     | '/admin/negociacoes'
+    | '/admin/pagamentos'
     | '/admin/usuarios'
     | '/admin/veiculos'
     | '/admin/vendedores'
@@ -671,10 +706,12 @@ export interface FileRouteTypes {
     | '/admin/negociacao/$id'
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
+    | '/comprador/pagamento/$id'
     | '/vendedor/veiculo/$id'
     | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
     | '/admin/anuncios/novo/'
+    | '/api/public/webhooks/pagamentos'
     | '/vendedor/veiculo/$id/proposta'
   fileRoutesById: FileRoutesById
 }
@@ -690,6 +727,7 @@ export interface RootRouteChildren {
   VendedorRoute: typeof VendedorRouteWithChildren
   VenderRoute: typeof VenderRoute
   VistoriadorRoute: typeof VistoriadorRouteWithChildren
+  ApiPublicWebhooksPagamentosRoute: typeof ApiPublicWebhooksPagamentosRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -825,6 +863,13 @@ declare module '@tanstack/react-router' {
       path: '/negociacoes'
       fullPath: '/admin/negociacoes'
       preLoaderRoute: typeof AdminNegociacoesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/pagamentos': {
+      id: '/admin/pagamentos'
+      path: '/pagamentos'
+      fullPath: '/admin/pagamentos'
+      preLoaderRoute: typeof AdminPagamentosRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/usuarios': {
@@ -1037,6 +1082,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminVendedorIdRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/comprador/pagamento/$id': {
+      id: '/comprador/pagamento/$id'
+      path: '/pagamento/$id'
+      fullPath: '/comprador/pagamento/$id'
+      preLoaderRoute: typeof CompradorPagamentoIdRouteImport
+      parentRoute: typeof CompradorRoute
+    }
     '/vendedor/veiculo/': {
       id: '/vendedor/veiculo/'
       path: '/veiculo'
@@ -1071,6 +1123,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/anuncios/novo/'
       preLoaderRoute: typeof AdminAnunciosNovoRouteImport
       parentRoute: typeof AdminAnunciosRoute
+    }
+    '/api/public/webhooks/pagamentos': {
+      id: '/api/public/webhooks/pagamentos'
+      path: '/api/public/webhooks/pagamentos'
+      fullPath: '/api/public/webhooks/pagamentos'
+      preLoaderRoute: typeof ApiPublicWebhooksPagamentosRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/vendedor/veiculo/$id/proposta': {
       id: '/vendedor/veiculo/$id/proposta'
@@ -1114,6 +1173,7 @@ interface AdminRouteChildren {
   AdminLeiloesRoute: typeof AdminLeiloesRouteWithChildren
   AdminLogsRoute: typeof AdminLogsRoute
   AdminNegociacoesRoute: typeof AdminNegociacoesRoute
+  AdminPagamentosRoute: typeof AdminPagamentosRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminVeiculosRoute: typeof AdminVeiculosRoute
   AdminVendedoresRoute: typeof AdminVendedoresRoute
@@ -1135,6 +1195,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLeiloesRoute: AdminLeiloesRouteWithChildren,
   AdminLogsRoute: AdminLogsRoute,
   AdminNegociacoesRoute: AdminNegociacoesRoute,
+  AdminPagamentosRoute: AdminPagamentosRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
   AdminVeiculosRoute: AdminVeiculosRoute,
   AdminVendedoresRoute: AdminVendedoresRoute,
@@ -1156,6 +1217,7 @@ interface CompradorRouteChildren {
   CompradorNegociacoesRoute: typeof CompradorNegociacoesRoute
   CompradorPerfilRoute: typeof CompradorPerfilRoute
   CompradorIndexRoute: typeof CompradorIndexRoute
+  CompradorPagamentoIdRoute: typeof CompradorPagamentoIdRoute
 }
 
 const CompradorRouteChildren: CompradorRouteChildren = {
@@ -1164,6 +1226,7 @@ const CompradorRouteChildren: CompradorRouteChildren = {
   CompradorNegociacoesRoute: CompradorNegociacoesRoute,
   CompradorPerfilRoute: CompradorPerfilRoute,
   CompradorIndexRoute: CompradorIndexRoute,
+  CompradorPagamentoIdRoute: CompradorPagamentoIdRoute,
 }
 
 const CompradorRouteWithChildren = CompradorRoute._addFileChildren(
@@ -1259,6 +1322,7 @@ const rootRouteChildren: RootRouteChildren = {
   VendedorRoute: VendedorRouteWithChildren,
   VenderRoute: VenderRoute,
   VistoriadorRoute: VistoriadorRouteWithChildren,
+  ApiPublicWebhooksPagamentosRoute: ApiPublicWebhooksPagamentosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

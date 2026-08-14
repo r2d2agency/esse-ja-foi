@@ -51,7 +51,7 @@ const MENU_ITEMS = [
   { label: "Leilões", icon: Gavel, to: "/admin/leiloes" },
   { label: "Negociações", icon: Handshake, to: "/admin/negociacoes" },
   { label: "Compradores", icon: ShoppingBag, to: "/admin/compradores" },
-  { label: "Financeiro", icon: DollarSign, to: "/admin/financeiro" },
+  { label: "Pagamentos", icon: DollarSign, to: "/admin/pagamentos" },
   { label: "Entregas", icon: Truck, to: "/admin/entregas" },
   { label: "Comunicações", icon: MessageSquare, to: "/admin/comunicacoes" },
   { label: "Relatórios", icon: BarChart3, to: "/admin/relatorios" },
