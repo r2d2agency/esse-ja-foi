@@ -87,8 +87,10 @@ function CompradorNegociacoesPage() {
 
               <PrazoPagamento prazo={vencedora.prazo_pagamento_em} servidorAgora={agora} />
 
-              <Button className="h-12 w-full bg-teal-600 font-black uppercase tracking-tight hover:bg-teal-700 md:w-auto md:px-10">
-                Ir para pagamento <ArrowRight className="ml-2 h-4 w-4" />
+              <Button asChild className="h-12 w-full bg-teal-600 font-black uppercase tracking-tight hover:bg-teal-700 md:w-auto md:px-10">
+                <Link to="/comprador/pagamento/$id" params={{ id: vencedora.id }}>
+                  Ir para pagamento <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
               </Button>
             </CardContent>
           </div>
