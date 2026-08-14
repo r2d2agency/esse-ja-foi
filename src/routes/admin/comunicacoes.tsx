@@ -1,3 +1,4 @@
+import { createFileRoute } from '@tanstack/react-router'
 import React, { useState } from 'react';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
