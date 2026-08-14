@@ -35,7 +35,13 @@ function RepasseDetalheAdminPage() {
 
   const concluirMutation = useMutation({
     mutationFn: (params: { repasseId: string, comprovante_url?: string }) => 
-      confirmarConclusaoRepasseFn({ data: { repasseId: params.repasseId, comprovante_url: params.comprovante_url } }),
+      confirmarConclusaoRepasseFn({ 
+        data: { 
+          repasseId: params.repasseId, 
+          comprovante_url: params.comprovante_url || undefined,
+          id_externo: undefined
+        } 
+      }),
     onSuccess: () => {
       toast.success("Repasse confirmado como concluído!");
       queryClient.invalidateQueries({ queryKey: ['repasse-detalhe', id] });
