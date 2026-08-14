@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
-import { CheckCircle2, Clock, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, Clock, ArrowLeft, FileText } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
@@ -34,7 +34,8 @@ function RepasseDetalheAdminPage() {
   });
 
   const concluirMutation = useMutation({
-    mutationFn: (repasseId: string) => confirmarConclusaoRepasseFn({ data: { repasseId } }),
+    mutationFn: (params: { repasseId: string, comprovante_url?: string }) => 
+      confirmarConclusaoRepasseFn({ data: { repasseId: params.repasseId, comprovante_url: params.comprovante_url } }),
     onSuccess: () => {
       toast.success("Repasse confirmado como concluído!");
       queryClient.invalidateQueries({ queryKey: ['repasse-detalhe', id] });
@@ -65,13 +66,25 @@ function RepasseDetalheAdminPage() {
               </Button>
             )}
             {repasse.status === 'AUTORIZADO' && (
-              <Button 
-                onClick={() => concluirMutation.mutate(repasse.id)}
-                className="bg-green-600 hover:bg-green-700"
-                disabled={concluirMutation.isPending}
-              >
-                Confirmar Pagamento Realizado
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    const url = prompt("Cole a URL do comprovante (PDF/Imagem):");
+                    if (url) concluirMutation.mutate({ repasseId: repasse.id, comprovante_url: url });
+                  }}
+                  disabled={concluirMutation.isPending}
+                >
+                  Informar Comprovante
+                </Button>
+                <Button 
+                  onClick={() => concluirMutation.mutate({ repasseId: repasse.id })}
+                  className="bg-green-600 hover:bg-green-700"
+                  disabled={concluirMutation.isPending}
+                >
+                  Confirmar Pagamento Realizado
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -115,6 +128,22 @@ function RepasseDetalheAdminPage() {
               </div>
             </CardContent>
           </Card>
+
+          {repasse.comprovante_url && (
+            <Card className="md:col-span-3">
+              <CardHeader><CardTitle>Comprovante de Repasse</CardTitle></CardHeader>
+              <CardContent>
+                <a 
+                  href={repasse.comprovante_url} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 text-teal-600 font-bold hover:underline"
+                >
+                  <FileText className="h-5 w-5" /> Visualizar Comprovante de Transferência
+                </a>
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="md:col-span-3">
             <CardHeader><CardTitle>Histórico e Auditoria</CardTitle></CardHeader>
