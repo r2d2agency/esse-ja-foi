@@ -379,6 +379,7 @@ function CompradorIndex() {
                             <label className="text-sm font-medium">Confirmar Senha</label>
                             <Input 
                               required
+                              id="confirm-password"
                               type="password"
                               placeholder="••••••••" 
                             />
