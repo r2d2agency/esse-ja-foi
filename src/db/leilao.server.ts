@@ -112,6 +112,16 @@ export async function registrarLance(leilaoId: string, compradorId: string, valo
     // 4. Registrar lance
     await tx.execute(sql`
       INSERT INTO lances (leilao_id, comprador_id, valor, ip_origem, user_agent)
+    const { processarEventoSistema } = await import("./automacoes-motor.server");
+    if (maiorLanceAnterior) {
+      await processarEventoSistema("LANCE_SUPERADO", {
+        leilao_id: leilaoId,
+        comprador_superado_id: maiorLanceAnterior.comprador_id,
+        veiculo: leilao.veiculo,
+        lance: { valor_atual: valor },
+        referencia_id: leilaoId
+      });
+    }
       VALUES (${leilaoId}::uuid, ${compradorId}::uuid, ${valor}, ${ip || null}, ${ua || null})
     `);
 

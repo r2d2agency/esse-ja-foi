@@ -15,6 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { 
   Dialog,
   DialogContent,
@@ -73,8 +80,22 @@ import {
   enviarTesteFn,
   processarEnvioCampanhaFn
 } from '@/lib/comunicacoes.functions';
+import { listarAutomacoesFn, salvarAutomacaoFn, getExecucoesAutomacaoFn } from '@/lib/automacoes.functions';
 import { getAnunciosAdmin } from '@/lib/anuncios.functions';
 import { toast } from 'sonner';
+import { 
+  Clock, 
+  Zap, 
+  Play, 
+  Pause, 
+  FileEdit, 
+  Trash2, 
+  RotateCcw, 
+  Mail, 
+  Target,
+  LayoutTemplate
+} from 'lucide-react';
+
 
 export const Route = createFileRoute('/admin/comunicacoes')({
   component: ComunicacoesPage,
@@ -98,7 +119,13 @@ function ComunicacoesPage() {
   const enviarTeste = useServerFn(enviarTesteFn);
   const getAnuncios = useServerFn(getAnunciosAdmin);
   const processarEnvio = useServerFn(processarEnvioCampanhaFn);
+  const getAutomacoes = useServerFn(listarAutomacoesFn);
+  const salvarAutomacao = useServerFn(salvarAutomacaoFn);
+  const getExecucoes = useServerFn(getExecucoesAutomacaoFn);
 
+  const [activeTab, setActiveTab] = useState('campanhas');
+  const [selectedAutomacao, setSelectedAutomacao] = useState<any>(null);
+  const [isExecucoesOpen, setIsExecucoesOpen] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<any>({});
   
@@ -130,7 +157,23 @@ function ComunicacoesPage() {
     agendado_para: null
   });
 
+  // Wizard Automação State
+  const [isAutomacaoWizardOpen, setIsAutomacaoWizardOpen] = useState(false);
+  const [automacaoStep, setAutomacaoStep] = useState(1);
+  const [novaAutomacao, setNovaAutomacao] = useState<any>({
+    nome: '',
+    evento: '',
+    publico: '',
+    template_id: '',
+    status: 'RASCUNHO',
+    config_envio: { momento: 'IMEDIATO' },
+    mapeamento_variaveis: []
+  });
+
+  // Removido duplicado handleSalvarAutomacao e automacoes query aqui
+  
   const [estimativa, setEstimativa] = useState<any>({ total: 0, elegiveis: 0, nao_elegiveis: 0 });
+
 
   const { data: indicadores } = useQuery({
     queryKey: ['wa-indicadores'],
@@ -162,10 +205,36 @@ function ComunicacoesPage() {
     queryFn: () => getAnuncios({ data: 'PUBLICADO' })
   });
 
+  const { data: automacoes, refetch: refetchAutomacoes } = useQuery({
+    queryKey: ['wa-automacoes'],
+    queryFn: () => getAutomacoes(),
+    enabled: activeTab === 'automacoes'
+  });
+
+  const { data: execucoesAutomacao } = useQuery({
+    queryKey: ['automacao-execucoes', selectedAutomacao?.id],
+    queryFn: () => getExecucoes(selectedAutomacao?.id),
+    enabled: !!selectedAutomacao?.id && isExecucoesOpen
+  });
+
+  const handleSalvarAutomacao = async () => {
+    toast.promise(salvarAutomacao({ data: novaAutomacao }), {
+      loading: 'Salvando automação...',
+      success: () => {
+        setIsAutomacaoWizardOpen(false);
+        refetchAutomacoes();
+        setAutomacaoStep(1);
+        return 'Automação salva!';
+      },
+      error: (err) => `Erro: ${err.message}`
+    });
+  };
+
   const handleEstimar = async () => {
     const res = await estimarPublico({ data: novaCampanha.filtros });
     setEstimativa(res);
   };
+
 
   const handleSalvarCampanha = async (enviarAgora = false) => {
     toast.promise(criarCampanha({ data: novaCampanha }), {
@@ -369,12 +438,14 @@ function ComunicacoesPage() {
         <Tabs defaultValue="campanhas" className="w-full">
           <TabsList className="flex w-full overflow-x-auto bg-muted/50 p-1 mb-6 border-b rounded-none justify-start h-auto gap-2">
             <TabsTrigger value="campanhas" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Campanhas</TabsTrigger>
+            <TabsTrigger value="automacoes" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Automações</TabsTrigger>
             <TabsTrigger value="segmentos" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Segmentos</TabsTrigger>
             <TabsTrigger value="templates" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Templates</TabsTrigger>
             <TabsTrigger value="contatos" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Contatos</TabsTrigger>
             <TabsTrigger value="logs" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Logs</TabsTrigger>
             <TabsTrigger value="config" className="px-6 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">Configurações</TabsTrigger>
           </TabsList>
+
 
           {/* Campanhas */}
           <TabsContent value="campanhas" className="mt-6 space-y-4">
@@ -1628,6 +1699,234 @@ function ComunicacoesPage() {
               </div>
             </div>
           </TabsContent>
+
+          {/* Automações */}
+          <TabsContent value="automacoes" className="mt-6 space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-semibold">Automações WhatsApp</h2>
+                <p className="text-sm text-muted-foreground">Mensagens disparadas automaticamente por eventos do sistema</p>
+              </div>
+              <Dialog open={isAutomacaoWizardOpen} onOpenChange={setIsAutomacaoWizardOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-teal-600 hover:bg-teal-700">
+                    <Plus className="w-4 h-4 mr-2" /> Nova Automação
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Nova Automação (Etapa {automacaoStep}/7)</DialogTitle>
+                    <DialogDescription>Configure disparos automáticos baseados em eventos</DialogDescription>
+                  </DialogHeader>
+
+                  <div className="py-6 space-y-6">
+                    {automacaoStep === 1 && (
+                      <div className="space-y-4">
+                        <Label>Selecione o Evento Gatilho</Label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {[
+                            { id: 'VEICULO_PUBLICADO', label: 'Veículo Publicado', icon: Car },
+                            { id: 'LANCE_SUPERADO', label: 'Lance Superado', icon: Zap },
+                            { id: 'VISTORIA_AGENDADA', label: 'Vistoria Agendada', icon: Clock },
+                            { id: 'PAGAMENTO_CONFIRMADO', label: 'Pagamento Confirmado', icon: CheckCircle2 },
+                          ].map((ev) => (
+                            <Card 
+                              key={ev.id}
+                              className={cn(
+                                "cursor-pointer border-2 hover:border-teal-500 transition-all",
+                                novaAutomacao.evento === ev.id ? "border-teal-600 bg-teal-50" : "border-slate-200"
+                              )}
+                              onClick={() => {
+                                setNovaAutomacao({ ...novaAutomacao, evento: ev.id });
+                                setAutomacaoStep(2);
+                              }}
+                            >
+                              <CardContent className="p-4 flex items-center gap-4">
+                                <div className="p-2 bg-white rounded-lg shadow-sm">
+                                  <ev.icon className="w-6 h-6 text-teal-600" />
+                                </div>
+                                <div className="text-left">
+                                  <h3 className="font-bold text-sm">{ev.label}</h3>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {automacaoStep === 2 && (
+                       <div className="space-y-4">
+                        <Label>Quem deve receber?</Label>
+                        <Select 
+                          value={novaAutomacao.publico} 
+                          onValueChange={(val) => {
+                            setNovaAutomacao({...novaAutomacao, publico: val});
+                            setAutomacaoStep(3);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o destinatário" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="VENDEDOR">Vendedor</SelectItem>
+                            <SelectItem value="COMPRADOR_VENCEDOR">Comprador Vencedor</SelectItem>
+                            <SelectItem value="COMPRADOR_PARTICIPANTE">Comprador Participante</SelectItem>
+                            <SelectItem value="COMPRADOR_SUPERADO">Comprador Superado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {automacaoStep === 3 && (
+                      <div className="space-y-4">
+                        <Label>Escolha o Template</Label>
+                        <div className="grid grid-cols-1 gap-3">
+                          {templates?.map((t: any) => (
+                            <Card 
+                              key={t.id}
+                              className={cn(
+                                "cursor-pointer border-2 hover:border-teal-500 transition-all",
+                                novaAutomacao.template_id === t.id ? "border-teal-600 bg-teal-50" : "border-slate-200"
+                              )}
+                              onClick={() => {
+                                setNovaAutomacao({ ...novaAutomacao, template_id: t.id });
+                                setAutomacaoStep(4);
+                              }}
+                            >
+                              <CardContent className="p-4 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <LayoutTemplate className="w-5 h-5 text-muted-foreground" />
+                                  <div>
+                                    <p className="font-medium">{t.meta_name}</p>
+                                    <p className="text-xs text-muted-foreground">{t.categoria} • {t.idioma}</p>
+                                  </div>
+                                </div>
+                                <Badge variant={t.status === 'APPROVED' ? 'default' : 'secondary'} className={cn(t.status === 'APPROVED' ? 'bg-green-500' : '')}>
+                                  {t.status}
+                                </Badge>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {automacaoStep >= 4 && (
+                      <div className="text-center py-10 space-y-4">
+                        <CheckCircle2 className="w-16 h-16 text-teal-600 mx-auto" />
+                        <h3 className="text-xl font-bold">Quase lá!</h3>
+                        <p className="text-muted-foreground">O motor de automações cuidará do preenchimento das variáveis e elegibilidade.</p>
+                        <Button onClick={handleSalvarAutomacao} className="bg-teal-600">Concluir e Salvar como Rascunho</Button>
+                      </div>
+                    )}
+                  </div>
+
+                  <DialogFooter className="flex justify-between border-t pt-4">
+                    <Button variant="outline" onClick={() => setAutomacaoStep(prev => Math.max(1, prev - 1))} disabled={automacaoStep === 1}>
+                      <ChevronLeft className="w-4 h-4 mr-2" /> Voltar
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {automacoes?.map((auto: any) => (
+                <Card key={auto.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-base">{auto.nome}</CardTitle>
+                        <CardDescription className="text-xs">{auto.evento}</CardDescription>
+                      </div>
+                      <Badge variant={auto.status === 'ATIVA' ? 'default' : 'secondary'} className={cn(
+                        auto.status === 'ATIVA' ? 'bg-green-500' : 
+                        auto.status === 'PAUSADA' ? 'bg-amber-500 text-white' : ''
+                      )}>
+                        {auto.status}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <p className="text-muted-foreground">Público</p>
+                        <p className="font-medium">{auto.publico}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Template</p>
+                        <p className="font-medium truncate">{auto.template_name}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-2 border-t flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Activity className="w-3 h-3" />
+                        <span>{auto.total_enviados} envios</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7"
+                          onClick={() => {
+                            setSelectedAutomacao(auto);
+                            setIsExecucoesOpen(true);
+                          }}
+                        >
+                          <History className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7"><FileEdit className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600"><Pause className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"><Trash2 className="w-3.5 h-3.5" /></Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {(!automacoes || automacoes.length === 0) && (
+                <div className="col-span-full py-12 text-center border-2 border-dashed rounded-xl space-y-3">
+                  <Zap className="w-12 h-12 mx-auto text-muted-foreground opacity-20" />
+                  <p className="text-muted-foreground">Nenhuma automação configurada</p>
+                  <Button variant="outline" size="sm" onClick={() => setIsAutomacaoWizardOpen(true)}>Criar Primeira Automação</Button>
+                </div>
+              )}
+            </div>
+
+            <Sheet open={isExecucoesOpen} onOpenChange={setIsExecucoesOpen}>
+              <SheetContent className="sm:max-w-xl overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>Histórico de Execução</SheetTitle>
+                  <SheetDescription>{selectedAutomacao?.nome}</SheetDescription>
+                </SheetHeader>
+                <div className="mt-6 space-y-4">
+                  {execucoesAutomacao?.map((exec: any) => (
+                    <div key={exec.id} className="p-3 border rounded-lg space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">{exec.destinatario_nome || 'N/A'}</span>
+                        <Badge variant={exec.status === 'ENVIADO' ? 'default' : 'destructive'} className="text-[10px]">
+                          {exec.status}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between text-[10px] text-muted-foreground">
+                        <span>{new Date(exec.criado_em).toLocaleString()}</span>
+                        <span>{exec.mensagem_status || 'Pendente'}</span>
+                      </div>
+                      {exec.erro_detalhe && (
+                        <p className="text-[10px] text-red-500 mt-1">{exec.erro_detalhe}</p>
+                      )}
+                    </div>
+                  ))}
+                  {(!execucoesAutomacao || execucoesAutomacao.length === 0) && (
+                    <div className="py-20 text-center opacity-50">Nenhuma execução registrada</div>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </TabsContent>
+
         </Tabs>
       </div>
     </AdminLayout>
