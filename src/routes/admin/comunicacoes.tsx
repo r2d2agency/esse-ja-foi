@@ -285,13 +285,13 @@ function ComunicacoesPage() {
         </div>
 
         <Tabs defaultValue="campanhas" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 bg-muted/50">
-            <TabsTrigger value="campanhas">Campanhas</TabsTrigger>
-            <TabsTrigger value="segmentos">Segmentos</TabsTrigger>
-            <TabsTrigger value="templates">Templates</TabsTrigger>
-            <TabsTrigger value="contatos">Contatos</TabsTrigger>
-            <TabsTrigger value="logs">Logs</TabsTrigger>
-            <TabsTrigger value="config">Configurações</TabsTrigger>
+          <TabsList className="flex w-full overflow-x-auto bg-muted/50 p-1 mb-6">
+            <TabsTrigger value="campanhas" className="flex-1">Campanhas</TabsTrigger>
+            <TabsTrigger value="segmentos" className="flex-1">Segmentos</TabsTrigger>
+            <TabsTrigger value="templates" className="flex-1">Templates</TabsTrigger>
+            <TabsTrigger value="contatos" className="flex-1">Contatos</TabsTrigger>
+            <TabsTrigger value="logs" className="flex-1">Logs</TabsTrigger>
+            <TabsTrigger value="config" className="flex-1">Configurações</TabsTrigger>
           </TabsList>
 
           {/* Campanhas */}
