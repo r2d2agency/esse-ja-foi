@@ -8,6 +8,8 @@ interface User {
   nome: string;
   email: string;
   role: Role;
+  whatsapp?: string;
+  cpf?: string;
 }
 
 interface AuthState {
