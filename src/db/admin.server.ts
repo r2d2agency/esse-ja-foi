@@ -96,7 +96,7 @@ export async function ensureAdminTables() {
 
 export async function checkSystemHealth() {
   const d = requireDb();
-  const tables = ['profiles', 'veiculos', 'agendamentos', 'clientes', 'laudos', 'logs', 'configuracoes_sistema'];
+  const tables = ['profiles', 'veiculos', 'agendamentos', 'clientes', 'laudos', 'logs', 'configuracoes_sistema', 'depreciacao_regras', 'depreciacao_calculos'];
   const health: Record<string, boolean> = {};
   
   for (const table of tables) {
