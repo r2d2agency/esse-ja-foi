@@ -77,7 +77,7 @@ function PagamentosAdminPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Link to="/admin/pagamento.$id" params={{ id: r.id }} className="text-teal-600 font-semibold hover:text-teal-700">
+                      <Link to="/admin/pagamento/$id" params={{ id: r.id }} className="text-teal-600 font-semibold hover:text-teal-700">
                         Detalhes
                       </Link>
                     </TableCell>

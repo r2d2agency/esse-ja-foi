@@ -11,7 +11,7 @@ import { Link } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
 
-export const Route = createFileRoute('/admin/pagamento.$id')({
+export const Route = createFileRoute('/admin/pagamento/$id')({
   component: RepasseDetalheAdminPage,
 });
 
