@@ -77,10 +77,8 @@ function CompradorIndex() {
     setIsSubmitting(true);
     try {
       const result = await loginFn({ 
-        data: {
-          email: formData.email, 
-          password: formData.password 
-        }
+        email: formData.email, 
+        password: formData.password 
       });
       
       if (result.ok) {
@@ -153,19 +151,15 @@ function CompradorIndex() {
     try {
       const { cadastrarVendedorFn } = await import("@/lib/vendedor.functions");
       const result = await cadastrarVendedorFn({
-        data: {
-          data: {
-            nome: formData.nome,
-            email: formData.email,
-            password: formData.password || "123456",
-            whatsapp: formData.whatsapp || null,
-            cpf: formData.cpf || null,
-            cep: formData.cep || null,
-            endereco: `${formData.endereco}, ${formData.numero}${formData.complemento ? ` - ${formData.complemento}` : ""} - ${formData.bairro}`,
-            cidade: formData.cidade,
-            uf: formData.uf
-          }
-        }
+        nome: formData.nome,
+        email: formData.email,
+        password: formData.password || "123456",
+        whatsapp: formData.whatsapp || null,
+        cpf: formData.cpf || null,
+        cep: formData.cep || null,
+        endereco: `${formData.endereco}, ${formData.numero}${formData.complemento ? ` - ${formData.complemento}` : ""} - ${formData.bairro}`,
+        cidade: formData.cidade,
+        uf: formData.uf
       });
 
       if (!result.ok) {
