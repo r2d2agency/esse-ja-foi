@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 interface FotoSlotProps {
   label: string;
-  dica?: string;
+  dica?: string | undefined;
   value?: string | null;
   onChange: (url: string | null) => void;
 }
