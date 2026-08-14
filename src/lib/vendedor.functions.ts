@@ -113,6 +113,11 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({
     data: z.object({
       perfilId: z.string().uuid(),
+      cpf: z.string().optional(),
+      cep: z.string().optional(),
+      endereco: z.string().optional(),
+      cidade: z.string().optional(),
+      uf: z.string().optional(),
       cnhUrl: z.string().optional(),
       crlvUrl: z.string().optional(),
       selfieUrl: z.string().optional(),
@@ -127,6 +132,11 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
     await db.execute(sql`
       UPDATE profiles 
       SET 
+        cpf = COALESCE(${data.cpf ?? null}, cpf),
+        cep = COALESCE(${data.cep ?? null}, cep),
+        endereco = COALESCE(${data.endereco ?? null}, endereco),
+        cidade = COALESCE(${data.cidade ?? null}, cidade),
+        uf = COALESCE(${data.uf ?? null}, uf),
         documento_cnh_url = COALESCE(${data.cnhUrl ?? null}, documento_cnh_url),
         documento_crlv_url = COALESCE(${data.crlvUrl ?? null}, documento_crlv_url),
         documento_selfie_url = COALESCE(${data.selfieUrl ?? null}, documento_selfie_url),
