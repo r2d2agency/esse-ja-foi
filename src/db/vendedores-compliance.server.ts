@@ -43,9 +43,9 @@ export async function listarVendedores(filtros: { status?: string | undefined, b
   
   return (await d.execute(sql`
     SELECT 
-      p.id, p.nome, p.cpf, p.whatsapp, p.criado_em,
+      p.id, p.nome, p.cpf, p.email, p.whatsapp, p.criado_em,
       c.status as compliance_status,
-      (SELECT count(*) FROM veiculos v WHERE v.perfil_id = p.id) as total_veiculos,
+      (SELECT count(*)::int FROM veiculos v WHERE v.perfil_id = p.id) as total_veiculos,
       res.nome as responsavel_nome
     FROM profiles p
     LEFT JOIN compliance_analise c ON c.vendedor_id = p.id
