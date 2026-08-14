@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getAnuncioPublico } from "@/lib/vitrine.functions";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, MapPin, Gauge, Lock, ArrowLeft, Fuel, Settings2, Info } from "lucide-react";
+import { ShieldCheck, MapPin, Gauge, Lock, ArrowLeft, Fuel, Settings2, Info, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/veiculos/")({
@@ -117,16 +117,16 @@ function DetalheVeiculoPublico() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                 <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl text-sm font-medium">
-                  <CheckCircleIcon className="h-4 w-4 text-teal-600" /> Quilometragem conferida
+                  <CheckCircle2 className="h-4 w-4 text-teal-600" /> Quilometragem conferida
                 </div>
                 <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl text-sm font-medium">
-                  <CheckCircleIcon className="h-4 w-4 text-teal-600" /> Estrutura analisada
+                  <CheckCircle2 className="h-4 w-4 text-teal-600" /> Estrutura analisada
                 </div>
                 <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl text-sm font-medium">
-                  <CheckCircleIcon className="h-4 w-4 text-teal-600" /> Documentação validada
+                  <CheckCircle2 className="h-4 w-4 text-teal-600" /> Documentação validada
                 </div>
                 <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl text-sm font-medium">
-                  <CheckCircleIcon className="h-4 w-4 text-teal-600" /> Funcionamento mecânico testado
+                  <CheckCircle2 className="h-4 w-4 text-teal-600" /> Funcionamento mecânico testado
                 </div>
               </div>
             </div>
@@ -177,7 +177,7 @@ function DetalheVeiculoPublico() {
   );
 }
 
-function CheckCircleIcon(props: any) {
+function CheckCircle2(props: any) {
   return (
     <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
