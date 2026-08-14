@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { getLeiloesAdmin } from "@/lib/leilao.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Gavel, Clock, Users, Eye } from "lucide-react";
-import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/admin/leiloes")({
   component: AdminLeiloesPage,
@@ -119,7 +119,7 @@ function AdminLeiloesPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <Button asChild size="sm" variant="ghost" className="gap-2">
-                        <Link to={`/admin/leiloes/${leilao.id}`}>
+                        <Link to="/admin/leiloes/$id" params={{ id: leilao.id }}>
                           <Eye className="h-4 w-4" /> Acompanhar
                         </Link>
                       </Button>
