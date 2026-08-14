@@ -177,7 +177,7 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
         documento_cnh_url = COALESCE(${data.cnhUrl ?? null}, documento_cnh_url),
         documento_crlv_url = COALESCE(${data.crlvUrl ?? null}, documento_crlv_url),
         documento_selfie_url = COALESCE(${data.selfieUrl ?? null}, documento_selfie_url),
-        cadastro_completo = CASE WHEN ${data.finalizar === true} THEN true ELSE cadastro_completo END
+        cadastro_completo = CASE WHEN ${data.finalizar ?? false} = true THEN true ELSE cadastro_completo END
       WHERE id = ${data.perfilId}::uuid;
 
     `);

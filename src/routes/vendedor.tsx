@@ -85,10 +85,8 @@ function DashboardVendedor() {
                 </div>
               </div>
               <Button 
-                onClick={() => {
-                  console.log("Navigating to onboarding...");
-                  navigate({ to: '/vendedor/onboarding' });
-                }}
+                onClick={() => navigate({ to: '/vendedor/onboarding' })}
+
 
                 className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs"
               >
