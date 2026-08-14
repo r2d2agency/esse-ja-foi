@@ -79,8 +79,11 @@ function AdminDashboard() {
           <Link to="/operacao/leads" className="inline-block text-sm font-medium text-teal-700 hover:underline">
             Ver todos os leads →
           </Link>
-          <Link to="/admin/usuarios" className="inline-block text-sm font-medium text-amber-700 hover:underline">
-            Aprovar novos vendedores →
+          <Link to="/admin/usuarios" className="inline-block text-sm font-medium text-teal-700 hover:underline">
+            Gestão de Vendedores →
+          </Link>
+          <Link to="/admin/configuracoes" className="inline-block text-sm font-medium text-amber-700 hover:underline">
+            Configurações do Sistema →
           </Link>
         </div>
 

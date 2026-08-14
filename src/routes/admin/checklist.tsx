@@ -11,7 +11,7 @@ import {
   salvarAcessorioFn,
   salvarModeloFn,
 } from "@/lib/checklist.functions";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/checklist")({
   head: () => ({
@@ -39,9 +39,17 @@ function ChecklistAdmin() {
   const [novoAcessorio, setNovoAcessorio] = useState({ nome: "", categoria: "" });
 
   const carregar = useCallback(async () => {
-    const res = await listarModelosFn();
-    setModelos(res.data ?? []);
-    setAcessorios(res.acessorios ?? []);
+    try {
+      const res = await listarModelosFn();
+      if (res.ok) {
+        setModelos(res.data ?? []);
+        setAcessorios(res.acessorios ?? []);
+      } else {
+        toast.error(res.message || "Erro ao carregar dados.");
+      }
+    } catch (err: any) {
+      toast.error("Falha na comunicação com o servidor.");
+    }
   }, []);
 
   useEffect(() => {
@@ -75,22 +83,29 @@ function ChecklistAdmin() {
 
   const salvar = async () => {
     if (!editando) return;
-    const res = await salvarModeloFn({
-      data: {
-        ...(editando.id ? { id: editando.id } : {}),
-        codigo: editando.codigo,
-        nome: editando.nome,
-        descricao: editando.descricao || null,
-        itens: editando.itens.filter((i) => i.titulo.trim()),
-      },
-    });
-    if (!res.ok || !res.data) {
-      toast.error(res.message);
-      return;
+    const loadingToast = toast.loading("Salvando...");
+    try {
+      const res = await salvarModeloFn({
+        data: {
+          ...(editando.id ? { id: editando.id } : {}),
+          codigo: editando.codigo,
+          nome: editando.nome,
+          descricao: editando.descricao || null,
+          itens: editando.itens.filter((i) => i.titulo.trim()),
+        },
+      });
+      toast.dismiss(loadingToast);
+      if (!res.ok || !res.data) {
+        toast.error(res.message || "Erro ao salvar.");
+        return;
+      }
+      toast.success(res.data.novaVersao ? "Modelo em uso: nova versão criada." : "Modelo salvo.");
+      setEditando(null);
+      void carregar();
+    } catch (err) {
+      toast.dismiss(loadingToast);
+      toast.error("Erro técnico ao salvar.");
     }
-    toast.success(res.data.novaVersao ? "Modelo em uso: nova versão criada." : "Modelo salvo.");
-    setEditando(null);
-    void carregar();
   };
 
   return (
@@ -144,8 +159,15 @@ function ChecklistAdmin() {
                     {!m['ativo'] && (
                       <button
                         onClick={async () => {
-                          await ativarModeloFn({ data: { id: String(m['id']) } });
-                          void carregar();
+                          const loadingToast = toast.loading("Ativando modelo...");
+                          const res = await ativarModeloFn({ data: { id: String(m['id']) } });
+                          toast.dismiss(loadingToast);
+                          if (res.ok) {
+                            toast.success("Modelo ativado!");
+                            void carregar();
+                          } else {
+                            toast.error(res.message);
+                          }
                         }}
                         className="mr-3 text-slate-600 hover:underline"
                       >
@@ -154,8 +176,12 @@ function ChecklistAdmin() {
                     )}
                     <button
                       onClick={async () => {
+                        if (!confirm("Tem certeza que deseja excluir este modelo?")) return;
+                        const loadingToast = toast.loading("Excluindo...");
                         const res = await excluirModeloFn({ data: { id: String(m['id']) } });
+                        toast.dismiss(loadingToast);
                         if (!res.ok) toast.error(res.message);
+                        else toast.success("Modelo excluído.");
                         void carregar();
                       }}
                       className="text-red-600 hover:underline"

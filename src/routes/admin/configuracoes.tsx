@@ -18,9 +18,18 @@ function ConfiguracoesAdminPage() {
 
   const carregar = useCallback(async () => {
     setLoading(true);
-    const res = await listarConfiguracoesFn();
-    if (res.ok) setConfigs(res.data);
-    setLoading(false);
+    try {
+      const res = await listarConfiguracoesFn();
+      if (res.ok) {
+        setConfigs(res.data);
+      } else {
+        toast.error(res.message || "Erro ao carregar configurações.");
+      }
+    } catch (err) {
+      toast.error("Erro na comunicação com o servidor.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
