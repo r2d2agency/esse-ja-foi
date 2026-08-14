@@ -1,174 +1,170 @@
-import { createFileRoute, useNavigate, Link } from '@tanstack/react-router';
-import { useAuth } from '@/hooks/use-auth';
-import { useSuspenseQuery, useQuery } from '@tanstack/react-query';
-
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
+import { Car, Plus, CheckCircle2 } from 'lucide-react';
 import { listarMeusVeiculosFn } from '@/lib/vendedor.functions';
+import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Car, Plus, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { AlertaAcao } from '@/components/vendedor/AlertaAcao';
+import { StatusBadge, statusVeiculo } from '@/components/vendedor/StatusBadge';
+import { ProgressoCadastro, montarEtapas, percentual } from '@/components/vendedor/ProgressoCadastro';
 
 export const Route = createFileRoute('/vendedor/')({
   component: DashboardVendedor,
 });
 
+const CAMINHO = [
+  'Complete seu cadastro',
+  'Cadastre seu veículo',
+  'Passe pela análise',
+  'Agende a vistoria',
+  'Receba ofertas',
+];
+
 function DashboardVendedor() {
-  const { user, logout, isLoading: authLoading, initialized } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const listarVeiculos = useServerFn(listarMeusVeiculosFn);
+  const listar = useServerFn(listarMeusVeiculosFn);
+  const [placaPendente, setPlacaPendente] = useState('');
 
-  // Se ainda não inicializou o persist do zustand ou está carregando auth, mostra loading
-  if (!initialized || authLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Carregando autenticação...</div>;
-  }
+  useEffect(() => {
+    setPlacaPendente(sessionStorage.getItem('ejf_placa') || '');
+  }, []);
 
-  // Só tenta buscar veículos se tivermos um usuário logado
-  // Usamos useQuery em vez de useSuspenseQuery aqui para evitar problemas de hidratação
-  // e permitir o uso do 'enabled' baseado na presença do usuário.
-  const { data: veiculosResult, isLoading: veiculosLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['meus-veiculos', user?.id],
-    queryFn: () => listarVeiculos({ 
-      data: { perfilId: user?.id || "" } 
-    }),
+    queryFn: () => listar({ data: { perfilId: user?.id || '' } }),
     enabled: !!user?.id,
   });
-  
-  const veiculos = veiculosResult?.data || [];
-  const profile = (veiculosResult as any)?.profile || {};
 
-  if (veiculosLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Carregando veículos...</div>;
-  }
-
-
-
-  if (!user || user.role !== 'vendedor') {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <p>Acesso restrito.</p>
-        <Link to="/" className="text-teal-600 underline">Voltar para Home</Link>
-      </div>
-    );
-  }
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'AGUARDANDO_APROVACAO':
-        return <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none"><Clock className="w-3 h-3 mr-1" /> Em Análise</Badge>;
-      case 'CADASTRADO':
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none"><CheckCircle2 className="w-3 h-3 mr-1" /> Aprovado</Badge>;
-      case 'AGENDADO':
-        return <Badge variant="secondary" className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-none">Agendado</Badge>;
-      case 'VENDIDO':
-        return <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 border-none">Vendido</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
+  const veiculos: any[] = (data as any)?.data || [];
+  const profile = (data as any)?.profile || {};
+  const etapas = montarEtapas(profile);
+  const pct = percentual(etapas);
+  const completo = pct === 100;
+  const primeiroNome = user?.nome?.split(' ')[0] || 'vendedor';
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 py-4 px-6 flex justify-between items-center sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-teal-900 rounded-lg flex items-center justify-center">
-            <Car className="w-5 h-5 text-amber-400" />
-          </div>
-          <span className="font-display font-bold text-teal-900">ÁREA DO VENDEDOR</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-slate-600 hidden md:inline">Olá, <strong>{user.nome}</strong></span>
-          <Button variant="outline" size="sm" onClick={() => logout()}>Sair</Button>
-        </div>
-      </header>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-black tracking-tight text-slate-900">Olá, {primeiroNome} 👋</h1>
+        <p className="mt-1 text-slate-500">Acompanhe por aqui seu cadastro, veículos e negociações.</p>
+      </div>
 
-      <main className="max-w-5xl mx-auto py-8 px-6">
-        {!profile?.cadastro_completo && (
-          <Card className="mb-8 border-amber-200 bg-amber-50 shadow-sm">
-            <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600">
-                  <AlertCircle className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-amber-900 text-sm">Seu cadastro não está finalizado!</h4>
-                  <p className="text-amber-800/70 text-xs">Ainda falta 1 passo: envie fotos dos seus documentos para liberar as vendas.</p>
-                </div>
+      {!completo && (
+        <AlertaAcao
+          titulo="Precisamos de você"
+          descricao="Seu cadastro ainda possui informações pendentes."
+          acaoLabel="Resolver agora"
+          onAcao={() => navigate({ to: '/vendedor/onboarding' })}
+        />
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Card cadastro */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-6">
+          {completo ? (
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+              <p className="text-lg font-bold text-slate-900">Cadastro verificado</p>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-start justify-between gap-3">
+                <h2 className="text-lg font-bold text-slate-900">Complete seu cadastro</h2>
+                <StatusBadge status="incompleto" />
               </div>
-              <Button 
-                onClick={() => navigate({ to: '/vendedor/onboarding' })}
-
-
-                className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs"
-              >
-                Concluir Agora
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-teal-900">Meus Veículos</h1>
-            <p className="text-slate-500">Acompanhe o status dos seus anúncios e vistorias.</p>
-          </div>
-          <Button 
-            className="bg-teal-900 hover:bg-teal-950 text-white" 
-            onClick={() => navigate({ to: '/vendedor/cadastrar' })}
-          >
-            <Plus className="w-4 h-4 mr-2" /> Novo Veículo
-          </Button>
-
-        </div>
-
-        {veiculos?.length === 0 ? (
-          <Card className="border-dashed border-2 bg-slate-50/50">
-            <CardContent className="flex flex-col items-center py-12 text-center">
-              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                <Car className="w-8 h-8 text-slate-300" />
-              </div>
-              <h3 className="font-semibold text-slate-900">Nenhum veículo cadastrado</h3>
-              <p className="text-slate-500 max-w-xs mt-1">
-                Você ainda não enviou nenhum carro para avaliação. Clique no botão acima para começar.
+              <p className="mt-2 text-sm text-slate-500">
+                Precisamos validar algumas informações antes de liberar seu veículo para análise.
               </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4">
-            {veiculos?.map((v: any) => (
-              <Card key={v.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Car className="w-8 h-8 text-teal-900" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-teal-900 text-lg">{v.marca} {v.modelo}</h4>
-                      <div className="flex gap-3 text-sm text-slate-500">
-                        <span>Placa: <strong>{v.placa}</strong></span>
-                        <span>Ano: {v.ano_modelo || 'N/A'}</span>
-                      </div>
-                    </div>
-                  </div>
+              <div className="mt-5">
+                <ProgressoCadastro etapas={etapas} />
+              </div>
+              <Button
+                onClick={() => navigate({ to: '/vendedor/onboarding' })}
+                className="mt-6 h-12 w-full rounded-xl bg-teal-700 font-semibold text-white transition-colors hover:bg-teal-800"
+              >
+                Continuar cadastro
+              </Button>
+            </>
+          )}
+        </section>
 
-                  <div className="flex flex-col md:items-end gap-2">
-                    {getStatusBadge(v.status)}
-                    <span className="text-xs text-slate-400">Cadastrado em {new Date(v.criado_em).toLocaleDateString('pt-BR')}</span>
-                  </div>
-                </div>
-                
-                {v.status === 'AGUARDANDO_APROVACAO' && (
-                  <div className="bg-amber-50 px-6 py-3 border-t border-amber-100 flex items-center gap-2 text-sm text-amber-800">
-                    <AlertCircle className="w-4 h-4" />
-                    <span>Estamos analisando os dados do seu veículo. Entraremos em contato em breve.</span>
-                  </div>
-                )}
-              </Card>
-            ))}
-          </div>
-        )}
-      </main>
+        {/* Card veículos */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-6">
+          {isLoading ? (
+            <p className="text-sm text-slate-400">Carregando seus veículos...</p>
+          ) : veiculos.length > 0 ? (
+            <>
+              <h2 className="text-lg font-bold text-slate-900">Seus veículos</h2>
+              <ul className="mt-4 space-y-3">
+                {veiculos.slice(0, 3).map((v) => (
+                  <li key={v.id} className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-4">
+                    <div>
+                      <p className="font-semibold text-slate-900">
+                        {v.marca} {v.modelo}
+                      </p>
+                      <p className="text-xs uppercase tracking-widest text-slate-400">{v.placa}</p>
+                    </div>
+                    <StatusBadge status={statusVeiculo(v.status)} />
+                  </li>
+                ))}
+              </ul>
+              <Button
+                variant="outline"
+                onClick={() => navigate({ to: '/vendedor/veiculos' })}
+                className="mt-5 h-12 w-full rounded-xl"
+              >
+                Ver todos
+              </Button>
+            </>
+          ) : placaPendente ? (
+            <>
+              <h2 className="text-lg font-bold text-slate-900">Seu veículo</h2>
+              <p className="mt-2 text-xl font-bold uppercase tracking-[0.2em] text-slate-900">{placaPendente}</p>
+              <div className="mt-3">
+                <StatusBadge status="incompleto" label="Cadastro não concluído" />
+              </div>
+              <Button
+                onClick={() => navigate({ to: '/vendedor/cadastrar' })}
+                className="mt-6 h-12 w-full rounded-xl bg-teal-700 font-semibold text-white hover:bg-teal-800"
+              >
+                Continuar cadastro do veículo
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50">
+                <Car className="h-6 w-6 text-teal-700" />
+              </div>
+              <h2 className="mt-4 text-lg font-bold text-slate-900">Venda seu primeiro veículo</h2>
+              <p className="mt-2 text-sm text-slate-500">
+                Cadastre os dados básicos do seu carro para iniciar a análise.
+              </p>
+              <Button
+                onClick={() => navigate({ to: '/vendedor/cadastrar' })}
+                className="mt-6 h-12 w-full rounded-xl bg-teal-700 font-semibold text-white hover:bg-teal-800"
+              >
+                <Plus className="mr-2 h-4 w-4" /> Cadastrar veículo
+              </Button>
+            </>
+          )}
+        </section>
+      </div>
+
+      {/* Como funciona */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-6">
+        <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">Como funciona</h2>
+        <ol className="mt-5 grid gap-4 lg:grid-cols-5">
+          {CAMINHO.map((etapa, i) => (
+            <li key={etapa} className="flex items-start gap-3 lg:block lg:border-t-2 lg:border-slate-900 lg:pt-3">
+              <span className="text-sm font-black text-teal-700">{i + 1}</span>
+              <span className="text-sm text-slate-600 lg:mt-1 lg:block">{etapa}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
     </div>
   );
 }

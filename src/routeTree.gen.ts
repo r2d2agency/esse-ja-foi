@@ -34,6 +34,7 @@ import { Route as OperacaoLaudosRouteImport } from './routes/operacao/laudos'
 import { Route as OperacaoLeadsRouteImport } from './routes/operacao/leads'
 import { Route as OperacaoVeiculosRouteImport } from './routes/operacao/veiculos'
 import { Route as VendedorIndexRouteImport } from './routes/vendedor.index'
+import { Route as VendedorBoasVindasRouteImport } from './routes/vendedor.boas-vindas'
 import { Route as VendedorCadastrarRouteImport } from './routes/vendedor.cadastrar'
 import { Route as VendedorOnboardingRouteImport } from './routes/vendedor.onboarding'
 import { Route as VistoriaIndexRouteImport } from './routes/vistoria/index'
@@ -166,6 +167,11 @@ const VendedorIndexRoute = VendedorIndexRouteImport.update({
   path: '/',
   getParentRoute: () => VendedorRoute,
 } as any)
+const VendedorBoasVindasRoute = VendedorBoasVindasRouteImport.update({
+  id: '/boas-vindas',
+  path: '/boas-vindas',
+  getParentRoute: () => VendedorRoute,
+} as any)
 const VendedorCadastrarRoute = VendedorCadastrarRouteImport.update({
   id: '/cadastrar',
   path: '/cadastrar',
@@ -220,6 +226,7 @@ export interface FileRoutesByFullPath {
   '/operacao/laudos': typeof OperacaoLaudosRoute
   '/operacao/leads': typeof OperacaoLeadsRoute
   '/operacao/veiculos': typeof OperacaoVeiculosRoute
+  '/vendedor/boas-vindas': typeof VendedorBoasVindasRoute
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
@@ -249,6 +256,7 @@ export interface FileRoutesByTo {
   '/operacao/laudos': typeof OperacaoLaudosRoute
   '/operacao/leads': typeof OperacaoLeadsRoute
   '/operacao/veiculos': typeof OperacaoVeiculosRoute
+  '/vendedor/boas-vindas': typeof VendedorBoasVindasRoute
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
@@ -283,6 +291,7 @@ export interface FileRoutesById {
   '/operacao/laudos': typeof OperacaoLaudosRoute
   '/operacao/leads': typeof OperacaoLeadsRoute
   '/operacao/veiculos': typeof OperacaoVeiculosRoute
+  '/vendedor/boas-vindas': typeof VendedorBoasVindasRoute
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
   '/vistoria/$agendamentoId': typeof VistoriaAgendamentoIdRoute
@@ -318,6 +327,7 @@ export interface FileRouteTypes {
     | '/operacao/laudos'
     | '/operacao/leads'
     | '/operacao/veiculos'
+    | '/vendedor/boas-vindas'
     | '/vendedor/cadastrar'
     | '/vendedor/onboarding'
     | '/vistoria/$agendamentoId'
@@ -347,6 +357,7 @@ export interface FileRouteTypes {
     | '/operacao/laudos'
     | '/operacao/leads'
     | '/operacao/veiculos'
+    | '/vendedor/boas-vindas'
     | '/vendedor/cadastrar'
     | '/vendedor/onboarding'
     | '/vistoria/$agendamentoId'
@@ -380,6 +391,7 @@ export interface FileRouteTypes {
     | '/operacao/laudos'
     | '/operacao/leads'
     | '/operacao/veiculos'
+    | '/vendedor/boas-vindas'
     | '/vendedor/cadastrar'
     | '/vendedor/onboarding'
     | '/vistoria/$agendamentoId'
@@ -582,6 +594,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendedorIndexRouteImport
       parentRoute: typeof VendedorRoute
     }
+    '/vendedor/boas-vindas': {
+      id: '/vendedor/boas-vindas'
+      path: '/boas-vindas'
+      fullPath: '/vendedor/boas-vindas'
+      preLoaderRoute: typeof VendedorBoasVindasRouteImport
+      parentRoute: typeof VendedorRoute
+    }
     '/vendedor/cadastrar': {
       id: '/vendedor/cadastrar'
       path: '/cadastrar'
@@ -684,12 +703,14 @@ const OperacaoRouteWithChildren = OperacaoRoute._addFileChildren(
 )
 
 interface VendedorRouteChildren {
+  VendedorBoasVindasRoute: typeof VendedorBoasVindasRoute
   VendedorCadastrarRoute: typeof VendedorCadastrarRoute
   VendedorOnboardingRoute: typeof VendedorOnboardingRoute
   VendedorIndexRoute: typeof VendedorIndexRoute
 }
 
 const VendedorRouteChildren: VendedorRouteChildren = {
+  VendedorBoasVindasRoute: VendedorBoasVindasRoute,
   VendedorCadastrarRoute: VendedorCadastrarRoute,
   VendedorOnboardingRoute: VendedorOnboardingRoute,
   VendedorIndexRoute: VendedorIndexRoute,
