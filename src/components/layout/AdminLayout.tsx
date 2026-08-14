@@ -41,19 +41,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 const MENU_ITEMS = [
   { label: "Dashboard", icon: LayoutDashboard, to: "/admin" },
-  { label: "Vendedores", icon: Users, to: "/admin/usuarios" },
+  { label: "Vendedores", icon: Users, to: "/admin/vendedores" },
   { label: "Veículos", icon: Car, to: "/operacao/veiculos" },
-  { label: "Compliance", icon: ShieldCheck, to: "/admin/compliance" },
+  { label: "Compliance", icon: ShieldCheck, to: "/admin/vendedores" }, // Redireciona para a lista para selecionar o vendedor
   { label: "Contratos", icon: FileText, to: "/admin/contratos" },
-  { label: "Vistorias", icon: Camera, to: "/operacao/laudos" },
-  { label: "Anúncios", icon: Megaphone, to: "/admin/anuncios" },
-  { label: "Leilões", icon: Gavel, to: "/comprador" },
-  { label: "Compradores", icon: ShoppingBag, to: "/admin/usuarios" },
-  { label: "Financeiro", icon: DollarSign, to: "/admin/financeiro" },
-  { label: "Entregas", icon: Truck, to: "/admin/entregas" },
-  { label: "Comunicações", icon: MessageSquare, to: "/admin/comunicacoes" },
-  { label: "Relatórios", icon: BarChart3, to: "/admin/relatorios" },
-  { label: "Usuários", icon: UserCog, to: "/admin/usuarios" },
   { label: "Configurações", icon: Settings, to: "/admin/configuracoes" },
 ];
 
