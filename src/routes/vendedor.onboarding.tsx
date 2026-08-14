@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Car, Loader2, ArrowRight, Save, Camera, Check, User, MapPin, FileCheck } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useServerFn } from '@tanstack/react-start';
 import { toast } from 'sonner';
 import { atualizarDocumentosVendedorFn } from '@/lib/vendedor.functions';
@@ -431,17 +431,20 @@ function VendedorOnboarding() {
                   </Button>
                )}
                
-               <div className="flex gap-2 w-full md:w-auto">
-                 {step > 1 && (
+                 <div className="flex gap-2 w-full md:w-auto">
                     <Button 
                       variant="outline" 
-                      onClick={() => setStep(s => s - 1)} 
+                      onClick={() => {
+                        if (step > 1) {
+                          setStep(s => s - 1);
+                          window.scrollTo(0, 0);
+                        }
+                      }} 
                       className="h-14 px-6 rounded-2xl border-slate-200 text-slate-600 font-bold flex-1 md:flex-initial"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || step === 1}
                     >
                       Voltar
                     </Button>
-                 )}
                  <Button 
                     variant="ghost" 
                     onClick={handleSalvarSair} 
