@@ -45,7 +45,7 @@ function LoginPage() {
   async function onSubmit(values: LoginFormValues) {
     setIsLoading(true);
     try {
-      const result = await loginWithPassword(values);
+      const result = await loginWithPassword({ data: values });
 
       if (!result.ok) {
         toast.error(result.message);
