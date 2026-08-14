@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      acessorios_catalogo: {
+        Row: {
+          ativo: boolean
+          categoria: string | null
+          criado_em: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          categoria?: string | null
+          criado_em?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string | null
+          criado_em?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       agendamentos: {
         Row: {
           criado_em: string
@@ -365,6 +389,27 @@ export type Database = {
           descricao?: string | null
           id?: string
           valor?: Json | null
+        }
+        Relationships: []
+      }
+      configuracoes_sistema: {
+        Row: {
+          atualizado_em: string
+          chave: string
+          descricao: string | null
+          valor: string
+        }
+        Insert: {
+          atualizado_em?: string
+          chave: string
+          descricao?: string | null
+          valor: string
+        }
+        Update: {
+          atualizado_em?: string
+          chave?: string
+          descricao?: string | null
+          valor?: string
         }
         Relationships: []
       }
