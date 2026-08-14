@@ -1,475 +1,268 @@
-import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useState, useEffect, useCallback } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { buscarCep } from "@/lib/brasil";
-import { loginWithPassword } from "@/lib/auth.functions";
-import { 
-  Gavel, 
-  ShieldCheck, 
-  Zap, 
-  UserCheck, 
-  CheckCircle2,
-  Lock,
-  ArrowRight,
-  MessageCircle,
-  FileSearch,
-  LogIn
-} from "lucide-react";
-import { 
-  Accordion, 
-  AccordionContent, 
-  AccordionItem, 
-  AccordionTrigger 
-} from "@/components/ui/accordion";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { ArrowRight, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
-import { useAuth } from "@/hooks/use-auth";
+import heroCar from "@/assets/hero-car.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "ESSE JÁ FOI — Vitrine de Oportunidades" },
+      { title: "ESSE JÁ FOI — Venda seu carro para uma rede de compradores" },
       {
         name: "description",
-        content: "Encontre os melhores veículos com procedência garantida. Acesse nossa vitrine exclusiva para compradores cadastrados.",
+        content:
+          "Cadastre seu veículo, passe pela avaliação e receba ofertas de compradores verificados. Cadastro inicial rápido e sem compromisso.",
       },
-      { property: "og:title", content: "ESSE JÁ FOI — Vitrine de Oportunidades" },
-      { property: "og:description", content: "Veículos com vistoria técnica aprovada e propostas reais." },
+      { property: "og:title", content: "ESSE JÁ FOI — Venda seu carro para uma rede de compradores" },
+      {
+        property: "og:description",
+        content: "Você cadastra seu carro. Nós encontramos quem está disposto a pagar por ele.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: CompradorIndex,
+  component: LandingVendedor,
 });
 
-function CompradorIndex() {
-  const [showLogin, setShowLogin] = useState(false);
-  const [wizardStep, setWizardStep] = useState(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login } = useAuth();
-  const [formData, setFormData] = useState({
-    nome: "",
-    cpf: "",
-    whatsapp: "",
-    email: "",
-    password: "",
-    cep: "",
-    endereco: "",
-    numero: "",
-    bairro: "",
-    complemento: "",
-    cidade: "",
-    uf: "",
-  });
-  const [vitrine] = useState([
-    { id: '1', marca: 'Toyota', modelo: 'Corolla Altis', ano: '2022', km: '35.000', cor: 'Branco', combustivel: 'Flex', imagem: 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?q=80&w=800' },
-    { id: '2', marca: 'Honda', modelo: 'Civic Touring', ano: '2021', km: '42.000', cor: 'Cinza', combustivel: 'Gasolina', imagem: 'https://images.unsplash.com/photo-1599912027806-cfec9f5944b6?q=80&w=800' },
-    { id: '3', marca: 'Volkswagen', modelo: 'Nivus Highline', ano: '2023', km: '12.000', cor: 'Azul', combustivel: 'Flex', imagem: 'https://images.unsplash.com/photo-1632243193041-563a017a5509?q=80&w=800' },
-    { id: '4', marca: 'Jeep', modelo: 'Compass Longitude', ano: '2022', km: '28.000', cor: 'Preto', combustivel: 'Diesel', imagem: 'https://images.unsplash.com/photo-1606148334078-2c4f1c9f4d71?q=80&w=800' },
-  ]);
+const ETAPAS = [
+  { n: "01", t: "Cadastre seu carro", d: "Informe os principais dados do veículo." },
+  { n: "02", t: "Faça a vistoria", d: "Após a análise, agendamos uma vistoria em uma unidade autorizada." },
+  { n: "03", t: "Receba ofertas", d: "Seu veículo é apresentado para compradores cadastrados e verificados." },
+  { n: "04", t: "Venda com segurança", d: "A melhor oferta vence e acompanhamos a negociação até a conclusão." },
+];
 
-  const loginFn = useServerFn(loginWithPassword);
+const SEGURANCA = [
+  "Identidade verificada",
+  "Documentação analisada",
+  "Vistoria do veículo",
+  "Compradores cadastrados",
+  "Acompanhamento da negociação",
+];
+
+function LandingVendedor() {
   const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [placaHero, setPlacaHero] = useState("");
+  const [placaFinal, setPlacaFinal] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      const result = await loginFn({ 
-        data: {
-          email: formData.email, 
-          password: formData.password 
-        }
-      });
-      
-      if (result.ok) {
-        toast.success("Login realizado com sucesso!");
-        const { user, accessToken } = result;
-        login({ 
-          user: {
-            id: user.id,
-            nome: user.nome,
-            email: user.email,
-            role: user.role as any
-          }, 
-          accessToken, 
-          refreshToken: "" 
-        });
-
-        if (user.role === 'vendedor') {
-          navigate({ to: '/vendedor' });
-          return;
-        }
-
-        if (user.role === 'admin' || user.role === 'operacao') {
-          navigate({ to: "/operacao/veiculos" });
-        } else if (user.role === 'vistoriador') {
-          navigate({ to: "/vistoria" });
-        } else {
-          navigate({ to: "/comprador" });
-        }
-      } else {
-        toast.error(result.message || "Erro ao realizar login");
-      }
-    } catch (error) {
-      toast.error("Erro na conexão com o servidor");
-    } finally {
-      setIsSubmitting(false);
+  const irParaCadastro = (placa?: string) => {
+    const valor = (placa ?? "").trim().toUpperCase();
+    if (typeof window !== "undefined") {
+      if (valor) sessionStorage.setItem("ejf_placa", valor);
+      else sessionStorage.removeItem("ejf_placa");
     }
-  };
-  
-  const handleCepChange = useCallback(async (cep: string) => {
-    const cleanCep = cep.replace(/\D/g, "");
-    setFormData(prev => ({ ...prev, cep }));
-    
-    if (cleanCep.length === 8) {
-      try {
-        const address = await buscarCep(cleanCep);
-        if (address) {
-          setFormData(prev => ({
-            ...prev,
-            endereco: address.logradouro,
-            bairro: address.bairro,
-            cidade: address.cidade,
-            uf: address.uf
-          }));
-          toast.success("Endereço preenchido automaticamente");
-        }
-      } catch (error) {
-        console.error("Erro ao buscar CEP:", error);
-      }
-    }
-  }, []);
-
-  const handleCadastro = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (wizardStep === 1) {
-      setWizardStep(2);
-      return;
-    }
-    
-    setIsSubmitting(true);
-    try {
-      const { cadastrarVendedorFn } = await import("@/lib/vendedor.functions");
-      const result = await cadastrarVendedorFn({
-        data: {
-          nome: formData.nome,
-          email: formData.email,
-          password: formData.password || "123456",
-          whatsapp: formData.whatsapp || null,
-          cpf: formData.cpf || null,
-          cep: formData.cep || null,
-          endereco: `${formData.endereco}, ${formData.numero}${formData.complemento ? ` - ${formData.complemento}` : ""} - ${formData.bairro}`,
-          cidade: formData.cidade,
-          uf: formData.uf
-        }
-      });
-
-      if (!result.ok) {
-        toast.error(result.message || "Erro ao realizar cadastro.");
-        console.error("Erro retornado pelo servidor:", result);
-        return;
-      }
-
-      toast.success("Cadastro realizado com sucesso!");
-      
-      const { user, accessToken } = result;
-      login({ 
-        user: {
-          id: user.id,
-          nome: user.nome,
-          email: user.email,
-          role: user.role as any
-        }, 
-        accessToken, 
-        refreshToken: "" 
-      });
-
-      // Redireciona para o novo onboarding
-      navigate({ to: '/vendedor/onboarding' });
-    } catch (error: any) {
-      console.error("Erro no cadastro:", error);
-      toast.error(error.message || "Erro técnico ao processar cadastro.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    navigate({ to: "/cadastro" });
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2">
-            <Gavel className="h-6 w-6 text-teal-800" />
-            <span className="font-display text-2xl font-bold tracking-tight text-teal-900">ESSE JÁ FOI</span>
-          </div>
-          <nav className="hidden md:flex items-center gap-8 mr-8">
-             <Link to="/vender" className="text-sm font-medium text-slate-500 hover:text-teal-900 transition-colors">Vender</Link>
-             <Link to="/" className="text-sm font-medium text-teal-900">Comprar</Link>
-          </nav>
+    <div className="min-h-screen bg-white text-slate-900 antialiased">
+      {/* HEADER */}
+      <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/85 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between px-6 py-4 lg:px-12">
+          <Link to="/" className="text-lg font-black uppercase tracking-[0.18em] text-slate-900">
+            Esse<span className="text-teal-700">JáFoi</span>
+          </Link>
 
-          <div className="flex items-center gap-4">
-            <Link to="/login" className="text-sm font-medium text-slate-500 hover:text-teal-900 transition-colors">
+          <nav className="hidden items-center gap-10 md:flex">
+            <a href="#como-funciona" className="text-sm text-slate-500 transition-colors hover:text-slate-900">
+              Como funciona
+            </a>
+            <Link to="/comprador" className="text-sm text-slate-500 transition-colors hover:text-slate-900">
+              Quero comprar
+            </Link>
+            <Link to="/login" className="text-sm text-slate-500 transition-colors hover:text-slate-900">
               Entrar
             </Link>
-            <Button onClick={() => document.getElementById('cadastro')?.scrollIntoView({ behavior: 'smooth' })} className="bg-teal-900 text-white hover:bg-teal-950">
+            <Button onClick={() => irParaCadastro(placaHero)} className="h-11 rounded-full bg-slate-900 px-6 text-white hover:bg-teal-800">
               Vender meu carro
             </Button>
-          </div>
+          </nav>
+
+          <button
+            aria-label="Abrir menu"
+            className="md:hidden"
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
-      </header>
 
-      <main className="flex-grow">
-        {/* Hero Vitrine */}
-        <section className="py-12 lg:py-20 bg-white">
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="grid lg:grid-cols-3 gap-12 items-start">
-              <div className="lg:col-span-2">
-                <h1 className="text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 mb-6">
-                  Vitrine de <span className="text-teal-800">Oportunidades</span>
-                </h1>
-                <p className="text-lg text-slate-600 mb-12 max-w-2xl">
-                  Acesse veículos selecionados com laudo técnico cautelar aprovado. 
-                  Preços e lances exclusivos para compradores verificados.
-                </p>
-
-                <div className="grid sm:grid-cols-2 gap-6">
-                  {vitrine.map((v) => (
-                    <div key={v.id} className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all">
-                      <div className="aspect-[16/10] relative overflow-hidden bg-slate-100">
-                        <img 
-                          src={v.imagem} 
-                          alt={v.modelo} 
-                          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute top-3 left-3">
-                          <span className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider text-teal-800 border border-teal-100">
-                            Vistoria OK
-                          </span>
-                        </div>
-                      </div>
-                      <div className="p-4">
-                        <div className="flex justify-between items-start mb-1">
-                          <h3 className="font-bold text-slate-900">{v.marca} {v.modelo}</h3>
-                          <span className="text-xs font-medium text-slate-500">{v.ano}</span>
-                        </div>
-                        <div className="flex gap-4 text-xs text-slate-500 mb-4">
-                          <span>{v.km} km</span>
-                          <span>{v.combustivel}</span>
-                        </div>
-                        <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                          <div className="flex items-center gap-1 text-slate-300 blur-[2px] select-none">
-                            <span className="text-xs">R$</span>
-                            <span className="font-bold">88.888</span>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-teal-800 text-xs h-7 hover:bg-teal-50"
-                            onClick={() => document.getElementById('cadastro')?.scrollIntoView({ behavior: 'smooth' })}
-                          >
-                            Ver detalhes
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Sidebar Login/Cadastro */}
-              <div id="cadastro" className="sticky top-24">
-                <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8">
-                  <h2 className="text-2xl font-bold text-slate-900 mb-2">Acesso do Vendedor</h2>
-                  <p className="text-sm text-slate-500 mb-8">
-                    Cadastre-se para anunciar seus veículos e receber propostas reais.
-                  </p>
-
-                  <div className="flex p-1 bg-slate-100 rounded-lg mb-8">
-                    <button 
-                      onClick={() => { setShowLogin(true); setWizardStep(1); }}
-                      className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${showLogin ? 'bg-white shadow text-teal-900' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                      Login
-                    </button>
-                    <button 
-                      onClick={() => setShowLogin(false)}
-                      className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${!showLogin ? 'bg-white shadow text-teal-900' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                      Cadastro Vendedor
-                    </button>
-                  </div>
-
-                  {showLogin ? (
-                    <form onSubmit={handleLogin} className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">E-mail</label>
-                        <Input 
-                          type="email" 
-                          required
-                          value={formData.email}
-                          onChange={(e) => setFormData({...formData, email: e.target.value})}
-                          placeholder="seu@email.com" 
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Senha</label>
-                        <Input 
-                          type="password" 
-                          required
-                          value={formData.password}
-                          onChange={(e) => setFormData({...formData, password: e.target.value})}
-                          placeholder="••••••••" 
-                        />
-                      </div>
-                      <Button 
-                        disabled={isSubmitting}
-                        className="w-full bg-teal-900 hover:bg-teal-950 text-white font-bold h-12"
-                      >
-                        {isSubmitting ? "Autenticando..." : "Entrar no Painel"}
-                      </Button>
-                      <button type="button" className="w-full text-xs text-slate-400 hover:text-teal-800 transition-colors">
-                        Esqueceu sua senha?
-                      </button>
-                    </form>
-                  ) : (
-                    <div className="space-y-6">
-                      <form onSubmit={handleCadastro} className="space-y-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Nome Completo</label>
-                          <Input 
-                            required
-                            value={formData.nome}
-                            onChange={(e) => setFormData({...formData, nome: e.target.value})}
-                            placeholder="Seu nome" 
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">WhatsApp</label>
-                          <Input 
-                            required
-                            value={formData.whatsapp}
-                            onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
-                            placeholder="(00) 00000-0000" 
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">E-mail</label>
-                          <Input 
-                            required
-                            type="email"
-                            value={formData.email}
-                            onChange={(e) => setFormData({...formData, email: e.target.value})}
-                            placeholder="seu@email.com" 
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Criar Senha</label>
-                            <Input 
-                              required
-                              type="password"
-                              value={formData.password}
-                              onChange={(e) => setFormData({...formData, password: e.target.value})}
-                              placeholder="••••••••" 
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Confirmar Senha</label>
-                            <Input 
-                              required
-                              id="confirm-password"
-                              type="password"
-                              placeholder="••••••••" 
-                            />
-                          </div>
-                        </div>
-                        
-                        <Button 
-                          disabled={isSubmitting}
-                          className="w-full bg-teal-900 hover:bg-teal-950 text-white font-bold h-12"
-                        >
-                          {isSubmitting ? "Processando..." : "Criar Minha Conta"}
-                        </Button>
-                      </form>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* FAQ - Compradores */}
-        <section className="py-24 bg-slate-50">
-          <div className="mx-auto max-w-3xl px-6">
-            <h2 className="text-3xl font-bold text-center mb-12">Dúvidas Frequentes</h2>
-            <Accordion type="single" collapsible className="w-full bg-white rounded-2xl border border-slate-200 p-6">
-              <AccordionItem value="participar">
-                <AccordionTrigger>Como faço para vender meu carro?</AccordionTrigger>
-                <AccordionContent>
-                  Para vender, você deve realizar seu cadastro de vendedor fornecendo seus dados e endereço. Após logar, você terá acesso ao painel onde poderá cadastrar seus veículos com fotos, opcionais e valor desejado. O veículo passará por uma análise técnica antes de ser aprovado.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="seguranca">
-                <AccordionTrigger>O cadastro é gratuito?</AccordionTrigger>
-                <AccordionContent>
-                  Sim, o cadastro de vendedores e veículos é totalmente gratuito. Cobramos apenas uma taxa de serviço administrativa em caso de venda concretizada através da plataforma.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="pagamento">
-                <AccordionTrigger>Quais documentos são necessários?</AccordionTrigger>
-                <AccordionContent>
-                  Para o cadastro inicial, solicitamos CPF, comprovante de endereço e dados de contato. Para o veículo, será necessário informar a placa e dados do documento (CRV/CRLV) durante a etapa de vistoria.
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
-        </section>
-      </main>
-
-      <footer className="border-t border-slate-200 bg-teal-900 py-20 text-white">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="text-3xl font-bold mb-4">Quer vender seu carro?</h2>
-              <p className="text-teal-100 text-lg mb-8 max-w-md">
-                Vendemos seu veículo de forma rápida, segura e pelo melhor preço de mercado através do nosso sistema de leilão.
-              </p>
-              <Button asChild className="bg-amber-400 text-teal-950 hover:bg-amber-500 font-bold h-12 px-8">
-                <Link to="/vender">Conhecer processo de venda</Link>
+        {menuOpen && (
+          <div className="border-t border-slate-100 bg-white px-6 py-6 md:hidden">
+            <div className="flex flex-col gap-5">
+              <a href="#como-funciona" onClick={() => setMenuOpen(false)} className="text-base text-slate-600">
+                Como funciona
+              </a>
+              <Link to="/comprador" className="text-base text-slate-600">Quero comprar</Link>
+              <Link to="/login" className="text-base text-slate-600">Entrar</Link>
+              <Button onClick={() => irParaCadastro(placaHero)} className="h-12 rounded-full bg-slate-900 text-white hover:bg-teal-800">
+                Vender meu carro
               </Button>
             </div>
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
-              <div className="flex gap-4 mb-6">
-                <div className="w-12 h-12 bg-amber-400 rounded-full flex items-center justify-center text-teal-950 shrink-0">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="font-bold mb-1">Pagamento Garantido</h4>
-                  <p className="text-sm text-teal-100/70">Receba o valor à vista após a finalização da venda e transferência.</p>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="w-12 h-12 bg-amber-400 rounded-full flex items-center justify-center text-teal-950 shrink-0">
-                  <UserCheck className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="font-bold mb-1">Venda sem Burocracia</h4>
-                  <p className="text-sm text-teal-100/70">Nós cuidamos de toda a documentação e vistoria cautelar para você.</p>
-                </div>
+          </div>
+        )}
+      </header>
+
+      {/* HERO */}
+      <section className="mx-auto max-w-[1400px] px-6 pb-16 pt-12 lg:px-12 lg:pb-28 lg:pt-20">
+        <div className="grid items-center gap-14 lg:grid-cols-[1.05fr_1fr] lg:gap-20">
+          <div>
+            <h1 className="text-[2.5rem] font-black leading-[1.05] tracking-tight text-slate-900 sm:text-5xl lg:text-[4rem]">
+              Seu carro pode valer mais quando mais compradores{" "}
+              <span className="text-teal-700">disputam por ele.</span>
+            </h1>
+            <p className="mt-7 max-w-xl text-lg leading-relaxed text-slate-500">
+              Cadastre seu veículo, passe pela avaliação e receba ofertas de compradores interessados.
+            </p>
+
+            <div className="mt-10 max-w-md rounded-3xl border border-slate-200 bg-slate-50/70 p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Comece pelo seu veículo
+              </p>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                <Input
+                  value={placaHero}
+                  onChange={(e) => setPlacaHero(e.target.value.toUpperCase())}
+                  placeholder="Digite a placa"
+                  aria-label="Digite a placa"
+                  className="h-14 flex-1 rounded-xl border-slate-200 bg-white text-base font-semibold tracking-[0.15em] uppercase placeholder:tracking-normal placeholder:font-normal"
+                />
+                <Button
+                  onClick={() => irParaCadastro(placaHero)}
+                  className="h-14 rounded-xl bg-teal-800 px-7 text-base font-bold text-white hover:bg-teal-900"
+                >
+                  Avaliar meu carro
+                </Button>
               </div>
             </div>
-          </div>
-          <div className="mt-20 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Gavel className="h-5 w-5 text-amber-400" />
-              <span className="font-bold tracking-tight">ESSE JÁ FOI</span>
+
+            <div className="mt-8 flex flex-wrap items-center gap-6">
+              <Button
+                onClick={() => irParaCadastro(placaHero)}
+                className="h-14 rounded-full bg-slate-900 px-8 text-base font-bold text-white hover:bg-slate-800"
+              >
+                Quero vender meu carro <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+              <Link to="/login" className="text-sm font-medium text-slate-500 underline-offset-4 hover:text-slate-900 hover:underline">
+                Já tenho cadastro
+              </Link>
             </div>
-            <p className="text-sm text-teal-100/50">© 2026 ESSE JÁ FOI - Gestão de Veículos e Leilões.</p>
           </div>
+
+          <div className="relative">
+            <img
+              src={heroCar}
+              alt="Carro premium em estúdio pronto para avaliação"
+              width={1600}
+              height={1104}
+              className="w-full rounded-[2rem] object-cover"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* COMO FUNCIONA */}
+      <section id="como-funciona" className="border-t border-slate-100 py-20 lg:py-28">
+        <div className="mx-auto max-w-[1400px] px-6 lg:px-12">
+          <h2 className="max-w-2xl text-3xl font-black leading-tight tracking-tight sm:text-4xl">
+            Você vende. A gente cuida do caminho até o comprador.
+          </h2>
+
+          <div className="mt-14 grid gap-10 lg:grid-cols-4 lg:gap-8">
+            {ETAPAS.map((e) => (
+              <div key={e.n} className="border-t-2 border-slate-900 pt-6">
+                <span className="text-sm font-black tracking-widest text-teal-700">{e.n}</span>
+                <h3 className="mt-3 text-xl font-bold">{e.t}</h3>
+                <p className="mt-2 text-[15px] leading-relaxed text-slate-500">{e.d}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* BENEFÍCIO PRINCIPAL */}
+      <section className="bg-slate-900 py-20 text-white lg:py-28">
+        <div className="mx-auto grid max-w-[1400px] gap-14 px-6 lg:grid-cols-2 lg:items-center lg:px-12">
+          <div>
+            <h2 className="text-3xl font-black leading-tight tracking-tight sm:text-4xl">
+              Mais compradores olhando para o seu carro. Mais chances de uma boa oferta.
+            </h2>
+            <p className="mt-6 max-w-lg text-lg leading-relaxed text-slate-400">
+              Em vez de negociar com apenas uma pessoa, seu veículo pode ser apresentado para uma rede de compradores
+              interessados.
+            </p>
+          </div>
+          <div className="grid gap-px overflow-hidden rounded-2xl bg-white/10 sm:grid-cols-3">
+            {["Mais alcance", "Mais ofertas", "Mais segurança"].map((b) => (
+              <div key={b} className="bg-slate-900 px-6 py-10 text-center">
+                <span className="text-lg font-bold text-amber-400">{b}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* SEGURANÇA */}
+      <section className="py-20 lg:py-28">
+        <div className="mx-auto grid max-w-[1400px] gap-12 px-6 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:px-12">
+          <div>
+            <h2 className="text-3xl font-black leading-tight tracking-tight sm:text-4xl">
+              Do cadastro ao pagamento, tudo acompanhado.
+            </h2>
+            <p className="mt-6 max-w-lg text-lg leading-relaxed text-slate-500">
+              O veículo passa por análise, validação documental e vistoria antes de ser disponibilizado para negociação.
+            </p>
+          </div>
+          <ul className="divide-y divide-slate-100 border-y border-slate-100">
+            {SEGURANCA.map((s) => (
+              <li key={s} className="flex items-center justify-between py-5">
+                <span className="text-lg font-medium text-slate-700">{s}</span>
+                <span className="h-2 w-2 rounded-full bg-teal-700" />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* CTA FINAL */}
+      <section className="bg-teal-900 py-24 text-white lg:py-32">
+        <div className="mx-auto max-w-3xl px-6 text-center">
+          <h2 className="text-3xl font-black leading-tight tracking-tight sm:text-[2.75rem]">
+            Seu próximo comprador pode já estar procurando um carro como o seu.
+          </h2>
+          <p className="mt-5 text-lg text-teal-100/80">Cadastre seu veículo e comece o processo de venda.</p>
+
+          <div className="mx-auto mt-10 flex max-w-xl flex-col gap-3 sm:flex-row">
+            <Input
+              value={placaFinal}
+              onChange={(e) => setPlacaFinal(e.target.value.toUpperCase())}
+              placeholder="Placa do veículo"
+              aria-label="Placa do veículo"
+              className="h-16 flex-1 rounded-xl border-white/20 bg-white/10 text-base font-semibold uppercase tracking-[0.15em] text-white placeholder:font-normal placeholder:tracking-normal placeholder:text-teal-100/60"
+            />
+            <Button
+              onClick={() => irParaCadastro(placaFinal)}
+              className="h-16 rounded-xl bg-amber-400 px-8 text-base font-black text-teal-950 hover:bg-amber-300"
+            >
+              Quero vender meu carro
+            </Button>
+          </div>
+          <p className="mt-4 text-sm text-teal-100/60">Cadastro inicial rápido e sem compromisso.</p>
+        </div>
+      </section>
+
+      {/* RODAPÉ */}
+      <footer className="border-t border-slate-100 py-10">
+        <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-6 px-6 sm:flex-row lg:px-12">
+          <span className="text-sm font-black uppercase tracking-[0.18em]">Esse Já Foi</span>
+          <div className="flex gap-6 text-sm text-slate-500">
+            <a href="#" className="hover:text-slate-900">Termos de Uso</a>
+            <a href="#" className="hover:text-slate-900">Política de Privacidade</a>
+            <a href="#" className="hover:text-slate-900">Ajuda</a>
+          </div>
+          <p className="text-sm text-slate-400">© Esse Já Foi. Todos os direitos reservados.</p>
         </div>
       </footer>
     </div>
