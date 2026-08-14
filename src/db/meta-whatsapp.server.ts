@@ -51,7 +51,7 @@ export class MetaWhatsAppService {
       const data = await this.fetchMeta(this.config.phone_number_id);
       
       // Se chegou aqui, as credenciais básicas funcionam
-      await db.execute(sql`
+      if (db) await db.execute(sql`
         UPDATE whatsapp_config SET 
           status = 'CONECTADO', 
           ultimo_teste = now(),
@@ -61,7 +61,7 @@ export class MetaWhatsAppService {
 
       return { ok: true, data };
     } catch (error: any) {
-      await db.execute(sql`
+      if (db) await db.execute(sql`
         UPDATE whatsapp_config SET 
           status = 'ERRO', 
           ultimo_teste = now(),
@@ -97,7 +97,7 @@ export class MetaWhatsAppService {
     const templates = data.data || [];
 
     for (const t of templates) {
-      await db.execute(sql`
+      if (db) await db.execute(sql`
         INSERT INTO whatsapp_templates (
           meta_id, 
           nome_interno, 
