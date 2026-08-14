@@ -1,8 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "./index";
 import { RegraNegocioError, type Row } from "./cadastro.server";
-import { ensureAgendaSchema } from "./agendamentos.server";
-import { ensureChecklistSchema, modeloAtivo } from "./checklist.server";
 import { normalizePlaca } from "@/lib/validators";
 
 function requireDb() {
@@ -14,10 +12,9 @@ let prepared = false;
 
 export async function ensureLaudoSchema(silent = true) {
   if (prepared) return;
-  await ensureAgendaSchema();
-  await ensureChecklistSchema();
   const d = requireDb();
   if (!silent && process.env['NODE_ENV'] === 'development') console.log("[laudos.server] Garantindo schema laudos...");
+
 
 
   await d.execute(sql`
