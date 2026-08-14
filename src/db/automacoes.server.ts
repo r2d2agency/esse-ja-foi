@@ -103,10 +103,10 @@ export async function salvarAutomacao(data: any, usuarioId: string) {
 }
 
 export async function dispararEventoSistema(evento: string, contexto: any) {
-  // Esta função seria chamada pelos módulos (veiculo, leilao, etc)
-  // 1. Buscar automações ativas para este evento
-  // 2. Validar regras
-  // 3. Criar execuções na fila
-  // Note: Implementação simplificada para o prompt
-  console.log(`[Automacao] Evento recebido: ${evento}`, contexto);
+  try {
+    const { processarEventoSistema } = await import("./automacoes-motor.server");
+    await processarEventoSistema(evento, contexto);
+  } catch (err) {
+    console.error(`[Automacao] Erro ao disparar evento ${evento}:`, err);
+  }
 }
