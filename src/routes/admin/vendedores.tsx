@@ -57,7 +57,7 @@ function VendedoresPage() {
   const loadVendedores = useServerFn(listarVendedoresFn);
   const { data: res, isLoading } = useQuery({
     queryKey: ["admin-vendedores", busca, filtroStatus],
-    queryFn: () => loadVendedores({ busca, status: filtroStatus })
+    queryFn: () => loadVendedores({ data: { busca, status: filtroStatus } })
   });
 
   const vendedores = res?.data || [];
