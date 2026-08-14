@@ -27,7 +27,6 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
     const veiculo = (rows as any).rows?.[0] || (rows as any)[0];
     if (!veiculo) return { ok: false as const, message: "Veículo não encontrado." };
 
-    // Buscar histórico/logs do veículo
     const logsRows = await db.execute(sql`
       SELECT * FROM logs 
       WHERE entidade = 'veiculo' AND entidade_id = ${data.id}::uuid
@@ -39,6 +38,33 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
       data: veiculo,
       historico: (logsRows as any).rows || logsRows
     };
+  });
+
+export const assumirAnaliseVeiculoFn = createServerFn({ method: "POST" })
+  .inputValidator(z.object({
+    veiculoId: z.string().uuid(),
+    responsavelId: z.string().uuid(),
+  }))
+  .handler(async ({ data }) => {
+    const { db } = await import("@/db/index");
+    const { sql } = await import("drizzle-orm");
+    if (!db) throw new Error("Banco de dados indisponível");
+
+    await db.execute(sql`
+      UPDATE veiculos 
+      SET 
+        responsavel_analise_id = ${data.responsavelId}::uuid,
+        status_analise = 'EM_ANALISE',
+        atualizado_em = now()
+      WHERE id = ${data.veiculoId}::uuid
+    `);
+
+    await db.execute(sql`
+      INSERT INTO logs (entidade, entidade_id, acao, detalhe, usuario)
+      VALUES ('veiculo', ${data.veiculoId}::uuid, 'ASSUMIR_ANALISE', 'Análise assumida pelo administrador', ${data.responsavelId}::uuid)
+    `);
+
+    return { ok: true as const };
   });
 
 export const atualizarStatusAnaliseFn = createServerFn({ method: "POST" })
@@ -70,3 +96,4 @@ export const atualizarStatusAnaliseFn = createServerFn({ method: "POST" })
 
     return { ok: true as const };
   });
+
