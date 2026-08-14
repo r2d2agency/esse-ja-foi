@@ -222,6 +222,16 @@ export async function listarCampanhas() {
   return (res as any).rows || [];
 }
 
+export async function getWebhookLogs() {
+  const d = requireDb();
+  const res = await d.execute(sql`
+    SELECT * FROM whatsapp_webhook_logs 
+    ORDER BY criado_em DESC 
+    LIMIT 50
+  `);
+  return (res as any).rows || [];
+}
+
 export async function getIndicadoresComunicacoes() {
   const d = requireDb();
   const res = await d.execute(sql`
