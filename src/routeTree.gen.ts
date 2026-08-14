@@ -71,6 +71,7 @@ import { Route as VistoriadorExecucaoIdRouteImport } from './routes/vistoriador.
 import { Route as VistoriadorVistoriaIdRouteImport } from './routes/vistoriador.vistoria.$id'
 import { Route as AdminAnunciosNovoRouteImport } from './routes/admin/anuncios.novo.'
 import { Route as ApiPublicWebhooksPagamentosRouteImport } from './routes/api/public/webhooks/pagamentos'
+import { Route as ApiPublicWebhooksWhatsappRouteImport } from './routes/api/public/webhooks/whatsapp'
 import { Route as VendedorVeiculoIdPropostaRouteImport } from './routes/vendedor.veiculo.$id.proposta'
 
 const IndexRoute = IndexRouteImport.update({
@@ -384,6 +385,12 @@ const ApiPublicWebhooksPagamentosRoute =
     path: '/api/public/webhooks/pagamentos',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicWebhooksWhatsappRoute =
+  ApiPublicWebhooksWhatsappRouteImport.update({
+    id: '/api/public/webhooks/whatsapp',
+    path: '/api/public/webhooks/whatsapp',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const VendedorVeiculoIdPropostaRoute =
   VendedorVeiculoIdPropostaRouteImport.update({
     id: '/proposta',
@@ -454,6 +461,7 @@ export interface FileRoutesByFullPath {
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
   '/admin/anuncios/novo/': typeof AdminAnunciosNovoRoute
   '/api/public/webhooks/pagamentos': typeof ApiPublicWebhooksPagamentosRoute
+  '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
   '/vendedor/veiculo/$id/proposta': typeof VendedorVeiculoIdPropostaRoute
 }
 export interface FileRoutesByTo {
@@ -514,6 +522,7 @@ export interface FileRoutesByTo {
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
   '/admin/anuncios/novo': typeof AdminAnunciosNovoRoute
   '/api/public/webhooks/pagamentos': typeof ApiPublicWebhooksPagamentosRoute
+  '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
   '/vendedor/veiculo/$id/proposta': typeof VendedorVeiculoIdPropostaRoute
 }
 export interface FileRoutesById {
@@ -580,6 +589,7 @@ export interface FileRoutesById {
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
   '/admin/anuncios/novo/': typeof AdminAnunciosNovoRoute
   '/api/public/webhooks/pagamentos': typeof ApiPublicWebhooksPagamentosRoute
+  '/api/public/webhooks/whatsapp': typeof ApiPublicWebhooksWhatsappRoute
   '/vendedor/veiculo/$id/proposta': typeof VendedorVeiculoIdPropostaRoute
 }
 export interface FileRouteTypes {
@@ -647,6 +657,7 @@ export interface FileRouteTypes {
     | '/vistoriador/vistoria/$id'
     | '/admin/anuncios/novo/'
     | '/api/public/webhooks/pagamentos'
+    | '/api/public/webhooks/whatsapp'
     | '/vendedor/veiculo/$id/proposta'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -707,6 +718,7 @@ export interface FileRouteTypes {
     | '/vistoriador/vistoria/$id'
     | '/admin/anuncios/novo'
     | '/api/public/webhooks/pagamentos'
+    | '/api/public/webhooks/whatsapp'
     | '/vendedor/veiculo/$id/proposta'
   id:
     | '__root__'
@@ -772,6 +784,7 @@ export interface FileRouteTypes {
     | '/vistoriador/vistoria/$id'
     | '/admin/anuncios/novo/'
     | '/api/public/webhooks/pagamentos'
+    | '/api/public/webhooks/whatsapp'
     | '/vendedor/veiculo/$id/proposta'
   fileRoutesById: FileRoutesById
 }
@@ -788,6 +801,7 @@ export interface RootRouteChildren {
   VenderRoute: typeof VenderRoute
   VistoriadorRoute: typeof VistoriadorRouteWithChildren
   ApiPublicWebhooksPagamentosRoute: typeof ApiPublicWebhooksPagamentosRoute
+  ApiPublicWebhooksWhatsappRoute: typeof ApiPublicWebhooksWhatsappRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1226,6 +1240,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhooksPagamentosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/webhooks/whatsapp': {
+      id: '/api/public/webhooks/whatsapp'
+      path: '/api/public/webhooks/whatsapp'
+      fullPath: '/api/public/webhooks/whatsapp'
+      preLoaderRoute: typeof ApiPublicWebhooksWhatsappRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vendedor/veiculo/$id/proposta': {
       id: '/vendedor/veiculo/$id/proposta'
       path: '/proposta'
@@ -1428,6 +1449,7 @@ const rootRouteChildren: RootRouteChildren = {
   VenderRoute: VenderRoute,
   VistoriadorRoute: VistoriadorRouteWithChildren,
   ApiPublicWebhooksPagamentosRoute: ApiPublicWebhooksPagamentosRoute,
+  ApiPublicWebhooksWhatsappRoute: ApiPublicWebhooksWhatsappRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
