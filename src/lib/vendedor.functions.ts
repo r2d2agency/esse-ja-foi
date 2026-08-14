@@ -17,8 +17,8 @@ const vendedorSchema = z.object({
 });
 
 export const cadastrarVendedorFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => vendedorSchema.parse(d))
-  .handler(async ({ data }) => {
+  .inputValidator((d: unknown) => z.object({ data: vendedorSchema }).parse(d))
+  .handler(async ({ data: { data } }) => {
     const { db: database } = await import("@/db/index");
     if (!database) throw new Error(`Banco de dados indisponível (Verifique se a DATABASE_URL está configurada corretamente)`);
     const db = database;
@@ -61,8 +61,8 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
   });
 
 export const listarMeusVeiculosFn = createServerFn({ method: "GET" })
-  .inputValidator((d: unknown) => z.object({ perfilId: z.string().uuid() }).parse(d))
-  .handler(async ({ data }) => {
+  .inputValidator((d: unknown) => z.object({ data: z.object({ perfilId: z.string().uuid() }) }).parse(d))
+  .handler(async ({ data: { data } }) => {
     const { db: database } = await import("@/db/index");
     if (!database) throw new Error("Banco de dados indisponível");
     const db = database;
@@ -85,19 +85,21 @@ export const listarMeusVeiculosFn = createServerFn({ method: "GET" })
 
 export const cadastrarMeuVeiculoFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({
-    perfilId: z.string().uuid(),
-    placa: z.string().min(7),
-    marca: z.string().min(2),
-    modelo: z.string().min(2),
-    anoFabricacao: z.string().optional(),
-    anoModelo: z.string().optional(),
-    km: z.number().optional(),
-    valorInteresse: z.number().optional(),
-    opcionais: z.array(z.string()).optional(),
-    observacoes: z.string().optional(),
-    fotos: z.array(z.string()).optional(),
+    data: z.object({
+      perfilId: z.string().uuid(),
+      placa: z.string().min(7),
+      marca: z.string().min(2),
+      modelo: z.string().min(2),
+      anoFabricacao: z.string().optional(),
+      anoModelo: z.string().optional(),
+      km: z.number().optional(),
+      valorInteresse: z.number().optional(),
+      opcionais: z.array(z.string()).optional(),
+      observacoes: z.string().optional(),
+      fotos: z.array(z.string()).optional(),
+    })
   }).parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data: { data } }) => {
     const { salvarVeiculo } = await import("@/db/cadastro.server");
     return await salvarVeiculo({
       ...data,
@@ -109,18 +111,20 @@ export const cadastrarMeuVeiculoFn = createServerFn({ method: "POST" })
 
 export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({
-    perfilId: z.string().uuid(),
-    cpf: z.string().optional(),
-    cep: z.string().optional(),
-    endereco: z.string().optional(),
-    cidade: z.string().optional(),
-    uf: z.string().optional(),
-    cnhUrl: z.string().optional(),
-    crlvUrl: z.string().optional(),
-    selfieUrl: z.string().optional(),
-    finalizar: z.boolean().optional(),
+    data: z.object({
+      perfilId: z.string().uuid(),
+      cpf: z.string().optional(),
+      cep: z.string().optional(),
+      endereco: z.string().optional(),
+      cidade: z.string().optional(),
+      uf: z.string().optional(),
+      cnhUrl: z.string().optional(),
+      crlvUrl: z.string().optional(),
+      selfieUrl: z.string().optional(),
+      finalizar: z.boolean().optional(),
+    })
   }).parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data: { data } }) => {
     const { db: database } = await import("@/db/index");
     if (!database) throw new Error("Banco de dados indisponível");
     const db = database;
