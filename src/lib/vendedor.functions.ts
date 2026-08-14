@@ -59,15 +59,17 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
       
       return { ok: true as const, user, accessToken };
     } catch (error: any) {
-      console.error("Erro ao cadastrar vendedor:", error);
+      console.error("Erro detalhado ao cadastrar vendedor:", error);
+      
       if (error.message?.includes("unique constraint") || error.message?.includes("already exists") || error.code === '23505') {
         return { ok: false as const, message: "Este e-mail já está cadastrado." };
       }
       
       // Sanitiza a mensagem de erro para o usuário não ver a query SQL bruta em caso de falha genérica
-      let userMessage = "Erro no servidor ao processar o cadastro.";
+      let userMessage = `Erro técnico: ${error.message || "Erro desconhecido"}`;
+      
       if (error.message?.includes("app_role") || error.message?.includes("permission")) {
-        userMessage = "Erro na configuração de permissões do sistema. Contate o suporte.";
+        userMessage = `Erro na configuração de permissões (app_role): ${error.message}`;
       }
       
       return { ok: false as const, message: userMessage };

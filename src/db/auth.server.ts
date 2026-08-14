@@ -86,7 +86,10 @@ export async function ensureSuperAdmin() {
         END IF;
       EXCEPTION 
         WHEN duplicate_object THEN NULL;
-        WHEN others THEN RAISE NOTICE 'Erro ao atualizar app_role: %', SQLERRM;
+        WHEN others THEN 
+          RAISE NOTICE 'Erro ao atualizar app_role: %', SQLERRM;
+          -- Tenta criar um por um se o bloco DO falhar
+          EXECUTE 'CREATE TYPE app_role AS ENUM (''admin'', ''operacao'', ''vistoriador'', ''comprador'', ''vendedor'')';
       END $$;
     `);
   } catch (e) {
