@@ -125,11 +125,7 @@ export async function ensureSuperAdmin(silent = true) {
         cadastro_completo boolean NOT NULL DEFAULT false
       );
     `);
-  } catch (e) {
-    console.error("Erro ao garantir tabela profiles:", e);
-  }
 
-  try {
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS veiculos (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -144,12 +140,8 @@ export async function ensureSuperAdmin(silent = true) {
         observacoes text
       );
     `);
-  } catch (e) {
-    console.error("Erro ao garantir tabela veiculos:", e);
-  }
 
-  // Bloqueia exclusão e rebaixamento do superadmin diretamente no banco
-  try {
+    // Bloqueia exclusão e rebaixamento do superadmin diretamente no banco
     await db.execute(sql`
       CREATE OR REPLACE FUNCTION protege_superadmin() RETURNS trigger AS $$
       BEGIN
@@ -176,28 +168,23 @@ export async function ensureSuperAdmin(silent = true) {
       BEFORE UPDATE OR DELETE ON profiles
       FOR EACH ROW EXECUTE FUNCTION protege_superadmin();
     `);
-  } catch (e) {
-    console.warn("[auth.server] Erro ao criar gatilho de proteção (pode ser falta de privilégio superuser):", (e as Error).message);
-  }
 
-  const senha = await hashPassword(SUPERADMIN_PASSWORD);
-  const cadastroModule = await import("./cadastro.server");
-  const ensureCadastroSchema = cadastroModule.ensureCadastroSchema;
-  
-  await ensureCadastroSchema(silent);
-  await ensureAdminTables(silent);
+    const senha = await hashPassword(SUPERADMIN_PASSWORD);
+    const cadastroModule = await import("./cadastro.server");
+    const ensureCadastroSchema = cadastroModule.ensureCadastroSchema;
+    
+    await ensureCadastroSchema(silent);
+    await ensureAdminTables(silent);
 
-  // Garante que o enum seja criado antes de qualquer tentativa de inserção
-  // e remove qualquer ambiguidade de tipo.
-  await db.execute(sql`
-    INSERT INTO profiles (nome, email, role, ativo, protegido, senha_hash, cpf, cep, endereco, cidade, uf)
-    VALUES (${SUPERADMIN_NAME}, ${SUPERADMIN_EMAIL}, 'admin'::text::app_role, true, true, ${senha}, '00000000000', '00000000', 'Endereço Admin', 'Cidade', 'UF')
-    ON CONFLICT (email) DO UPDATE
-      SET protegido = true,
-          role = 'admin'::text::app_role,
-          ativo = true,
-          senha_hash = COALESCE(profiles.senha_hash, EXCLUDED.senha_hash);
-  `);
+    await db.execute(sql`
+      INSERT INTO profiles (nome, email, role, ativo, protegido, senha_hash, cpf, cep, endereco, cidade, uf)
+      VALUES (${SUPERADMIN_NAME}, ${SUPERADMIN_EMAIL}, 'admin'::text::app_role, true, true, ${senha}, '00000000000', '00000000', 'Endereço Admin', 'Cidade', 'UF')
+      ON CONFLICT (email) DO UPDATE
+        SET protegido = true,
+            role = 'admin'::text::app_role,
+            ativo = true,
+            senha_hash = COALESCE(profiles.senha_hash, EXCLUDED.senha_hash);
+    `);
 
     if (!silent && process.env['NODE_ENV'] === 'development') console.log("✅ Superadmin garantido:", SUPERADMIN_EMAIL);
   } catch (err) {
