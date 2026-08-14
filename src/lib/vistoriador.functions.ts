@@ -33,11 +33,11 @@ export const iniciarCheckinFn = createServerFn({ method: "POST" })
     localizacao: z.any()
   }).parse(d))
   .handler(async ({ data }) => {
-    const { iniciarCheckin } = await import("@/db/vistorias.server");
     try {
-      return await iniciarCheckin(data);
+      const res = await iniciarCheckin(data);
+      return res;
     } catch (err: any) {
-      return { ok: false, message: err.message };
+      return { ok: false as const, message: err.message };
     }
   });
 
@@ -83,10 +83,10 @@ export const concluirVistoriaAppFn = createServerFn({ method: "POST" })
     declaracao: z.boolean()
   }).parse(d))
   .handler(async ({ data }) => {
-    const { concluirVistoriaApp } = await import("@/db/vistorias.server");
     try {
-      return await concluirVistoriaApp(data);
+      const res = await concluirVistoriaApp(data);
+      return res;
     } catch (err: any) {
-      return { ok: false, message: err.message };
+      return { ok: false as const, message: err.message };
     }
   });

@@ -79,7 +79,7 @@ function VistoriaExecucaoPage() {
         setEtapaAtual(1);
         toast.success("Check-in realizado com sucesso!");
       } else {
-        toast.error(res.message || "Erro ao realizar check-in");
+        toast.error('message' in res ? res.message : "Erro ao realizar check-in");
       }
     }
   });
@@ -98,7 +98,7 @@ function VistoriaExecucaoPage() {
         toast.success("Vistoria concluída e enviada para análise!");
         navigate({ to: "/vistoriador" });
       } else {
-        toast.error(res.message || "Erro ao concluir vistoria");
+        toast.error('message' in res ? res.message : "Erro ao concluir vistoria");
       }
     }
   });
