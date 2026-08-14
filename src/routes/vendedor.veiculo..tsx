@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge, statusVeiculo } from '@/components/vendedor/StatusBadge';
 import { cn } from '@/lib/utils';
 
-export const Route = createFileRoute('/vendedor/veiculo/$id')({
+export const Route = createFileRoute('/vendedor/veiculo/')({
   component: DetalheVeiculo,
 });
 
