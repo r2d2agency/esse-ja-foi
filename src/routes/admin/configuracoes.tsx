@@ -58,7 +58,7 @@ function ConfiguracoesAdminPage() {
 
   return (
     <BackofficeLayout>
-      <div className="max-w-4xl space-y-8">
+      <div className="max-w-4xl space-y-8 mb-12">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <Settings className="h-6 w-6 text-teal-900" />
