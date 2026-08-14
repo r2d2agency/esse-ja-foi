@@ -30,7 +30,8 @@ import {
   Eye,
   RotateCcw,
   Maximize2,
-  Calendar
+  Calendar,
+  Gavel
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -245,7 +246,12 @@ function DetalheVeiculoAdminPage() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {v.status_analise === 'APROVADO' && (
+                  <AuctionConfigCard veiculo={v} />
+                )}
               </TabsContent>
+
 
               <TabsContent value="dados" className="mt-0">
                 <Card className="border-slate-200 shadow-none">
