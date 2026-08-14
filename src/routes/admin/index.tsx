@@ -4,7 +4,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { BackofficeLayout } from "@/components/layout/BackofficeLayout";
 import { DataTable } from "@/components/shared/DataTable";
 import { dashboardAdminFn } from "@/lib/dashboard.functions";
+import { checkSystemHealthFn } from "@/lib/admin.functions";
 import { formatDate } from "@/lib/utils";
+import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
@@ -28,7 +30,12 @@ const statusClasses: Record<string, string> = {
 
 function AdminDashboard() {
   const carregar = useServerFn(dashboardAdminFn);
+  const carregarSaude = useServerFn(checkSystemHealthFn);
   const { data, isLoading } = useQuery({ queryKey: ["dashboard-admin"], queryFn: () => carregar() });
+  const { data: healthData, isLoading: loadingHealth } = useQuery({ queryKey: ["system-health"], queryFn: () => carregarSaude() });
+
+  const health = healthData?.data || {};
+  const hasCriticalIssue = Object.values(health).some(v => v === false);
 
   const i = data?.indicadores;
   const cards: Array<[string, number, string]> = [
@@ -46,9 +53,27 @@ function AdminDashboard() {
           <p className="text-slate-500">Gestão central da plataforma ESSE JÁ FOI.</p>
         </div>
 
-        {data && data.bancoOk === false && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            Banco de dados não conectado (DATABASE_URL ausente). Os cadastros feitos na landing page não estão sendo gravados.
+        {hasCriticalIssue && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-red-800 font-bold">
+              <AlertTriangle className="h-5 w-5" />
+              Problemas de Integridade Detectados
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {Object.entries(health).map(([table, ok]) => (
+                <div key={table} className="flex items-center gap-2 text-xs">
+                  {ok ? <CheckCircle2 className="h-3 w-3 text-emerald-600" /> : <XCircle className="h-3 w-3 text-red-600" />}
+                  <span className={ok ? "text-emerald-700" : "text-red-700 font-medium"}>{table}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {data && data.bancoOk === false && !hasCriticalIssue && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 flex items-center gap-2">
+            <XCircle className="h-4 w-4" />
+            Banco de dados não conectado (DATABASE_URL ausente).
           </div>
         )}
 

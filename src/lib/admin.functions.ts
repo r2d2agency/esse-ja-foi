@@ -31,6 +31,16 @@ export const listarCompradoresFn = createServerFn({ method: "GET" })
     }
   });
 
+export const checkSystemHealthFn = createServerFn({ method: "GET" })
+  .handler(async () => {
+    const m = await import("@/db/admin.server");
+    try {
+      return { ok: true as const, data: await m.checkSystemHealth() };
+    } catch (e: any) {
+      return { ok: false as const, message: e.message };
+    }
+  });
+
 export const gerenciarUsuarioFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), ativo: z.boolean() }).parse(d))
   .handler(async ({ data }) => {
