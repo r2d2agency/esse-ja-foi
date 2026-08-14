@@ -37,6 +37,7 @@ import { Route as AdminVistoriasRouteImport } from './routes/admin/vistorias'
 import { Route as CompradorIndexRouteImport } from './routes/comprador/index'
 import { Route as CompradorCadastroRouteImport } from './routes/comprador.cadastro'
 import { Route as CompradorDocumentosRouteImport } from './routes/comprador/documentos'
+import { Route as CompradorInteressesRouteImport } from './routes/comprador/interesses'
 import { Route as CompradorNegociacoesRouteImport } from './routes/comprador/negociacoes'
 import { Route as CompradorPerfilRouteImport } from './routes/comprador/perfil'
 import { Route as VeiculosIndexRouteImport } from './routes/veiculos.index'
@@ -212,6 +213,11 @@ const CompradorCadastroRoute = CompradorCadastroRouteImport.update({
 const CompradorDocumentosRoute = CompradorDocumentosRouteImport.update({
   id: '/documentos',
   path: '/documentos',
+  getParentRoute: () => CompradorRoute,
+} as any)
+const CompradorInteressesRoute = CompradorInteressesRouteImport.update({
+  id: '/interesses',
+  path: '/interesses',
   getParentRoute: () => CompradorRoute,
 } as any)
 const CompradorNegociacoesRoute = CompradorNegociacoesRouteImport.update({
@@ -425,6 +431,7 @@ export interface FileRoutesByFullPath {
   '/admin/vistorias': typeof AdminVistoriasRoute
   '/comprador/cadastro': typeof CompradorCadastroRoute
   '/comprador/documentos': typeof CompradorDocumentosRoute
+  '/comprador/interesses': typeof CompradorInteressesRoute
   '/comprador/negociacoes': typeof CompradorNegociacoesRoute
   '/comprador/perfil': typeof CompradorPerfilRoute
   '/veiculos/$slug': typeof VeiculosSlugRoute
@@ -486,6 +493,7 @@ export interface FileRoutesByTo {
   '/admin/vistorias': typeof AdminVistoriasRoute
   '/comprador/cadastro': typeof CompradorCadastroRoute
   '/comprador/documentos': typeof CompradorDocumentosRoute
+  '/comprador/interesses': typeof CompradorInteressesRoute
   '/comprador/negociacoes': typeof CompradorNegociacoesRoute
   '/comprador/perfil': typeof CompradorPerfilRoute
   '/veiculos/$slug': typeof VeiculosSlugRoute
@@ -553,6 +561,7 @@ export interface FileRoutesById {
   '/admin/vistorias': typeof AdminVistoriasRoute
   '/comprador/cadastro': typeof CompradorCadastroRoute
   '/comprador/documentos': typeof CompradorDocumentosRoute
+  '/comprador/interesses': typeof CompradorInteressesRoute
   '/comprador/negociacoes': typeof CompradorNegociacoesRoute
   '/comprador/perfil': typeof CompradorPerfilRoute
   '/veiculos/$slug': typeof VeiculosSlugRoute
@@ -621,6 +630,7 @@ export interface FileRouteTypes {
     | '/admin/vistorias'
     | '/comprador/cadastro'
     | '/comprador/documentos'
+    | '/comprador/interesses'
     | '/comprador/negociacoes'
     | '/comprador/perfil'
     | '/veiculos/$slug'
@@ -682,6 +692,7 @@ export interface FileRouteTypes {
     | '/admin/vistorias'
     | '/comprador/cadastro'
     | '/comprador/documentos'
+    | '/comprador/interesses'
     | '/comprador/negociacoes'
     | '/comprador/perfil'
     | '/veiculos/$slug'
@@ -748,6 +759,7 @@ export interface FileRouteTypes {
     | '/admin/vistorias'
     | '/comprador/cadastro'
     | '/comprador/documentos'
+    | '/comprador/interesses'
     | '/comprador/negociacoes'
     | '/comprador/perfil'
     | '/veiculos/$slug'
@@ -1000,6 +1012,13 @@ declare module '@tanstack/react-router' {
       path: '/documentos'
       fullPath: '/comprador/documentos'
       preLoaderRoute: typeof CompradorDocumentosRouteImport
+      parentRoute: typeof CompradorRoute
+    }
+    '/comprador/interesses': {
+      id: '/comprador/interesses'
+      path: '/interesses'
+      fullPath: '/comprador/interesses'
+      preLoaderRoute: typeof CompradorInteressesRouteImport
       parentRoute: typeof CompradorRoute
     }
     '/comprador/negociacoes': {
@@ -1334,6 +1353,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 interface CompradorRouteChildren {
   CompradorCadastroRoute: typeof CompradorCadastroRoute
   CompradorDocumentosRoute: typeof CompradorDocumentosRoute
+  CompradorInteressesRoute: typeof CompradorInteressesRoute
   CompradorNegociacoesRoute: typeof CompradorNegociacoesRoute
   CompradorPerfilRoute: typeof CompradorPerfilRoute
   CompradorIndexRoute: typeof CompradorIndexRoute
@@ -1344,6 +1364,7 @@ interface CompradorRouteChildren {
 const CompradorRouteChildren: CompradorRouteChildren = {
   CompradorCadastroRoute: CompradorCadastroRoute,
   CompradorDocumentosRoute: CompradorDocumentosRoute,
+  CompradorInteressesRoute: CompradorInteressesRoute,
   CompradorNegociacoesRoute: CompradorNegociacoesRoute,
   CompradorPerfilRoute: CompradorPerfilRoute,
   CompradorIndexRoute: CompradorIndexRoute,
