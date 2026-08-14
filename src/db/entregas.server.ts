@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "./index";
+import { prepararFinanceiroNegociacao } from "./financeiro.server";
 
 function requireDb() {
   if (!db) throw new Error("Banco de dados indisponível.");
@@ -495,6 +496,10 @@ export async function confirmarRecebimento(entregaId: string, compradorId: strin
   await notificar(d, e.negociacao_id, "VENDEDOR", e.vendedor_id, "Comprador confirmou o recebimento.", "A negociação agora seguirá para a etapa de repasse.");
   await notificar(d, e.negociacao_id, "COMPRADOR", e.comprador_id, "Entrega concluída.", "Sua compra foi concluída.");
   await notificar(d, e.negociacao_id, "ADMIN", null, "Negociação liberada para repasse", `Entrega confirmada em ${e.negociacao_codigo}.`);
+  
+  // Módulo Financeiro
+  await prepararFinanceiroNegociacao(e.negociacao_id);
+
   return { ok: true };
 }
 
@@ -539,6 +544,9 @@ export async function decidirDivergencia(params: { entrega_id: string; decisao: 
     await d.execute(sql`UPDATE veiculos SET status = 'VENDA_CONCLUIDA' WHERE id = ${e.veiculo_id}::uuid`);
     await evento(d, params.entrega_id, "Divergência resolvida — liberado para repasse.", params.observacao, params.admin_id);
     await notificar(d, e.negociacao_id, "VENDEDOR", e.vendedor_id, "Negociação liberada para repasse.", "A entrega foi validada pela nossa equipe.");
+    
+    // Módulo Financeiro
+    await prepararFinanceiroNegociacao(e.negociacao_id);
   } else if (params.decisao === "MANTER_BLOQUEIO") {
     await d.execute(sql`UPDATE entregas SET repasse_bloqueado = true, repasse_liberado = false, atualizado_em = now() WHERE id = ${params.entrega_id}::uuid`);
     await evento(d, params.entrega_id, "Repasse mantido bloqueado.", params.observacao, params.admin_id);
