@@ -211,8 +211,8 @@ function DetalheVeiculoAdminPage() {
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-y-3 text-sm">
-                        <div><p className="text-slate-400 font-medium">Compliance</p><p className="font-bold text-green-600">✓ Aprovado</p></div>
-                        <div><p className="text-slate-400 font-medium">Contrato</p><p className="font-bold text-green-600">✓ Assinado</p></div>
+                        <div><p className="text-slate-400 font-medium">Compliance</p><p className="font-bold text-teal-600">✓ Aprovado</p></div>
+                        <div><p className="text-slate-400 font-medium">Contrato</p><p className="font-bold text-teal-600">✓ Assinado</p></div>
                       </div>
                     </CardContent>
                   </Card>
