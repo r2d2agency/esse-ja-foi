@@ -391,7 +391,7 @@ export async function salvarVeiculo(input: VeiculoInput) {
       ${base.anoFabricacao}, ${base.anoModelo}, ${base.combustivel}, ${base.cambio}, ${base.clienteId},
       ${base.fipe}, ${base.interesse}, ${base.tipoExpectativa}, ${base.percentual}, ${base.alerta},
       ${base.ciente}, ${base.cep}, ${base.endereco}, ${base.cidade}, ${base.uf}, ${base.latitude},
-      ${base.longitude}, ${base.observacoes}, ${base.perfilId}::uuid, ${base.fotos}::jsonb, ${base.status})
+      ${base.longitude}, ${base.observacoes}, ${base.perfilId}::uuid, ${base.fotos}::jsonb, ${base.status}, 'AGUARDANDO_ANALISE')
     RETURNING id;
   `)) as unknown as Array<{ id: string }>;
   const id = rows[0]?.id as string;
