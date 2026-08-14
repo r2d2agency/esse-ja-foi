@@ -17,7 +17,7 @@ export async function ensureLaudoSchema(silent = true) {
   await ensureAgendaSchema();
   await ensureChecklistSchema();
   const d = requireDb();
-  if (!silent) console.log("[laudos.server] Garantindo schema laudos...");
+  if (!silent && process.env['NODE_ENV'] === 'development') console.log("[laudos.server] Garantindo schema laudos...");
 
 
   await d.execute(sql`
