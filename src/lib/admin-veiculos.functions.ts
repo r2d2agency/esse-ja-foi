@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 export const getVeiculosAdminFn = createServerFn({ method: "GET" })
-  .inputValidator(z.object({
+  .validator(z.object({
     busca: z.string().optional(),
     status_analise: z.string().optional(),
   }))
@@ -17,7 +17,7 @@ export const getVeiculosAdminFn = createServerFn({ method: "GET" })
   });
 
 export const assumirAnaliseVeiculoFn = createServerFn({ method: "POST" })
-  .inputValidator(z.object({
+  .validator(z.object({
     veiculoId: z.string().uuid(),
     responsavelId: z.string().uuid(),
   }))

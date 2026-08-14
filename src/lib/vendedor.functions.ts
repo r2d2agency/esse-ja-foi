@@ -17,7 +17,7 @@ const vendedorSchema = z.object({
 });
 
 export const cadastrarVendedorFn = createServerFn({ method: "POST" })
-  .inputValidator(vendedorSchema)
+  .validator(vendedorSchema)
   .handler(async ({ data }) => {
     const { db: database } = await import("@/db/index");
     if (!database) throw new Error(`Banco de dados indisponível (Verifique se a DATABASE_URL está configurada corretamente)`);
@@ -95,7 +95,7 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
   });
 
 export const listarMeusVeiculosFn = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ perfilId: z.string().uuid() }))
+  .validator(z.object({ perfilId: z.string().uuid() }))
   .handler(async ({ data }) => {
     const { db: database } = await import("@/db/index");
     if (!database) throw new Error("Banco de dados indisponível");
@@ -118,7 +118,7 @@ export const listarMeusVeiculosFn = createServerFn({ method: "GET" })
   });
 
 export const cadastrarMeuVeiculoFn = createServerFn({ method: "POST" })
-  .inputValidator(z.object({
+  .validator(z.object({
     perfilId: z.string().uuid(),
     placa: z.string().min(7),
     marca: z.string().min(2),
@@ -149,7 +149,7 @@ export const cadastrarMeuVeiculoFn = createServerFn({ method: "POST" })
   });
 
 export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
-  .inputValidator(z.object({
+  .validator(z.object({
     perfilId: z.string().uuid(),
     cpf: z.string().optional(),
     cep: z.string().optional(),
@@ -186,7 +186,7 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
   });
 
 export const obterMeuPerfilFn = createServerFn({ method: "GET" })
-  .inputValidator(z.object({ perfilId: z.string().uuid() }))
+  .validator(z.object({ perfilId: z.string().uuid() }))
   .handler(async ({ data }) => {
     const { db } = await import("@/db/index");
     if (!db) throw new Error("Banco de dados indisponível");
@@ -205,7 +205,7 @@ export const obterMeuPerfilFn = createServerFn({ method: "GET" })
   });
 
 export const atualizarMeuPerfilFn = createServerFn({ method: "POST" })
-  .inputValidator(z.object({
+  .validator(z.object({
     perfilId: z.string().uuid(),
     nome: z.string().min(3, "Nome muito curto"),
     whatsapp: z.string().optional().nullable(),
@@ -239,7 +239,7 @@ export const atualizarMeuPerfilFn = createServerFn({ method: "POST" })
   });
 
 export const alterarMinhaSenhaFn = createServerFn({ method: "POST" })
-  .inputValidator(z.object({
+  .validator(z.object({
     perfilId: z.string().uuid(),
     senhaAtual: z.string().min(1, "Informe a senha atual"),
     novaSenha: z.string().min(6, "A nova senha deve ter pelo menos 6 caracteres"),

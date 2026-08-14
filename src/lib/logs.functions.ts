@@ -4,7 +4,7 @@ import { db } from "../db/index";
 import { sql } from "drizzle-orm";
 
 export const getSystemLogsFn = createServerFn({ method: "GET" })
-  .inputValidator(z.object({
+  .validator(z.object({
     limit: z.number().optional().default(100),
     offset: z.number().optional().default(0),
     busca: z.string().optional()

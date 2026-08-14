@@ -42,7 +42,7 @@ export const checkSystemHealthFn = createServerFn({ method: "GET" })
   });
 
 export const gerenciarUsuarioFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), ativo: z.boolean() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid(), ativo: z.boolean() }).parse(d))
   .handler(async ({ data }) => {
     const m = await import("@/db/admin.server");
     try {
@@ -65,7 +65,7 @@ export const listarConfiguracoesFn = createServerFn({ method: "GET" })
   });
 
 export const salvarConfiguracaoFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => z.object({ chave: z.string(), valor: z.string() }).parse(d))
+  .validator((d: unknown) => z.object({ chave: z.string(), valor: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const m = await import("@/db/admin.server");
     try {
@@ -103,7 +103,7 @@ export const listarRegrasDepreciacaoFn = createServerFn({ method: "GET" })
   });
 
 export const salvarRegraDepreciacaoFn = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({
+  .validator((d) => z.object({
     id: z.string().optional(),
     itemId: z.string().nullable(),
     resposta: z.string().nullable(),
@@ -146,7 +146,7 @@ export const salvarRegraDepreciacaoFn = createServerFn({ method: "POST" })
   });
 
 export const duplicarRegraDepreciacaoFn = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ id: z.string() }).parse(d))
+  .validator((d) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
     try {
       const m = await import("@/db/admin.server");

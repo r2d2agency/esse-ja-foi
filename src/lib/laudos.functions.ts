@@ -15,7 +15,7 @@ function falha(error: unknown) {
 }
 
 export const detalheAgendamentoFn = createServerFn({ method: "GET" })
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), vistoriadorId: z.string().uuid().nullish() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid(), vistoriadorId: z.string().uuid().nullish() }).parse(d))
   .handler(async ({ data }) => {
     const m = await import("@/db/laudos.server");
     try {
@@ -26,7 +26,7 @@ export const detalheAgendamentoFn = createServerFn({ method: "GET" })
   });
 
 export const criarLaudoFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ agendamentoId: z.string().uuid(), vistoriadorId: z.string().uuid(), placaConfirmada: z.string().nullish() }).parse(d),
   )
   .handler(async ({ data }) => {
@@ -39,7 +39,7 @@ export const criarLaudoFn = createServerFn({ method: "POST" })
   });
 
 export const obterLaudoFn = createServerFn({ method: "GET" })
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), vistoriadorId: z.string().uuid().nullish() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid(), vistoriadorId: z.string().uuid().nullish() }).parse(d))
   .handler(async ({ data }) => {
     const m = await import("@/db/laudos.server");
     try {
@@ -50,7 +50,7 @@ export const obterLaudoFn = createServerFn({ method: "GET" })
   });
 
 export const salvarRespostaFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         laudoId: z.string().uuid(),
@@ -73,7 +73,7 @@ export const salvarRespostaFn = createServerFn({ method: "POST" })
   });
 
 export const salvarFotoFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         laudoId: z.string().uuid(),
@@ -95,7 +95,7 @@ export const salvarFotoFn = createServerFn({ method: "POST" })
   });
 
 export const removerFotoFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ laudoId: z.string().uuid(), fotoId: z.string().uuid(), vistoriadorId: z.string().uuid().nullish() }).parse(d),
   )
   .handler(async ({ data }) => {
@@ -109,7 +109,7 @@ export const removerFotoFn = createServerFn({ method: "POST" })
   });
 
 export const salvarAcessoriosLaudoFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         laudoId: z.string().uuid(),
@@ -129,7 +129,7 @@ export const salvarAcessoriosLaudoFn = createServerFn({ method: "POST" })
   });
 
 export const validarPlacaFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         laudoId: z.string().uuid().nullish(),
@@ -150,7 +150,7 @@ export const validarPlacaFn = createServerFn({ method: "POST" })
   });
 
 export const registrarDivergenciaFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         agendamentoId: z.string().uuid(),
@@ -171,7 +171,7 @@ export const registrarDivergenciaFn = createServerFn({ method: "POST" })
   });
 
 export const enviarLaudoFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => z.object({ laudoId: z.string().uuid(), vistoriadorId: z.string().uuid().nullish() }).parse(d))
+  .validator((d: unknown) => z.object({ laudoId: z.string().uuid(), vistoriadorId: z.string().uuid().nullish() }).parse(d))
   .handler(async ({ data }) => {
     const m = await import("@/db/laudos.server");
     try {
@@ -182,7 +182,7 @@ export const enviarLaudoFn = createServerFn({ method: "POST" })
   });
 
 export const pendenciasLaudoFn = createServerFn({ method: "GET" })
-  .inputValidator((d: unknown) => z.object({ laudoId: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ laudoId: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     const m = await import("@/db/laudos.server");
     try {
@@ -193,7 +193,7 @@ export const pendenciasLaudoFn = createServerFn({ method: "GET" })
   });
 
 export const devolverLaudoFn = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ laudoId: z.string().uuid(), motivo: z.string().min(3), usuario: z.string().nullish() }).parse(d),
   )
   .handler(async ({ data }) => {
@@ -206,7 +206,7 @@ export const devolverLaudoFn = createServerFn({ method: "POST" })
   });
 
 export const listarLaudosFn = createServerFn({ method: "GET" })
-  .inputValidator((d: unknown) => z.object({ status: z.string().nullish(), vistoriadorId: z.string().nullish() }).parse(d ?? {}))
+  .validator((d: unknown) => z.object({ status: z.string().nullish(), vistoriadorId: z.string().nullish() }).parse(d ?? {}))
   .handler(async ({ data }) => {
     const m = await import("@/db/laudos.server");
     try {

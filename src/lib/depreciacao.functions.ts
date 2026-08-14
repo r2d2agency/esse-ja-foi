@@ -8,7 +8,7 @@ import {
 } from "../db/depreciacao.server";
 
 export const calcularDepreciacaoFn = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ 
+  .validator((d) => z.object({ 
     veiculoId: z.string(),
     usuarioId: z.string().optional().nullable()
   }).parse(d))
@@ -22,7 +22,7 @@ export const calcularDepreciacaoFn = createServerFn({ method: "POST" })
   });
 
 export const obterHistoricoDepreciacaoFn = createServerFn({ method: "GET" })
-  .inputValidator((d) => z.object({ veiculoId: z.string() }).parse(d))
+  .validator((d) => z.object({ veiculoId: z.string() }).parse(d))
   .handler(async ({ data }) => {
     try {
       const res = await obterHistoricoDepreciacao(data.veiculoId);
@@ -33,7 +33,7 @@ export const obterHistoricoDepreciacaoFn = createServerFn({ method: "GET" })
   });
 
 export const sobrescreverAjusteFn = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({
+  .validator((d) => z.object({
     calculoId: z.string(),
     titulo: z.string(),
     novoValor: z.number(),

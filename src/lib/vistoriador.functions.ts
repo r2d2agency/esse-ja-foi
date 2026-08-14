@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 export const getVistoriasHojeVistoriadorFn = createServerFn({ method: "GET" })
-  .inputValidator((d) => z.object({ usuarioId: z.string() }).parse(d))
+  .validator((d) => z.object({ usuarioId: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { listarVistoriasHojeVistoriador } = await import("@/db/vistorias.server");
     try {
@@ -14,7 +14,7 @@ export const getVistoriasHojeVistoriadorFn = createServerFn({ method: "GET" })
   });
 
 export const getVistoriaDetalheVistoriadorFn = createServerFn({ method: "GET" })
-  .inputValidator((d) => z.object({ vistoriaId: z.string(), usuarioId: z.string() }).parse(d))
+  .validator((d) => z.object({ vistoriaId: z.string(), usuarioId: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { getVistoriaDetalheVistoriador } = await import("@/db/vistorias.server");
     try {
@@ -26,7 +26,7 @@ export const getVistoriaDetalheVistoriadorFn = createServerFn({ method: "GET" })
   });
 
 export const iniciarCheckinFn = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({
+  .validator((d) => z.object({
     vistoriaId: z.string(),
     usuarioId: z.string(),
     placa: z.string(),
@@ -43,7 +43,7 @@ export const iniciarCheckinFn = createServerFn({ method: "POST" })
   });
 
 export const salvarItemChecklistFn = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({
+  .validator((d) => z.object({
     laudoId: z.string(),
     etapa: z.string(),
     item_chave: z.string(),
@@ -61,7 +61,7 @@ export const salvarItemChecklistFn = createServerFn({ method: "POST" })
   });
 
 export const salvarFotoLaudoFn = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({
+  .validator((d) => z.object({
     laudoId: z.string(),
     tipo_foto: z.string(),
     url: z.string(),
@@ -77,7 +77,7 @@ export const salvarFotoLaudoFn = createServerFn({ method: "POST" })
   });
 
 export const concluirVistoriaAppFn = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({
+  .validator((d) => z.object({
     laudoId: z.string(),
     quilometragem: z.number(),
     observacao_geral: z.string(),
