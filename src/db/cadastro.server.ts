@@ -32,7 +32,7 @@ export async function ensureCadastroSchema(silent = true) {
   if (prepared) return;
   const d = requireDb();
   // Silenciando logs de inicialização de schema por padrão
-  if (!silent && process.env.NODE_ENV === 'development') console.log("[cadastro.server] Garantindo schema cadastro...");
+  if (!silent && process.env['NODE_ENV'] === 'development') console.log("[cadastro.server] Garantindo schema cadastro...");
 
 
   await d.execute(sql`
