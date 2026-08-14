@@ -22,8 +22,8 @@ export async function ensureVeiculosAdminSchema() {
 }
 
 export async function listarVeiculosAdmin(filtros: {
-  busca?: string;
-  status_analise?: string;
+  busca?: string | null;
+  status_analise?: string | null;
 }) {
   const d = db;
   if (!d) return [];
