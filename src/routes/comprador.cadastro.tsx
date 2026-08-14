@@ -84,21 +84,34 @@ function CadastroComprador() {
           </p>
 
           <div className="flex gap-2 mt-8">
-            <Button 
-              variant={form.tipo === 'PF' ? 'default' : 'outline'}
-              className={cn("flex-1 font-bold", form.tipo === 'PF' && "bg-teal-600")}
+            <button 
+              type="button"
+              className={cn(
+                "flex-1 h-20 rounded-2xl border-2 flex flex-col items-center justify-center gap-1 font-bold transition-all",
+                form.tipo === 'PF' 
+                  ? "border-teal-600 bg-teal-50 text-teal-900" 
+                  : "border-slate-200 bg-white text-slate-500 hover:border-teal-200"
+              )}
               onClick={() => setForm({...form, tipo: 'PF'})}
             >
+              <div className={cn("w-2 h-2 rounded-full", form.tipo === 'PF' ? "bg-teal-600" : "bg-slate-200")} />
               Pessoa Física
-            </Button>
-            <Button 
-              variant={form.tipo === 'PJ' ? 'default' : 'outline'}
-              className={cn("flex-1 font-bold", form.tipo === 'PJ' && "bg-teal-600")}
+            </button>
+            <button 
+              type="button"
+              className={cn(
+                "flex-1 h-20 rounded-2xl border-2 flex flex-col items-center justify-center gap-1 font-bold transition-all",
+                form.tipo === 'PJ' 
+                  ? "border-teal-600 bg-teal-50 text-teal-900" 
+                  : "border-slate-200 bg-white text-slate-500 hover:border-teal-200"
+              )}
               onClick={() => setForm({...form, tipo: 'PJ'})}
             >
+              <div className={cn("w-2 h-2 rounded-full", form.tipo === 'PJ' ? "bg-teal-600" : "bg-slate-200")} />
               Empresa (PJ)
-            </Button>
+            </button>
           </div>
+
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <Input 
