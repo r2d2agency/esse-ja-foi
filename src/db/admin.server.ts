@@ -66,13 +66,9 @@ export async function ensureAdminTables() {
       );
     `);
 
-    // Garantir permissões básicas nas tabelas admin
-    await d.execute(sql`GRANT ALL PRIVILEGES ON TABLE public.depreciacao_regras TO authenticated;`);
-    await d.execute(sql`GRANT ALL PRIVILEGES ON TABLE public.depreciacao_regras TO service_role;`);
-    await d.execute(sql`GRANT ALL PRIVILEGES ON TABLE public.depreciacao_calculos TO authenticated;`);
-    await d.execute(sql`GRANT ALL PRIVILEGES ON TABLE public.depreciacao_calculos TO service_role;`);
-    await d.execute(sql`GRANT ALL PRIVILEGES ON TABLE public.configuracoes_sistema TO authenticated;`);
-    await d.execute(sql`GRANT ALL PRIVILEGES ON TABLE public.configuracoes_sistema TO service_role;`);
+    // Permissions are managed via Supabase migrations to avoid runtime failures
+    // in environments where the app user lacks DDL/GRANT privileges on the public schema.
+
 
 
     // Sementes iniciais
