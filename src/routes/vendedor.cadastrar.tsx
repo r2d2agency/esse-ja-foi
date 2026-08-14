@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ComboboxSearch } from '@/components/ui/combobox-search';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -21,14 +22,17 @@ import { FotoSlot } from '@/components/veiculo/FotoSlot';
 import { OpcaoBotoes } from '@/components/veiculo/OpcaoBotoes';
 import { useAuth } from '@/hooks/use-auth';
 import { cadastrarMeuVeiculoFn, listarMeusVeiculosFn } from '@/lib/vendedor.functions';
-import { maskPlaca, formatCurrency } from '@/lib/brasil';
+import { maskPlaca, formatCurrency, buscarCep, maskCep } from '@/lib/brasil';
 import { montarEtapas, percentual } from '@/components/vendedor/ProgressoCadastro';
+import { TODAS_MARCAS, MARCAS_POPULARES, MODELOS_POR_MARCA, CORES, COMBUSTIVEIS, CAMBIOS, PORTAS, UFS, RELACOES_PROPRIETARIO, BANCOS_COMUNS } from '@/lib/constants-veiculos';
+
+
 
 export const Route = createFileRoute('/vendedor/cadastrar')({
   component: CadastrarVeiculo,
 });
 
-const ETAPAS = ['Identificação', 'Dados', 'Documentação', 'Condição', 'Fotos', 'Valor', 'Revisão'];
+const ETAPAS = ['Placa', 'Dados', 'Documentação', 'Condição', 'Fotos', 'Valor', 'Revisão'];
 const DRAFT_KEY = 'ejf_veiculo_rascunho';
 
 const FOTOS = [
@@ -141,9 +145,26 @@ function CadastrarVeiculo() {
     setVeiculoEncontrado(null);
     // Estrutura pronta para integração futura com API de consulta veicular.
     await new Promise((r) => setTimeout(r, 1200));
+    
+    // Simulação de preenchimento automático via placa
+    set({
+      marca: 'Volkswagen',
+      modelo: 'T-Cross',
+      versao: 'Highline 250 TSI',
+      anoFabricacao: '2023',
+      anoModelo: '2024',
+      combustivel: 'Flex',
+      cambio: 'Automático',
+      portas: '4',
+      cor: 'Branco',
+    });
+
     setBuscando(false);
     setBuscaFeita(true);
+    toast.success("Dados do veículo localizados!");
+    avancar();
   };
+
 
   const avancar = () => { setStep((s) => Math.min(7, s + 1)); window.scrollTo(0, 0); };
   const voltar = () => { setStep((s) => Math.max(1, s - 1)); window.scrollTo(0, 0); };
@@ -245,22 +266,45 @@ function CadastrarVeiculo() {
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-black text-slate-900">Qual veículo você quer vender?</h2>
-              <p className="mt-1 text-sm text-slate-500">Informe a placa para tentarmos localizar os dados.</p>
+              <p className="mt-1 text-sm text-slate-500">Informe a placa e o CEP onde o carro se encontra.</p>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Input
-                value={form.placa}
-                onChange={(e) => { set({ placa: maskPlaca(e.target.value) }); setBuscaFeita(false); }}
-                placeholder="ABC1D23"
-                aria-label="Placa"
-                className="h-14 flex-1 rounded-xl text-lg font-bold uppercase tracking-[0.2em]"
-              />
-              <Button onClick={buscarPlaca} disabled={buscando} className="h-14 rounded-xl bg-teal-800 px-8 font-bold text-white hover:bg-teal-900">
-                {buscando ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Search className="mr-2 h-4 w-4" /> Buscar veículo</>}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">Placa do Veículo</Label>
+                <Input
+                  value={form.placa}
+                  onChange={(e) => { set({ placa: maskPlaca(e.target.value) }); setBuscaFeita(false); }}
+                  placeholder="ABC1D23"
+                  aria-label="Placa"
+                  className="h-14 w-full rounded-xl text-2xl font-black uppercase tracking-[0.2em] text-center"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">CEP (Onde o carro está?)</Label>
+                <Input
+                  value={form.uf ? `${form.cidade}/${form.uf} (${maskCep(form.uf)})` : form.cidade}
+                  placeholder="00000-000"
+                  onChange={async (e) => {
+                    const val = maskCep(e.target.value);
+                    const clean = val.replace(/\D/g, '');
+                    if (clean.length === 8) {
+                      setBuscando(true);
+                      const res = await buscarCep(clean);
+                      if (res) {
+                        set({ cidade: res.cidade, uf: res.uf });
+                        toast.success(`Localizado: ${res.cidade}/${res.uf}`);
+                      }
+                      setBuscando(false);
+                    }
+                  }}
+                  className="h-14 w-full rounded-xl text-lg font-bold text-center"
+                />
+              </div>
+              
+              <Button onClick={buscarPlaca} disabled={buscando} className="h-16 w-full rounded-2xl bg-teal-800 text-lg font-black text-white hover:bg-teal-900 shadow-lg shadow-teal-900/20">
+                {buscando ? <Loader2 className="h-6 w-6 animate-spin" /> : <><Search className="mr-2 h-5 w-5" /> Buscar e Continuar</>}
               </Button>
             </div>
-
-            {buscando && <p className="text-sm text-slate-400">Buscando informações do veículo...</p>}
 
             {buscaFeita && !veiculoEncontrado && (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
@@ -274,6 +318,7 @@ function CadastrarVeiculo() {
               </div>
             )}
           </div>
+
         )}
 
         {/* 2 — DADOS */}
@@ -284,23 +329,74 @@ function CadastrarVeiculo() {
               <p className="mt-1 text-sm text-slate-500">Ajuste o que for necessário.</p>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <Campo label="Marca *" value={form.marca} onChange={(v) => set({ marca: v })} />
-              <Campo label="Modelo *" value={form.modelo} onChange={(v) => set({ modelo: v })} />
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">Marca</Label>
+                <ComboboxSearch 
+                  options={TODAS_MARCAS} 
+                  popularOptions={MARCAS_POPULARES}
+                  value={form.marca} 
+                  onChange={(v) => set({ marca: v, modelo: '' })}
+                  placeholder="Selecione a marca"
+                  allowOther
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">Modelo</Label>
+                <ComboboxSearch 
+                  options={MODELOS_POR_MARCA[form.marca] || ['Outro']} 
+                  value={form.modelo} 
+                  onChange={(v) => set({ modelo: v })}
+                  placeholder={form.marca ? "Selecione o modelo" : "Selecione a marca antes"}
+                  allowOther
+                />
+              </div>
               <Campo label="Versão" value={form.versao} onChange={(v) => set({ versao: v })} />
-              <Campo label="Cor" value={form.cor} onChange={(v) => set({ cor: v })} />
-              <Campo label="Ano de fabricação" value={form.anoFabricacao} onChange={(v) => set({ anoFabricacao: soDigitos(v).slice(0, 4) })} />
-              <Campo label="Ano modelo" value={form.anoModelo} onChange={(v) => set({ anoModelo: soDigitos(v).slice(0, 4) })} />
-              <Campo label="Combustível" value={form.combustivel} onChange={(v) => set({ combustivel: v })} />
-              <Campo label="Câmbio" value={form.cambio} onChange={(v) => set({ cambio: v })} />
-              <Campo label="Número de portas" value={form.portas} onChange={(v) => set({ portas: soDigitos(v).slice(0, 1) })} />
-              <Campo
-                label="Quilometragem atual"
-                value={form.km ? `${Number(soDigitos(form.km)).toLocaleString('pt-BR')} km` : ''}
-                onChange={(v) => set({ km: soDigitos(v) })}
-                placeholder="42.850 km"
-              />
-              <Campo label="Município onde o veículo está" value={form.cidade} onChange={(v) => set({ cidade: v })} />
-              <Campo label="Estado" value={form.uf} onChange={(v) => set({ uf: v.toUpperCase().slice(0, 2) })} />
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">Cor</Label>
+                <ComboboxSearch options={CORES} value={form.cor} onChange={(v) => set({ cor: v })} placeholder="Selecione a cor" allowOther />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">Ano de fabricação</Label>
+                <ComboboxSearch options={Array.from({length: 40}, (_, i) => String(new Date().getFullYear() - i))} value={form.anoFabricacao} onChange={(v) => set({ anoFabricacao: v })} placeholder="Ano" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">Ano modelo</Label>
+                <ComboboxSearch options={Array.from({length: 40}, (_, i) => String(new Date().getFullYear() - i + 1))} value={form.anoModelo} onChange={(v) => set({ anoModelo: v })} placeholder="Ano" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">Combustível</Label>
+                <ComboboxSearch options={COMBUSTIVEIS} value={form.combustivel} onChange={(v) => set({ combustivel: v })} placeholder="Selecione" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">Câmbio</Label>
+                <ComboboxSearch options={CAMBIOS} value={form.cambio} onChange={(v) => set({ cambio: v })} placeholder="Selecione" />
+              </div>
+              <OpcaoBotoes label="Portas" opcoes={PORTAS} value={form.portas} onChange={(v) => set({ portas: v })} />
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">Quilometragem atual</Label>
+                <div className="relative">
+                  <Input
+                    value={form.km ? `${Number(form.km).toLocaleString('pt-BR')}` : ''}
+                    onChange={(e) => set({ km: e.target.value.replace(/\D/g, '') })}
+                    placeholder="0"
+                    inputMode="numeric"
+                    className="h-12 rounded-xl pr-12 font-bold"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">km</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">CEP</Label>
+                <Input
+                  value={form.uf ? `${form.cidade}/${form.uf}` : form.cidade}
+                  placeholder="Município e Estado"
+                  disabled
+                  className="h-12 rounded-xl bg-slate-50 font-medium"
+                />
+              </div>
+
+
             </div>
 
             <div className="space-y-5 border-t border-slate-100 pt-6">
@@ -309,17 +405,19 @@ function CadastrarVeiculo() {
                 <>
                   <OpcaoBotoes
                     label="Qual sua relação com o proprietário?"
-                    opcoes={['Cônjuge', 'Familiar', 'Empresa', 'Procurador', 'Outro']}
+                    opcoes={RELACOES_PROPRIETARIO}
                     value={form.relacaoProprietario}
                     onChange={(v) => set({ relacaoProprietario: v })}
                     colunas={3}
                   />
-                  <Textarea
-                    placeholder="Explique brevemente"
-                    value={form.relacaoDescricao}
-                    onChange={(e) => set({ relacaoDescricao: e.target.value })}
-                    className="rounded-xl"
-                  />
+                  {form.relacaoProprietario === 'Outro' && (
+                    <Textarea
+                      placeholder="Descreva sua relação com o proprietário"
+                      value={form.relacaoDescricao}
+                      onChange={(e) => set({ relacaoDescricao: e.target.value })}
+                      className="rounded-xl"
+                    />
+                  )}
                 </>
               )}
             </div>
@@ -327,13 +425,16 @@ function CadastrarVeiculo() {
             <div className="space-y-5 border-t border-slate-100 pt-6">
               <OpcaoBotoes
                 label="O veículo está financiado?"
-                opcoes={['Não, está quitado', 'Sim, ainda possui financiamento']}
-                value={form.financiado}
+                opcoes={['Sim', 'Não']}
+                value={form.financiado === 'Sim' ? 'Sim' : 'Não'}
                 onChange={(v) => set({ financiado: v })}
               />
-              {form.financiado.startsWith('Sim') && (
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Campo label="Instituição financeira" value={form.instituicao} onChange={(v) => set({ instituicao: v })} />
+              {form.financiado === 'Sim' && (
+                <div className="grid gap-4 md:grid-cols-2 animate-in fade-in duration-300">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-bold text-slate-900">Instituição financeira</Label>
+                    <ComboboxSearch options={BANCOS_COMUNS} value={form.instituicao} onChange={(v) => set({ instituicao: v })} placeholder="Selecione o banco" allowOther />
+                  </div>
                   <Campo label="Saldo aproximado para quitação" value={form.saldoQuitacao} onChange={(v) => set({ saldoQuitacao: moeda(v) })} placeholder="R$ 0,00" />
                   <p className="text-xs text-slate-500 md:col-span-2">
                     Esse valor será confirmado posteriormente antes da conclusão da venda.
@@ -341,6 +442,7 @@ function CadastrarVeiculo() {
                 </div>
               )}
             </div>
+
           </div>
         )}
 
@@ -379,40 +481,44 @@ function CadastrarVeiculo() {
               <Textarea placeholder="Conte brevemente o que acontece" value={form.funcionamentoObs} onChange={(e) => set({ funcionamentoObs: e.target.value })} className="rounded-xl" />
             )}
 
-            <OpcaoBotoes label="Existe algum problema conhecido no motor?" opcoes={['Não', 'Sim']} value={form.motor} onChange={(v) => set({ motor: v })} />
+            <OpcaoBotoes label="Existe algum problema conhecido no motor?" opcoes={['Não', 'Sim', 'Não sei']} value={form.motor} onChange={(v) => set({ motor: v })} colunas={3} />
             {form.motor === 'Sim' && (
-              <Textarea placeholder="Descreva o problema do motor" value={form.motorObs} onChange={(e) => set({ motorObs: e.target.value })} className="rounded-xl" />
+              <Textarea placeholder="Qual problema?" value={form.motorObs} onChange={(e) => set({ motorObs: e.target.value })} className="rounded-xl" />
             )}
 
-            <OpcaoBotoes label="Existe algum problema conhecido no câmbio?" opcoes={['Não', 'Sim']} value={form.cambioProblema} onChange={(v) => set({ cambioProblema: v })} />
+            <OpcaoBotoes label="Existe algum problema conhecido no câmbio?" opcoes={['Não', 'Sim', 'Não sei']} value={form.cambioProblema} onChange={(v) => set({ cambioProblema: v })} colunas={3} />
 
-            <OpcaoBotoes label="Como você considera a condição da lataria?" opcoes={['Excelente', 'Boa', 'Possui pequenos detalhes', 'Possui avarias relevantes']} value={form.lataria} onChange={(v) => set({ lataria: v })} />
-            {form.lataria === 'Possui avarias relevantes' && (
-              <Textarea placeholder="Comente brevemente as avarias" value={form.latariaObs} onChange={(e) => set({ latariaObs: e.target.value })} className="rounded-xl" />
+
+            <OpcaoBotoes label="Como está a lataria?" opcoes={['Excelente', 'Boa', 'Pequenos detalhes', 'Possui avarias']} value={form.lataria} onChange={(v) => set({ lataria: v })} colunas={2} />
+            {form.lataria === 'Possui avarias' && (
+              <Textarea placeholder="Conte brevemente" value={form.latariaObs} onChange={(e) => set({ latariaObs: e.target.value })} className="rounded-xl" />
             )}
 
-            <OpcaoBotoes label="Como está o interior do veículo?" opcoes={['Excelente', 'Bom', 'Possui sinais de uso', 'Possui avarias']} value={form.interior} onChange={(v) => set({ interior: v })} />
-            <OpcaoBotoes label="Como estão os pneus?" opcoes={['Bons', 'Meia vida', 'Precisam de substituição', 'Não sei informar']} value={form.pneus} onChange={(v) => set({ pneus: v })} />
+            <OpcaoBotoes label="Como está o interior do veículo?" opcoes={['Excelente', 'Bom', 'Sinais de uso', 'Possui avarias']} value={form.interior} onChange={(v) => set({ interior: v })} colunas={2} />
+            <OpcaoBotoes label="Como estão os pneus?" opcoes={['Bons', 'Meia vida', 'Substituição', 'Não sei']} value={form.pneus} onChange={(v) => set({ pneus: v })} colunas={2} />
+
 
             <div className="space-y-5 border-t border-slate-100 pt-6">
               <p className="text-sm text-slate-500">Essas informações serão verificadas durante a análise do veículo.</p>
-              <OpcaoBotoes label="O veículo já sofreu acidente?" opcoes={['Não', 'Sim', 'Não sei informar']} value={form.acidente} onChange={(v) => set({ acidente: v })} colunas={3} />
-              <OpcaoBotoes label="O veículo já passou por leilão?" opcoes={['Não', 'Sim', 'Não sei informar']} value={form.leilao} onChange={(v) => set({ leilao: v })} colunas={3} />
-              <OpcaoBotoes label="Possui histórico de sinistro?" opcoes={['Não', 'Sim', 'Não sei informar']} value={form.sinistro} onChange={(v) => set({ sinistro: v })} colunas={3} />
-              <OpcaoBotoes label="Possui alguma restrição conhecida?" opcoes={['Não', 'Sim', 'Não sei informar']} value={form.restricao} onChange={(v) => set({ restricao: v })} colunas={3} />
+              <OpcaoBotoes label="Já sofreu acidente?" opcoes={['Não', 'Sim', 'Não sei']} value={form.acidente} onChange={(v) => set({ acidente: v })} colunas={3} />
+              <OpcaoBotoes label="Já passou por leilão?" opcoes={['Não', 'Sim', 'Não sei']} value={form.leilao} onChange={(v) => set({ leilao: v })} colunas={3} />
+              <OpcaoBotoes label="Possui sinistro conhecido?" opcoes={['Não', 'Sim', 'Não sei']} value={form.sinistro} onChange={(v) => set({ sinistro: v })} colunas={3} />
+              <OpcaoBotoes label="Possui alguma restrição conhecida?" opcoes={['Não', 'Sim', 'Não sei']} value={form.restricao} onChange={(v) => set({ restricao: v })} colunas={3} />
               {[form.acidente, form.leilao, form.sinistro, form.restricao].includes('Sim') && (
-                <Textarea placeholder="Observações sobre o histórico" value={form.historicoObs} onChange={(e) => set({ historicoObs: e.target.value })} className="rounded-xl" />
+                <Textarea placeholder="Complemente o histórico se necessário" value={form.historicoObs} onChange={(e) => set({ historicoObs: e.target.value })} className="rounded-xl" />
               )}
+
             </div>
 
             <div className="space-y-5 border-t border-slate-100 pt-6">
-              <OpcaoBotoes label="Possui chave reserva?" opcoes={['Sim', 'Não']} value={form.chaveReserva} onChange={(v) => set({ chaveReserva: v })} />
-              <OpcaoBotoes label="Possui manual?" opcoes={['Sim', 'Não']} value={form.manual} onChange={(v) => set({ manual: v })} />
-              <OpcaoBotoes label="Possui estepe?" opcoes={['Sim', 'Não']} value={form.estepe} onChange={(v) => set({ estepe: v })} />
+              <OpcaoBotoes label="Chave reserva?" opcoes={['Sim', 'Não']} value={form.chaveReserva} onChange={(v) => set({ chaveReserva: v })} />
+              <OpcaoBotoes label="Manual?" opcoes={['Sim', 'Não']} value={form.manual} onChange={(v) => set({ manual: v })} />
+              <OpcaoBotoes label="Estepe?" opcoes={['Sim', 'Não']} value={form.estepe} onChange={(v) => set({ estepe: v })} />
               <OpcaoBotoes label="Possui acessórios adicionais?" opcoes={['Sim', 'Não']} value={form.acessorios} onChange={(v) => set({ acessorios: v })} />
               {form.acessorios === 'Sim' && (
-                <Campo label="Quais?" value={form.acessoriosQuais} onChange={(v) => set({ acessoriosQuais: v })} />
+                <Textarea placeholder="Quais acessórios?" value={form.acessoriosQuais} onChange={(e) => set({ acessoriosQuais: e.target.value })} className="rounded-xl" />
               )}
+
             </div>
           </div>
         )}
