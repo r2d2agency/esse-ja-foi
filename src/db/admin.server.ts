@@ -8,7 +8,7 @@ function requireDb() {
   return db;
 }
 
-export async function ensureAdminTables(silent = false) {
+export async function ensureAdminTables(silent = true) {
   const d = requireDb();
   if (!silent) console.log("[admin.server] Garantindo tabelas admin...");
 
