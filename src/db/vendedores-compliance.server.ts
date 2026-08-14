@@ -32,7 +32,7 @@ export async function ensureVendedoresSchema() {
   `);
 }
 
-export async function listarVendedores(filtros: { status?: string, busca?: string }) {
+export async function listarVendedores(filtros: { status?: string | undefined, busca?: string | undefined }) {
   const d = requireDb();
   await ensureVendedoresSchema();
   
