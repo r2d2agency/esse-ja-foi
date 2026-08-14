@@ -21,9 +21,18 @@ function UsuariosAdminPage() {
 
   const carregar = useCallback(async () => {
     setLoading(true);
-    const res = await listarVendedoresFn();
-    if (res.ok) setVendedores(res.data);
-    setLoading(false);
+    try {
+      const res = await listarVendedoresFn();
+      if (res.ok) {
+        setVendedores(res.data);
+      } else {
+        toast.error(res.message || "Erro ao carregar vendedores.");
+      }
+    } catch (err) {
+      toast.error("Falha na rede.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {

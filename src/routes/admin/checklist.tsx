@@ -11,7 +11,7 @@ import {
   salvarAcessorioFn,
   salvarModeloFn,
 } from "@/lib/checklist.functions";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/checklist")({
   head: () => ({
@@ -39,9 +39,17 @@ function ChecklistAdmin() {
   const [novoAcessorio, setNovoAcessorio] = useState({ nome: "", categoria: "" });
 
   const carregar = useCallback(async () => {
-    const res = await listarModelosFn();
-    setModelos(res.data ?? []);
-    setAcessorios(res.acessorios ?? []);
+    try {
+      const res = await listarModelosFn();
+      if (res.ok) {
+        setModelos(res.data ?? []);
+        setAcessorios(res.acessorios ?? []);
+      } else {
+        toast.error(res.message || "Erro ao carregar dados.");
+      }
+    } catch (err: any) {
+      toast.error("Falha na comunicação com o servidor.");
+    }
   }, []);
 
   useEffect(() => {

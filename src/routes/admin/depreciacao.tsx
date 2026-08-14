@@ -62,12 +62,19 @@ function DepreciacaoAdminPage() {
 
   const carregar = useCallback(async () => {
     setLoading(true);
-    const res = await listarRegrasDepreciacaoFn();
-    if (res.ok) {
-      setRegras(res.data as Rule[]);
-      setItens(res.itens as any[]);
+    try {
+      const res = await listarRegrasDepreciacaoFn();
+      if (res.ok) {
+        setRegras(res.data as Rule[]);
+        setItens(res.itens as any[]);
+      } else {
+        toast.error(res.message || "Erro ao carregar regras.");
+      }
+    } catch (err) {
+      toast.error("Erro ao conectar com o servidor.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => { void carregar(); }, [carregar]);
