@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { CardsEntregaVendedor } from '@/components/entrega/cards-entrega';
 import { useServerFn } from '@tanstack/react-start';
 import { Car, Plus, CheckCircle2 } from 'lucide-react';
 import { listarMeusVeiculosFn } from '@/lib/vendedor.functions';
@@ -54,6 +55,8 @@ function DashboardVendedor() {
         <h1 className="text-2xl font-black tracking-tight text-slate-900">Olá, {primeiroNome} 👋</h1>
         <p className="mt-1 text-slate-500">Acompanhe por aqui seu cadastro, veículos e negociações.</p>
       </div>
+
+      <CardsEntregaVendedor vendedorId={user?.id} />
 
       {!completo && profile.cadastro_completo !== true && (
         <AlertaAcao

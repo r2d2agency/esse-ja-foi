@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { CardsEntregaComprador } from "@/components/entrega/cards-entrega";
 import { getNegociacoesCompradorFn } from "@/lib/negociacoes.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,6 +58,8 @@ function CompradorNegociacoesPage() {
         <h1 className="text-2xl font-black uppercase tracking-tight text-slate-900">Negociações</h1>
         <p className="text-slate-500">Suas oportunidades vencidas e participações encerradas.</p>
       </div>
+
+      <CardsEntregaComprador compradorId={user?.id} />
 
       {vencedora && (
         <Card className="overflow-hidden border-teal-200 shadow-sm">
