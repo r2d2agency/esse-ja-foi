@@ -22,9 +22,10 @@ import { FotoSlot } from '@/components/veiculo/FotoSlot';
 import { OpcaoBotoes } from '@/components/veiculo/OpcaoBotoes';
 import { useAuth } from '@/hooks/use-auth';
 import { cadastrarMeuVeiculoFn, listarMeusVeiculosFn } from '@/lib/vendedor.functions';
-import { maskPlaca, formatCurrency } from '@/lib/brasil';
+import { maskPlaca, formatCurrency, buscarCep } from '@/lib/brasil';
 import { montarEtapas, percentual } from '@/components/vendedor/ProgressoCadastro';
 import { TODAS_MARCAS, MARCAS_POPULARES, MODELOS_POR_MARCA, CORES, COMBUSTIVEIS, CAMBIOS, PORTAS, UFS, RELACOES_PROPRIETARIO, BANCOS_COMUNS } from '@/lib/constants-veiculos';
+
 
 export const Route = createFileRoute('/vendedor/cadastrar')({
   component: CadastrarVeiculo,
@@ -329,17 +330,30 @@ function CadastrarVeiculo() {
                 <ComboboxSearch options={CAMBIOS} value={form.cambio} onChange={(v) => set({ cambio: v })} placeholder="Selecione" />
               </div>
               <OpcaoBotoes label="Portas" opcoes={PORTAS} value={form.portas} onChange={(v) => set({ portas: v })} />
-              <Campo
-                label="Quilometragem atual"
-                value={form.km ? `${Number(form.km).toLocaleString('pt-BR')} km` : ''}
-                onChange={(v) => set({ km: soDigitos(v) })}
-                placeholder="0 km"
-              />
-              <Campo label="Município" value={form.cidade} onChange={(v) => set({ cidade: v })} />
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-slate-900">Estado</Label>
-                <ComboboxSearch options={UFS} value={form.uf} onChange={(v) => set({ uf: v })} placeholder="UF" />
+                <Label className="text-sm font-bold text-slate-900">Quilometragem atual</Label>
+                <div className="relative">
+                  <Input
+                    value={form.km ? `${Number(form.km).toLocaleString('pt-BR')}` : ''}
+                    onChange={(e) => set({ km: e.target.value.replace(/\D/g, '') })}
+                    placeholder="0"
+                    inputMode="numeric"
+                    className="h-12 rounded-xl pr-12 font-bold"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">km</span>
+                </div>
               </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">CEP</Label>
+                <Input
+                  value={form.uf ? `${form.cidade}/${form.uf}` : form.cidade}
+                  placeholder="Município e Estado"
+                  disabled
+                  className="h-12 rounded-xl bg-slate-50 font-medium"
+                />
+              </div>
+
 
             </div>
 

@@ -135,8 +135,24 @@ function CadastroComprador() {
                 placeholder="CNPJ" 
                 className="h-14 rounded-xl"
                 value={form.cnpj}
-                onChange={e => setForm({...form, cnpj: e.target.value})}
+                onChange={async e => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 14);
+                  setForm({...form, cnpj: val});
+                  if (val.length === 14) {
+                    toast.loading("Consultando CNPJ...");
+                    // Simulação de consulta CNPJ
+                    setTimeout(() => {
+                      toast.dismiss();
+                      toast.success("Dados da empresa localizados!");
+                      setForm(prev => ({
+                        ...prev,
+                        nome: prev.nome || "Empresa Exemplo Ltda",
+                      }));
+                    }, 1000);
+                  }
+                }}
               />
+
             )}
             <Input 
               required 
