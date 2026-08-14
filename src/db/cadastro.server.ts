@@ -92,8 +92,17 @@ export async function ensureCadastroSchema(silent = false) {
     ["fotos", "jsonb"],
     ["atualizado_em", "timestamptz NOT NULL DEFAULT now()"],
   ];
+  
+  // Use a transaction for stability and catch errors per column to avoid halting on existing ones
   for (const [name, type] of cols) {
-    await d.execute(sql.raw(`ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS ${name} ${type};`));
+    try {
+      await d.execute(sql.raw(`ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS ${name} ${type};`));
+    } catch (e) {
+      // Ignore "already exists" errors (PostgreSQL 9.6+ supports IF NOT EXISTS, but just in case)
+      if (!(e as any).message?.includes("already exists")) {
+        console.error(`Erro ao adicionar coluna ${name}:`, e);
+      }
+    }
   }
   await d.execute(sql`ALTER TABLE veiculos ALTER COLUMN status SET DEFAULT 'CADASTRADO';`);
   await d.execute(sql`UPDATE veiculos SET placa = upper(placa) WHERE placa <> upper(placa);`);

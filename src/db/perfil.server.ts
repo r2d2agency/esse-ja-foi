@@ -25,7 +25,13 @@ export async function ensurePerfilSchema() {
   if (pronto || !db) return;
   try {
     for (const [nome, tipo] of COLUNAS) {
-      await db.execute(sql.raw(`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ${nome} ${tipo};`));
+      try {
+        await db.execute(sql.raw(`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ${nome} ${tipo};`));
+      } catch (e) {
+        if (!(e as any).message?.includes("already exists")) {
+          throw e;
+        }
+      }
     }
     pronto = true;
   } catch (e) {
