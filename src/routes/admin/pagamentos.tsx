@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { getIndicadoresFinanceirosFn, listarRepassesAdminFn } from '@/lib/financeiro.functions';
-import { AdminLayout } from '@/components/admin/AdminLayout';
+import { AdminLayout } from '@/components/admin/layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -67,7 +67,7 @@ function PagamentosAdminPage() {
                     <Badge variant={r.status === 'CONCLUIDO' ? 'default' : 'secondary'}>{r.status}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Link to="/admin/pagamentos/$id" params={{ id: r.id }} className="text-teal-600 hover:underline">Ver detalhe</Link>
+                    <Link to="/admin/pagamento.$id" params={{ id: r.id }} className="text-teal-600 hover:underline">Ver detalhe</Link>
                   </TableCell>
                 </TableRow>
               ))}
