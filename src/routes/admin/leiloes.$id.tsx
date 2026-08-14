@@ -1,13 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getLeilaoInfo, darLanceFn } from "@/lib/leilao.functions";
+import { getLeilaoInfo } from "@/lib/leilao.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Gavel, Clock, Users, ArrowLeft, TrendingUp, AlertCircle } from "lucide-react";
+import { Gavel, Clock, Users, ArrowLeft, TrendingUp, AlertCircle, History as HistoryIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 
@@ -107,7 +107,7 @@ function AdminLeilaoAcompanhamentoPage() {
         <Card className="border-slate-200 shadow-none overflow-hidden">
           <CardHeader className="bg-slate-50 border-b border-slate-100 flex flex-row items-center justify-between py-4">
             <CardTitle className="text-sm font-black uppercase tracking-tight flex items-center gap-2">
-              <History className="h-4 w-4 text-slate-400" /> Histórico Completo de Lances
+              <HistoryIcon className="h-4 w-4 text-slate-400" /> Histórico Completo de Lances
             </CardTitle>
             <Badge variant="outline" className="text-[10px] font-bold">EXIBIÇÃO ADMIN</Badge>
           </CardHeader>
@@ -189,7 +189,7 @@ function AdminLeilaoAcompanhamentoPage() {
               <div className="flex justify-between items-center text-sm pt-2 border-t border-slate-100">
                 <span className="text-slate-500 font-medium">Ágio Atual:</span>
                 <span className="font-bold text-teal-600">
-                  {(((lanceAtual / Number(leilao.lance_inicial)) - 1) * 100).toFixed(1)}%
+                  {leilao.lance_inicial > 0 ? (((lanceAtual / Number(leilao.lance_inicial)) - 1) * 100).toFixed(1) : 0}%
                 </span>
               </div>
             </CardContent>
