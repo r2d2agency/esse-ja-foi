@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ShieldCheck, MapPin, Gauge, Lock, ArrowLeft, Fuel, Settings2, Info } from "lucide-react";
 import { useState } from "react";
 
-export const Route = createFileRoute("/veiculos/$slug")({
+export const Route = createFileRoute("/veiculos/")({
   component: DetalheVeiculoPublico,
 });
 
