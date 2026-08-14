@@ -138,9 +138,9 @@ export async function ensureComunicacoesSchema(silent = true) {
     // 8. Atualizar profiles com preferências e elegibilidade
     const profileCols: Array<[string, string]> = [
       ["pode_receber_comunicacoes", "boolean DEFAULT true"],
-      ["whatsapp_status", "text DEFAULT 'ATIVO'"], -- ATIVO, INVALIDO, DESABILITADO, BLOQUEADO, DESCADASTRADO
+      ["whatsapp_status", "text DEFAULT 'ATIVO'"], // ATIVO, INVALIDO, DESABILITADO, BLOQUEADO, DESCADASTRADO
       ["whatsapp_validado_em", "timestamptz"],
-      ["interesses_veiculos", "jsonb DEFAULT '[]'"], -- Hatch, Sedan, SUV, etc.
+      ["interesses_veiculos", "jsonb DEFAULT '[]'"], // Hatch, Sedan, SUV, etc.
       ["interesses_marcas", "jsonb DEFAULT '[]'"],
       ["interesses_regioes", "jsonb DEFAULT '[]'"],
       ["interesses_anos", "jsonb DEFAULT '[]'"]
