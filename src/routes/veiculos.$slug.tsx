@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getAnuncioPublico } from "@/lib/vitrine.functions";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, MapPin, Gauge, Lock, ArrowLeft, Fuel, Settings2, Info } from "lucide-react";
+import { ShieldCheck, MapPin, Fuel, Settings2, Info, Lock, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/veiculos/$slug")({
