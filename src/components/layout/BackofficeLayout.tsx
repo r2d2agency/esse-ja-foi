@@ -7,8 +7,9 @@ interface BackofficeLayoutProps {
 }
 
 export function BackofficeLayout({ children }: BackofficeLayoutProps) {
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, initialized } = useAuthStore();
 
+  if (!initialized) return <div className="flex items-center justify-center h-screen">Carregando...</div>;
   if (!isAuthenticated) return <Navigate to="/login" />;
 
   return (
