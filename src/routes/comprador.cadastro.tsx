@@ -49,7 +49,7 @@ function CadastroComprador() {
       const result = await cadastrarCompradorFn({ data: form });
 
       if (!result.ok) {
-        toast.error(result.message || "Erro ao criar conta.");
+        toast.error("Erro ao criar conta.");
         return;
       }
 
