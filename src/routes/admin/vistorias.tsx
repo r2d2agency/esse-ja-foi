@@ -131,7 +131,7 @@ function VistoriasAdminPage() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <Button asChild size="sm" className="bg-slate-900 hover:bg-teal-700 text-white font-bold h-8 rounded-lg">
-                            <Link to={`/admin/veiculo/${v.id}`}>Agendar</Link>
+                            <Link to="/admin/veiculo/$id" params={{ id: v.id }}>Agendar</Link>
                           </Button>
                         </td>
                       </tr>
