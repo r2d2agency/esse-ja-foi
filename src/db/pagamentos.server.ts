@@ -290,6 +290,12 @@ export async function registrarEventoPagamento(evento: {
       VALUES (${cobranca.negociacao_id}::uuid, ${cobranca.id}::uuid, 'PAGAMENTO_COMPRADOR', 'ENTRADA', ${recebido}, 'CONFIRMADO')
     `);
 
+    // Ledger - Entrada do Comprador
+    await tx.execute(sql`
+      INSERT INTO financeiro_ledger (negociacao_id, tipo, direcao, valor, referencia_externa, detalhe)
+      VALUES (${cobranca.negociacao_id}::uuid, 'ENTRADA_COMPRADOR', 'ENTRADA', ${recebido}, ${cobranca.id_externo}, 'Pagamento do comprador confirmado via Pix.')
+    `);
+
     await timeline(tx, cobranca.negociacao_id, "Pagamento confirmado pelo provedor.", `Transação ${cobranca.id_externo}`);
     await timeline(tx, cobranca.negociacao_id, "Conciliação concluída.", `Esperado e recebido: R$ ${recebido.toFixed(2)}`);
     await timeline(tx, cobranca.negociacao_id, "Negociação atualizada para Pagamento confirmado.");
