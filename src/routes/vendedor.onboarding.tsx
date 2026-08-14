@@ -94,6 +94,8 @@ function VendedorOnboarding() {
       });
       toast.success("Onboarding finalizado com sucesso!");
       navigate({ to: '/vendedor' });
+
+
     } catch (error: any) {
       toast.error(error.message || "Erro ao finalizar onboarding.");
     } finally {

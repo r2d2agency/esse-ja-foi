@@ -125,6 +125,8 @@ function CadastrarVeiculoVendedor() {
           variant="ghost" 
           className="mb-6 text-slate-500 hover:text-teal-900" 
           onClick={() => navigate({ to: '/vendedor' })}
+
+
         >
           <ArrowLeft className="w-4 h-4 mr-2" /> Voltar ao Painel
         </Button>

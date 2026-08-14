@@ -25,7 +25,7 @@ function DashboardVendedor() {
   });
   
   const veiculos = veiculosResult?.data || [];
-  const profile = (veiculosResult as any)?.profile;
+  const profile = (veiculosResult as any)?.profile || {};
 
   if (authLoading || veiculosLoading) {
     return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
@@ -86,6 +86,8 @@ function DashboardVendedor() {
               </div>
               <Button 
                 onClick={() => navigate({ to: '/vendedor/onboarding' })}
+
+
                 className="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs"
               >
                 Concluir Agora
@@ -99,9 +101,13 @@ function DashboardVendedor() {
             <h1 className="text-2xl font-bold text-teal-900">Meus Veículos</h1>
             <p className="text-slate-500">Acompanhe o status dos seus anúncios e vistorias.</p>
           </div>
-          <Button className="bg-teal-900 hover:bg-teal-950 text-white" onClick={() => navigate({ to: '/vendedor/cadastrar' })}>
+          <Button 
+            className="bg-teal-900 hover:bg-teal-950 text-white" 
+            onClick={() => navigate({ to: '/vendedor/cadastrar' })}
+          >
             <Plus className="w-4 h-4 mr-2" /> Novo Veículo
           </Button>
+
         </div>
 
         {veiculos?.length === 0 ? (
