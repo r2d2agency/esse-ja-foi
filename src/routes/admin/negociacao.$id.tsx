@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getNegociacaoFn, cancelarNegociacaoFn } from "@/lib/negociacoes.functions";
 import { confirmarPagamentoManualFn } from "@/lib/pagamentos.functions";
 import { useAuth } from "@/hooks/use-auth";
-import { useState } from "react";
+import { useState, ChangeEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, Ban, Trophy } from "lucide-react";
+import { ArrowLeft, Ban, Trophy, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { PrazoPagamento, STATUS_LABEL, STATUS_CLASSE, brl } from "@/components/negociacao/prazo-pagamento";
 
@@ -212,7 +212,7 @@ function AdminNegociacaoDetalhe() {
                       <Input 
                         type="number" 
                         value={valorManual} 
-                        onChange={(e) => setValorManual(e.target.value)} 
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => setValorManual(e.target.value)} 
                         placeholder={String(n.valor_venda)}
                       />
                     </div>
@@ -220,7 +220,7 @@ function AdminNegociacaoDetalhe() {
                       <Label className="text-xs font-bold uppercase text-slate-500">Referência / Comprovante</Label>
                       <Input 
                         value={refManual} 
-                        onChange={(e) => setRefManual(e.target.value)} 
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => setRefManual(e.target.value)} 
                         placeholder="Ex: TED Banco X - 12/08" 
                       />
                     </div>
