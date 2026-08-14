@@ -13,6 +13,7 @@ const MENU = [
   { to: '/vendedor/veiculos', label: 'Meus veículos', icon: Car },
   { to: '/vendedor/documentos', label: 'Documentos', icon: FileText },
   { to: '/vendedor/perfil', label: 'Perfil', icon: User },
+  { to: '/vendedor/financeiro', label: 'Financeiro', icon: Handshake },
 ] as const;
 
 const MOBILE = [

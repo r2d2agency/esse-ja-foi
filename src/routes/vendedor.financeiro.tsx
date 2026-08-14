@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { VendedorLayout } from '@/components/vendedor/VendedorLayout';
+import { Outlet } from '@tanstack/react-router';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -25,11 +25,11 @@ function FinanceiroVendedorPage() {
     queryKey: ['vendedor-dados-bancarios', user?.id],
     queryFn: async () => {
       const { data } = await supabase
-        .from('vendedor_dados_bancarios')
+        .from('vendedor_dados_bancarios' as any)
         .select('*')
         .eq('vendedor_id', user?.id)
         .single();
-      return data;
+      return data as any;
     },
     enabled: !!user?.id
   });
@@ -61,57 +61,55 @@ function FinanceiroVendedorPage() {
   });
 
   return (
-    <VendedorLayout title="Financeiro">
-      <div className="max-w-2xl mx-auto space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Dados para Recebimento (Pix)</CardTitle>
-            <p className="text-sm text-muted-foreground">Informe a chave Pix onde deseja receber os valores de suas vendas.</p>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
+    <div className="max-w-2xl mx-auto space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Dados para Recebimento (Pix)</CardTitle>
+          <p className="text-sm text-muted-foreground">Informe a chave Pix onde deseja receber os valores de suas vendas.</p>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Tipo de Chave</Label>
+              <Select 
+                value={watch('tipo_chave')} 
+                onValueChange={(v) => setValue('tipo_chave', v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CPF">CPF</SelectItem>
+                  <SelectItem value="CNPJ">CNPJ</SelectItem>
+                  <SelectItem value="EMAIL">E-mail</SelectItem>
+                  <SelectItem value="TELEFONE">Telefone</SelectItem>
+                  <SelectItem value="ALEATORIA">Chave Aleatória</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Chave Pix</Label>
+              <Input {...register('chave_pix')} placeholder="Digite sua chave pix" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Tipo de Chave</Label>
-                <Select 
-                  defaultValue={watch('tipo_chave')} 
-                  onValueChange={(v) => setValue('tipo_chave', v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="CPF">CPF</SelectItem>
-                    <SelectItem value="CNPJ">CNPJ</SelectItem>
-                    <SelectItem value="EMAIL">E-mail</SelectItem>
-                    <SelectItem value="TELEFONE">Telefone</SelectItem>
-                    <SelectItem value="ALEATORIA">Chave Aleatória</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Nome do Titular</Label>
+                <Input {...register('titular_nome')} placeholder="Nome completo" />
               </div>
-
               <div className="space-y-2">
-                <Label>Chave Pix</Label>
-                <Input {...register('chave_pix')} placeholder="Digite sua chave pix" />
+                <Label>CPF/CNPJ do Titular</Label>
+                <Input {...register('titular_documento')} placeholder="000.000.000-00" />
               </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Nome do Titular</Label>
-                  <Input {...register('titular_nome')} placeholder="Nome completo" />
-                </div>
-                <div className="space-y-2">
-                  <Label>CPF/CNPJ do Titular</Label>
-                  <Input {...register('titular_documento')} placeholder="000.000.000-00" />
-                </div>
-              </div>
-
-              <Button type="submit" className="w-full" disabled={mutation.isPending}>
-                Salvar Dados Bancários
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    </VendedorLayout>
+            <Button type="submit" className="w-full" disabled={mutation.isPending}>
+              {mutation.isPending ? "Salvando..." : "Salvar Dados Bancários"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
