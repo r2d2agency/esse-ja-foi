@@ -15,6 +15,7 @@ export const Route = createFileRoute('/api/public/webhooks/whatsapp')({
 
         if (mode === 'subscribe' && token) {
           // Buscar o token configurado no banco
+          if (!db) throw new Error("Database offline");
           const res = await db.execute(sql`SELECT webhook_verify_token FROM whatsapp_config LIMIT 1`);
           const configToken = (res as any).rows?.[0]?.webhook_verify_token;
 
@@ -33,8 +34,7 @@ export const Route = createFileRoute('/api/public/webhooks/whatsapp')({
         const bodyText = await request.text();
         const signature = request.headers.get('x-hub-signature-256');
 
-        // 1. Validar Assinatura (Opcional mas recomendado)
-        // Se app_secret estiver configurado, validar
+        if (!db) throw new Error("Database offline");
         const configRes = await db.execute(sql`SELECT app_secret FROM whatsapp_config LIMIT 1`);
         const appSecret = (configRes as any).rows?.[0]?.app_secret;
 
@@ -53,6 +53,7 @@ export const Route = createFileRoute('/api/public/webhooks/whatsapp')({
 
         // 2. Processar Payload
         try {
+          if (!db) throw new Error("Database offline");
           // Extrair informações básicas
           const entry = payload.entry?.[0];
           const change = entry?.changes?.[0];
@@ -108,10 +109,12 @@ export const Route = createFileRoute('/api/public/webhooks/whatsapp')({
         } catch (error: any) {
           console.error("[WhatsApp Webhook] Erro ao processar:", error);
           
-          await db.execute(sql`
-            INSERT INTO whatsapp_webhook_logs (event_type, payload, status, erro_detalhe)
-            VALUES ('ERRO_PROCESSAMENTO', ${JSON.stringify(payload)}::jsonb, 'ERRO', ${error.message})
-          `);
+          if (db) {
+            await db.execute(sql`
+              INSERT INTO whatsapp_webhook_logs (event_type, payload, status, erro_detalhe)
+              VALUES ('ERRO_PROCESSAMENTO', ${JSON.stringify(payload)}::jsonb, 'ERRO', ${error.message})
+            `);
+          }
 
           return new Response('Internal Server Error', { status: 500 });
         }
