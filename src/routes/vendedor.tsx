@@ -19,7 +19,7 @@ function DashboardVendedor() {
 
   const { data: veiculosResult } = useSuspenseQuery({
     queryKey: ['meus-veiculos', user?.id],
-    queryFn: () => listarVeiculos({ data: { perfilId: user?.id || "" } }),
+    queryFn: () => listarVeiculos({ perfilId: user?.id || "" }),
   });
   
   const veiculos = veiculosResult?.data || [];

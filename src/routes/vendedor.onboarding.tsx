@@ -44,11 +44,9 @@ function VendedorOnboarding() {
     setIsSubmitting(true);
     try {
       await updateDocs({
-        data: {
-          perfilId: user?.id || "",
-          ...personalData,
-          endereco: `${personalData.endereco}, ${personalData.numero}${personalData.complemento ? ` - ${personalData.complemento}` : ""} - ${personalData.bairro}`,
-        }
+        perfilId: user?.id || "",
+        ...personalData,
+        endereco: `${personalData.endereco}, ${personalData.numero}${personalData.complemento ? ` - ${personalData.complemento}` : ""} - ${personalData.bairro}`,
       });
       toast.success("Dados pessoais salvos com sucesso!");
       setStep(2);
@@ -71,13 +69,11 @@ function VendedorOnboarding() {
     setIsSubmitting(true);
     try {
       await updateDocs({
-        data: {
-          perfilId: user?.id || "",
-          cnhUrl: files.cnh || undefined,
-          crlvUrl: files.crlv || undefined,
-          selfieUrl: files.selfie || undefined,
-          finalizar: true
-        }
+        perfilId: user?.id || "",
+        cnhUrl: files.cnh || undefined,
+        crlvUrl: files.crlv || undefined,
+        selfieUrl: files.selfie || undefined,
+        finalizar: true
       });
       toast.success("Onboarding finalizado com sucesso!");
       navigate({ to: '/vendedor' });

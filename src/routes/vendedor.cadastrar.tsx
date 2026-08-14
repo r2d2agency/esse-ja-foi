@@ -99,12 +99,10 @@ function CadastrarVeiculoVendedor() {
     setIsSubmitting(true);
     try {
       const result = await cadastrarVeiculo({
-        data: {
-          ...form,
-          ...localizacao,
-          endereco: `${localizacao.endereco}, ${localizacao.numero}${localizacao.complemento ? ` - ${localizacao.complemento}` : ""} - ${localizacao.bairro}`,
-          perfilId: user.id,
-        }
+        ...form,
+        ...localizacao,
+        endereco: `${localizacao.endereco}, ${localizacao.numero}${localizacao.complemento ? ` - ${localizacao.complemento}` : ""} - ${localizacao.bairro}`,
+        perfilId: user.id,
       });
 
       if (result) {
