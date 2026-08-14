@@ -19,13 +19,16 @@ function ConfiguracoesAdminPage() {
   const carregar = useCallback(async () => {
     setLoading(true);
     try {
+      console.log("[admin/configuracoes] Carregando configurações...");
       const res = await listarConfiguracoesFn();
+      console.log("[admin/configuracoes] Resposta:", res);
       if (res.ok) {
         setConfigs(res.data);
       } else {
         toast.error(res.message || "Erro ao carregar configurações.");
       }
     } catch (err) {
+      console.error("[admin/configuracoes] Erro:", err);
       toast.error("Erro na comunicação com o servidor.");
     } finally {
       setLoading(false);

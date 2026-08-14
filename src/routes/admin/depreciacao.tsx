@@ -63,7 +63,9 @@ function DepreciacaoAdminPage() {
   const carregar = useCallback(async () => {
     setLoading(true);
     try {
+      console.log("[admin/depreciacao] Carregando regras...");
       const res = await listarRegrasDepreciacaoFn();
+      console.log("[admin/depreciacao] Resposta:", res);
       if (res.ok) {
         setRegras(res.data as Rule[]);
         setItens(res.itens as any[]);
@@ -71,6 +73,7 @@ function DepreciacaoAdminPage() {
         toast.error(res.message || "Erro ao carregar regras.");
       }
     } catch (err) {
+      console.error("[admin/depreciacao] Erro:", err);
       toast.error("Erro ao conectar com o servidor.");
     } finally {
       setLoading(false);

@@ -14,24 +14,29 @@ function toHex(buf: ArrayBuffer) {
 }
 
 async function pbkdf2(password: string, saltHex: string, iterations = 120_000) {
-  const saltParts = saltHex.match(/.{2}/g);
-  if (!saltParts) return "";
-  const salt = Uint8Array.from(
-    saltParts.map((h) => parseInt(h, 16)),
-  );
-  const key = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(password),
-    "PBKDF2",
-    false,
-    ["deriveBits"],
-  );
-  const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
-    key,
-    256,
-  );
-  return toHex(bits);
+  try {
+    const saltParts = saltHex.match(/.{2}/g);
+    if (!saltParts) return "";
+    const salt = Uint8Array.from(
+      saltParts.map((h) => parseInt(h, 16)),
+    );
+    const key = await crypto.subtle.importKey(
+      "raw",
+      enc.encode(password),
+      "PBKDF2",
+      false,
+      ["deriveBits"],
+    );
+    const bits = await crypto.subtle.deriveBits(
+      { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
+      key,
+      256,
+    );
+    return toHex(bits);
+  } catch (err) {
+    console.error("[auth.server] Erro no pbkdf2:", err);
+    return "";
+  }
 }
 
 export async function hashPassword(password: string) {
@@ -42,13 +47,18 @@ export async function hashPassword(password: string) {
 }
 
 export async function verifyPassword(password: string, stored: string) {
-  const [scheme, iter, salt, hash] = stored.split("$");
-  if (scheme !== "pbkdf2" || !iter || !salt || !hash) return false;
-  const candidate = await pbkdf2(password, salt, Number(iter));
-  if (candidate.length !== hash.length) return false;
-  let diff = 0;
-  for (let i = 0; i < hash.length; i++) diff |= hash.charCodeAt(i) ^ candidate.charCodeAt(i);
-  return diff === 0;
+  try {
+    const [scheme, iter, salt, hash] = stored.split("$");
+    if (scheme !== "pbkdf2" || !iter || !salt || !hash) return false;
+    const candidate = await pbkdf2(password, salt, Number(iter));
+    if (candidate.length !== hash.length) return false;
+    let diff = 0;
+    for (let i = 0; i < hash.length; i++) diff |= hash.charCodeAt(i) ^ candidate.charCodeAt(i);
+    return diff === 0;
+  } catch (err) {
+    console.error("[auth.server] Erro ao verificar senha:", err);
+    return false;
+  }
 }
 
 /** Cria as colunas de senha/proteção, o gatilho anti-exclusão e o superadmin. Idempotente. */
@@ -56,10 +66,14 @@ export async function ensureSuperAdmin() {
   if (!db) {
     throw new Error("DATABASE_URL ausente.");
   }
-
-  // Garante que uma instalação nova consiga autenticar mesmo antes de qualquer
-  // acesso à aplicação. Todas as operações são idempotentes.
+  console.log("[auth.server] ensureSuperAdmin iniciado...");
   try {
+    const adminModule = await import("./admin.server");
+    const ensureAdminTables = adminModule.ensureAdminTables;
+    console.log("[auth.server] Garantindo tabelas e roles...");
+    // Garante que uma instalação nova consiga autenticar mesmo antes de qualquer
+    // acesso à aplicação. Todas as operações são idempotentes.
+    try {
     // Garante que o enum app_role exista e tenha todos os valores necessários
     await db.execute(sql`
       DO $$ 
@@ -106,7 +120,8 @@ export async function ensureSuperAdmin() {
         email text NOT NULL UNIQUE,
         role app_role NOT NULL DEFAULT 'comprador',
         ativo boolean NOT NULL DEFAULT true,
-        criado_em timestamp NOT NULL DEFAULT now()
+        criado_em timestamp NOT NULL DEFAULT now(),
+        atualizado_em timestamp NOT NULL DEFAULT now()
       );
     `);
     
@@ -159,34 +174,43 @@ export async function ensureSuperAdmin() {
   }
 
   // Bloqueia exclusão e rebaixamento do superadmin diretamente no banco
-  await db.execute(sql`
-    CREATE OR REPLACE FUNCTION protege_superadmin() RETURNS trigger AS $$
-    BEGIN
-      IF TG_OP = 'DELETE' THEN
-        IF OLD.protegido THEN
-          RAISE EXCEPTION 'Este usuário é protegido e não pode ser excluído.';
+  try {
+    await db.execute(sql`
+      CREATE OR REPLACE FUNCTION protege_superadmin() RETURNS trigger AS $$
+      BEGIN
+        IF TG_OP = 'DELETE' THEN
+          IF OLD.protegido THEN
+            RAISE EXCEPTION 'Este usuário é protegido e não pode ser excluído.';
+          END IF;
+          RETURN OLD;
+        ELSE
+          IF OLD.protegido THEN
+            NEW.protegido := true;
+            NEW.role := 'admin';
+            NEW.ativo := true;
+            NEW.email := OLD.email;
+          END IF;
+          RETURN NEW;
         END IF;
-        RETURN OLD;
-      ELSE
-        IF OLD.protegido THEN
-          NEW.protegido := true;
-          NEW.role := 'admin';
-          NEW.ativo := true;
-          NEW.email := OLD.email;
-        END IF;
-        RETURN NEW;
-      END IF;
-    END;
-    $$ LANGUAGE plpgsql;
-  `);
-  await db.execute(sql`DROP TRIGGER IF EXISTS trg_protege_superadmin ON profiles;`);
-  await db.execute(sql`
-    CREATE TRIGGER trg_protege_superadmin
-    BEFORE UPDATE OR DELETE ON profiles
-    FOR EACH ROW EXECUTE FUNCTION protege_superadmin();
-  `);
+      END;
+      $$ LANGUAGE plpgsql;
+    `);
+    await db.execute(sql`DROP TRIGGER IF EXISTS trg_protege_superadmin ON profiles;`);
+    await db.execute(sql`
+      CREATE TRIGGER trg_protege_superadmin
+      BEFORE UPDATE OR DELETE ON profiles
+      FOR EACH ROW EXECUTE FUNCTION protege_superadmin();
+    `);
+  } catch (e) {
+    console.warn("[auth.server] Erro ao criar gatilho de proteção (pode ser falta de privilégio superuser):", (e as Error).message);
+  }
 
   const senha = await hashPassword(SUPERADMIN_PASSWORD);
+  const cadastroModule = await import("./cadastro.server");
+  const ensureCadastroSchema = cadastroModule.ensureCadastroSchema;
+  
+  await ensureCadastroSchema();
+  await ensureAdminTables();
 
   // Garante que o enum seja criado antes de qualquer tentativa de inserção
   // e remove qualquer ambiguidade de tipo.
@@ -200,26 +224,50 @@ export async function ensureSuperAdmin() {
           senha_hash = COALESCE(profiles.senha_hash, EXCLUDED.senha_hash);
   `);
 
-  // console.log("✅ Superadmin garantido:", SUPERADMIN_EMAIL);
+  console.log("✅ Superadmin garantido:", SUPERADMIN_EMAIL);
+} catch (err) {
+  console.error("[auth.server] Erro fatal no ensureSuperAdmin:", err);
+}
 }
 
 export async function authenticate(email: string, password: string) {
   if (!db) throw new Error("Banco de dados indisponível.");
-  await ensureSuperAdmin();
-  const rows: any = await db.execute(sql`
-    SELECT id, nome, email, role, ativo, senha_hash
-    FROM profiles WHERE lower(email) = lower(${email}) LIMIT 1
-  `);
-  const user = Array.isArray(rows) ? rows[0] : rows?.rows?.[0];
-  if (!user || !user.ativo || !user.senha_hash) return null;
-  const ok = await verifyPassword(password, user.senha_hash);
-  if (!ok) return null;
-  return {
-    id: String(user.id),
-    nome: user.nome ?? user.email,
-    email: user.email as string,
-    role: user.role as any,
-  };
+  console.log("[auth.server] Autenticando:", email);
+  try {
+    await ensureSuperAdmin();
+    const rows: any = await db.execute(sql`
+      SELECT id, nome, email, role, ativo, senha_hash
+      FROM profiles WHERE lower(email) = lower(${email}) LIMIT 1
+    `);
+    const user = Array.isArray(rows) ? rows[0] : rows?.rows?.[0];
+    if (!user) {
+      console.warn("[auth.server] Usuário não encontrado:", email);
+      return null;
+    }
+    if (!user.ativo) {
+      console.warn("[auth.server] Usuário inativo:", email);
+      return null;
+    }
+    if (!user.senha_hash) {
+      console.warn("[auth.server] Usuário sem hash de senha:", email);
+      return null;
+    }
+    const ok = await verifyPassword(password, user.senha_hash);
+    if (!ok) {
+      console.warn("[auth.server] Senha incorreta para:", email);
+      return null;
+    }
+    console.log("[auth.server] Autenticação OK para:", email);
+    return {
+      id: String(user.id),
+      nome: user.nome ?? user.email,
+      email: user.email as string,
+      role: user.role as any,
+    };
+  } catch (err) {
+    console.error("[auth.server] Erro durante autenticação:", err);
+    throw err;
+  }
 }
 
 export async function issueToken(userId: string) {
