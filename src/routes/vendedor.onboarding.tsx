@@ -20,14 +20,44 @@ function VendedorOnboarding() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const updateDocs = useServerFn(atualizarDocumentosVendedorFn);
 
+  const [personalData, setPersonalData] = useState({
+    cpf: '',
+    cep: '',
+    endereco: '',
+    numero: '',
+    bairro: '',
+    complemento: '',
+    cidade: '',
+    uf: '',
+  });
+
   const [files, setFiles] = useState({
     cnh: null as string | null,
     crlv: null as string | null,
     selfie: null as string | null,
   });
 
+  const handlePersonalDataSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      await updateDocs({
+        data: {
+          perfilId: user?.id || "",
+          ...personalData,
+          endereco: `${personalData.endereco}, ${personalData.numero}${personalData.complemento ? ` - ${personalData.complemento}` : ""} - ${personalData.bairro}`,
+        }
+      });
+      toast.success("Dados pessoais salvos com sucesso!");
+      setStep(2);
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao salvar dados pessoais.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleFileUpload = (type: 'cnh' | 'crlv' | 'selfie') => {
-    // Simulação de upload
     toast.info(`Selecionando arquivo para ${type.toUpperCase()}...`);
     setTimeout(() => {
       setFiles(prev => ({ ...prev, [type]: 'https://placehold.co/400x300?text=Documento+' + type.toUpperCase() }));
@@ -36,28 +66,46 @@ function VendedorOnboarding() {
   };
 
   const finalizeOnboarding = async () => {
-    if (!files.cnh || !files.crlv || !files.selfie) {
-      toast.error("Por favor, envie todos os documentos necessários.");
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       await updateDocs({
         data: {
           perfilId: user?.id || "",
-          cnhUrl: files.cnh,
-          crlvUrl: files.crlv,
-          selfieUrl: files.selfie,
+          cnhUrl: files.cnh || undefined,
+          crlvUrl: files.crlv || undefined,
+          selfieUrl: files.selfie || undefined,
           finalizar: true
         }
       });
-      toast.success("Documentação enviada com sucesso!");
+      toast.success("Onboarding finalizado com sucesso!");
       navigate({ to: '/vendedor' });
     } catch (error: any) {
-      toast.error(error.message || "Erro ao salvar documentos.");
+      toast.error(error.message || "Erro ao finalizar onboarding.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCepChange = async (cep: string) => {
+    const cleanCep = cep.replace(/\D/g, "");
+    setPersonalData(prev => ({ ...prev, cep }));
+    
+    if (cleanCep.length === 8) {
+      try {
+        const address = await buscarCep(cleanCep);
+        if (address) {
+          setPersonalData(prev => ({
+            ...prev,
+            endereco: address.logradouro,
+            bairro: address.bairro,
+            cidade: address.cidade,
+            uf: address.uf
+          }));
+          toast.success("Endereço preenchido");
+        }
+      } catch (error) {
+        console.error("Erro ao buscar CEP:", error);
+      }
     }
   };
 
