@@ -815,7 +815,7 @@ function ComunicacoesPage() {
                           <td className="px-4 py-3">
                             <div className="flex flex-col">
                               <span className="font-bold">Interessados SUVs Premium</span>
-                              <span className="text-[10px] text-muted-foreground">Filtro: Interesse SUV + > 2018</span>
+                              <span className="text-[10px] text-muted-foreground">Filtro: Interesse SUV + {">"} 2018</span>
                             </div>
                           </td>
                           <td className="px-4 py-3"><Badge variant="outline">Dinâmico</Badge></td>
