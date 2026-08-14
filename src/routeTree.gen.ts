@@ -58,6 +58,7 @@ import { Route as AdminLeiloesIdRouteImport } from './routes/admin/leiloes.$id'
 import { Route as AdminNegociacaoIdRouteImport } from './routes/admin/negociacao.$id'
 import { Route as AdminVeiculoIdRouteImport } from './routes/admin/veiculo.$id'
 import { Route as AdminVendedorIdRouteImport } from './routes/admin/vendedor.$id'
+import { Route as CompradorPagamentoIdRouteImport } from './routes/comprador/pagamento.$id'
 import { Route as VendedorVeiculoRouteImport } from './routes/vendedor.veiculo.'
 import { Route as VendedorVeiculoIdRouteImport } from './routes/vendedor.veiculo.$id'
 import { Route as VistoriadorExecucaoIdRouteImport } from './routes/vistoriador.execucao.$id'
@@ -311,6 +312,11 @@ const AdminVendedorIdRoute = AdminVendedorIdRouteImport.update({
   path: '/vendedor/$id',
   getParentRoute: () => AdminRoute,
 } as any)
+const CompradorPagamentoIdRoute = CompradorPagamentoIdRouteImport.update({
+  id: '/pagamento/$id',
+  path: '/pagamento/$id',
+  getParentRoute: () => CompradorRoute,
+} as any)
 const VendedorVeiculoRoute = VendedorVeiculoRouteImport.update({
   id: '/veiculo/',
   path: '/veiculo/',
@@ -400,6 +406,7 @@ export interface FileRoutesByFullPath {
   '/admin/negociacao/$id': typeof AdminNegociacaoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
+  '/comprador/pagamento/$id': typeof CompradorPagamentoIdRoute
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRouteWithChildren
   '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
@@ -453,6 +460,7 @@ export interface FileRoutesByTo {
   '/admin/negociacao/$id': typeof AdminNegociacaoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
+  '/comprador/pagamento/$id': typeof CompradorPagamentoIdRoute
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRouteWithChildren
   '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
@@ -512,6 +520,7 @@ export interface FileRoutesById {
   '/admin/negociacao/$id': typeof AdminNegociacaoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
+  '/comprador/pagamento/$id': typeof CompradorPagamentoIdRoute
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRouteWithChildren
   '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
@@ -572,6 +581,7 @@ export interface FileRouteTypes {
     | '/admin/negociacao/$id'
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
+    | '/comprador/pagamento/$id'
     | '/vendedor/veiculo/$id'
     | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
@@ -625,6 +635,7 @@ export interface FileRouteTypes {
     | '/admin/negociacao/$id'
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
+    | '/comprador/pagamento/$id'
     | '/vendedor/veiculo/$id'
     | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
@@ -683,6 +694,7 @@ export interface FileRouteTypes {
     | '/admin/negociacao/$id'
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
+    | '/comprador/pagamento/$id'
     | '/vendedor/veiculo/$id'
     | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
@@ -1051,6 +1063,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminVendedorIdRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/comprador/pagamento/$id': {
+      id: '/comprador/pagamento/$id'
+      path: '/pagamento/$id'
+      fullPath: '/comprador/pagamento/$id'
+      preLoaderRoute: typeof CompradorPagamentoIdRouteImport
+      parentRoute: typeof CompradorRoute
+    }
     '/vendedor/veiculo/': {
       id: '/vendedor/veiculo/'
       path: '/veiculo'
@@ -1177,6 +1196,7 @@ interface CompradorRouteChildren {
   CompradorNegociacoesRoute: typeof CompradorNegociacoesRoute
   CompradorPerfilRoute: typeof CompradorPerfilRoute
   CompradorIndexRoute: typeof CompradorIndexRoute
+  CompradorPagamentoIdRoute: typeof CompradorPagamentoIdRoute
 }
 
 const CompradorRouteChildren: CompradorRouteChildren = {
@@ -1185,6 +1205,7 @@ const CompradorRouteChildren: CompradorRouteChildren = {
   CompradorNegociacoesRoute: CompradorNegociacoesRoute,
   CompradorPerfilRoute: CompradorPerfilRoute,
   CompradorIndexRoute: CompradorIndexRoute,
+  CompradorPagamentoIdRoute: CompradorPagamentoIdRoute,
 }
 
 const CompradorRouteWithChildren = CompradorRoute._addFileChildren(
