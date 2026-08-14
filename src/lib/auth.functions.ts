@@ -14,12 +14,10 @@ export const seedSuperAdmin = createServerFn({ method: "POST" }).handler(async (
 
 export const loginWithPassword = createServerFn({ method: "POST" })
   .inputValidator(z.object({ 
-    data: z.object({ 
-      email: z.string().email(), 
-      password: z.string().min(1) 
-    }) 
+    email: z.string().email(), 
+    password: z.string().min(1) 
   }))
-  .handler(async ({ data: { data } }) => {
+  .handler(async ({ data }) => {
     const { authenticate, issueToken } = await import("@/db/auth.server");
     try {
       const user = await authenticate(data.email, data.password);
