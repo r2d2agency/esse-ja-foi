@@ -5,23 +5,29 @@ interface EtapaProps {
   currentStep: number;
   totalSteps: number;
   etapas: string[];
+  titulo?: string;
+  subtitulo?: string;
 }
 
-export function EtapaProgresso({ currentStep, totalSteps, etapas }: EtapaProps) {
+export function EtapaProgresso({
+  currentStep,
+  totalSteps,
+  etapas,
+  titulo = "Complete seu cadastro",
+  subtitulo = "Precisamos dessas informações para validar sua identidade e dar segurança às negociações.",
+}: EtapaProps) {
   const progress = (currentStep / totalSteps) * 100;
 
   return (
     <div className="w-full space-y-4">
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-black text-white">Complete seu cadastro</h2>
+          <h2 className="text-xl font-black text-white">{titulo}</h2>
           <span className="text-xs font-bold text-teal-200 uppercase tracking-wider">
             Etapa {currentStep} de {totalSteps}
           </span>
         </div>
-        <p className="text-sm text-teal-100/80">
-          Precisamos dessas informações para validar sua identidade e dar segurança às negociações.
-        </p>
+        <p className="text-sm text-teal-100/80">{subtitulo}</p>
       </div>
 
       <div className="relative h-2 w-full overflow-hidden rounded-full bg-teal-950/50">
@@ -32,7 +38,10 @@ export function EtapaProgresso({ currentStep, totalSteps, etapas }: EtapaProps) 
       </div>
 
       {/* Indicadores de etapa (Desktop) */}
-      <div className="hidden lg:grid grid-cols-5 gap-2">
+      <div
+        className="hidden lg:grid gap-2"
+        style={{ gridTemplateColumns: `repeat(${etapas.length}, minmax(0, 1fr))` }}
+      >
         {etapas.map((label, idx) => {
           const stepNum = idx + 1;
           const isCompleted = stepNum < currentStep;

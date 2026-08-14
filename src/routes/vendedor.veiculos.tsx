@@ -1,22 +1,41 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
 import { Car, Plus } from 'lucide-react';
-import { toast } from 'sonner';
 import { listarMeusVeiculosFn } from '@/lib/vendedor.functions';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
-import { StatusBadge, statusVeiculo } from '@/components/vendedor/StatusBadge';
-import { montarEtapas, percentual } from '@/components/vendedor/ProgressoCadastro';
+import { CardVeiculo } from '@/components/veiculo/CardVeiculo';
+import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/vendedor/veiculos')({
   component: MeusVeiculos,
 });
 
+const FILTROS = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'rascunhos', label: 'Rascunhos' },
+  { id: 'analise', label: 'Em análise' },
+  { id: 'andamento', label: 'Em andamento' },
+  { id: 'vendidos', label: 'Vendidos' },
+] as const;
+
+function filtrar(veiculos: any[], filtro: string) {
+  switch (filtro) {
+    case 'rascunhos': return veiculos.filter((v) => v.status === 'RASCUNHO');
+    case 'analise': return veiculos.filter((v) => v.status === 'AGUARDANDO_APROVACAO');
+    case 'andamento': return veiculos.filter((v) => ['CADASTRADO', 'AGENDADO', 'EM_VISTORIA', 'EM_LEILAO'].includes(v.status));
+    case 'vendidos': return veiculos.filter((v) => v.status === 'VENDIDO');
+    default: return veiculos;
+  }
+}
+
 function MeusVeiculos() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const listar = useServerFn(listarMeusVeiculosFn);
+  const [filtro, setFiltro] = useState<string>('todos');
 
   const { data, isLoading } = useQuery({
     queryKey: ['meus-veiculos', user?.id],
@@ -25,17 +44,7 @@ function MeusVeiculos() {
   });
 
   const veiculos: any[] = (data as any)?.data || [];
-  const cadastroCompleto = percentual(montarEtapas((data as any)?.profile)) === 100;
-
-  const enviarParaAnalise = () => {
-    if (!cadastroCompleto) {
-      toast.error('Complete seu cadastro para continuar.', {
-        action: { label: 'Completar cadastro', onClick: () => navigate({ to: '/vendedor/onboarding' }) },
-      });
-      return;
-    }
-    toast.success('Veículo enviado para análise.');
-  };
+  const lista = filtrar(veiculos, filtro);
 
   return (
     <div className="space-y-6">
@@ -52,36 +61,35 @@ function MeusVeiculos() {
         </Button>
       </div>
 
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {FILTROS.map((f) => (
+          <button
+            key={f.id}
+            onClick={() => setFiltro(f.id)}
+            className={cn(
+              'shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors',
+              filtro === f.id ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+            )}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {isLoading ? (
         <p className="text-sm text-slate-400">Carregando...</p>
-      ) : veiculos.length === 0 ? (
+      ) : lista.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
           <Car className="mx-auto h-8 w-8 text-slate-300" />
-          <p className="mt-4 font-semibold text-slate-900">Nenhum veículo cadastrado</p>
+          <p className="mt-4 font-semibold text-slate-900">Nenhum veículo por aqui</p>
           <p className="mt-1 text-sm text-slate-500">Cadastre seu carro para iniciar a análise.</p>
         </div>
       ) : (
-        <ul className="space-y-3">
-          {veiculos.map((v) => (
-            <li
-              key={v.id}
-              className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div>
-                <p className="font-bold text-slate-900">
-                  {v.marca} {v.modelo}
-                </p>
-                <p className="text-xs uppercase tracking-widest text-slate-400">{v.placa}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <StatusBadge status={statusVeiculo(v.status)} />
-                <Button variant="outline" className="h-10 rounded-xl" onClick={enviarParaAnalise}>
-                  Enviar para análise
-                </Button>
-              </div>
-            </li>
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {lista.map((v) => (
+            <CardVeiculo key={v.id} veiculo={v} onAbrir={() => navigate({ to: '/vendedor/veiculo/$id', params: { id: v.id } })} />
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );
