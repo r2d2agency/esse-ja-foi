@@ -94,5 +94,6 @@ export const gerarNovoVerifyTokenFn = createServerFn({ method: "POST" })
 
 export const getWebhookLogsFn = createServerFn({ method: "GET" })
   .handler(async () => {
-    return db.getWebhookLogs();
+    const logs = await db.getWebhookLogs();
+    return logs as any[];
   });
