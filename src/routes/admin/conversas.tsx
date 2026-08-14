@@ -99,7 +99,7 @@ function CentralConversasPage() {
   };
 
   return (
-    <AdminLayout title="Central de Conversas">
+    <AdminLayout>
       <div className="flex h-[calc(100vh-12rem)] overflow-hidden bg-white border rounded-xl shadow-sm">
         
         {/* Coluna 1: Lista */}
