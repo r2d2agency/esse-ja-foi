@@ -1022,6 +1022,76 @@ function ComunicacoesPage() {
             </div>
           </TabsContent>
 
+          {/* Contatos */}
+          <TabsContent value="contatos" className="mt-6 space-y-4">
+             <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-semibold">Base de Contatos (WhatsApp)</h2>
+                <p className="text-sm text-muted-foreground">Monitore a elegibilidade e saúde dos números dos seus compradores</p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline">
+                  <Filter className="w-4 h-4 mr-2" /> Filtrar Elegíveis
+                </Button>
+                <Button variant="outline"> Exportar Base</Button>
+              </div>
+            </div>
+            
+            <Card>
+              <CardContent className="p-0">
+                <div className="border-b p-4 bg-slate-50/50 flex gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input placeholder="Buscar por nome, telefone ou empresa..." className="pl-10" />
+                  </div>
+                </div>
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 border-b">
+                    <tr>
+                      <th className="px-4 py-3 text-left">Comprador</th>
+                      <th className="px-4 py-3 text-left">WhatsApp</th>
+                      <th className="px-4 py-3 text-left">Status</th>
+                      <th className="px-4 py-3 text-left">Elegibilidade</th>
+                      <th className="px-4 py-3 text-right">Interesses</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    <tr className="hover:bg-slate-50">
+                      <td className="px-4 py-3 font-medium">Auto Prime Multimarcas</td>
+                      <td className="px-4 py-3 font-mono">(17) 99762-4832</td>
+                      <td className="px-4 py-3"><Badge variant="success">ATIVO</Badge></td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          <span>Elegível</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-1">
+                          <Badge variant="outline" className="text-[9px]">SUV</Badge>
+                          <Badge variant="outline" className="text-[9px]">Luxury</Badge>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr className="hover:bg-slate-50">
+                      <td className="px-4 py-3 font-medium">Carlos Eduardo Silva</td>
+                      <td className="px-4 py-3 font-mono">(11) 98221-0092</td>
+                      <td className="px-4 py-3"><Badge variant="destructive">INVÁLIDO</Badge></td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <AlertCircle className="w-4 h-4 text-red-500" />
+                          <span>Número Inexistente</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                         <Badge variant="outline" className="text-[9px]">Hatch</Badge>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+
           {/* Templates */}
           <TabsContent value="templates" className="mt-6 space-y-4">
             <div className="flex justify-between items-center">
