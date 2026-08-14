@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BackofficeLayout } from "@/components/layout/BackofficeLayout";
+import { AdminLayout as BackofficeLayout } from "@/components/layout/AdminLayout";
 import { listarLeiloesAtivosFn } from "@/lib/leiloes.functions";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Gavel, Clock, TrendingUp } from "lucide-react";

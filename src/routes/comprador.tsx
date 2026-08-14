@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BackofficeLayout } from "@/components/layout/BackofficeLayout";
+import { AdminLayout as BackofficeLayout } from "@/components/layout/AdminLayout";
 import { DataTable } from "@/components/shared/DataTable";
 import { dashboardCompradorFn } from "@/lib/dashboard.functions";
 import { formatCurrency, formatDate } from "@/lib/utils";

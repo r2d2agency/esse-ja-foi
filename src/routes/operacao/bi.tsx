@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { BackofficeLayout } from "@/components/layout/BackofficeLayout";
+import { AdminLayout as BackofficeLayout } from "@/components/layout/AdminLayout";
 import { useAuthStore } from "@/hooks/use-auth";
 import { 
   TrendingUp, 

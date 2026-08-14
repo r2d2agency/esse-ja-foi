@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BackofficeLayout } from "@/components/layout/BackofficeLayout";
+import { AdminLayout as BackofficeLayout } from "@/components/layout/AdminLayout";
 import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
