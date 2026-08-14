@@ -31,6 +31,7 @@ import { Route as AdminVeiculosRouteImport } from './routes/admin/veiculos'
 import { Route as AdminVendedoresRouteImport } from './routes/admin/vendedores'
 import { Route as AdminVistoriasRouteImport } from './routes/admin/vistorias'
 import { Route as CompradorIndexRouteImport } from './routes/comprador/index'
+import { Route as CompradorCadastroRouteImport } from './routes/comprador.cadastro'
 import { Route as CompradorDocumentosRouteImport } from './routes/comprador/documentos'
 import { Route as CompradorPerfilRouteImport } from './routes/comprador/perfil'
 import { Route as VeiculosIndexRouteImport } from './routes/veiculos.index'
@@ -167,6 +168,11 @@ const AdminVistoriasRoute = AdminVistoriasRouteImport.update({
 const CompradorIndexRoute = CompradorIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => CompradorRoute,
+} as any)
+const CompradorCadastroRoute = CompradorCadastroRouteImport.update({
+  id: '/cadastro',
+  path: '/cadastro',
   getParentRoute: () => CompradorRoute,
 } as any)
 const CompradorDocumentosRoute = CompradorDocumentosRouteImport.update({
@@ -327,6 +333,7 @@ export interface FileRoutesByFullPath {
   '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
   '/admin/vistorias': typeof AdminVistoriasRoute
+  '/comprador/cadastro': typeof CompradorCadastroRoute
   '/comprador/documentos': typeof CompradorDocumentosRoute
   '/comprador/perfil': typeof CompradorPerfilRoute
   '/veiculos/$slug': typeof VeiculosSlugRoute
@@ -373,6 +380,7 @@ export interface FileRoutesByTo {
   '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
   '/admin/vistorias': typeof AdminVistoriasRoute
+  '/comprador/cadastro': typeof CompradorCadastroRoute
   '/comprador/documentos': typeof CompradorDocumentosRoute
   '/comprador/perfil': typeof CompradorPerfilRoute
   '/veiculos/$slug': typeof VeiculosSlugRoute
@@ -425,6 +433,7 @@ export interface FileRoutesById {
   '/admin/veiculos': typeof AdminVeiculosRoute
   '/admin/vendedores': typeof AdminVendedoresRoute
   '/admin/vistorias': typeof AdminVistoriasRoute
+  '/comprador/cadastro': typeof CompradorCadastroRoute
   '/comprador/documentos': typeof CompradorDocumentosRoute
   '/comprador/perfil': typeof CompradorPerfilRoute
   '/veiculos/$slug': typeof VeiculosSlugRoute
@@ -478,6 +487,7 @@ export interface FileRouteTypes {
     | '/admin/veiculos'
     | '/admin/vendedores'
     | '/admin/vistorias'
+    | '/comprador/cadastro'
     | '/comprador/documentos'
     | '/comprador/perfil'
     | '/veiculos/$slug'
@@ -524,6 +534,7 @@ export interface FileRouteTypes {
     | '/admin/veiculos'
     | '/admin/vendedores'
     | '/admin/vistorias'
+    | '/comprador/cadastro'
     | '/comprador/documentos'
     | '/comprador/perfil'
     | '/veiculos/$slug'
@@ -575,6 +586,7 @@ export interface FileRouteTypes {
     | '/admin/veiculos'
     | '/admin/vendedores'
     | '/admin/vistorias'
+    | '/comprador/cadastro'
     | '/comprador/documentos'
     | '/comprador/perfil'
     | '/veiculos/$slug'
@@ -774,6 +786,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/comprador/'
       preLoaderRoute: typeof CompradorIndexRouteImport
+      parentRoute: typeof CompradorRoute
+    }
+    '/comprador/cadastro': {
+      id: '/comprador/cadastro'
+      path: '/cadastro'
+      fullPath: '/comprador/cadastro'
+      preLoaderRoute: typeof CompradorCadastroRouteImport
       parentRoute: typeof CompradorRoute
     }
     '/comprador/documentos': {
@@ -1019,12 +1038,14 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface CompradorRouteChildren {
+  CompradorCadastroRoute: typeof CompradorCadastroRoute
   CompradorDocumentosRoute: typeof CompradorDocumentosRoute
   CompradorPerfilRoute: typeof CompradorPerfilRoute
   CompradorIndexRoute: typeof CompradorIndexRoute
 }
 
 const CompradorRouteChildren: CompradorRouteChildren = {
+  CompradorCadastroRoute: CompradorCadastroRoute,
   CompradorDocumentosRoute: CompradorDocumentosRoute,
   CompradorPerfilRoute: CompradorPerfilRoute,
   CompradorIndexRoute: CompradorIndexRoute,
