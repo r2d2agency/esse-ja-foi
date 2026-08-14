@@ -110,3 +110,18 @@ export async function dispararEventoSistema(evento: string, contexto: any) {
     console.error(`[Automacao] Erro ao disparar evento ${evento}:`, err);
   }
 }
+
+export async function getExecucoesAutomacao(automacaoId: string) {
+  const d = requireDb();
+  const res = await d.execute(sql`
+    SELECT e.*, p.nome as destinatario_nome, m.status as mensagem_status
+    FROM whatsapp_automacoes_execucoes e
+    LEFT JOIN profiles p ON p.id = e.destinatario_id
+    LEFT JOIN whatsapp_mensagens m ON m.id = e.mensagem_id
+    WHERE e.automacao_id = ${automacaoId}::uuid
+    ORDER BY e.criado_em DESC
+    LIMIT 50
+  `);
+  return (res as any).rows || [];
+}
+
