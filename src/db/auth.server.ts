@@ -66,10 +66,13 @@ export async function ensureSuperAdmin() {
   if (!db) {
     throw new Error("DATABASE_URL ausente.");
   }
-
-  // Garante que uma instalação nova consiga autenticar mesmo antes de qualquer
-  // acesso à aplicação. Todas as operações são idempotentes.
+  console.log("[auth.server] ensureSuperAdmin iniciado...");
   try {
+    const { ensureAdminTables } = await import("./admin.server");
+    console.log("[auth.server] Garantindo tabelas e roles...");
+    // Garante que uma instalação nova consiga autenticar mesmo antes de qualquer
+    // acesso à aplicação. Todas as operações são idempotentes.
+    try {
     // Garante que o enum app_role exista e tenha todos os valores necessários
     await db.execute(sql`
       DO $$ 
@@ -211,7 +214,11 @@ export async function ensureSuperAdmin() {
           senha_hash = COALESCE(profiles.senha_hash, EXCLUDED.senha_hash);
   `);
 
-  // console.log("✅ Superadmin garantido:", SUPERADMIN_EMAIL);
+    await ensureAdminTables();
+    console.log("✅ Superadmin garantido:", SUPERADMIN_EMAIL);
+  } catch (err) {
+    console.error("[auth.server] Erro fatal no ensureSuperAdmin:", err);
+  }
 }
 
 export async function authenticate(email: string, password: string) {
