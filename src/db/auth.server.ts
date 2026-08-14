@@ -67,25 +67,26 @@ export async function ensureSuperAdmin() {
         IF NOT EXISTS (SELECT 1 FROM pg_type t WHERE t.typname = 'app_role') THEN
           CREATE TYPE app_role AS ENUM ('admin', 'operacao', 'vistoriador', 'comprador', 'vendedor');
         ELSE
-          IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'app_role' AND e.enumlabel = 'admin') THEN
-            ALTER TYPE app_role ADD VALUE 'admin';
-          END IF;
-          IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'app_role' AND e.enumlabel = 'operacao') THEN
-            ALTER TYPE app_role ADD VALUE 'operacao';
-          END IF;
-          IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'app_role' AND e.enumlabel = 'vistoriador') THEN
-            ALTER TYPE app_role ADD VALUE 'vistoriador';
-          END IF;
-          IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'app_role' AND e.enumlabel = 'comprador') THEN
-            ALTER TYPE app_role ADD VALUE 'comprador';
-          END IF;
-          IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'app_role' AND e.enumlabel = 'vendedor') THEN
-            ALTER TYPE app_role ADD VALUE 'vendedor';
-          END IF;
+          BEGIN
+            ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'admin';
+          EXCEPTION WHEN duplicate_object THEN NULL; END;
+          
+          BEGIN
+            ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'operacao';
+          EXCEPTION WHEN duplicate_object THEN NULL; END;
+          
+          BEGIN
+            ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'vistoriador';
+          EXCEPTION WHEN duplicate_object THEN NULL; END;
+          
+          BEGIN
+            ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'comprador';
+          EXCEPTION WHEN duplicate_object THEN NULL; END;
+          
+          BEGIN
+            ALTER TYPE app_role ADD VALUE IF NOT EXISTS 'vendedor';
+          EXCEPTION WHEN duplicate_object THEN NULL; END;
         END IF;
-      EXCEPTION
-        WHEN OTHERS THEN
-          NULL;
       END $$;
     `);
   } catch (e) {
@@ -184,12 +185,14 @@ export async function ensureSuperAdmin() {
 
   const senha = await hashPassword(SUPERADMIN_PASSWORD);
 
+  // Garante que o enum seja criado antes de qualquer tentativa de inserção
+  // e remove qualquer ambiguidade de tipo.
   await db.execute(sql`
     INSERT INTO profiles (nome, email, role, ativo, protegido, senha_hash, cpf, cep, endereco, cidade, uf)
-    VALUES (${SUPERADMIN_NAME}, ${SUPERADMIN_EMAIL}, 'admin', true, true, ${senha}, '00000000000', '00000000', 'Endereço Admin', 'Cidade', 'UF')
+    VALUES (${SUPERADMIN_NAME}, ${SUPERADMIN_EMAIL}, 'admin'::text::app_role, true, true, ${senha}, '00000000000', '00000000', 'Endereço Admin', 'Cidade', 'UF')
     ON CONFLICT (email) DO UPDATE
       SET protegido = true,
-          role = 'admin',
+          role = 'admin'::text::app_role,
           ativo = true,
           senha_hash = COALESCE(profiles.senha_hash, EXCLUDED.senha_hash);
   `);

@@ -168,6 +168,7 @@ function CompradorIndex() {
 
       if (!result.ok) {
         toast.error(result.message || "Erro ao realizar cadastro.");
+        console.error("Erro retornado pelo servidor:", result);
         return;
       }
 
