@@ -96,6 +96,13 @@ export const cadastrarMeuVeiculoFn = createServerFn({ method: "POST" })
     opcionais: z.array(z.string()).optional(),
     observacoes: z.string().optional(),
     fotos: z.array(z.string()).optional(),
+    endereco: z.string().optional(),
+    cep: z.string().optional(),
+    cidade: z.string().optional(),
+    uf: z.string().optional(),
+    numero: z.string().optional(),
+    bairro: z.string().optional(),
+    complemento: z.string().optional(),
   }))
   .handler(async ({ data }) => {
     const { salvarVeiculo } = await import("@/db/cadastro.server");
