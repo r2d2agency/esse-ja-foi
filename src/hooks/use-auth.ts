@@ -11,6 +11,7 @@ interface User {
   whatsapp?: string;
   cpf?: string;
   pode_ver_valores?: boolean;
+  tipo_pessoa?: "PF" | "PJ";
 }
 
 interface AuthState {
