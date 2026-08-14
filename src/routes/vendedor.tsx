@@ -13,23 +13,31 @@ export const Route = createFileRoute('/vendedor')({
 });
 
 function DashboardVendedor() {
-  const { user, logout, isLoading: authLoading } = useAuth();
+  const { user, logout, isLoading: authLoading, initialized } = useAuth();
   const navigate = useNavigate();
   const listarVeiculos = useServerFn(listarMeusVeiculosFn);
 
+  // Se ainda não inicializou o persist do zustand ou está carregando auth, mostra loading
+  if (!initialized || authLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Carregando autenticação...</div>;
+  }
+
+  // Só tenta buscar veículos se tivermos um usuário logado
   const { data: veiculosResult, isLoading: veiculosLoading } = useSuspenseQuery({
     queryKey: ['meus-veiculos', user?.id],
     queryFn: () => listarVeiculos({ 
       data: { perfilId: user?.id || "" } 
     }),
+    enabled: !!user?.id,
   });
   
   const veiculos = veiculosResult?.data || [];
   const profile = (veiculosResult as any)?.profile || {};
 
-  if (authLoading || veiculosLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
+  if (veiculosLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Carregando veículos...</div>;
   }
+
 
   if (!user || user.role !== 'vendedor') {
     return (
