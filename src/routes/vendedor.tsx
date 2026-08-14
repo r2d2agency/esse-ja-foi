@@ -99,9 +99,13 @@ function DashboardVendedor() {
             <h1 className="text-2xl font-bold text-teal-900">Meus Veículos</h1>
             <p className="text-slate-500">Acompanhe o status dos seus anúncios e vistorias.</p>
           </div>
-          <Button className="bg-teal-900 hover:bg-teal-950 text-white" onClick={() => navigate({ to: '/vendedor/cadastrar' })}>
+          <Button 
+            className="bg-teal-900 hover:bg-teal-950 text-white" 
+            onClick={() => navigate({ to: '/vendedor/cadastrar' })}
+          >
             <Plus className="w-4 h-4 mr-2" /> Novo Veículo
           </Button>
+
         </div>
 
         {veiculos?.length === 0 ? (
