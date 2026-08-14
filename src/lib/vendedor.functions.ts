@@ -61,8 +61,8 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
   });
 
 export const listarMeusVeiculosFn = createServerFn({ method: "GET" })
-  .inputValidator((d: unknown) => z.object({ data: z.object({ perfilId: z.string().uuid() }) }).parse(d))
-  .handler(async ({ data: { data } }) => {
+  .inputValidator(z.object({ perfilId: z.string().uuid() }))
+  .handler(async ({ data }) => {
     const { db: database } = await import("@/db/index");
     if (!database) throw new Error("Banco de dados indisponível");
     const db = database;
