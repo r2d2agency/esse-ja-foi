@@ -27,6 +27,7 @@ import { Route as AdminVendedoresRouteImport } from './routes/admin/vendedores'
 import { Route as VendedorIndexRouteImport } from './routes/vendedor.index'
 import { Route as VendedorBoasVindasRouteImport } from './routes/vendedor.boas-vindas'
 import { Route as VendedorCadastrarRouteImport } from './routes/vendedor.cadastrar'
+import { Route as VendedorContratoRouteImport } from './routes/vendedor.contrato'
 import { Route as VendedorDocumentosRouteImport } from './routes/vendedor.documentos'
 import { Route as VendedorOnboardingRouteImport } from './routes/vendedor.onboarding'
 import { Route as VendedorPerfilRouteImport } from './routes/vendedor.perfil'
@@ -126,6 +127,11 @@ const VendedorCadastrarRoute = VendedorCadastrarRouteImport.update({
   path: '/cadastrar',
   getParentRoute: () => VendedorRoute,
 } as any)
+const VendedorContratoRoute = VendedorContratoRouteImport.update({
+  id: '/contrato',
+  path: '/contrato',
+  getParentRoute: () => VendedorRoute,
+} as any)
 const VendedorDocumentosRoute = VendedorDocumentosRouteImport.update({
   id: '/documentos',
   path: '/documentos',
@@ -184,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/admin/vendedores': typeof AdminVendedoresRoute
   '/vendedor/boas-vindas': typeof VendedorBoasVindasRoute
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
+  '/vendedor/contrato': typeof VendedorContratoRoute
   '/vendedor/documentos': typeof VendedorDocumentosRoute
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
   '/vendedor/perfil': typeof VendedorPerfilRoute
@@ -210,6 +217,7 @@ export interface FileRoutesByTo {
   '/admin/vendedores': typeof AdminVendedoresRoute
   '/vendedor/boas-vindas': typeof VendedorBoasVindasRoute
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
+  '/vendedor/contrato': typeof VendedorContratoRoute
   '/vendedor/documentos': typeof VendedorDocumentosRoute
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
   '/vendedor/perfil': typeof VendedorPerfilRoute
@@ -239,6 +247,7 @@ export interface FileRoutesById {
   '/admin/vendedores': typeof AdminVendedoresRoute
   '/vendedor/boas-vindas': typeof VendedorBoasVindasRoute
   '/vendedor/cadastrar': typeof VendedorCadastrarRoute
+  '/vendedor/contrato': typeof VendedorContratoRoute
   '/vendedor/documentos': typeof VendedorDocumentosRoute
   '/vendedor/onboarding': typeof VendedorOnboardingRoute
   '/vendedor/perfil': typeof VendedorPerfilRoute
@@ -269,6 +278,7 @@ export interface FileRouteTypes {
     | '/admin/vendedores'
     | '/vendedor/boas-vindas'
     | '/vendedor/cadastrar'
+    | '/vendedor/contrato'
     | '/vendedor/documentos'
     | '/vendedor/onboarding'
     | '/vendedor/perfil'
@@ -295,6 +305,7 @@ export interface FileRouteTypes {
     | '/admin/vendedores'
     | '/vendedor/boas-vindas'
     | '/vendedor/cadastrar'
+    | '/vendedor/contrato'
     | '/vendedor/documentos'
     | '/vendedor/onboarding'
     | '/vendedor/perfil'
@@ -323,6 +334,7 @@ export interface FileRouteTypes {
     | '/admin/vendedores'
     | '/vendedor/boas-vindas'
     | '/vendedor/cadastrar'
+    | '/vendedor/contrato'
     | '/vendedor/documentos'
     | '/vendedor/onboarding'
     | '/vendedor/perfil'
@@ -474,6 +486,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendedorCadastrarRouteImport
       parentRoute: typeof VendedorRoute
     }
+    '/vendedor/contrato': {
+      id: '/vendedor/contrato'
+      path: '/contrato'
+      fullPath: '/vendedor/contrato'
+      preLoaderRoute: typeof VendedorContratoRouteImport
+      parentRoute: typeof VendedorRoute
+    }
     '/vendedor/documentos': {
       id: '/vendedor/documentos'
       path: '/documentos'
@@ -564,6 +583,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 interface VendedorRouteChildren {
   VendedorBoasVindasRoute: typeof VendedorBoasVindasRoute
   VendedorCadastrarRoute: typeof VendedorCadastrarRoute
+  VendedorContratoRoute: typeof VendedorContratoRoute
   VendedorDocumentosRoute: typeof VendedorDocumentosRoute
   VendedorOnboardingRoute: typeof VendedorOnboardingRoute
   VendedorPerfilRoute: typeof VendedorPerfilRoute
@@ -575,6 +595,7 @@ interface VendedorRouteChildren {
 const VendedorRouteChildren: VendedorRouteChildren = {
   VendedorBoasVindasRoute: VendedorBoasVindasRoute,
   VendedorCadastrarRoute: VendedorCadastrarRoute,
+  VendedorContratoRoute: VendedorContratoRoute,
   VendedorDocumentosRoute: VendedorDocumentosRoute,
   VendedorOnboardingRoute: VendedorOnboardingRoute,
   VendedorPerfilRoute: VendedorPerfilRoute,
