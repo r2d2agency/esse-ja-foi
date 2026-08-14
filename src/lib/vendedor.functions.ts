@@ -184,3 +184,72 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
     
     return { ok: true as const };
   });
+
+export const obterMeuPerfilFn = createServerFn({ method: "GET" })
+  .inputValidator(z.object({ perfilId: z.string().uuid() }))
+  .handler(async ({ data }) => {
+    const { db } = await import("@/db/index");
+    if (!db) throw new Error("Banco de dados indisponível");
+    const { ensureSuperAdmin } = await import("@/db/auth.server");
+    await ensureSuperAdmin();
+    const rows = await db.execute(sql`
+      SELECT id, nome, email, whatsapp, telefone, cpf, cep, endereco, cidade, uf, role,
+             documento_cnh_url, documento_crlv_url, documento_selfie_url,
+             cadastro_completo, criado_em
+      FROM profiles WHERE id = ${data.perfilId}::uuid LIMIT 1;
+    `);
+    const perfil = (rows as any).rows?.[0] || (rows as any)[0] || null;
+    return { ok: true as const, perfil };
+  });
+
+export const atualizarMeuPerfilFn = createServerFn({ method: "POST" })
+  .inputValidator(z.object({
+    perfilId: z.string().uuid(),
+    nome: z.string().min(3, "Nome muito curto"),
+    whatsapp: z.string().optional().nullable(),
+    cpf: z.string().optional().nullable(),
+    cep: z.string().optional().nullable(),
+    endereco: z.string().optional().nullable(),
+    cidade: z.string().optional().nullable(),
+    uf: z.string().optional().nullable(),
+  }))
+  .handler(async ({ data }) => {
+    const { db } = await import("@/db/index");
+    if (!db) throw new Error("Banco de dados indisponível");
+    const rows = await db.execute(sql`
+      UPDATE profiles SET
+        nome = ${data.nome},
+        whatsapp = ${data.whatsapp ?? null},
+        cpf = ${data.cpf ?? null},
+        cep = ${data.cep ?? null},
+        endereco = ${data.endereco ?? null},
+        cidade = ${data.cidade ?? null},
+        uf = ${data.uf ?? null},
+        atualizado_em = now()
+      WHERE id = ${data.perfilId}::uuid
+      RETURNING id, nome, email, role, whatsapp, cpf;
+    `);
+    const perfil = (rows as any).rows?.[0] || (rows as any)[0] || null;
+    if (!perfil) return { ok: false as const, message: "Perfil não encontrado." };
+    return { ok: true as const, perfil };
+  });
+
+export const alterarMinhaSenhaFn = createServerFn({ method: "POST" })
+  .inputValidator(z.object({
+    perfilId: z.string().uuid(),
+    senhaAtual: z.string().min(1, "Informe a senha atual"),
+    novaSenha: z.string().min(6, "A nova senha deve ter pelo menos 6 caracteres"),
+  }))
+  .handler(async ({ data }) => {
+    const { db } = await import("@/db/index");
+    if (!db) throw new Error("Banco de dados indisponível");
+    const { verifyPassword } = await import("@/db/auth.server");
+    const rows = await db.execute(sql`SELECT senha_hash FROM profiles WHERE id = ${data.perfilId}::uuid LIMIT 1;`);
+    const row = (rows as any).rows?.[0] || (rows as any)[0];
+    if (!row?.senha_hash) return { ok: false as const, message: "Perfil sem senha cadastrada." };
+    const confere = await verifyPassword(data.senhaAtual, row.senha_hash);
+    if (!confere) return { ok: false as const, message: "Senha atual incorreta." };
+    const novoHash = await hashPassword(data.novaSenha);
+    await db.execute(sql`UPDATE profiles SET senha_hash = ${novoHash}, atualizado_em = now() WHERE id = ${data.perfilId}::uuid;`);
+    return { ok: true as const };
+  });
