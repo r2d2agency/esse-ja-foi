@@ -47,10 +47,8 @@ export class MetaWhatsAppService {
     }
 
     try {
-      // Tenta buscar informações básicas do número para validar credenciais
       const data = await this.fetchMeta(this.config.phone_number_id);
       
-      // Se chegou aqui, as credenciais básicas funcionam
       if (db) await db.execute(sql`
         UPDATE whatsapp_config SET 
           status = 'CONECTADO', 
@@ -75,17 +73,7 @@ export class MetaWhatsAppService {
   async buscarDadosAutomaticos() {
     await this.init();
     if (!this.config?.phone_number_id) throw new Error("Phone Number ID ausente.");
-
-    // Busca detalhes do número e da WABA
     const phoneData = await this.fetchMeta(this.config.phone_number_id);
-    
-    // Se o token tiver permissão, buscamos os templates para validar acesso
-    try {
-      if (this.config.waba_id) {
-        await this.fetchMeta(`${this.config.waba_id}/message_templates?limit=1`);
-      }
-    } catch (e) {}
-
     return phoneData;
   }
 
@@ -126,6 +114,63 @@ export class MetaWhatsAppService {
     }
 
     return templates.length;
+  }
+
+  async criarTemplate(template: any) {
+    await this.init();
+    if (!this.config?.waba_id) throw new Error("WABA ID não configurado.");
+
+    const metaPayload = {
+      name: template.name,
+      category: template.category,
+      language: template.language || 'pt_BR',
+      components: template.components
+    };
+
+    const data = await this.fetchMeta(`${this.config.waba_id}/message_templates`, {
+      method: 'POST',
+      body: JSON.stringify(metaPayload)
+    });
+
+    if (db && data.id) {
+      await db.execute(sql`
+        INSERT INTO whatsapp_templates (
+          meta_id, 
+          nome_interno, 
+          meta_name, 
+          categoria, 
+          idioma, 
+          status, 
+          conteudo,
+          ultima_sincronizacao
+        )
+        VALUES (
+          ${data.id}, 
+          ${template.nome_interno || template.name}, 
+          ${template.name}, 
+          ${template.category}, 
+          ${template.language || 'pt_BR'}, 
+          'PENDING', 
+          ${JSON.stringify(template.components)}::jsonb,
+          now()
+        )
+      `);
+    }
+
+    return data;
+  }
+
+  async uploadMedia(fileData: string, fileName: string, fileType: string) {
+    await this.init();
+    if (!this.config?.app_id) throw new Error("Meta App ID não configurado.");
+
+    // Implementação simplificada de upload de mídia Meta
+    // 1. Iniciar upload
+    // 2. Enviar chunks (ou arquivo inteiro se pequeno)
+    // 3. Obter handle
+    
+    // Para simplificar agora, retornamos um erro indicando que o upload requer Buffer/Stream real
+    throw new Error("Upload de mídia via API Meta requer processamento de binários.");
   }
 }
 
