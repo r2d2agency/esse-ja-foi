@@ -1,0 +1,17 @@
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS cpf text,
+  ADD COLUMN IF NOT EXISTS cep text,
+  ADD COLUMN IF NOT EXISTS endereco text,
+  ADD COLUMN IF NOT EXISTS numero text,
+  ADD COLUMN IF NOT EXISTS bairro text,
+  ADD COLUMN IF NOT EXISTS complemento text,
+  ADD COLUMN IF NOT EXISTS cidade text,
+  ADD COLUMN IF NOT EXISTS uf text,
+  ADD COLUMN IF NOT EXISTS senha_hash text,
+  ADD COLUMN IF NOT EXISTS cadastro_completo boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS doc_cnh_frente text,
+  ADD COLUMN IF NOT EXISTS doc_cnh_verso text,
+  ADD COLUMN IF NOT EXISTS doc_crlv text,
+  ADD COLUMN IF NOT EXISTS doc_selfie text,
+  ADD COLUMN IF NOT EXISTS doc_comprovante text,
+  ADD COLUMN IF NOT EXISTS atualizado_em timestamptz NOT NULL DEFAULT now();

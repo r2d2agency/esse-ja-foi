@@ -904,32 +904,80 @@ export type Database = {
       profiles: {
         Row: {
           ativo: boolean
+          atualizado_em: string
+          bairro: string | null
+          cadastro_completo: boolean
+          cep: string | null
+          cidade: string | null
+          complemento: string | null
+          cpf: string | null
           criado_em: string
+          doc_cnh_frente: string | null
+          doc_cnh_verso: string | null
+          doc_comprovante: string | null
+          doc_crlv: string | null
+          doc_selfie: string | null
           email: string
+          endereco: string | null
           id: string
           nome: string | null
+          numero: string | null
           role: Database["public"]["Enums"]["app_role"]
+          senha_hash: string | null
           telefone: string | null
+          uf: string | null
           whatsapp: string | null
         }
         Insert: {
           ativo?: boolean
+          atualizado_em?: string
+          bairro?: string | null
+          cadastro_completo?: boolean
+          cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
+          cpf?: string | null
           criado_em?: string
+          doc_cnh_frente?: string | null
+          doc_cnh_verso?: string | null
+          doc_comprovante?: string | null
+          doc_crlv?: string | null
+          doc_selfie?: string | null
           email: string
+          endereco?: string | null
           id: string
           nome?: string | null
+          numero?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          senha_hash?: string | null
           telefone?: string | null
+          uf?: string | null
           whatsapp?: string | null
         }
         Update: {
           ativo?: boolean
+          atualizado_em?: string
+          bairro?: string | null
+          cadastro_completo?: boolean
+          cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
+          cpf?: string | null
           criado_em?: string
+          doc_cnh_frente?: string | null
+          doc_cnh_verso?: string | null
+          doc_comprovante?: string | null
+          doc_crlv?: string | null
+          doc_selfie?: string | null
           email?: string
+          endereco?: string | null
           id?: string
           nome?: string | null
+          numero?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          senha_hash?: string | null
           telefone?: string | null
+          uf?: string | null
           whatsapp?: string | null
         }
         Relationships: []

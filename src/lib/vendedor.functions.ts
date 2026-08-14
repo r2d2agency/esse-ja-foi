@@ -192,6 +192,8 @@ export const obterMeuPerfilFn = createServerFn({ method: "GET" })
     if (!db) throw new Error("Banco de dados indisponível");
     const { ensureSuperAdmin } = await import("@/db/auth.server");
     await ensureSuperAdmin();
+    const { ensurePerfilSchema } = await import("@/db/perfil.server");
+    await ensurePerfilSchema();
     const rows = await db.execute(sql`
       SELECT id, nome, email, whatsapp, telefone, cpf, cep, endereco, cidade, uf, role,
              documento_cnh_url, documento_crlv_url, documento_selfie_url,
@@ -216,6 +218,8 @@ export const atualizarMeuPerfilFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { db } = await import("@/db/index");
     if (!db) throw new Error("Banco de dados indisponível");
+    const { ensurePerfilSchema } = await import("@/db/perfil.server");
+    await ensurePerfilSchema();
     const rows = await db.execute(sql`
       UPDATE profiles SET
         nome = ${data.nome},
