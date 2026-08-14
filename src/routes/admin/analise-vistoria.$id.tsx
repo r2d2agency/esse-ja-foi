@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
-export const Route = createFileRoute("/admin/analise-vistoria/")({
+export const Route = createFileRoute("/admin/analise-vistoria/$id")({
   component: DetalheAnaliseVistoriaPage,
 });
 

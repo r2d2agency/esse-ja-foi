@@ -38,6 +38,7 @@ import { Route as VistoriadorIndexRouteImport } from './routes/vistoriador.index
 import { Route as VistoriadorAgendaRouteImport } from './routes/vistoriador.agenda'
 import { Route as VistoriadorHistoricoRouteImport } from './routes/vistoriador.historico'
 import { Route as VistoriadorPerfilRouteImport } from './routes/vistoriador.perfil'
+import { Route as AdminAnaliseVistoriaIdRouteImport } from './routes/admin/analise-vistoria.$id'
 import { Route as AdminContratoIdRouteImport } from './routes/admin/contrato.$id'
 import { Route as AdminVeiculoIdRouteImport } from './routes/admin/veiculo.$id'
 import { Route as AdminVendedorIdRouteImport } from './routes/admin/vendedor.$id'
@@ -190,6 +191,11 @@ const VistoriadorPerfilRoute = VistoriadorPerfilRouteImport.update({
   path: '/perfil',
   getParentRoute: () => VistoriadorRoute,
 } as any)
+const AdminAnaliseVistoriaIdRoute = AdminAnaliseVistoriaIdRouteImport.update({
+  id: '/analise-vistoria/$id',
+  path: '/analise-vistoria/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminContratoIdRoute = AdminContratoIdRouteImport.update({
   id: '/contrato/$id',
   path: '/contrato/$id',
@@ -251,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/vendedor/': typeof VendedorIndexRoute
   '/vistoriador/': typeof VistoriadorIndexRoute
+  '/admin/analise-vistoria/$id': typeof AdminAnaliseVistoriaIdRoute
   '/admin/contrato/$id': typeof AdminContratoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
@@ -285,6 +292,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/vendedor': typeof VendedorIndexRoute
   '/vistoriador': typeof VistoriadorIndexRoute
+  '/admin/analise-vistoria/$id': typeof AdminAnaliseVistoriaIdRoute
   '/admin/contrato/$id': typeof AdminContratoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
@@ -323,6 +331,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/vendedor/': typeof VendedorIndexRoute
   '/vistoriador/': typeof VistoriadorIndexRoute
+  '/admin/analise-vistoria/$id': typeof AdminAnaliseVistoriaIdRoute
   '/admin/contrato/$id': typeof AdminContratoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
@@ -362,6 +371,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/vendedor/'
     | '/vistoriador/'
+    | '/admin/analise-vistoria/$id'
     | '/admin/contrato/$id'
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
@@ -396,6 +406,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/vendedor'
     | '/vistoriador'
+    | '/admin/analise-vistoria/$id'
     | '/admin/contrato/$id'
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
@@ -433,6 +444,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/vendedor/'
     | '/vistoriador/'
+    | '/admin/analise-vistoria/$id'
     | '/admin/contrato/$id'
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
@@ -658,6 +670,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VistoriadorPerfilRouteImport
       parentRoute: typeof VistoriadorRoute
     }
+    '/admin/analise-vistoria/$id': {
+      id: '/admin/analise-vistoria/$id'
+      path: '/analise-vistoria/$id'
+      fullPath: '/admin/analise-vistoria/$id'
+      preLoaderRoute: typeof AdminAnaliseVistoriaIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/contrato/$id': {
       id: '/admin/contrato/$id'
       path: '/contrato/$id'
@@ -712,6 +731,7 @@ interface AdminRouteChildren {
   AdminVendedoresRoute: typeof AdminVendedoresRoute
   AdminVistoriasRoute: typeof AdminVistoriasRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminAnaliseVistoriaIdRoute: typeof AdminAnaliseVistoriaIdRoute
   AdminContratoIdRoute: typeof AdminContratoIdRoute
   AdminVeiculoIdRoute: typeof AdminVeiculoIdRoute
   AdminVendedorIdRoute: typeof AdminVendedorIdRoute
@@ -726,6 +746,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminVendedoresRoute: AdminVendedoresRoute,
   AdminVistoriasRoute: AdminVistoriasRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminAnaliseVistoriaIdRoute: AdminAnaliseVistoriaIdRoute,
   AdminContratoIdRoute: AdminContratoIdRoute,
   AdminVeiculoIdRoute: AdminVeiculoIdRoute,
   AdminVendedorIdRoute: AdminVendedorIdRoute,
