@@ -37,6 +37,10 @@ export async function listarVendedores(filtros: { status?: string, busca?: strin
   await ensureVendedoresSchema();
   
   const busca = `%${filtros.busca || ""}%`;
+  
+  // Usando query builder ou sql template com sintaxe correta para condições dinâmicas
+  const whereStatus = filtros.status ? sql`AND c.status = ${filtros.status}` : sql``;
+  
   return (await d.execute(sql`
     SELECT 
       p.id, p.nome, p.cpf, p.whatsapp, p.criado_em,
@@ -47,7 +51,7 @@ export async function listarVendedores(filtros: { status?: string, busca?: strin
     LEFT JOIN compliance_analise c ON c.vendedor_id = p.id
     LEFT JOIN profiles res ON res.id = c.responsavel_id
     WHERE p.role = 'vendedor'::app_role
-      AND (${filtros.status ? sql`c.status = ${filtros.status}` : sql`true`)
+      ${whereStatus}
       AND (p.nome ILIKE ${busca} OR p.cpf ILIKE ${busca} OR p.email ILIKE ${busca})
     ORDER BY p.criado_em DESC;
   `)) as any;
