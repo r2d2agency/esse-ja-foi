@@ -31,7 +31,8 @@ import {
   RotateCcw,
   Maximize2,
   Calendar,
-  Gavel
+  Gavel,
+  MessageSquare
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -131,6 +132,14 @@ function DetalheVeiculoAdminPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button 
+            variant="outline" 
+            className="font-bold border-teal-200 text-teal-700 hover:bg-teal-50"
+            onClick={() => navigate({ to: "/admin/comunicacoes" as any })}
+          >
+            <MessageSquare className="mr-2 h-4 w-4" /> Divulgar no WhatsApp
+          </Button>
+
           {!v.responsavel_analise_id ? (
             <Button onClick={handleAssumir} className="bg-teal-600 hover:bg-teal-700 text-white font-bold">
               <User className="mr-2 h-4 w-4" /> Assumir análise

@@ -44,6 +44,9 @@ export const migrateDb = async () => {
     const { seedConfiguracoes, ensureLaudoSchema } = await import('./laudos.server');
     await ensureLaudoSchema();
     await seedConfiguracoes();
+    
+    const { ensureComunicacoesSchema } = await import('./comunicacoes.server');
+    await ensureComunicacoesSchema();
   } catch (error) {
     console.error('❌ Falha na migração:', error);
   }
