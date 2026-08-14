@@ -6,7 +6,7 @@ import { DataTable } from "@/components/shared/DataTable";
 import { dashboardAdminFn } from "@/lib/dashboard.functions";
 import { formatDate } from "@/lib/utils";
 
-export const Route = createFileRoute("/admin")({
+export const Route = createFileRoute("/admin/_layout")({
   head: () => ({
     meta: [
       { title: "Dashboard Admin | ESSE JÁ FOI" },
