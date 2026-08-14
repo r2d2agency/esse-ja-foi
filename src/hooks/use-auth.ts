@@ -21,6 +21,7 @@ interface AuthState {
    initialized: boolean;
   login: (data: { user: User; accessToken: string; refreshToken: string }) => void;
   logout: () => void;
+  setUser: (user: Partial<User>) => void;
   setLoading: (loading: boolean) => void;
 }
 
@@ -41,6 +42,8 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: true,
           isLoading: false,
         }),
+      setUser: (user) =>
+        set((state) => ({ user: state.user ? { ...state.user, ...user } : state.user })),
       logout: () => {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
@@ -77,6 +80,7 @@ export function useAuth() {
     isAuthenticated: store.isAuthenticated,
     isLoading: store.isLoading,
     login: store.login,
+    setUser: store.setUser,
     logout: store.logout,
     initialized: store.initialized
   };
