@@ -171,6 +171,27 @@ export class MetaWhatsAppService {
     
     // Para simplificar agora, retornamos um erro indicando que o upload requer Buffer/Stream real
     throw new Error("Upload de mídia via API Meta requer processamento de binários.");
+  async enviarMensagem(to: string, templateName: string, language: string, components: any[]) {
+    await this.init();
+    if (!this.config?.phone_number_id) throw new Error("Phone Number ID não configurado.");
+
+    const payload = {
+      messaging_product: "whatsapp",
+      to,
+      type: "template",
+      template: {
+        name: templateName,
+        language: {
+          code: language
+        },
+        components
+      }
+    };
+
+    return this.fetchMeta(`${this.config.phone_number_id}/messages`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
   }
 }
 
