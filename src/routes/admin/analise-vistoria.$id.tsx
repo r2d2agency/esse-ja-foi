@@ -21,7 +21,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/admin/analise-vistoria/")({
+export const Route = createFileRoute("/admin/analise-vistoria/$id")({
   component: DetalheAnaliseVistoriaPage,
 });
 
