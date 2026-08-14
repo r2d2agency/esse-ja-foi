@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      acessorios_catalogo: {
+        Row: {
+          ativo: boolean
+          categoria: string | null
+          criado_em: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          categoria?: string | null
+          criado_em?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string | null
+          criado_em?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       agendamentos: {
         Row: {
           criado_em: string
