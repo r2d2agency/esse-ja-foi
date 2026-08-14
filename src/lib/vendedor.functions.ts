@@ -61,13 +61,27 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
     } catch (error: any) {
       console.error("Erro detalhado ao cadastrar vendedor:", error);
       
+      const { db: database } = await import("@/db/index");
+      if (database) {
+        try {
+          await database.execute(sql`
+            INSERT INTO logs (entidade, acao, detalhe, usuario)
+            VALUES ('auth', 'CADASTRO_VENDEDOR_ERRO', ${JSON.stringify({ 
+              error: error.message, 
+              email: data.email, 
+              stack: error.stack 
+            })}, ${data.email})
+          `);
+        } catch (logErr) {
+          console.error("Erro ao registrar log de erro:", logErr);
+        }
+      }
+
       if (error.message?.includes("unique constraint") || error.message?.includes("already exists") || error.code === '23505') {
         return { ok: false as const, message: "Este e-mail já está cadastrado." };
       }
       
-      // Sanitiza a mensagem de erro para o usuário não ver a query SQL bruta em caso de falha genérica
       let userMessage = `Erro técnico: ${error.message || "Erro desconhecido"}`;
-      
       if (error.message?.includes("app_role") || error.message?.includes("permission")) {
         userMessage = `Erro na configuração de permissões (app_role): ${error.message}`;
       }

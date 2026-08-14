@@ -23,8 +23,22 @@ export const loginWithPassword = createServerFn({ method: "POST" })
       const user = await authenticate(data.email, data.password);
       if (!user) return { ok: false as const, message: "E-mail ou senha inválidos." };
       return { ok: true as const, user, accessToken: await issueToken(user.id) };
-    } catch (error) {
+    } catch (error: any) {
       console.error("Falha na autenticação:", error);
+      
+      const { db: database } = await import("@/db/index");
+      if (database) {
+        try {
+          const { sql } = await import("drizzle-orm");
+          await database.execute(sql`
+            INSERT INTO logs (entidade, acao, detalhe, usuario)
+            VALUES ('auth', 'LOGIN_ERRO', ${JSON.stringify({ error: error.message, email: data.email })}, ${data.email})
+          `);
+        } catch (logErr) {
+          console.error("Erro ao registrar log de login:", logErr);
+        }
+      }
+
       return {
         ok: false as const,
         message: "Não foi possível acessar o banco de dados. Verifique a DATABASE_URL e tente novamente.",
