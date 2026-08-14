@@ -28,6 +28,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { AbaContratoVendedor } from "@/components/contratos/AbaContratoVendedor";
+import { FileSignature } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -125,6 +127,7 @@ function DetalheVendedorPage() {
           <TabsTrigger value="resumo" className="gap-2"><User className="h-4 w-4" /> Resumo</TabsTrigger>
           <TabsTrigger value="documentos" className="gap-2"><FileText className="h-4 w-4" /> Documentos</TabsTrigger>
           <TabsTrigger value="compliance" className="gap-2"><ShieldCheck className="h-4 w-4" /> Compliance</TabsTrigger>
+          <TabsTrigger value="contrato" className="gap-2"><FileSignature className="h-4 w-4" /> Contrato</TabsTrigger>
           <TabsTrigger value="veiculos" className="gap-2"><Car className="h-4 w-4" /> Veículos ({veiculos.length})</TabsTrigger>
           <TabsTrigger value="historico" className="gap-2"><History className="h-4 w-4" /> Histórico</TabsTrigger>
         </TabsList>
@@ -278,6 +281,10 @@ function DetalheVendedorPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="contrato" className="mt-6">
+          <AbaContratoVendedor vendedorId={id} />
         </TabsContent>
 
         <TabsContent value="veiculos" className="mt-6">

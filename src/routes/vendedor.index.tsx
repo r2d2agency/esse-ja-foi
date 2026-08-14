@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { AlertaAcao } from '@/components/vendedor/AlertaAcao';
 import { StatusBadge, statusVeiculo } from '@/components/vendedor/StatusBadge';
 import { ProgressoCadastro, montarEtapas, percentual } from '@/components/vendedor/ProgressoCadastro';
+import { CardContratoVendedor } from '@/components/contratos/CardContratoVendedor';
 
 export const Route = createFileRoute('/vendedor/')({
   component: DashboardVendedor,
@@ -176,6 +177,8 @@ function DashboardVendedor() {
           )}
         </section>
       </div>
+
+      {user?.id && <CardContratoVendedor vendedorId={user.id} />}
 
       {/* Como funciona */}
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
