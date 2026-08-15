@@ -46,23 +46,7 @@ export async function ensureNegociacoesSchema() {
       atualizado_em timestamptz DEFAULT now()
     );
   `);
-  await d.execute(sql`
-    DO $$
-    BEGIN
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'negociacoes' AND column_name = 'motivo_cancelamento') THEN
-        ALTER TABLE negociacoes ADD COLUMN motivo_cancelamento text;
-      END IF;
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'negociacoes' AND column_name = 'mensagem_comprador') THEN
-        ALTER TABLE negociacoes ADD COLUMN mensagem_comprador text;
-      END IF;
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'negociacoes' AND column_name = 'mensagem_vendedor') THEN
-        ALTER TABLE negociacoes ADD COLUMN mensagem_vendedor text;
-      END IF;
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'negociacoes' AND column_name = 'cancelado_por') THEN
-        ALTER TABLE negociacoes ADD COLUMN cancelado_por uuid REFERENCES profiles(id);
-      END IF;
-    END $$;
-  `);
+
 
   await d.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_negociacoes_leilao ON negociacoes(leilao_id);`);
   await d.execute(sql`CREATE INDEX IF NOT EXISTS idx_negociacoes_comprador ON negociacoes(comprador_id, status);`);
