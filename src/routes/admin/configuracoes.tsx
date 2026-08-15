@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Save, Settings, BrainCircuit, Mail } from "lucide-react";
-import { listarConfiguracoesFn, salvarConfiguracaoFn } from "@/lib/admin.functions";
+import { Save, Settings, BrainCircuit, Mail, Send } from "lucide-react";
+import { listarConfiguracoesFn, salvarConfiguracaoFn, enviarEmailTesteFn } from "@/lib/admin.functions";
+
 
 export const Route = createFileRoute("/admin/configuracoes")({
   component: ConfiguracoesAdminPage,
@@ -116,8 +117,21 @@ function ConfiguracoesAdminPage() {
             }}>
               <Save className="mr-2 h-4 w-4" /> Salvar SMTP
             </Button>
+            <Button 
+              variant="outline" 
+              onClick={async () => {
+                const email = prompt("Digite o e-mail para teste:");
+                if (!email) return;
+                const res = await enviarEmailTesteFn({ data: { email } });
+                if (res.ok) toast.success("E-mail de teste enviado!");
+                else toast.error(res.message || "Erro ao enviar teste.");
+              }}
+            >
+              <Send className="mr-2 h-4 w-4" /> Enviar Teste
+            </Button>
           </div>
         </section>
+
 
         <section className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-2 text-lg font-semibold text-slate-900">
