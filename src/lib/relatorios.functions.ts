@@ -13,7 +13,11 @@ export const getRelatoriosGeraisFn = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
 
     try {
-      const res = await getRelatoriosGerais(data);
+      const res = await getRelatoriosGerais({
+        dataInicio: data.dataInicio ?? null,
+        dataFim: data.dataFim ?? null
+      });
+
       return { ok: true as const, data: res };
 
     } catch (e: any) {
@@ -26,7 +30,11 @@ export const getRelatoriosVendasFn = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
 
     try {
-      const res = await getRelatoriosVendas(data);
+      const res = await getRelatoriosVendas({
+        dataInicio: data.dataInicio ?? null,
+        dataFim: data.dataFim ?? null
+      });
+
       return { ok: true as const, data: res };
     } catch (e: any) {
       return { ok: false as const, message: e.message };
