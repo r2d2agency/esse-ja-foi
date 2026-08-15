@@ -114,7 +114,19 @@ export async function ensureCadastroSchema(silent = true) {
       criado_em timestamptz NOT NULL DEFAULT now(),
       status_analise text DEFAULT 'AGUARDANDO_ANALISE'
     );
-  `);
+    `);
+    
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'veiculos' AND column_name = 'placa') THEN
+          ALTER TABLE veiculos ADD COLUMN placa text NOT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'veiculos' AND column_name = 'status_analise') THEN
+          ALTER TABLE veiculos ADD COLUMN status_analise text DEFAULT 'PENDENTE';
+        END IF;
+      END $$;
+    `);
 
   await d.execute(sql`
     DO $$
