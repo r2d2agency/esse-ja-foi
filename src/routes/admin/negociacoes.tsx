@@ -107,7 +107,7 @@ function AdminNegociacoesPage() {
   );
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 p-8">
+    <div className="mx-auto max-w-7xl space-y-8 p-6">
       <div>
         <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">Negociações</h1>
         <p className="text-slate-500">Fechamento dos leilões, vencedores confirmados e prazos de pagamento.</p>

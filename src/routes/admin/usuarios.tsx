@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-const BackofficeLayout = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+
 import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -61,8 +61,8 @@ function UsuariosAdminPage() {
   };
 
   return (
-    <BackofficeLayout>
-      <div className="space-y-6">
+    <div className="space-y-6 p-6">
+
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Gestão de Usuários</h1>
           <p className="text-sm text-slate-500">Aprove ou reprove o acesso de vendedores e compradores à plataforma.</p>
@@ -254,6 +254,6 @@ function UsuariosAdminPage() {
           </SheetContent>
         </Sheet>
       </div>
-    </BackofficeLayout>
   );
 }
+

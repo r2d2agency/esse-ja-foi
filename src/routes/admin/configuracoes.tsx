@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-const BackofficeLayout = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,11 +54,11 @@ function ConfiguracoesAdminPage() {
     setConfigs(prev => prev.map(c => c.chave === chave ? { ...c, valor } : c));
   };
 
-  if (loading) return <BackofficeLayout><div className="p-8">Carregando...</div></BackofficeLayout>;
+  if (loading) return <div className="p-8">Carregando...</div>;
 
   return (
-    <BackofficeLayout>
-      <div className="max-w-4xl space-y-8 mb-12">
+    <div className="max-w-4xl space-y-8 mb-12 p-6">
+
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
             <Settings className="h-6 w-6 text-teal-900" />
@@ -153,6 +153,6 @@ function ConfiguracoesAdminPage() {
           </div>
         </section>
       </div>
-    </BackofficeLayout>
   );
 }
+

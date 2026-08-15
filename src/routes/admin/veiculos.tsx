@@ -31,6 +31,7 @@ function AdminVeiculosPage() {
 
   return (
     <div className="flex flex-col h-full bg-slate-50">
+
       {/* Header */}
       <div className="bg-white border-b border-slate-200 p-8 space-y-6">
         <div className="flex justify-between items-center">

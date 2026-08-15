@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import React, { useState, useEffect, useRef } from 'react';
-import { AdminLayout } from '@/components/layout/AdminLayout';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -99,8 +99,8 @@ function CentralConversasPage() {
   };
 
   return (
-    <AdminLayout>
-      <div className="flex h-[calc(100vh-12rem)] overflow-hidden bg-white border rounded-xl shadow-sm">
+    <div className="flex h-[calc(100vh-12rem)] overflow-hidden bg-white border rounded-xl shadow-sm">
+
         
         {/* Coluna 1: Lista */}
         <div className="w-80 flex-shrink-0 border-r flex flex-col">
@@ -334,9 +334,9 @@ function CentralConversasPage() {
           </div>
         )}
       </div>
-    </AdminLayout>
   );
 }
+
 
 import { Textarea } from '@/components/ui/textarea';
 import { MessageSquare } from 'lucide-react';

@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { getIndicadoresFinanceirosFn, listarRepassesAdminFn } from '@/lib/financeiro.functions';
-import { AdminLayout } from '@/components/layout/AdminLayout';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -24,8 +24,8 @@ function PagamentosAdminPage() {
   });
 
   return (
-    <AdminLayout>
-      <div className="p-6">
+    <div className="p-6">
+
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Financeiro - Repasses</h1>
         </div>
@@ -93,9 +93,9 @@ function PagamentosAdminPage() {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
   );
 }
+
 
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');

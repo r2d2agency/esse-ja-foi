@@ -19,6 +19,7 @@ function AnunciosAdminPage() {
 
   return (
     <div className="p-6 space-y-6">
+
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
           <Megaphone className="h-6 w-6 text-teal-600" />

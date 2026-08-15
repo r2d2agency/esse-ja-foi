@@ -2,8 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listarVendedoresFn } from "@/lib/vendedores-compliance.functions";
-// O layout já é provido por src/routes/admin.tsx
-const BackofficeLayout = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 import { useState } from "react";
 import { 
   Search, 
@@ -59,7 +57,8 @@ function VendedoresPage() {
   };
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="p-6 space-y-8 max-w-7xl mx-auto">
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-950 uppercase tracking-tight">Vendedores</h1>

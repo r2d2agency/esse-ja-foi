@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import React, { useState } from 'react';
-import { AdminLayout } from '@/components/layout/AdminLayout';
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -374,8 +374,8 @@ function ComunicacoesPage() {
   };
 
   return (
-    <AdminLayout>
-      <div className="p-6 space-y-6 pb-20">
+    <div className="p-6 space-y-6 pb-20">
+
         {/* Header com Indicadores */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
@@ -1929,6 +1929,6 @@ function ComunicacoesPage() {
 
         </Tabs>
       </div>
-    </AdminLayout>
   );
 }
+
