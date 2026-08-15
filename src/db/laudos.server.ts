@@ -18,25 +18,14 @@ export async function ensureLaudoSchema(silent = true) {
 
 
   await d.execute(sql`
-    CREATE TABLE IF NOT EXISTS laudos (
-      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      agendamento_id uuid NOT NULL,
-      veiculo_id uuid NOT NULL,
-      vistoriador_id uuid NOT NULL,
-      modelo_id uuid NOT NULL,
-      modelo_versao integer NOT NULL DEFAULT 1,
-      status text NOT NULL DEFAULT 'RASCUNHO',
-      protocolo text,
-      bloqueado boolean NOT NULL DEFAULT false,
-      placa_confirmada text,
-      divergencia_placa text,
-      motivo_devolucao text,
-      observacoes text,
-      enviado_em timestamptz,
-      criado_em timestamptz NOT NULL DEFAULT now(),
-      atualizado_em timestamptz NOT NULL DEFAULT now()
-    );
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'laudos' AND column_name = 'motivo_devolucao') THEN
+        ALTER TABLE laudos ADD COLUMN motivo_devolucao text;
+      END IF;
+    END $$;
   `);
+  
   await d.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS laudos_agendamento_uidx ON laudos (agendamento_id);`);
   await d.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS laudos_protocolo_uidx ON laudos (protocolo) WHERE protocolo IS NOT NULL;`);
   await d.execute(sql`CREATE INDEX IF NOT EXISTS laudos_vistoriador_idx ON laudos (vistoriador_id, status);`);
