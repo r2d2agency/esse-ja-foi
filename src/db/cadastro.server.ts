@@ -53,7 +53,16 @@ export async function ensureCadastroSchema(silent = true) {
       criado_em timestamptz NOT NULL DEFAULT now(),
       atualizado_em timestamptz NOT NULL DEFAULT now()
     );
-  `);
+    `);
+    
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'clientes' AND column_name = 'documento') THEN
+          ALTER TABLE clientes ADD COLUMN documento text NOT NULL;
+        END IF;
+      END $$;
+    `);
   
   await d.execute(sql`
     DO $$
