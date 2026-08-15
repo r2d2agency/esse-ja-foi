@@ -444,9 +444,9 @@ function VendedorOnboarding() {
                   <Button 
                     onClick={handleFinalizar} 
                     className="h-14 w-full md:flex-1 rounded-2xl bg-teal-600 text-white font-black text-lg shadow-xl shadow-teal-600/20"
-                    disabled={isSubmitting || !agreedTerms || !agreedPrivacy}
+                    disabled={isSubmitting || !agreedTerms || !agreedPrivacy || documentosFaltantes.length > 0}
                   >
-                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Enviar para análise"}
+                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : documentosFaltantes.length > 0 ? "Documentos pendentes" : "Enviar para análise"}
                   </Button>
                )}
                
