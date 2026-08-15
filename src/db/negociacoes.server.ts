@@ -199,8 +199,8 @@ export async function fecharLeilao(leilaoId: string) {
       SELECT a.id as anuncio_id, a.codigo_publico, a.titulo, v.id as veiculo_id, v.vendedor_id,
         pr.valor_minimo_acordado, pr.comissao_valor, pr.valor_liquido_vendedor
       FROM leiloes le
-      JOIN anuncios_veiculo a ON a.id = le.anuncio_id
-      JOIN veiculos v ON v.id = a.veiculo_id
+      JOIN veiculos v ON v.id = le.veiculo_id
+      JOIN anuncios_veiculo a ON a.veiculo_id = v.id
       LEFT JOIN LATERAL (
         SELECT * FROM propostas_veiculo pv WHERE pv.veiculo_id = v.id ORDER BY pv.versao DESC LIMIT 1
       ) pr ON true
