@@ -26,10 +26,16 @@ function VistoriasHojePage() {
 
   return (
     <div className="p-4 lg:ml-64 lg:p-10">
-      <header className="mb-6">
-        <h1 className="text-2xl font-black text-slate-900">Vistorias de hoje</h1>
-        <p className="text-slate-500 capitalize">{hoje}</p>
+      <header className="mb-6 flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900">Vistorias de hoje</h1>
+          <p className="text-slate-500 capitalize">{hoje}</p>
+        </div>
+        <Button variant="ghost" size="sm" onClick={() => logout()} className="text-slate-400 hover:text-red-600">
+          <LogOut className="h-5 w-5" />
+        </Button>
       </header>
+
 
       {vistorias.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
