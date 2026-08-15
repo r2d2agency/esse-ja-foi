@@ -163,7 +163,14 @@ export async function ensureCadastroSchema(silent = true) {
       criado_em timestamptz NOT NULL DEFAULT now()
     );
   `);
-  await d.execute(sql`CREATE INDEX IF NOT EXISTS logs_entidade_idx ON logs (entidade, entidade_id);`);
+  await d.execute(sql`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE tablename = 'logs' AND indexname = 'logs_entidade_idx') THEN
+        CREATE INDEX logs_entidade_idx ON logs (entidade, entidade_id);
+      END IF;
+    END $$;
+  `);
 
   await d.execute(sql`
     CREATE TABLE IF NOT EXISTS configuracoes (
