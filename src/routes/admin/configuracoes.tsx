@@ -91,6 +91,29 @@ function ConfiguracoesAdminPage() {
               />
             </div>
             <div className="space-y-2">
+              <Label>Criptografia</Label>
+              <select
+                className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                value={getConfig("smtp_secure") || "tls"}
+                onChange={(e) => setConfig("smtp_secure", e.target.value)}
+              >
+                <option value="ssl">SSL/TLS direto (porta 465)</option>
+                <option value="tls">STARTTLS (porta 587)</option>
+                <option value="none">Sem criptografia (porta 25)</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label>Validar certificado do servidor</Label>
+              <select
+                className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                value={getConfig("smtp_reject_unauthorized") || "false"}
+                onChange={(e) => setConfig("smtp_reject_unauthorized", e.target.value)}
+              >
+                <option value="false">Não (recomendado em hospedagem compartilhada)</option>
+                <option value="true">Sim</option>
+              </select>
+            </div>
+            <div className="space-y-2">
               <Label>Usuário</Label>
               <Input 
                 value={getConfig("smtp_user")} 
@@ -107,6 +130,25 @@ function ConfiguracoesAdminPage() {
                 placeholder="******" 
               />
             </div>
+            <div className="space-y-2">
+              <Label>E-mail remetente (From)</Label>
+              <Input
+                value={getConfig("smtp_from")}
+                onChange={(e) => setConfig("smtp_from", e.target.value)}
+                placeholder="contato@seudominio.com.br"
+              />
+              <p className="text-xs text-slate-500">
+                Precisa ser um endereço autorizado pelo servidor SMTP, senão ocorre o erro 550 (sender not recognized). Se vazio, usa o usuário.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Nome do remetente</Label>
+              <Input
+                value={getConfig("smtp_from_name")}
+                onChange={(e) => setConfig("smtp_from_name", e.target.value)}
+                placeholder="Esse Já Foi"
+              />
+            </div>
           </div>
           <div className="flex gap-2">
             <Button className="bg-teal-900" onClick={() => {
@@ -114,6 +156,10 @@ function ConfiguracoesAdminPage() {
               void salvar("smtp_port", getConfig("smtp_port"));
               void salvar("smtp_user", getConfig("smtp_user"));
               void salvar("smtp_pass", getConfig("smtp_pass"));
+              void salvar("smtp_secure", getConfig("smtp_secure") || "tls");
+              void salvar("smtp_reject_unauthorized", getConfig("smtp_reject_unauthorized") || "false");
+              void salvar("smtp_from", getConfig("smtp_from"));
+              void salvar("smtp_from_name", getConfig("smtp_from_name"));
             }}>
               <Save className="mr-2 h-4 w-4" /> Salvar SMTP
             </Button>
