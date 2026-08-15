@@ -24,8 +24,8 @@ function PagamentosAdminPage() {
   });
 
   return (
-    <AdminLayout>
-      <div className="p-6">
+    <div className="p-6">
+
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Financeiro - Repasses</h1>
         </div>
@@ -93,9 +93,9 @@ function PagamentosAdminPage() {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
   );
 }
+
 
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');
