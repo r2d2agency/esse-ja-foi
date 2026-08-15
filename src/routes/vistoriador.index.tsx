@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Car, Clock, MapPin, ChevronRight, AlertCircle } from "lucide-react";
+import { Car, Clock, MapPin, ChevronRight, AlertCircle, LogOut } from "lucide-react";
 import { useAuthStore } from "@/hooks/use-auth";
 import { getVistoriasHojeVistoriadorFn } from "@/lib/vistoriador.functions";
 import { Badge } from "@/components/ui/badge";
@@ -12,8 +12,9 @@ export const Route = createFileRoute("/vistoriador/")({
   component: VistoriasHojePage,
 });
 
+
 function VistoriasHojePage() {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   
   const { data: vistoriasRes } = useSuspenseQuery({
     queryKey: ["vistorias-hoje", user?.id],
@@ -25,10 +26,16 @@ function VistoriasHojePage() {
 
   return (
     <div className="p-4 lg:ml-64 lg:p-10">
-      <header className="mb-6">
-        <h1 className="text-2xl font-black text-slate-900">Vistorias de hoje</h1>
-        <p className="text-slate-500 capitalize">{hoje}</p>
+      <header className="mb-6 flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900">Vistorias de hoje</h1>
+          <p className="text-slate-500 capitalize">{hoje}</p>
+        </div>
+        <Button variant="ghost" size="sm" onClick={() => logout()} className="text-slate-400 hover:text-red-600">
+          <LogOut className="h-5 w-5" />
+        </Button>
       </header>
+
 
       {vistorias.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">

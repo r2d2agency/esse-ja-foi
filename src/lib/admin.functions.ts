@@ -42,16 +42,33 @@ export const checkSystemHealthFn = createServerFn({ method: "GET" })
   });
 
 export const gerenciarUsuarioFn = createServerFn({ method: "POST" })
-  .validator((d: unknown) => z.object({ id: z.string().uuid(), ativo: z.boolean() }).parse(d))
+  .validator((d: unknown) => z.object({ 
+    id: z.string().uuid().optional(), 
+    nome: z.string().optional(),
+    email: z.string().email().optional(),
+    whatsapp: z.string().optional(),
+    role: z.enum(['admin', 'operacao', 'vistoriador', 'comprador', 'vendedor']).optional(),
+    password: z.string().optional(),
+    ativo: z.boolean().optional() 
+  }).parse(d))
   .handler(async ({ data }) => {
     const m = await import("@/db/admin.server");
     try {
-      await m.alterarStatusUsuario(data.id, data.ativo);
+      if (data.id) {
+        await m.alterarStatusUsuario(data.id, data.ativo ?? true);
+        if (data.nome || data.email || data.role || data.password) {
+          await m.atualizarUsuario(data);
+        }
+      } else {
+        if (!data.email || !data.password || !data.role) throw new Error("Dados incompletos para novo usuário.");
+        await m.criarUsuario(data);
+      }
       return { ok: true as const };
     } catch (e: any) {
       return { ok: false as const, message: e.message };
     }
   });
+
 
 export const listarConfiguracoesFn = createServerFn({ method: "GET" })
   .handler(async () => {

@@ -171,6 +171,42 @@ export async function alterarStatusUsuario(userId: string, ativo: boolean) {
   return { ok: true };
 }
 
+export async function criarUsuario(data: any) {
+  const d = requireDb();
+  const auth = await import("./auth.server");
+  const senhaHash = await auth.hashPassword(data.password);
+  
+  await d.execute(sql`
+    INSERT INTO profiles (nome, email, role, senha_hash, ativo, whatsapp)
+    VALUES (${data.nome}, ${data.email}, ${data.role}::app_role, ${senhaHash}, true, ${data.whatsapp || null})
+  `);
+}
+
+export async function atualizarUsuario(data: any) {
+  const d = requireDb();
+  const updates: any[] = [];
+  
+  if (data.nome) updates.push(sql`nome = ${data.nome}`);
+  if (data.email) updates.push(sql`email = ${data.email}`);
+  if (data.role) updates.push(sql`role = ${data.role}::app_role`);
+  if (data.whatsapp) updates.push(sql`whatsapp = ${data.whatsapp}`);
+  
+  if (data.password) {
+    const auth = await import("./auth.server");
+    const hash = await auth.hashPassword(data.password);
+    updates.push(sql`senha_hash = ${hash}`);
+  }
+
+  if (updates.length === 0) return;
+
+  const setClause = sql.join(updates, sql`, `);
+  await d.execute(sql`
+    UPDATE profiles SET ${setClause}, atualizado_em = now() 
+    WHERE id = ${data.id}::uuid
+  `);
+}
+
+
 export async function listarConfiguracoes() {
   const d = requireDb();
   const rows = await d.execute(sql`SELECT * FROM configuracoes_sistema ORDER BY chave;`);

@@ -1,14 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-
 import { DataTable } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Eye, Mail, Key, UserCheck, Users, FileCheck, RefreshCw } from "lucide-react";
+import { CheckCircle, XCircle, Eye, Mail, UserCheck, Users, FileCheck, RefreshCw, UserPlus, ShieldAlert } from "lucide-react";
 import { listarVendedoresFn, listarCompradoresFn, gerenciarUsuarioFn } from "@/lib/admin.functions";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDate } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/usuarios")({
@@ -20,6 +22,15 @@ function UsuariosAdminPage() {
   const [compradores, setCompradores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [detalhes, setDetalhes] = useState<any | null>(null);
+  const [modalNovo, setModalNovo] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    nome: "",
+    email: "",
+    whatsapp: "",
+    role: "vistoriador",
+    password: ""
+  });
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -56,16 +67,45 @@ function UsuariosAdminPage() {
     }
   };
 
+  const criarUsuario = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.nome || !formData.email || !formData.password) {
+      toast.error("Preencha os campos obrigatórios.");
+      return;
+    }
+
+    const res = await gerenciarUsuarioFn({ data: { 
+      nome: formData.nome,
+      email: formData.email,
+      whatsapp: formData.whatsapp,
+      role: formData.role as any,
+      password: formData.password
+    }});
+
+    if (res.ok) {
+      toast.success("Usuário criado com sucesso!");
+      setModalNovo(false);
+      setFormData({ nome: "", email: "", whatsapp: "", role: "vistoriador", password: "" });
+      void carregar();
+    } else {
+      toast.error(res.message || "Erro ao criar usuário.");
+    }
+  };
+
   const enviarSenhaTemporaria = (email: string) => {
     toast.info(`Funcionalidade de envio de e-mail para ${email} será integrada com o SMTP configurado.`);
   };
 
   return (
     <div className="space-y-6 p-6">
-
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Gestão de Usuários</h1>
-          <p className="text-sm text-slate-500">Aprove ou reprove o acesso de vendedores e compradores à plataforma.</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Gestão de Usuários</h1>
+            <p className="text-sm text-slate-500">Aprove ou reprove o acesso de vendedores e compradores à plataforma.</p>
+          </div>
+          <Button onClick={() => setModalNovo(true)} className="bg-teal-700 hover:bg-teal-800 gap-2">
+            <UserPlus className="h-4 w-4" /> Novo Usuário
+          </Button>
         </div>
 
         <Tabs defaultValue="vendedores" className="w-full">
@@ -166,6 +206,58 @@ function UsuariosAdminPage() {
           </TabsContent>
         </Tabs>
 
+        {/* Modal Novo Usuário */}
+        <Sheet open={modalNovo} onOpenChange={setModalNovo}>
+          <SheetContent className="sm:max-w-md">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5 text-teal-700" /> Criar Novo Usuário
+              </SheetTitle>
+            </SheetHeader>
+            <form onSubmit={criarUsuario} className="mt-6 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="nome">Nome Completo *</Label>
+                <Input id="nome" value={formData.nome} onChange={e => setFormData({...formData, nome: e.target.value})} placeholder="Ex: João Silva" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail *</Label>
+                <Input id="email" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="joao@email.com" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp">WhatsApp</Label>
+                <Input id="whatsapp" value={formData.whatsapp} onChange={e => setFormData({...formData, whatsapp: e.target.value})} placeholder="(11) 99999-9999" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="role">Tipo de Perfil *</Label>
+                <Select value={formData.role} onValueChange={v => setFormData({...formData, role: v})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o perfil" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="vistoriador">Vistoriador</SelectItem>
+                    <SelectItem value="operacao">Operação</SelectItem>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha Inicial *</Label>
+                <Input id="password" type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} placeholder="******" required />
+              </div>
+
+              <div className="pt-4 flex flex-col gap-3">
+                <Button type="submit" className="w-full bg-teal-700 hover:bg-teal-800">
+                  Criar Usuário
+                </Button>
+                <p className="text-[10px] text-slate-500 text-center">
+                  O usuário será criado com status ativo e poderá logar imediatamente.
+                </p>
+              </div>
+            </form>
+          </SheetContent>
+        </Sheet>
+
+        {/* Modal Detalhes */}
         <Sheet open={!!detalhes} onOpenChange={() => setDetalhes(null)}>
           <SheetContent className="sm:max-w-md overflow-y-auto">
             <SheetHeader>
@@ -187,12 +279,8 @@ function UsuariosAdminPage() {
                     <p className="text-slate-900">{detalhes.whatsapp || "—"}</p>
                   </div>
                   <div>
-                    <label className="font-bold text-slate-500 text-xs uppercase tracking-wider">CPF</label>
-                    <p className="text-slate-900">{detalhes.cpf || "—"}</p>
-                  </div>
-                  <div>
-                    <label className="font-bold text-slate-500 text-xs uppercase tracking-wider">Cidade/UF</label>
-                    <p className="text-slate-900">{detalhes.cidade ? `${detalhes.cidade}/${detalhes.uf}` : "—"}</p>
+                    <label className="font-bold text-slate-500 text-xs uppercase tracking-wider">Perfil</label>
+                    <Badge variant="outline" className="capitalize">{detalhes.role}</Badge>
                   </div>
                   <div className="col-span-2">
                     <label className="font-bold text-slate-500 text-xs uppercase tracking-wider">Cadastrado em</label>
@@ -256,4 +344,3 @@ function UsuariosAdminPage() {
       </div>
   );
 }
-
