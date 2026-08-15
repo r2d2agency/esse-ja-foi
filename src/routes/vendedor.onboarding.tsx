@@ -198,9 +198,11 @@ function VendedorOnboarding() {
                     <Input disabled value={personalData.nomeCompleto} />
                   </div>
                   <div className="space-y-2">
-                    <Label>CPF *</Label>
+                    <Label htmlFor="cpf">CPF *</Label>
                     <Input 
-                      value={personalData.cpf} 
+                      id="cpf"
+                      name="cpf"
+                      value={personalData.cpf || ''} 
                       onChange={e => setPersonalData(p => ({ ...p, cpf: e.target.value }))}
                       placeholder="000.000.000-00"
                     />
