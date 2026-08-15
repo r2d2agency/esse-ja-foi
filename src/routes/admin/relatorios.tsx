@@ -1,0 +1,161 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getRelatoriosGeraisFn, getRelatoriosVendasFn } from "@/lib/relatorios.functions";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { 
+  BarChart3, 
+  TrendingUp, 
+  Car, 
+  Gavel, 
+  Users, 
+  Camera, 
+  DollarSign, 
+  MessageSquare, 
+  Settings2,
+  Calendar,
+  ArrowRight,
+  Download,
+  Filter
+} from "lucide-react";
+import { cn, formatCurrency, formatDate } from "@/lib/utils";
+
+export const Route = createFileRoute("/admin/relatorios")({
+  component: RelatoriosPage,
+});
+
+function RelatoriosPage() {
+  const [periodo, setPeriodo] = useState("30d");
+  const [dataInicio, setDataInicio] = useState("");
+  const [dataFim, setDataFim] = useState("");
+
+  const getGerais = useServerFn(getRelatoriosGeraisFn);
+  const getVendas = useServerFn(getRelatoriosVendasFn);
+
+  const { data: gerais, isLoading: loadingGerais } = useQuery({
+    queryKey: ["relatorios-gerais", { periodo, dataInicio, dataFim }],
+    queryFn: () => getGerais({ dataInicio, dataFim })
+  });
+
+  return (
+    <div className="p-6 space-y-8 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-slate-950 uppercase tracking-tight">Relatórios</h1>
+          <p className="text-slate-500 font-medium">Acompanhe os principais indicadores da operação do Esse Já Foi.</p>
+        </div>
+
+        <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
+          <Calendar className="h-4 w-4 text-slate-400 ml-2" />
+          <select 
+            className="bg-transparent border-none text-sm font-bold text-slate-700 focus:ring-0 cursor-pointer"
+            value={periodo}
+            onChange={(e) => setPeriodo(e.target.value)}
+          >
+            <option value="hoje">Hoje</option>
+            <option value="7d">Últimos 7 dias</option>
+            <option value="30d">Últimos 30 dias</option>
+            <option value="mes">Este mês</option>
+            <option value="ano">Este ano</option>
+            <option value="custom">Personalizado</option>
+          </select>
+          {periodo === "custom" && (
+            <div className="flex items-center gap-2 ml-2 pl-2 border-l border-slate-100">
+              <Input type="date" className="h-8 text-xs" value={dataInicio} onChange={e => setDataInicio(e.target.value)} />
+              <Input type="date" className="h-8 text-xs" value={dataFim} onChange={e => setDataFim(e.target.value)} />
+              <Button size="sm" className="h-8 px-3 text-xs bg-teal-600">Aplicar</Button>
+            </div>
+          )}
+          <Button variant="ghost" size="sm" className="ml-2 text-slate-400 hover:text-teal-600">
+            <Download className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <Tabs defaultValue="geral" className="w-full">
+        <TabsList className="bg-slate-100 p-1 flex-wrap h-auto mb-6">
+          <TabsTrigger value="geral" className="gap-2">
+            <BarChart3 className="h-4 w-4" /> Visão Geral
+          </TabsTrigger>
+          <TabsTrigger value="vendas" className="gap-2">
+            <TrendingUp className="h-4 w-4" /> Vendas
+          </TabsTrigger>
+          <TabsTrigger value="veiculos" className="gap-2">
+            <Car className="h-4 w-4" /> Veículos
+          </TabsTrigger>
+          <TabsTrigger value="leiloes" className="gap-2">
+            <Gavel className="h-4 w-4" /> Leilões
+          </TabsTrigger>
+          <TabsTrigger value="financeiro" className="gap-2">
+            <DollarSign className="h-4 w-4" /> Financeiro
+          </TabsTrigger>
+          <TabsTrigger value="operacional" className="gap-2">
+            <Settings2 className="h-4 w-4" /> Operacional
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="geral" className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard label="Veículos Cadastrados" value={gerais?.data?.overview?.veiculos_cadastrados} loading={loadingGerais} />
+            <StatCard label="Veículos Aprovados" value={gerais?.data?.overview?.veiculos_aprovados} loading={loadingGerais} />
+            <StatCard label="Vendas Concluídas" value={gerais?.data?.overview?.vendas_concluidas} loading={loadingGerais} />
+            <StatCard label="Volume Vendido" value={gerais?.data?.overview?.volume_vendido} isCurrency loading={loadingGerais} />
+          </div>
+
+          <Card className="border-slate-200 shadow-none">
+            <CardHeader>
+              <CardTitle className="text-sm font-black uppercase tracking-wider text-slate-500">Funil da Operação</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col space-y-4">
+                <FunnelStep label="Cadastrados" value={gerais?.data?.funnel?.cadastrados} total={gerais?.data?.funnel?.cadastrados} />
+                <FunnelStep label="Em Análise" value={gerais?.data?.funnel?.em_analise} total={gerais?.data?.funnel?.cadastrados} />
+                <FunnelStep label="Vistoriados" value={gerais?.data?.funnel?.vistoriados} total={gerais?.data?.funnel?.cadastrados} />
+                <FunnelStep label="Publicados" value={gerais?.data?.funnel?.publicados} total={gerais?.data?.funnel?.cadastrados} />
+                <FunnelStep label="Com Vencedor" value={gerais?.data?.funnel?.com_vencedor} total={gerais?.data?.funnel?.cadastrados} />
+                <FunnelStep label="Concluídos" value={gerais?.data?.funnel?.concluidos} total={gerais?.data?.funnel?.cadastrados} />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="vendas">
+           <div className="p-8 text-center text-slate-400 italic">Módulo de vendas detalhado em desenvolvimento...</div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function StatCard({ label, value, isCurrency, loading }: any) {
+  return (
+    <Card className="border-slate-200 shadow-none">
+      <CardContent className="p-6">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+        <p className="text-2xl font-black text-slate-950 mt-1">
+          {loading ? "..." : (isCurrency ? formatCurrency(value || 0) : value || 0)}
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function FunnelStep({ label, value, total }: any) {
+  const percent = total > 0 ? (value / total) * 100 : 0;
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between text-xs font-bold uppercase tracking-tight">
+        <span className="text-slate-600">{label}</span>
+        <span className="text-slate-900">{value} ({percent.toFixed(1)}%)</span>
+      </div>
+      <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+        <div className="h-full bg-teal-500 rounded-full" style={{ width: `${percent}%` }} />
+      </div>
+    </div>
+  );
+}
