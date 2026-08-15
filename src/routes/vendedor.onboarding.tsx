@@ -74,6 +74,15 @@ function VendedorOnboarding() {
     }
   }, [user]);
 
+  const DOCS_OBRIGATORIOS: { label: string; ok: boolean }[] = [
+    { label: "CNH (frente)", ok: !!files.cnhFrente },
+    { label: "CNH (verso)", ok: !!files.cnhVerso },
+    { label: "CRLV-e", ok: !!files.crlv },
+    { label: "Comprovante de residência", ok: !!files.comprovanteEndereco },
+    { label: "Selfie de validação", ok: !!files.selfie },
+  ];
+  const documentosFaltantes = DOCS_OBRIGATORIOS.filter((d) => !d.ok).map((d) => d.label);
+
   const saveProgress = async (finalizar = false) => {
     setIsSubmitting(true);
     try {
