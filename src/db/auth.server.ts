@@ -104,11 +104,13 @@ export async function ensureAuthSchema(silent = true) {
         email text NOT NULL UNIQUE,
         role app_role NOT NULL DEFAULT 'comprador',
         ativo boolean NOT NULL DEFAULT true,
-        criado_em timestamp NOT NULL DEFAULT now(),
-        atualizado_em timestamp NOT NULL DEFAULT now(),
+        criado_em timestamptz NOT NULL DEFAULT now(),
+        atualizado_em timestamptz NOT NULL DEFAULT now(),
         senha_hash text,
         protegido boolean NOT NULL DEFAULT false,
         cpf text,
+        cnpj text,
+        tipo_pessoa text DEFAULT 'PF',
         cep text,
         endereco text,
         numero text,
@@ -121,21 +123,41 @@ export async function ensureAuthSchema(silent = true) {
         documento_crlv_url text,
         documento_selfie_url text,
         documento_comprovante_endereco_url text,
-        cadastro_completo boolean NOT NULL DEFAULT false
+        cadastro_completo boolean NOT NULL DEFAULT false,
+        status_compliance text DEFAULT 'PENDENTE',
+        responsavel_nome text,
+        pode_ver_valores boolean NOT NULL DEFAULT false,
+        pode_dar_lances boolean NOT NULL DEFAULT false
       );
     `);
     
     await db.execute(sql`
       DO $$
       BEGIN
+        -- Garante todas as colunas individualmente caso a tabela já exista
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'cpf') THEN
           ALTER TABLE profiles ADD COLUMN cpf text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'cnpj') THEN
+          ALTER TABLE profiles ADD COLUMN cnpj text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'tipo_pessoa') THEN
+          ALTER TABLE profiles ADD COLUMN tipo_pessoa text DEFAULT 'PF';
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'cep') THEN
           ALTER TABLE profiles ADD COLUMN cep text;
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'endereco') THEN
           ALTER TABLE profiles ADD COLUMN endereco text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'numero') THEN
+          ALTER TABLE profiles ADD COLUMN numero text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'bairro') THEN
+          ALTER TABLE profiles ADD COLUMN bairro text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'complemento') THEN
+          ALTER TABLE profiles ADD COLUMN complemento text;
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'cidade') THEN
           ALTER TABLE profiles ADD COLUMN cidade text;
@@ -146,29 +168,20 @@ export async function ensureAuthSchema(silent = true) {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'documento_cnh_url') THEN
           ALTER TABLE profiles ADD COLUMN documento_cnh_url text;
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'documento_cnh_verso_url') THEN
+          ALTER TABLE profiles ADD COLUMN documento_cnh_verso_url text;
+        END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'documento_crlv_url') THEN
           ALTER TABLE profiles ADD COLUMN documento_crlv_url text;
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'documento_selfie_url') THEN
           ALTER TABLE profiles ADD COLUMN documento_selfie_url text;
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'documento_comprovante_endereco_url') THEN
+          ALTER TABLE profiles ADD COLUMN documento_comprovante_endereco_url text;
+        END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'cadastro_completo') THEN
           ALTER TABLE profiles ADD COLUMN cadastro_completo boolean NOT NULL DEFAULT false;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'atualizado_em') THEN
-          ALTER TABLE profiles ADD COLUMN atualizado_em timestamptz NOT NULL DEFAULT now();
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'criado_em') THEN
-          ALTER TABLE profiles ADD COLUMN criado_em timestamptz NOT NULL DEFAULT now();
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'telefone') THEN
-          ALTER TABLE profiles ADD COLUMN telefone text;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'cnpj') THEN
-          ALTER TABLE profiles ADD COLUMN cnpj text;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'tipo_pessoa') THEN
-          ALTER TABLE profiles ADD COLUMN tipo_pessoa text DEFAULT 'PF';
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'status_compliance') THEN
           ALTER TABLE profiles ADD COLUMN status_compliance text DEFAULT 'PENDENTE';
@@ -179,20 +192,11 @@ export async function ensureAuthSchema(silent = true) {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'pode_ver_valores') THEN
           ALTER TABLE profiles ADD COLUMN pode_ver_valores boolean NOT NULL DEFAULT false;
         END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'documento_cnh_verso_url') THEN
-          ALTER TABLE profiles ADD COLUMN documento_cnh_verso_url text;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'pode_dar_lances') THEN
+          ALTER TABLE profiles ADD COLUMN pode_dar_lances boolean NOT NULL DEFAULT false;
         END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'documento_comprovante_endereco_url') THEN
-          ALTER TABLE profiles ADD COLUMN documento_comprovante_endereco_url text;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'numero') THEN
-          ALTER TABLE profiles ADD COLUMN numero text;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'bairro') THEN
-          ALTER TABLE profiles ADD COLUMN bairro text;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'complemento') THEN
-          ALTER TABLE profiles ADD COLUMN complemento text;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'atualizado_em') THEN
+          ALTER TABLE profiles ADD COLUMN atualizado_em timestamptz NOT NULL DEFAULT now();
         END IF;
       END $$;
     `);
