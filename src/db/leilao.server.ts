@@ -50,12 +50,21 @@ export async function ensureLeilaoSchema() {
 
 export async function configurarLeilao(data: any) {
   const d = requireDb();
+  // Se receber anuncio_id, precisamos descobrir o veiculo_id correspondente
+  let veiculoId = data.veiculo_id;
+  if (!veiculoId && data.anuncio_id) {
+    const aRes = await d.execute(sql`SELECT veiculo_id FROM anuncios_veiculo WHERE id = ${data.anuncio_id}::uuid`);
+    veiculoId = (aRes as any).rows[0]?.veiculo_id;
+  }
+
+  if (!veiculoId) throw new Error("veiculo_id não fornecido e não pôde ser determinado pelo anuncio_id.");
+
   const res = await d.execute(sql`
     INSERT INTO leiloes (
-      anuncio_id, inicio_em, fim_em, lance_inicial, incremento_minimo, 
+      veiculo_id, inicio_em, fim_em, lance_inicial, incremento_minimo, 
       prorrogacao_ativa, prorrogacao_janela_segundos, prorrogacao_tempo_segundos, status
     ) VALUES (
-      ${data.anuncio_id}::uuid, ${data.inicio_em}, ${data.fim_em}, 
+      ${veiculoId}::uuid, ${data.inicio_em}, ${data.fim_em}, 
       ${data.lance_inicial}, ${data.incremento_minimo}, 
       ${data.prorrogacao_ativa}, ${data.prorrogacao_janela_segundos}, ${data.prorrogacao_tempo_segundos},
       'AGENDADO'
@@ -160,7 +169,7 @@ export async function getEstadoLeilao(leilaoId: string) {
       (SELECT count(*)::int FROM lances WHERE leilao_id = l.id) as total_lances,
       (SELECT count(distinct comprador_id)::int FROM lances WHERE leilao_id = l.id) as total_participantes
     FROM leiloes l
-    JOIN anuncios_veiculo a ON l.anuncio_id = a.id
+    JOIN anuncios_veiculo a ON l.veiculo_id = a.veiculo_id
     WHERE l.id = ${leilaoId}::uuid
   `);
   
