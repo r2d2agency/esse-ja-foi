@@ -24,6 +24,15 @@ export async function ensureConversasSchema(silent = true) {
         atualizado_em timestamptz DEFAULT now()
       );
     `);
+    
+    await db.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_conversas' AND column_name = 'contato_id') THEN
+          ALTER TABLE whatsapp_conversas ADD COLUMN contato_id uuid NOT NULL REFERENCES profiles(id);
+        END IF;
+      END $$;
+    `);
 
     // 2. Tabela de Mensagens e Notas
     // Nota: Reutiliza whatsapp_mensagens mas adiciona campos para notas internas e auditoria
