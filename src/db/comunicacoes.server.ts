@@ -253,6 +253,27 @@ export async function ensureComunicacoesSchema(silent = true) {
         atualizado_em timestamptz DEFAULT now()
       );
     `);
+    
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_mensagens' AND column_name = 'campanha_id') THEN
+          ALTER TABLE whatsapp_mensagens ADD COLUMN campanha_id uuid REFERENCES whatsapp_campanhas(id) ON DELETE CASCADE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_mensagens' AND column_name = 'comprador_id') THEN
+          ALTER TABLE whatsapp_mensagens ADD COLUMN comprador_id uuid REFERENCES profiles(id);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_mensagens' AND column_name = 'telefone') THEN
+          ALTER TABLE whatsapp_mensagens ADD COLUMN telefone text NOT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_mensagens' AND column_name = 'status') THEN
+          ALTER TABLE whatsapp_mensagens ADD COLUMN status text DEFAULT 'NA_FILA';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_mensagens' AND column_name = 'meta_message_id') THEN
+          ALTER TABLE whatsapp_mensagens ADD COLUMN meta_message_id text UNIQUE;
+        END IF;
+      END $$;
+    `);
     await d.execute(sql`CREATE INDEX IF NOT EXISTS idx_wa_mensagens_campanha ON whatsapp_mensagens(campanha_id);`);
     await d.execute(sql`CREATE INDEX IF NOT EXISTS idx_wa_mensagens_status ON whatsapp_mensagens(status);`);
 
