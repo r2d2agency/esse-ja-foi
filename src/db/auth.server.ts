@@ -150,6 +150,30 @@ export async function ensureAuthSchema(silent = true) {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'cadastro_completo') THEN
           ALTER TABLE profiles ADD COLUMN cadastro_completo boolean NOT NULL DEFAULT false;
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'atualizado_em') THEN
+          ALTER TABLE profiles ADD COLUMN atualizado_em timestamptz NOT NULL DEFAULT now();
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'criado_em') THEN
+          ALTER TABLE profiles ADD COLUMN criado_em timestamptz NOT NULL DEFAULT now();
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'telefone') THEN
+          ALTER TABLE profiles ADD COLUMN telefone text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'cnpj') THEN
+          ALTER TABLE profiles ADD COLUMN cnpj text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'tipo_pessoa') THEN
+          ALTER TABLE profiles ADD COLUMN tipo_pessoa text DEFAULT 'PF';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'status_compliance') THEN
+          ALTER TABLE profiles ADD COLUMN status_compliance text DEFAULT 'PENDENTE';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'responsavel_nome') THEN
+          ALTER TABLE profiles ADD COLUMN responsavel_nome text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'pode_ver_valores') THEN
+          ALTER TABLE profiles ADD COLUMN pode_ver_valores boolean NOT NULL DEFAULT false;
+        END IF;
       END $$;
     `);
 
