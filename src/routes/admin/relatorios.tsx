@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getRelatoriosGeraisFn, getRelatoriosVendasFn } from "@/lib/relatorios.functions";
@@ -7,23 +7,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { 
   BarChart3, 
   TrendingUp, 
   Car, 
   Gavel, 
   Users, 
-  Camera, 
   DollarSign, 
-  MessageSquare, 
   Settings2,
   Calendar,
-  ArrowRight,
-  Download,
-  Filter
+  Download
 } from "lucide-react";
-import { cn, formatCurrency, formatDate } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/relatorios")({
   component: RelatoriosPage,
@@ -31,15 +26,37 @@ export const Route = createFileRoute("/admin/relatorios")({
 
 function RelatoriosPage() {
   const [periodo, setPeriodo] = useState("30d");
-  const [dataInicio, setDataInicio] = useState("");
-  const [dataFim, setDataFim] = useState("");
+  const [dataInicio, setDataInicio] = useState<string>("");
+  const [dataFim, setDataFim] = useState<string>("");
+
+  useEffect(() => {
+    const agora = new Date();
+    let inicio = new Date();
+
+    if (periodo === "hoje") {
+      inicio.setHours(0, 0, 0, 0);
+    } else if (periodo === "7d") {
+      inicio.setDate(agora.getDate() - 7);
+    } else if (periodo === "30d") {
+      inicio.setDate(agora.getDate() - 30);
+    } else if (periodo === "mes") {
+      inicio = new Date(agora.getFullYear(), agora.getMonth(), 1);
+    } else if (periodo === "ano") {
+      inicio = new Date(agora.getFullYear(), 0, 1);
+    }
+
+    if (periodo !== "custom") {
+      setDataInicio(inicio.toISOString().split("T")[0]);
+      setDataFim(agora.toISOString().split("T")[0]);
+    }
+  }, [periodo]);
 
   const getGerais = useServerFn(getRelatoriosGeraisFn);
-  const getVendas = useServerFn(getRelatoriosVendasFn);
 
   const { data: gerais, isLoading: loadingGerais } = useQuery({
-    queryKey: ["relatorios-gerais", { periodo, dataInicio, dataFim }],
-    queryFn: () => getGerais({ data: { dataInicio, dataFim } })
+    queryKey: ["relatorios-gerais", { dataInicio, dataFim }],
+    queryFn: () => getGerais({ data: { dataInicio, dataFim } }),
+    enabled: !!dataInicio && !!dataFim
   });
 
   return (
@@ -138,7 +155,7 @@ function StatCard({ label, value, isCurrency, loading }: any) {
       <CardContent className="p-6">
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
         <p className="text-2xl font-black text-slate-950 mt-1">
-          {loading ? "..." : (isCurrency ? formatCurrency(value || 0) : value || 0)}
+          {loading ? "..." : (isCurrency ? formatCurrency(Number(value || 0)) : value || 0)}
         </p>
       </CardContent>
     </Card>
