@@ -111,6 +111,28 @@ async function registrarEvento(tx: any, negociacaoId: string, evento: string, de
 
 async function notificar(tx: any, negociacaoId: string, publico: string, destinatarioId: string | null, titulo: string, mensagem: string) {
   await tx.execute(sql`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'notificacoes') THEN
+        CREATE TABLE notificacoes (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          destinatario_id uuid REFERENCES profiles(id),
+          titulo text NOT NULL,
+          mensagem text NOT NULL,
+          tipo text DEFAULT 'GERAL',
+          lida boolean DEFAULT false,
+          criado_em timestamptz DEFAULT now()
+        );
+      END IF;
+    END $$;
+  `);
+
+  await tx.execute(sql`
+    INSERT INTO notificacoes (destinatario_id, titulo, mensagem, tipo)
+    VALUES (${destinatarioId}::uuid, ${titulo}, ${mensagem}, 'NEGOCIACAO')
+  `);
+  
+  await tx.execute(sql`
     INSERT INTO negociacoes_notificacoes (negociacao_id, destinatario_id, publico, titulo, mensagem)
     VALUES (${negociacaoId}::uuid, ${destinatarioId}::uuid, ${publico}, ${titulo}, ${mensagem})
   `);
