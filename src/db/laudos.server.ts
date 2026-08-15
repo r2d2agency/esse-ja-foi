@@ -18,25 +18,14 @@ export async function ensureLaudoSchema(silent = true) {
 
 
   await d.execute(sql`
-    CREATE TABLE IF NOT EXISTS laudos (
-      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      agendamento_id uuid NOT NULL,
-      veiculo_id uuid NOT NULL,
-      vistoriador_id uuid NOT NULL,
-      modelo_id uuid NOT NULL,
-      modelo_versao integer NOT NULL DEFAULT 1,
-      status text NOT NULL DEFAULT 'RASCUNHO',
-      protocolo text,
-      bloqueado boolean NOT NULL DEFAULT false,
-      placa_confirmada text,
-      divergencia_placa text,
-      motivo_devolucao text,
-      observacoes text,
-      enviado_em timestamptz,
-      criado_em timestamptz NOT NULL DEFAULT now(),
-      atualizado_em timestamptz NOT NULL DEFAULT now()
-    );
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'laudos' AND column_name = 'motivo_devolucao') THEN
+        ALTER TABLE laudos ADD COLUMN motivo_devolucao text;
+      END IF;
+    END $$;
   `);
+  
   await d.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS laudos_agendamento_uidx ON laudos (agendamento_id);`);
   await d.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS laudos_protocolo_uidx ON laudos (protocolo) WHERE protocolo IS NOT NULL;`);
   await d.execute(sql`CREATE INDEX IF NOT EXISTS laudos_vistoriador_idx ON laudos (vistoriador_id, status);`);
@@ -397,6 +386,23 @@ export async function registrarDivergenciaPlaca(input: { agendamentoId: string; 
     VALUES ('agendamento', ${input.agendamentoId}, 'Divergência de placa', ${texto});
   `);
   await d.execute(sql`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'notificacoes') THEN
+        CREATE TABLE notificacoes (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          destinatario_id uuid REFERENCES profiles(id),
+          titulo text NOT NULL,
+          mensagem text NOT NULL,
+          tipo text DEFAULT 'GERAL',
+          lida boolean DEFAULT false,
+          criado_em timestamptz DEFAULT now()
+        );
+      END IF;
+    END $$;
+  `);
+
+  await d.execute(sql`
     INSERT INTO notificacoes (destinatario_id, titulo, mensagem, tipo)
     VALUES (NULL, ${"Divergência de placa na vistoria"}, ${texto}, 'VISTORIA');
   `);
@@ -498,6 +504,23 @@ export async function enviarLaudo(input: { laudoId: string; vistoriadorId?: stri
     VALUES ('laudo', ${input.laudoId}, 'Laudo enviado', 'EM_AVALIACAO', ${`Protocolo ${protocolo}`});
   `);
   await d.execute(sql`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'notificacoes') THEN
+        CREATE TABLE notificacoes (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          destinatario_id uuid REFERENCES profiles(id),
+          titulo text NOT NULL,
+          mensagem text NOT NULL,
+          tipo text DEFAULT 'GERAL',
+          lida boolean DEFAULT false,
+          criado_em timestamptz DEFAULT now()
+        );
+      END IF;
+    END $$;
+  `);
+
+  await d.execute(sql`
     INSERT INTO notificacoes (destinatario_id, titulo, mensagem, tipo)
     VALUES (NULL, ${"Laudo recebido"}, ${`Laudo ${protocolo} enviado e aguardando avaliação.`}, 'VISTORIA');
   `);
@@ -559,6 +582,23 @@ export async function devolverLaudo(input: { laudoId: string; motivo: string; us
   await d.execute(sql`
     UPDATE veiculos SET status = 'EM_VISTORIA', atualizado_em = now() WHERE id = ${String(laudo['veiculo_id'])}::uuid;
   `);
+  await d.execute(sql`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'notificacoes') THEN
+        CREATE TABLE notificacoes (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          destinatario_id uuid REFERENCES profiles(id),
+          titulo text NOT NULL,
+          mensagem text NOT NULL,
+          tipo text DEFAULT 'GERAL',
+          lida boolean DEFAULT false,
+          criado_em timestamptz DEFAULT now()
+        );
+      END IF;
+    END $$;
+  `);
+
   await d.execute(sql`
     INSERT INTO notificacoes (destinatario_id, titulo, mensagem, tipo)
     VALUES (${String(laudo['vistoriador_id'])}, ${"Laudo devolvido"}, ${input.motivo.trim()}, 'VISTORIA');

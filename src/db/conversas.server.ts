@@ -24,14 +24,34 @@ export async function ensureConversasSchema(silent = true) {
         atualizado_em timestamptz DEFAULT now()
       );
     `);
+    
+    await db.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_conversas' AND column_name = 'contato_id') THEN
+          ALTER TABLE whatsapp_conversas ADD COLUMN contato_id uuid NOT NULL REFERENCES profiles(id);
+        END IF;
+      END $$;
+    `);
 
     // 2. Tabela de Mensagens e Notas
     // Nota: Reutiliza whatsapp_mensagens mas adiciona campos para notas internas e auditoria
     await db.execute(sql`
-      ALTER TABLE whatsapp_mensagens ADD COLUMN IF NOT EXISTS conversa_id uuid REFERENCES whatsapp_conversas(id) ON DELETE CASCADE;
-      ALTER TABLE whatsapp_mensagens ADD COLUMN IF NOT EXISTS tipo text DEFAULT 'MENSAGEM'; -- MENSAGEM, NOTA_INTERNA
-      ALTER TABLE whatsapp_mensagens ADD COLUMN IF NOT EXISTS autor_id uuid REFERENCES profiles(id); -- Atendente que enviou
-      ALTER TABLE whatsapp_mensagens ADD COLUMN IF NOT EXISTS metadata jsonb DEFAULT '{}'::jsonb; -- { origem: 'ATENDENTE' | 'CAMPANHA' | 'AUTOMACAO', responsavel: 'Nome' }
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_mensagens' AND column_name = 'conversa_id') THEN
+          ALTER TABLE whatsapp_mensagens ADD COLUMN conversa_id uuid REFERENCES whatsapp_conversas(id) ON DELETE CASCADE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_mensagens' AND column_name = 'tipo') THEN
+          ALTER TABLE whatsapp_mensagens ADD COLUMN tipo text DEFAULT 'MENSAGEM';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_mensagens' AND column_name = 'autor_id') THEN
+          ALTER TABLE whatsapp_mensagens ADD COLUMN autor_id uuid REFERENCES profiles(id);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_mensagens' AND column_name = 'metadata') THEN
+          ALTER TABLE whatsapp_mensagens ADD COLUMN metadata jsonb DEFAULT '{}'::jsonb;
+        END IF;
+      END $$;
     `);
 
     // 3. Índices para busca

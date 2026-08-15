@@ -61,11 +61,9 @@ export async function verifyPassword(password: string, stored: string) {
   }
 }
 
-/** Cria as colunas de senha/proteção, o gatilho anti-exclusão e o superadmin. Idempotente. */
-export async function ensureSuperAdmin(silent = true) {
-  if (!db) {
-    throw new Error("DATABASE_URL ausente.");
-  }
+/** Garante que o schema de autenticação e perfis esteja correto. */
+export async function ensureAuthSchema(silent = true) {
+  if (!db) throw new Error("DATABASE_URL ausente.");
   
   try {
     const adminModule = await import("./admin.server");
@@ -78,10 +76,6 @@ export async function ensureSuperAdmin(silent = true) {
         IF NOT EXISTS (SELECT 1 FROM pg_type t WHERE t.typname = 'app_role') THEN
           CREATE TYPE app_role AS ENUM ('admin', 'operacao', 'vistoriador', 'comprador', 'vendedor');
         ELSE
-          -- Garante que cada valor exista individualmente
-          IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'app_role' AND e.enumlabel = 'admin') THEN
-            ALTER TYPE app_role ADD VALUE 'admin';
-          END IF;
           IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'app_role' AND e.enumlabel = 'operacao') THEN
             ALTER TYPE app_role ADD VALUE 'operacao';
           END IF;
@@ -125,21 +119,80 @@ export async function ensureSuperAdmin(silent = true) {
         cadastro_completo boolean NOT NULL DEFAULT false
       );
     `);
+    
+    await db.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'cpf') THEN
+          ALTER TABLE profiles ADD COLUMN cpf text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'cep') THEN
+          ALTER TABLE profiles ADD COLUMN cep text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'endereco') THEN
+          ALTER TABLE profiles ADD COLUMN endereco text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'cidade') THEN
+          ALTER TABLE profiles ADD COLUMN cidade text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'uf') THEN
+          ALTER TABLE profiles ADD COLUMN uf text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'documento_cnh_url') THEN
+          ALTER TABLE profiles ADD COLUMN documento_cnh_url text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'documento_crlv_url') THEN
+          ALTER TABLE profiles ADD COLUMN documento_crlv_url text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'documento_selfie_url') THEN
+          ALTER TABLE profiles ADD COLUMN documento_selfie_url text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'cadastro_completo') THEN
+          ALTER TABLE profiles ADD COLUMN cadastro_completo boolean NOT NULL DEFAULT false;
+        END IF;
+      END $$;
+    `);
 
     await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS veiculos (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        placa text NOT NULL UNIQUE,
-        marca text NOT NULL,
-        modelo text NOT NULL,
-        status text NOT NULL DEFAULT 'cadastrado',
-        criado_em timestamp NOT NULL DEFAULT now(),
-        perfil_id uuid REFERENCES profiles(id),
-        km integer,
-        valor_interesse_cliente numeric,
-        observacoes text
-      );
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_profiles_protegido') THEN
+          CREATE OR REPLACE FUNCTION public.check_profile_protegido()
+          RETURNS trigger
+          LANGUAGE plpgsql
+          AS $function$
+          BEGIN
+            IF OLD.protegido THEN
+              RAISE EXCEPTION 'Perfil protegido não pode ser removido.';
+            END IF;
+            RETURN OLD;
+          END;
+          $function$;
+
+          CREATE TRIGGER trg_profiles_protegido
+          BEFORE DELETE ON public.profiles
+          FOR EACH ROW EXECUTE FUNCTION public.check_profile_protegido();
+        END IF;
+      END $$;
     `);
+
+    await ensureAdminTables();
+    if (!silent && process.env['NODE_ENV'] === 'development') console.log("[auth.server] Schema Auth OK.");
+  } catch (err) {
+    console.error("[auth.server] Erro ao garantir schema:", err);
+  }
+}
+
+/** Cria o superadmin. Idempotente. */
+export async function ensureSuperAdmin(silent = true) {
+  if (!db) throw new Error("DATABASE_URL ausente.");
+  
+  try {
+    const adminModule = await import("./admin.server");
+    const ensureAdminTables = adminModule.ensureAdminTables;
+    await ensureAdminTables();
+
+    // Bloqueia exclusão e rebaixamento do superadmin diretamente no banco
 
     // Bloqueia exclusão e rebaixamento do superadmin diretamente no banco
     await db.execute(sql`

@@ -32,6 +32,48 @@ export async function ensureComunicacoesSchema(silent = true) {
         atualizado_em timestamptz DEFAULT now()
       );
     `);
+    
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'waba_id') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN waba_id text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'phone_number_id') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN phone_number_id text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'business_id') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN business_id text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'phone_number') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN phone_number text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'app_id') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN app_id text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'app_secret') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN app_secret text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'access_token') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN access_token text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'graph_api_version') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN graph_api_version text DEFAULT 'v20.0';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'webhook_verify_token') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN webhook_verify_token text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'status') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN status text DEFAULT 'DESCONECTADO';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'ultimo_teste') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN ultimo_teste timestamptz;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'detalhes_erro') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN detalhes_erro text;
+        END IF;
+      END $$;
+    `);
 
     // 2. Logs de Webhook (Histórico de eventos recebidos da Meta)
     await d.execute(sql`
@@ -69,6 +111,39 @@ export async function ensureComunicacoesSchema(silent = true) {
         criado_em timestamptz DEFAULT now()
       );
     `);
+    
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_templates' AND column_name = 'nome_interno') THEN
+          ALTER TABLE whatsapp_templates ADD COLUMN nome_interno text NOT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_templates' AND column_name = 'meta_name') THEN
+          ALTER TABLE whatsapp_templates ADD COLUMN meta_name text UNIQUE NOT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_templates' AND column_name = 'categoria') THEN
+          ALTER TABLE whatsapp_templates ADD COLUMN categoria text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_templates' AND column_name = 'idioma') THEN
+          ALTER TABLE whatsapp_templates ADD COLUMN idioma text DEFAULT 'pt_BR';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_templates' AND column_name = 'conteudo') THEN
+          ALTER TABLE whatsapp_templates ADD COLUMN conteudo jsonb;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_templates' AND column_name = 'status') THEN
+          ALTER TABLE whatsapp_templates ADD COLUMN status text DEFAULT 'PENDENTE';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_templates' AND column_name = 'tipo_midia') THEN
+          ALTER TABLE whatsapp_templates ADD COLUMN tipo_midia text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_templates' AND column_name = 'meta_id') THEN
+          ALTER TABLE whatsapp_templates ADD COLUMN meta_id text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_templates' AND column_name = 'ultima_sincronizacao') THEN
+          ALTER TABLE whatsapp_templates ADD COLUMN ultima_sincronizacao timestamptz DEFAULT now();
+        END IF;
+      END $$;
+    `);
 
     // 3. Segmentos (Listas de Compradores)
     await d.execute(sql`
@@ -82,6 +157,27 @@ export async function ensureComunicacoesSchema(silent = true) {
         criado_em timestamptz DEFAULT now(),
         atualizado_em timestamptz DEFAULT now()
       );
+    `);
+    
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_segmentos' AND column_name = 'nome') THEN
+          ALTER TABLE whatsapp_segmentos ADD COLUMN nome text NOT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_segmentos' AND column_name = 'descricao') THEN
+          ALTER TABLE whatsapp_segmentos ADD COLUMN descricao text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_segmentos' AND column_name = 'tipo') THEN
+          ALTER TABLE whatsapp_segmentos ADD COLUMN tipo text NOT NULL DEFAULT 'DINAMICO';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_segmentos' AND column_name = 'filtros') THEN
+          ALTER TABLE whatsapp_segmentos ADD COLUMN filtros jsonb;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_segmentos' AND column_name = 'total_contatos') THEN
+          ALTER TABLE whatsapp_segmentos ADD COLUMN total_contatos integer DEFAULT 0;
+        END IF;
+      END $$;
     `);
 
     // 4. Join table para segmentos manuais
@@ -115,6 +211,27 @@ export async function ensureComunicacoesSchema(silent = true) {
         atualizado_em timestamptz DEFAULT now()
       );
     `);
+    
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_campanhas' AND column_name = 'nome') THEN
+          ALTER TABLE whatsapp_campanhas ADD COLUMN nome text NOT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_campanhas' AND column_name = 'status') THEN
+          ALTER TABLE whatsapp_campanhas ADD COLUMN status text DEFAULT 'RASCUNHO';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_campanhas' AND column_name = 'agendado_para') THEN
+          ALTER TABLE whatsapp_campanhas ADD COLUMN agendado_para timestamptz;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_campanhas' AND column_name = 'total_destinatarios') THEN
+          ALTER TABLE whatsapp_campanhas ADD COLUMN total_destinatarios integer DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_campanhas' AND column_name = 'criado_por') THEN
+          ALTER TABLE whatsapp_campanhas ADD COLUMN criado_por uuid REFERENCES profiles(id);
+        END IF;
+      END $$;
+    `);
 
     // 6. Mensagens Individuais (Fila e Histórico)
     await d.execute(sql`
@@ -136,6 +253,27 @@ export async function ensureComunicacoesSchema(silent = true) {
         atualizado_em timestamptz DEFAULT now()
       );
     `);
+    
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_mensagens' AND column_name = 'campanha_id') THEN
+          ALTER TABLE whatsapp_mensagens ADD COLUMN campanha_id uuid REFERENCES whatsapp_campanhas(id) ON DELETE CASCADE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_mensagens' AND column_name = 'comprador_id') THEN
+          ALTER TABLE whatsapp_mensagens ADD COLUMN comprador_id uuid REFERENCES profiles(id);
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_mensagens' AND column_name = 'telefone') THEN
+          ALTER TABLE whatsapp_mensagens ADD COLUMN telefone text NOT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_mensagens' AND column_name = 'status') THEN
+          ALTER TABLE whatsapp_mensagens ADD COLUMN status text DEFAULT 'NA_FILA';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_mensagens' AND column_name = 'meta_message_id') THEN
+          ALTER TABLE whatsapp_mensagens ADD COLUMN meta_message_id text UNIQUE;
+        END IF;
+      END $$;
+    `);
     await d.execute(sql`CREATE INDEX IF NOT EXISTS idx_wa_mensagens_campanha ON whatsapp_mensagens(campanha_id);`);
     await d.execute(sql`CREATE INDEX IF NOT EXISTS idx_wa_mensagens_status ON whatsapp_mensagens(status);`);
 
@@ -152,6 +290,15 @@ export async function ensureComunicacoesSchema(silent = true) {
         criado_em timestamptz DEFAULT now()
       );
     `);
+    
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_logs' AND column_name = 'acao') THEN
+          ALTER TABLE whatsapp_logs ADD COLUMN acao text NOT NULL;
+        END IF;
+      END $$;
+    `);
 
     // 8. Atualizar profiles com preferências e elegibilidade
     const profileCols: Array<[string, string]> = [
@@ -166,7 +313,14 @@ export async function ensureComunicacoesSchema(silent = true) {
 
     for (const [name, type] of profileCols) {
       try {
-        await d.execute(sql.raw(`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ${name} ${type};`));
+        await d.execute(sql.raw(`
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = '${name}') THEN
+              ALTER TABLE profiles ADD COLUMN ${name} ${type};
+            END IF;
+          END $$;
+        `));
       } catch (e) {}
     }
 

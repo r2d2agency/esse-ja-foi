@@ -53,6 +53,30 @@ export async function ensureCadastroSchema(silent = true) {
       criado_em timestamptz NOT NULL DEFAULT now(),
       atualizado_em timestamptz NOT NULL DEFAULT now()
     );
+    `);
+    
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'clientes' AND column_name = 'documento') THEN
+          ALTER TABLE clientes ADD COLUMN documento text NOT NULL;
+        END IF;
+      END $$;
+    `);
+  
+  await d.execute(sql`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'tipo_pessoa') THEN
+        ALTER TABLE profiles ADD COLUMN tipo_pessoa text;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'status_compliance') THEN
+        ALTER TABLE profiles ADD COLUMN status_compliance text DEFAULT 'PENDENTE';
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'pode_ver_valores') THEN
+        ALTER TABLE profiles ADD COLUMN pode_ver_valores boolean DEFAULT false;
+      END IF;
+    END $$;
   `);
   await d.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS clientes_documento_uidx ON clientes (documento);`);
 
@@ -90,6 +114,27 @@ export async function ensureCadastroSchema(silent = true) {
       criado_em timestamptz NOT NULL DEFAULT now(),
       status_analise text DEFAULT 'AGUARDANDO_ANALISE'
     );
+    `);
+    
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'veiculos' AND column_name = 'placa') THEN
+          ALTER TABLE veiculos ADD COLUMN placa text NOT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'veiculos' AND column_name = 'status_analise') THEN
+          ALTER TABLE veiculos ADD COLUMN status_analise text DEFAULT 'PENDENTE';
+        END IF;
+      END $$;
+    `);
+
+  await d.execute(sql`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'veiculos' AND column_name = 'status_analise') THEN
+        ALTER TABLE veiculos ADD COLUMN status_analise text DEFAULT 'AGUARDANDO_ANALISE';
+      END IF;
+    END $$;
   `);
   
   await d.execute(sql`ALTER TABLE veiculos ALTER COLUMN status SET DEFAULT 'CADASTRADO';`);
