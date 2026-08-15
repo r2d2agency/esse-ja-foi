@@ -198,6 +198,12 @@ export async function ensureAuthSchema(silent = true) {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'atualizado_em') THEN
           ALTER TABLE profiles ADD COLUMN atualizado_em timestamptz NOT NULL DEFAULT now();
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'criado_em') THEN
+          ALTER TABLE profiles ADD COLUMN criado_em timestamptz NOT NULL DEFAULT now();
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'telefone') THEN
+          ALTER TABLE profiles ADD COLUMN telefone text;
+        END IF;
       END $$;
     `);
 
@@ -239,8 +245,6 @@ export async function ensureSuperAdmin(silent = true) {
     const adminModule = await import("./admin.server");
     const ensureAdminTables = adminModule.ensureAdminTables;
     await ensureAdminTables();
-
-    // Bloqueia exclusão e rebaixamento do superadmin diretamente no banco
 
     // Bloqueia exclusão e rebaixamento do superadmin diretamente no banco
     await db.execute(sql`
@@ -295,11 +299,10 @@ export async function ensureSuperAdmin(silent = true) {
 
 export async function authenticate(email: string, password: string) {
   if (!db) throw new Error("Banco de dados indisponível.");
-  // Silenced log to prevent cluttering stdout during requests
   try {
     await ensureSuperAdmin();
     const rows: any = await db.execute(sql`
-      SELECT id, nome, email, role, ativo, senha_hash
+      SELECT id, nome, email, role, ativo, senha_hash, pode_ver_valores, tipo_pessoa
       FROM profiles WHERE lower(email) = lower(${email}) LIMIT 1
     `);
     const user = Array.isArray(rows) ? rows[0] : rows?.rows?.[0];
@@ -320,14 +323,13 @@ export async function authenticate(email: string, password: string) {
       console.warn("[auth.server] Senha incorreta para:", email);
       return null;
     }
-    // Silenced log to prevent cluttering stdout during requests
     return {
       id: String(user.id),
       nome: user.nome ?? user.email,
       email: user.email as string,
       role: user.role as any,
-      pode_ver_valores: !!(user as any).pode_ver_valores,
-      tipo_pessoa: (user as any).tipo_pessoa,
+      pode_ver_valores: !!user.pode_ver_valores,
+      tipo_pessoa: user.tipo_pessoa,
     };
   } catch (err) {
     console.error("[auth.server] Erro durante autenticação:", err);
