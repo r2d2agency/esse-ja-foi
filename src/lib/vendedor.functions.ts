@@ -255,8 +255,8 @@ export const obterMeuPerfilFn = createServerFn({ method: "GET" })
     await ensurePerfilSchema();
     const rows = await db.execute(sql`
       SELECT id, nome, email, whatsapp, telefone, cpf, cep, endereco, cidade, uf, role,
-             documento_cnh_url, documento_crlv_url, documento_selfie_url,
-             cadastro_completo, criado_em
+             documento_cnh_url, documento_cnh_verso_url, documento_crlv_url, documento_selfie_url,
+             documento_comprovante_endereco_url, cadastro_completo, criado_em
       FROM profiles WHERE id = ${data.perfilId}::uuid LIMIT 1;
     `);
     const perfil = (rows as any).rows?.[0] || (rows as any)[0] || null;
