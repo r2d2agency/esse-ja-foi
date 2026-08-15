@@ -93,6 +93,19 @@ export const salvarConfiguracaoFn = createServerFn({ method: "POST" })
     }
   });
 
+export const enviarEmailTesteFn = createServerFn({ method: "POST" })
+  .validator((d: unknown) => z.object({ email: z.string().email() }).parse(d))
+  .handler(async ({ data }) => {
+    const m = await import("@/db/mail.server");
+    try {
+      await m.enviarEmailTeste(data.email);
+      return { ok: true as const };
+    } catch (e: any) {
+      return { ok: false as const, message: e.message };
+    }
+  });
+
+
 export const listarRegrasDepreciacaoFn = createServerFn({ method: "GET" })
   .handler(async () => {
     try {
