@@ -57,8 +57,11 @@ export const migrateDb = async () => {
     
     const { ensureAutomacoesSchema } = await import('./automacoes.server');
     const { ensureConversasSchema } = await import("./conversas.server");
+    const { ensureRelatoriosSchema } = await import("./relatorios.server");
     await ensureConversasSchema();
     await ensureAutomacoesSchema();
+    await ensureRelatoriosSchema();
+
   } catch (error) {
     console.error('❌ Falha na migração:', error);
   }

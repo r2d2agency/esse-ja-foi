@@ -8,22 +8,25 @@ const FilterSchema = z.object({
 });
 
 export const getRelatoriosGeraisFn = createServerFn({ method: "GET" })
-  .input(FilterSchema)
-  .handler(async ({ input }) => {
+  .validator((data: unknown) => FilterSchema.parse(data))
+  .handler(async ({ data }) => {
+
     try {
-      const data = await getRelatoriosGerais(input);
-      return { ok: true as const, data };
+      const res = await getRelatoriosGerais(data);
+      return { ok: true as const, data: res };
+
     } catch (e: any) {
       return { ok: false as const, message: e.message };
     }
   });
 
 export const getRelatoriosVendasFn = createServerFn({ method: "GET" })
-  .input(FilterSchema)
-  .handler(async ({ input }) => {
+  .validator((data: unknown) => FilterSchema.parse(data))
+  .handler(async ({ data }) => {
+
     try {
-      const data = await getRelatoriosVendas(input);
-      return { ok: true as const, data };
+      const res = await getRelatoriosVendas(data);
+      return { ok: true as const, data: res };
     } catch (e: any) {
       return { ok: false as const, message: e.message };
     }
