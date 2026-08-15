@@ -37,7 +37,7 @@ export async function getRelatoriosGerais(filtros: { dataInicio?: string | null;
       (SELECT count(*)::int FROM vistorias WHERE status = 'CONCLUIDA' ${andWhereClause}) as vistoriados,
       (SELECT count(*)::int FROM veiculos WHERE status = 'PRONTO_PARA_ANUNCIO' ${andWhereClause}) as prontos_anuncio,
       (SELECT count(*)::int FROM anuncios_veiculo ${andWhereClause}) as publicados,
-      (SELECT count(DISTINCT leilao_id)::int FROM leiloes_lances ${andWhereClause}) as com_lances,
+      (SELECT count(DISTINCT leilao_id)::int FROM lances ${andWhereClause}) as com_lances,
       (SELECT count(*)::int FROM negociacoes ${andWhereClause}) as com_vencedor,
       (SELECT count(*)::int FROM cobrancas WHERE status = 'PAGO' ${andWhereClause}) as pagos,
       (SELECT count(*)::int FROM entregas WHERE status = 'ENTREGA_CONFIRMADA' ${andWhereClause}) as entregues,

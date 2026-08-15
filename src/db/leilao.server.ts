@@ -14,7 +14,7 @@ export async function ensureLeilaoSchema() {
   await d.execute(sql`
     CREATE TABLE IF NOT EXISTS leiloes (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      anuncio_id uuid NOT NULL REFERENCES anuncios_veiculo(id) ON DELETE CASCADE,
+      veiculo_id uuid NOT NULL REFERENCES veiculos(id) ON DELETE CASCADE,
       inicio_em timestamptz NOT NULL,
       fim_em timestamptz NOT NULL,
       lance_inicial numeric(12,2) NOT NULL,
@@ -50,12 +50,21 @@ export async function ensureLeilaoSchema() {
 
 export async function configurarLeilao(data: any) {
   const d = requireDb();
+  // Se receber anuncio_id, precisamos descobrir o veiculo_id correspondente
+  let veiculoId = data.veiculo_id;
+  if (!veiculoId && data.anuncio_id) {
+    const aRes = await d.execute(sql`SELECT veiculo_id FROM anuncios_veiculo WHERE id = ${data.anuncio_id}::uuid`);
+    veiculoId = (aRes as any).rows[0]?.veiculo_id;
+  }
+
+  if (!veiculoId) throw new Error("veiculo_id não fornecido e não pôde ser determinado pelo anuncio_id.");
+
   const res = await d.execute(sql`
     INSERT INTO leiloes (
-      anuncio_id, inicio_em, fim_em, lance_inicial, incremento_minimo, 
+      veiculo_id, inicio_em, fim_em, lance_inicial, incremento_minimo, 
       prorrogacao_ativa, prorrogacao_janela_segundos, prorrogacao_tempo_segundos, status
     ) VALUES (
-      ${data.anuncio_id}::uuid, ${data.inicio_em}, ${data.fim_em}, 
+      ${veiculoId}::uuid, ${data.inicio_em}, ${data.fim_em}, 
       ${data.lance_inicial}, ${data.incremento_minimo}, 
       ${data.prorrogacao_ativa}, ${data.prorrogacao_janela_segundos}, ${data.prorrogacao_tempo_segundos},
       'AGENDADO'
@@ -100,18 +109,24 @@ export async function registrarLance(leilaoId: string, compradorId: string, valo
 
     // 3. Buscar maior lance atual
     const maxRes = await tx.execute(sql`
-      SELECT valor FROM lances WHERE leilao_id = ${leilaoId}::uuid ORDER BY valor DESC LIMIT 1
+      SELECT valor, comprador_id FROM lances WHERE leilao_id = ${leilaoId}::uuid ORDER BY valor DESC LIMIT 1
     `);
-    const maiorLance = (maxRes as any).rows[0]?.valor || leilao.lance_inicial;
-    const lanceMinimoNecessario = Number(maiorLance) + Number(leilao.incremento_minimo);
+    const maiorLanceAnterior = (maxRes as any).rows[0];
+    const valorMaiorLance = maiorLanceAnterior?.valor || leilao.lance_inicial;
+    const lanceMinimoNecessario = Number(valorMaiorLance) + Number(leilao.incremento_minimo);
 
     if (valor < lanceMinimoNecessario) {
       throw new Error(`O próximo lance mínimo é R$ ${lanceMinimoNecessario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
     }
 
     // 4. Registrar lance
-    await tx.execute(sql`
+    const res = await tx.execute(sql`
       INSERT INTO lances (leilao_id, comprador_id, valor, ip_origem, user_agent)
+      VALUES (${leilaoId}::uuid, ${compradorId}::uuid, ${valor}, ${ip || null}, ${ua || null})
+      RETURNING id
+    `);
+    const lanceId = (res as any).rows?.[0]?.id;
+
     const { processarEventoSistema } = await import("./automacoes-motor.server");
     if (maiorLanceAnterior) {
       await processarEventoSistema("LANCE_SUPERADO", {
@@ -119,11 +134,9 @@ export async function registrarLance(leilaoId: string, compradorId: string, valo
         comprador_superado_id: maiorLanceAnterior.comprador_id,
         veiculo: leilao.veiculo,
         lance: { valor_atual: valor },
-        referencia_id: leilaoId
+        referencia_id: lanceId
       });
     }
-      VALUES (${leilaoId}::uuid, ${compradorId}::uuid, ${valor}, ${ip || null}, ${ua || null})
-    `);
 
     // 5. Tratar prorrogação automática (Anti-sniping)
     let novoFim = leilao.fim_em;
@@ -156,7 +169,7 @@ export async function getEstadoLeilao(leilaoId: string) {
       (SELECT count(*)::int FROM lances WHERE leilao_id = l.id) as total_lances,
       (SELECT count(distinct comprador_id)::int FROM lances WHERE leilao_id = l.id) as total_participantes
     FROM leiloes l
-    JOIN anuncios_veiculo a ON l.anuncio_id = a.id
+    JOIN anuncios_veiculo a ON l.veiculo_id = a.veiculo_id
     WHERE l.id = ${leilaoId}::uuid
   `);
   
@@ -205,7 +218,7 @@ export async function listarLeiloesAdmin(status?: string) {
       (SELECT valor FROM lances WHERE leilao_id = l.id ORDER BY valor DESC LIMIT 1) as lance_atual,
       (SELECT count(*) FROM lances WHERE leilao_id = l.id) as qtd_lances
     FROM leiloes l
-    JOIN anuncios_veiculo a ON l.anuncio_id = a.id
+    JOIN anuncios_veiculo a ON l.veiculo_id = a.veiculo_id
     ${status ? sql`WHERE l.status = ${status}` : sql``}
     ORDER BY l.criado_em DESC
   `);
