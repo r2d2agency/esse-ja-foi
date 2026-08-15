@@ -51,17 +51,58 @@ export const solicitarResetSenha = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { db } = await import("@/db/index");
-      const { ensureCadastroSchema } = await import("@/db/cadastro.server");
       const { sql } = await import("drizzle-orm");
       if (!db) return { ok: false as const, message: "Banco de dados indisponível no momento." };
-      await ensureCadastroSchema();
+      
+      const { gerarEnviarOTP } = await import("@/db/mail.server");
+      
+      // Verifica se o e-mail existe
+      const rows = await db.execute(sql`SELECT id FROM profiles WHERE lower(email) = lower(${data.email})`);
+      if ((rows as any).rows?.length > 0 || (rows as any).length > 0) {
+        await gerarEnviarOTP(data.email.toLowerCase(), 'RECOVERY');
+      }
+
       await db.execute(sql`
         INSERT INTO logs (entidade, acao, detalhe, usuario)
         VALUES (${"auth"}, ${"RESET_SENHA_SOLICITADO"}, ${data.email.toLowerCase()}, ${data.email.toLowerCase()});
       `);
       return { ok: true as const };
-    } catch (error) {
-      console.error("Falha ao registrar solicitação de reset:", error);
-      return { ok: false as const, message: "Não foi possível registrar a solicitação. Tente novamente." };
+    } catch (error: any) {
+      console.error("Falha ao processar solicitação de reset:", error);
+      return { ok: false as const, message: error.message || "Não foi possível processar a solicitação." };
     }
   });
+
+export const validarOTPResetFn = createServerFn({ method: "POST" })
+  .validator((data: any) => z.object({ email: z.string().email(), code: z.string() }).parse(data))
+  .handler(async ({ data }) => {
+    const { validarOTP } = await import("@/db/mail.server");
+    const ok = await validarOTP(data.email, data.code, 'RECOVERY');
+    return { ok };
+  });
+
+export const resetarSenhaFinalFn = createServerFn({ method: "POST" })
+  .validator((data: any) => z.object({ 
+    email: z.string().email(), 
+    code: z.string(), 
+    newPassword: z.string().min(6) 
+  }).parse(data))
+  .handler(async ({ data }) => {
+    const { db } = await import("@/db/index");
+    const { sql } = await import("drizzle-orm");
+    const { hashPassword } = await import("@/db/auth.server");
+    const { validarOTP } = await import("@/db/mail.server");
+    
+    // Validamos novamente por segurança
+    const ok = await validarOTP(data.email, data.code, 'RECOVERY');
+    if (!ok) return { ok: false, message: "Código inválido ou expirado." };
+
+    const newHash = await hashPassword(data.newPassword);
+    await db!.execute(sql`
+      UPDATE profiles SET senha_hash = ${newHash}, atualizado_em = now() 
+      WHERE lower(email) = lower(${data.email})
+    `);
+
+    return { ok: true };
+  });
+
