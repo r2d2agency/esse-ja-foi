@@ -198,26 +198,36 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
       }
     }
 
-    await db.execute(sql`
-      UPDATE profiles 
-      SET 
-        cpf = CASE WHEN ${data.cpf}::text IS NOT NULL THEN ${data.cpf}::text ELSE cpf END,
-        cep = CASE WHEN ${data.cep}::text IS NOT NULL THEN ${data.cep}::text ELSE cep END,
-        endereco = CASE WHEN ${data.endereco}::text IS NOT NULL THEN ${data.endereco}::text ELSE endereco END,
-        numero = CASE WHEN ${data.numero}::text IS NOT NULL THEN ${data.numero}::text ELSE numero END,
-        bairro = CASE WHEN ${data.bairro}::text IS NOT NULL THEN ${data.bairro}::text ELSE bairro END,
-        complemento = CASE WHEN ${data.complemento}::text IS NOT NULL THEN ${data.complemento}::text ELSE complemento END,
-        cidade = CASE WHEN ${data.cidade}::text IS NOT NULL THEN ${data.cidade}::text ELSE cidade END,
-        uf = CASE WHEN ${data.uf}::text IS NOT NULL THEN ${data.uf}::text ELSE uf END,
-        documento_cnh_url = CASE WHEN ${data.cnhUrl}::text IS NOT NULL THEN ${data.cnhUrl}::text ELSE documento_cnh_url END,
-        documento_cnh_verso_url = CASE WHEN ${data.cnhVersoUrl}::text IS NOT NULL THEN ${data.cnhVersoUrl}::text ELSE documento_cnh_verso_url END,
-        documento_crlv_url = CASE WHEN ${data.crlvUrl}::text IS NOT NULL THEN ${data.crlvUrl}::text ELSE documento_crlv_url END,
-        documento_selfie_url = CASE WHEN ${data.selfieUrl}::text IS NOT NULL THEN ${data.selfieUrl}::text ELSE documento_selfie_url END,
-        documento_comprovante_endereco_url = CASE WHEN ${data.comprovanteEnderecoUrl}::text IS NOT NULL THEN ${data.comprovanteEnderecoUrl}::text ELSE documento_comprovante_endereco_url END,
-        cadastro_completo = CASE WHEN ${data.finalizar ?? false} = true THEN true ELSE cadastro_completo END,
-        atualizado_em = now()
-      WHERE id = ${data.perfilId}::uuid;
-    `);
+    const updates: any[] = [];
+    
+    if (data.cpf !== undefined) updates.push(sql`cpf = ${data.cpf}`);
+    if (data.cep !== undefined) updates.push(sql`cep = ${data.cep}`);
+    if (data.endereco !== undefined) updates.push(sql`endereco = ${data.endereco}`);
+    if (data.numero !== undefined) updates.push(sql`numero = ${data.numero}`);
+    if (data.bairro !== undefined) updates.push(sql`bairro = ${data.bairro}`);
+    if (data.complemento !== undefined) updates.push(sql`complemento = ${data.complemento}`);
+    if (data.cidade !== undefined) updates.push(sql`cidade = ${data.cidade}`);
+    if (data.uf !== undefined) updates.push(sql`uf = ${data.uf}`);
+    
+    if (data.cnhUrl !== undefined) updates.push(sql`documento_cnh_url = ${data.cnhUrl}`);
+    if (data.cnhVersoUrl !== undefined) updates.push(sql`documento_cnh_verso_url = ${data.cnhVersoUrl}`);
+    if (data.crlvUrl !== undefined) updates.push(sql`documento_crlv_url = ${data.crlvUrl}`);
+    if (data.selfieUrl !== undefined) updates.push(sql`documento_selfie_url = ${data.selfieUrl}`);
+    if (data.comprovanteEnderecoUrl !== undefined) updates.push(sql`documento_comprovante_endereco_url = ${data.comprovanteEnderecoUrl}`);
+    
+    if (data.finalizar !== undefined) {
+      updates.push(sql`cadastro_completo = ${data.finalizar}`);
+    }
+
+    if (updates.length > 0) {
+      updates.push(sql`atualizado_em = now()`);
+      const setClause = sql.join(updates, sql`, `);
+      await db.execute(sql`
+        UPDATE profiles 
+        SET ${setClause}
+        WHERE id = ${data.perfilId}::uuid;
+      `);
+    }
     
     return { ok: true as const };
   });
