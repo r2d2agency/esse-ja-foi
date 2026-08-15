@@ -117,7 +117,7 @@ function AdminEntregas() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <header>
         <h1 className="text-2xl font-black uppercase tracking-tight text-slate-900">Entregas</h1>
         <p className="text-sm font-medium text-slate-500">Organize a entrega dos veículos com pagamento confirmado.</p>
