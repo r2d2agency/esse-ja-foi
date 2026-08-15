@@ -39,7 +39,7 @@ function RelatoriosPage() {
 
   const { data: gerais, isLoading: loadingGerais } = useQuery({
     queryKey: ["relatorios-gerais", { periodo, dataInicio, dataFim }],
-    queryFn: () => getGerais({ dataInicio, dataFim })
+    queryFn: () => getGerais({ data: { dataInicio, dataFim } })
   });
 
   return (

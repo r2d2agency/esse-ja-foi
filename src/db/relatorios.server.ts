@@ -7,7 +7,7 @@ export async function ensureRelatoriosSchema() {
   // For now, we just ensure existing tables used in reports are indexed if needed.
 }
 
-export async function getRelatoriosGerais(filtros: { dataInicio?: string; dataFim?: string }) {
+export async function getRelatoriosGerais(filtros: { dataInicio?: string | null; dataFim?: string | null }) {
   if (!db) return null;
 
   const whereClause = filtros.dataInicio && filtros.dataFim 
@@ -50,7 +50,7 @@ export async function getRelatoriosGerais(filtros: { dataInicio?: string; dataFi
   };
 }
 
-export async function getRelatoriosVendas(filtros: { dataInicio?: string; dataFim?: string }) {
+export async function getRelatoriosVendas(filtros: { dataInicio?: string | null; dataFim?: string | null }) {
   if (!db) return null;
   const whereClause = filtros.dataInicio && filtros.dataFim 
     ? sql`WHERE n.criado_em BETWEEN ${filtros.dataInicio} AND ${filtros.dataFim}`

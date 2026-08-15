@@ -3,9 +3,10 @@ import { getRelatoriosGerais, getRelatoriosVendas } from "@/db/relatorios.server
 import { z } from "zod";
 
 const FilterSchema = z.object({
-  dataInicio: z.string().optional(),
-  dataFim: z.string().optional(),
+  dataInicio: z.string().nullable().optional(),
+  dataFim: z.string().nullable().optional(),
 });
+
 
 export const getRelatoriosGeraisFn = createServerFn({ method: "GET" })
   .validator((data: unknown) => FilterSchema.parse(data))
