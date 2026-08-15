@@ -201,20 +201,21 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
     await db.execute(sql`
       UPDATE profiles 
       SET 
-        cpf = CASE WHEN ${data.cpf} IS NOT NULL THEN ${data.cpf}::text ELSE cpf END,
-        cep = CASE WHEN ${data.cep} IS NOT NULL THEN ${data.cep}::text ELSE cep END,
-        endereco = CASE WHEN ${data.endereco} IS NOT NULL THEN ${data.endereco}::text ELSE endereco END,
-        numero = CASE WHEN ${data.numero} IS NOT NULL THEN ${data.numero}::text ELSE numero END,
-        bairro = CASE WHEN ${data.bairro} IS NOT NULL THEN ${data.bairro}::text ELSE bairro END,
-        complemento = CASE WHEN ${data.complemento} IS NOT NULL THEN ${data.complemento}::text ELSE complemento END,
-        cidade = CASE WHEN ${data.cidade} IS NOT NULL THEN ${data.cidade}::text ELSE cidade END,
-        uf = CASE WHEN ${data.uf} IS NOT NULL THEN ${data.uf}::text ELSE uf END,
-        documento_cnh_url = CASE WHEN ${data.cnhUrl} IS NOT NULL THEN ${data.cnhUrl}::text ELSE documento_cnh_url END,
-        documento_cnh_verso_url = CASE WHEN ${data.cnhVersoUrl} IS NOT NULL THEN ${data.cnhVersoUrl}::text ELSE documento_cnh_verso_url END,
-        documento_crlv_url = CASE WHEN ${data.crlvUrl} IS NOT NULL THEN ${data.crlvUrl}::text ELSE documento_crlv_url END,
-        documento_selfie_url = CASE WHEN ${data.selfieUrl} IS NOT NULL THEN ${data.selfieUrl}::text ELSE documento_selfie_url END,
-        documento_comprovante_endereco_url = CASE WHEN ${data.comprovanteEnderecoUrl} IS NOT NULL THEN ${data.comprovanteEnderecoUrl}::text ELSE documento_comprovante_endereco_url END,
-        cadastro_completo = CASE WHEN ${data.finalizar ?? false} = true THEN true ELSE cadastro_completo END
+        cpf = COALESCE(${data.cpf}::text, cpf),
+        cep = COALESCE(${data.cep}::text, cep),
+        endereco = COALESCE(${data.endereco}::text, endereco),
+        numero = COALESCE(${data.numero}::text, numero),
+        bairro = COALESCE(${data.bairro}::text, bairro),
+        complemento = COALESCE(${data.complemento}::text, complemento),
+        cidade = COALESCE(${data.cidade}::text, cidade),
+        uf = COALESCE(${data.uf}::text, uf),
+        documento_cnh_url = COALESCE(${data.cnhUrl}::text, documento_cnh_url),
+        documento_cnh_verso_url = COALESCE(${data.cnhVersoUrl}::text, documento_cnh_verso_url),
+        documento_crlv_url = COALESCE(${data.crlvUrl}::text, documento_crlv_url),
+        documento_selfie_url = COALESCE(${data.selfieUrl}::text, documento_selfie_url),
+        documento_comprovante_endereco_url = COALESCE(${data.comprovanteEnderecoUrl}::text, documento_comprovante_endereco_url),
+        cadastro_completo = CASE WHEN ${data.finalizar ?? false} = true THEN true ELSE cadastro_completo END,
+        atualizado_em = now()
       WHERE id = ${data.perfilId}::uuid;
     `);
     
