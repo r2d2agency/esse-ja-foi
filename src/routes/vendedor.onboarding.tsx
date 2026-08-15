@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Car, Loader2, ArrowRight, Save, Camera, Check, User, MapPin, FileCheck, Search } from 'lucide-react';
+import { Car, Loader2, ArrowRight, Save, Camera, Check, User, MapPin, FileCheck, Search, AlertTriangle } from 'lucide-react';
 import { ComboboxSearch } from '@/components/ui/combobox-search';
 import { ESTADOS_CIVIS, PROFISSOES, UFS } from '@/lib/constants-veiculos';
 import { useState, useEffect, useRef } from 'react';
@@ -86,8 +86,10 @@ function VendedorOnboarding() {
           cidade: addressData.cidade,
           uf: addressData.uf,
           cnhUrl: files.cnhFrente || undefined, // Simplified for now
+          cnhVersoUrl: files.cnhVerso || undefined,
           crlvUrl: files.crlv || undefined,
           selfieUrl: files.selfie || undefined,
+          comprovanteEnderecoUrl: files.comprovanteEndereco || undefined,
           finalizar
         }
       });
@@ -119,6 +121,10 @@ function VendedorOnboarding() {
   const handleFinalizar = async () => {
     if (!agreedTerms || !agreedPrivacy) {
       toast.error("Você precisa aceitar os termos e a política de privacidade.");
+      return;
+    }
+    if (documentosFaltantes.length > 0) {
+      toast.error(`Envie todos os documentos para concluir: ${documentosFaltantes.join(", ")}.`);
       return;
     }
     const ok = await saveProgress(true);
