@@ -174,6 +174,21 @@ export async function ensureAuthSchema(silent = true) {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'pode_ver_valores') THEN
           ALTER TABLE profiles ADD COLUMN pode_ver_valores boolean NOT NULL DEFAULT false;
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'documento_cnh_verso_url') THEN
+          ALTER TABLE profiles ADD COLUMN documento_cnh_verso_url text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'documento_comprovante_endereco_url') THEN
+          ALTER TABLE profiles ADD COLUMN documento_comprovante_endereco_url text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'numero') THEN
+          ALTER TABLE profiles ADD COLUMN numero text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'bairro') THEN
+          ALTER TABLE profiles ADD COLUMN bairro text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'complemento') THEN
+          ALTER TABLE profiles ADD COLUMN complemento text;
+        END IF;
       END $$;
     `);
 

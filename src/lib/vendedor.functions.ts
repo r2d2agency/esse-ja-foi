@@ -160,16 +160,19 @@ export const cadastrarMeuVeiculoFn = createServerFn({ method: "POST" })
 export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
   .validator(z.object({
     perfilId: z.string().uuid(),
-    cpf: z.string().optional(),
-    cep: z.string().optional(),
-    endereco: z.string().optional(),
-    cidade: z.string().optional(),
-    uf: z.string().optional(),
-    cnhUrl: z.string().optional(),
-    cnhVersoUrl: z.string().optional(),
-    crlvUrl: z.string().optional(),
-    selfieUrl: z.string().optional(),
-    comprovanteEnderecoUrl: z.string().optional(),
+    cpf: z.string().optional().nullable(),
+    cep: z.string().optional().nullable(),
+    endereco: z.string().optional().nullable(),
+    numero: z.string().optional().nullable(),
+    bairro: z.string().optional().nullable(),
+    complemento: z.string().optional().nullable(),
+    cidade: z.string().optional().nullable(),
+    uf: z.string().optional().nullable(),
+    cnhUrl: z.string().optional().nullable(),
+    cnhVersoUrl: z.string().optional().nullable(),
+    crlvUrl: z.string().optional().nullable(),
+    selfieUrl: z.string().optional().nullable(),
+    comprovanteEnderecoUrl: z.string().optional().nullable(),
     finalizar: z.boolean().optional(),
   }))
   .handler(async ({ data }) => {
@@ -198,19 +201,21 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
     await db.execute(sql`
       UPDATE profiles 
       SET 
-        cpf = COALESCE(${data.cpf ?? null}, cpf),
-        cep = COALESCE(${data.cep ?? null}, cep),
-        endereco = COALESCE(${data.endereco ?? null}, endereco),
-        cidade = COALESCE(${data.cidade ?? null}, cidade),
-        uf = COALESCE(${data.uf ?? null}, uf),
-        documento_cnh_url = COALESCE(${data.cnhUrl ?? null}, documento_cnh_url),
-        documento_cnh_verso_url = COALESCE(${data.cnhVersoUrl ?? null}, documento_cnh_verso_url),
-        documento_crlv_url = COALESCE(${data.crlvUrl ?? null}, documento_crlv_url),
-        documento_selfie_url = COALESCE(${data.selfieUrl ?? null}, documento_selfie_url),
-        documento_comprovante_endereco_url = COALESCE(${data.comprovanteEnderecoUrl ?? null}, documento_comprovante_endereco_url),
+        cpf = COALESCE(${data.cpf || null}, cpf),
+        cep = COALESCE(${data.cep || null}, cep),
+        endereco = COALESCE(${data.endereco || null}, endereco),
+        numero = COALESCE(${data.numero || null}, numero),
+        bairro = COALESCE(${data.bairro || null}, bairro),
+        complemento = COALESCE(${data.complemento || null}, complemento),
+        cidade = COALESCE(${data.cidade || null}, cidade),
+        uf = COALESCE(${data.uf || null}, uf),
+        documento_cnh_url = COALESCE(${data.cnhUrl || null}, documento_cnh_url),
+        documento_cnh_verso_url = COALESCE(${data.cnhVersoUrl || null}, documento_cnh_verso_url),
+        documento_crlv_url = COALESCE(${data.crlvUrl || null}, documento_crlv_url),
+        documento_selfie_url = COALESCE(${data.selfieUrl || null}, documento_selfie_url),
+        documento_comprovante_endereco_url = COALESCE(${data.comprovanteEnderecoUrl || null}, documento_comprovante_endereco_url),
         cadastro_completo = CASE WHEN ${data.finalizar ?? false} = true THEN true ELSE cadastro_completo END
       WHERE id = ${data.perfilId}::uuid;
-
     `);
     
     return { ok: true as const };
