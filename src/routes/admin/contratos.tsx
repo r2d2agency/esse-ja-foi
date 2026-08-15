@@ -45,7 +45,7 @@ function ContratosPage() {
   const modelos: any[] = (res as any)?.modelos ?? [];
 
   return (
-    <div className="p-8 space-y-6 max-w-[1400px] mx-auto">
+    <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
 
       <div>
         <h1 className="text-2xl font-black text-slate-950 uppercase tracking-tight">Contratos</h1>
