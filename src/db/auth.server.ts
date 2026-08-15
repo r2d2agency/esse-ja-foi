@@ -125,6 +125,39 @@ export async function ensureSuperAdmin(silent = true) {
         cadastro_completo boolean NOT NULL DEFAULT false
       );
     `);
+    
+    await db.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'cpf') THEN
+          ALTER TABLE profiles ADD COLUMN cpf text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'cep') THEN
+          ALTER TABLE profiles ADD COLUMN cep text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'endereco') THEN
+          ALTER TABLE profiles ADD COLUMN endereco text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'cidade') THEN
+          ALTER TABLE profiles ADD COLUMN cidade text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'uf') THEN
+          ALTER TABLE profiles ADD COLUMN uf text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'documento_cnh_url') THEN
+          ALTER TABLE profiles ADD COLUMN documento_cnh_url text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'documento_crlv_url') THEN
+          ALTER TABLE profiles ADD COLUMN documento_crlv_url text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'documento_selfie_url') THEN
+          ALTER TABLE profiles ADD COLUMN documento_selfie_url text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'cadastro_completo') THEN
+          ALTER TABLE profiles ADD COLUMN cadastro_completo boolean NOT NULL DEFAULT false;
+        END IF;
+      END $$;
+    `);
 
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS veiculos (
