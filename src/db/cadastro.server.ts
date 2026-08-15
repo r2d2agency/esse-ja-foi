@@ -88,6 +88,7 @@ export async function ensureCadastroSchema(silent = true) {
       modelo text NOT NULL,
       status text NOT NULL DEFAULT 'CADASTRADO',
       perfil_id uuid,
+      vendedor_id uuid,
       cliente_id uuid,
       ano_fabricacao text,
       ano_modelo text,
@@ -119,11 +120,14 @@ export async function ensureCadastroSchema(silent = true) {
     await d.execute(sql`
       DO $$
       BEGIN
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'veiculos' AND column_name = 'placa') THEN
-          ALTER TABLE veiculos ADD COLUMN placa text NOT NULL;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'veiculos' AND column_name = 'vendedor_id') THEN
+          ALTER TABLE veiculos ADD COLUMN vendedor_id uuid;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'veiculos' AND column_name = 'perfil_id') THEN
+          ALTER TABLE veiculos ADD COLUMN perfil_id uuid;
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'veiculos' AND column_name = 'status_analise') THEN
-          ALTER TABLE veiculos ADD COLUMN status_analise text DEFAULT 'PENDENTE';
+          ALTER TABLE veiculos ADD COLUMN status_analise text DEFAULT 'AGUARDANDO_ANALISE';
         END IF;
       END $$;
     `);
