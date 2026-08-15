@@ -201,19 +201,19 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
     await db.execute(sql`
       UPDATE profiles 
       SET 
-        cpf = COALESCE(${data.cpf ?? null}, cpf),
-        cep = COALESCE(${data.cep ?? null}, cep),
-        endereco = COALESCE(${data.endereco ?? null}, endereco),
-        numero = COALESCE(${data.numero ?? null}, numero),
-        bairro = COALESCE(${data.bairro ?? null}, bairro),
-        complemento = COALESCE(${data.complemento ?? null}, complemento),
-        cidade = COALESCE(${data.cidade ?? null}, cidade),
-        uf = COALESCE(${data.uf ?? null}, uf),
-        documento_cnh_url = COALESCE(${data.cnhUrl ?? null}, documento_cnh_url),
-        documento_cnh_verso_url = COALESCE(${data.cnhVersoUrl ?? null}, documento_cnh_verso_url),
-        documento_crlv_url = COALESCE(${data.crlvUrl ?? null}, documento_crlv_url),
-        documento_selfie_url = COALESCE(${data.selfieUrl ?? null}, documento_selfie_url),
-        documento_comprovante_endereco_url = COALESCE(${data.comprovanteEnderecoUrl ?? null}, documento_comprovante_endereco_url),
+        cpf = CASE WHEN ${data.cpf ?? null} IS NOT NULL THEN ${data.cpf} ELSE cpf END,
+        cep = CASE WHEN ${data.cep ?? null} IS NOT NULL THEN ${data.cep} ELSE cep END,
+        endereco = CASE WHEN ${data.endereco ?? null} IS NOT NULL THEN ${data.endereco} ELSE endereco END,
+        numero = CASE WHEN ${data.numero ?? null} IS NOT NULL THEN ${data.numero} ELSE numero END,
+        bairro = CASE WHEN ${data.bairro ?? null} IS NOT NULL THEN ${data.bairro} ELSE bairro END,
+        complemento = CASE WHEN ${data.complemento ?? null} IS NOT NULL THEN ${data.complemento} ELSE complemento END,
+        cidade = CASE WHEN ${data.cidade ?? null} IS NOT NULL THEN ${data.cidade} ELSE cidade END,
+        uf = CASE WHEN ${data.uf ?? null} IS NOT NULL THEN ${data.uf} ELSE uf END,
+        documento_cnh_url = CASE WHEN ${data.cnhUrl ?? null} IS NOT NULL THEN ${data.cnhUrl} ELSE documento_cnh_url END,
+        documento_cnh_verso_url = CASE WHEN ${data.cnhVersoUrl ?? null} IS NOT NULL THEN ${data.cnhVersoUrl} ELSE documento_cnh_verso_url END,
+        documento_crlv_url = CASE WHEN ${data.crlvUrl ?? null} IS NOT NULL THEN ${data.crlvUrl} ELSE documento_crlv_url END,
+        documento_selfie_url = CASE WHEN ${data.selfieUrl ?? null} IS NOT NULL THEN ${data.selfieUrl} ELSE documento_selfie_url END,
+        documento_comprovante_endereco_url = CASE WHEN ${data.comprovanteEnderecoUrl ?? null} IS NOT NULL THEN ${data.comprovanteEnderecoUrl} ELSE documento_comprovante_endereco_url END,
         cadastro_completo = CASE WHEN ${data.finalizar ?? false} = true THEN true ELSE cadastro_completo END
       WHERE id = ${data.perfilId}::uuid;
     `);

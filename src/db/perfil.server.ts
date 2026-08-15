@@ -17,6 +17,11 @@ const COLUNAS: [string, string][] = [
   ['documento_selfie_url', 'text'],
   ['documento_comprovante_endereco_url', 'text'],
   ['cadastro_completo', 'boolean NOT NULL DEFAULT false'],
+  ['tipo_pessoa', 'text DEFAULT \'PF\''],
+  ['cnpj', 'text'],
+  ['status_compliance', 'text DEFAULT \'PENDENTE\''],
+  ['responsavel_nome', 'text'],
+  ['pode_ver_valores', 'boolean NOT NULL DEFAULT false'],
   ['atualizado_em', 'timestamptz NOT NULL DEFAULT now()'],
 ];
 
