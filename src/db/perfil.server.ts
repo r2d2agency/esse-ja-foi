@@ -12,8 +12,10 @@ const COLUNAS: [string, string][] = [
   ['cidade', 'text'],
   ['uf', 'text'],
   ['documento_cnh_url', 'text'],
+  ['documento_cnh_verso_url', 'text'],
   ['documento_crlv_url', 'text'],
   ['documento_selfie_url', 'text'],
+  ['documento_comprovante_endereco_url', 'text'],
   ['cadastro_completo', 'boolean NOT NULL DEFAULT false'],
   ['atualizado_em', 'timestamptz NOT NULL DEFAULT now()'],
 ];

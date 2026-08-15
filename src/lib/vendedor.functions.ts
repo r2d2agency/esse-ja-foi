@@ -166,15 +166,35 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
     cidade: z.string().optional(),
     uf: z.string().optional(),
     cnhUrl: z.string().optional(),
+    cnhVersoUrl: z.string().optional(),
     crlvUrl: z.string().optional(),
     selfieUrl: z.string().optional(),
+    comprovanteEnderecoUrl: z.string().optional(),
     finalizar: z.boolean().optional(),
   }))
   .handler(async ({ data }) => {
     const { db } = await import("@/db/index");
     const { sql } = await import("drizzle-orm");
     if (!db) throw new Error("Banco de dados indisponível");
-    
+
+    if (data.finalizar) {
+      const atual = (await db.execute(sql`
+        SELECT documento_cnh_url, documento_cnh_verso_url, documento_crlv_url,
+               documento_selfie_url, documento_comprovante_endereco_url
+        FROM profiles WHERE id = ${data.perfilId}::uuid
+      `)) as any;
+      const p = atual.rows?.[0] || atual[0] || {};
+      const faltando: string[] = [];
+      if (!(data.cnhUrl || p.documento_cnh_url)) faltando.push("CNH (frente)");
+      if (!(data.cnhVersoUrl || p.documento_cnh_verso_url)) faltando.push("CNH (verso)");
+      if (!(data.crlvUrl || p.documento_crlv_url)) faltando.push("CRLV-e");
+      if (!(data.comprovanteEnderecoUrl || p.documento_comprovante_endereco_url)) faltando.push("Comprovante de residência");
+      if (!(data.selfieUrl || p.documento_selfie_url)) faltando.push("Selfie de validação");
+      if (faltando.length) {
+        throw new Error(`Envie todos os documentos para concluir: ${faltando.join(", ")}.`);
+      }
+    }
+
     await db.execute(sql`
       UPDATE profiles 
       SET 
@@ -184,8 +204,10 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
         cidade = COALESCE(${data.cidade ?? null}, cidade),
         uf = COALESCE(${data.uf ?? null}, uf),
         documento_cnh_url = COALESCE(${data.cnhUrl ?? null}, documento_cnh_url),
+        documento_cnh_verso_url = COALESCE(${data.cnhVersoUrl ?? null}, documento_cnh_verso_url),
         documento_crlv_url = COALESCE(${data.crlvUrl ?? null}, documento_crlv_url),
         documento_selfie_url = COALESCE(${data.selfieUrl ?? null}, documento_selfie_url),
+        documento_comprovante_endereco_url = COALESCE(${data.comprovanteEnderecoUrl ?? null}, documento_comprovante_endereco_url),
         cadastro_completo = CASE WHEN ${data.finalizar ?? false} = true THEN true ELSE cadastro_completo END
       WHERE id = ${data.perfilId}::uuid;
 

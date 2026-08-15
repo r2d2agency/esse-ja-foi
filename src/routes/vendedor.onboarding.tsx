@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Car, Loader2, ArrowRight, Save, Camera, Check, User, MapPin, FileCheck, Search } from 'lucide-react';
+import { Car, Loader2, ArrowRight, Save, Camera, Check, User, MapPin, FileCheck, Search, AlertTriangle } from 'lucide-react';
 import { ComboboxSearch } from '@/components/ui/combobox-search';
 import { ESTADOS_CIVIS, PROFISSOES, UFS } from '@/lib/constants-veiculos';
 import { useState, useEffect, useRef } from 'react';
@@ -74,6 +74,15 @@ function VendedorOnboarding() {
     }
   }, [user]);
 
+  const DOCS_OBRIGATORIOS: { label: string; ok: boolean }[] = [
+    { label: "CNH (frente)", ok: !!files.cnhFrente },
+    { label: "CNH (verso)", ok: !!files.cnhVerso },
+    { label: "CRLV-e", ok: !!files.crlv },
+    { label: "Comprovante de residência", ok: !!files.comprovanteEndereco },
+    { label: "Selfie de validação", ok: !!files.selfie },
+  ];
+  const documentosFaltantes = DOCS_OBRIGATORIOS.filter((d) => !d.ok).map((d) => d.label);
+
   const saveProgress = async (finalizar = false) => {
     setIsSubmitting(true);
     try {
@@ -86,8 +95,10 @@ function VendedorOnboarding() {
           cidade: addressData.cidade,
           uf: addressData.uf,
           cnhUrl: files.cnhFrente || undefined, // Simplified for now
+          cnhVersoUrl: files.cnhVerso || undefined,
           crlvUrl: files.crlv || undefined,
           selfieUrl: files.selfie || undefined,
+          comprovanteEnderecoUrl: files.comprovanteEndereco || undefined,
           finalizar
         }
       });
@@ -119,6 +130,10 @@ function VendedorOnboarding() {
   const handleFinalizar = async () => {
     if (!agreedTerms || !agreedPrivacy) {
       toast.error("Você precisa aceitar os termos e a política de privacidade.");
+      return;
+    }
+    if (documentosFaltantes.length > 0) {
+      toast.error(`Envie todos os documentos para concluir: ${documentosFaltantes.join(", ")}.`);
       return;
     }
     const ok = await saveProgress(true);
@@ -254,11 +269,12 @@ function VendedorOnboarding() {
 
                 <div className="pt-4 border-t border-slate-100">
                    <FileUpload 
-                     label="Comprovante de endereço" 
-                     description="Contas de luz, água ou telefone de até 3 meses."
+                     label="Comprovante de residência *" 
+                     description="Obrigatório. Conta de luz, água ou telefone de até 3 meses."
                      value={files.comprovanteEndereco} 
                      onChange={url => setFiles({...files, comprovanteEndereco: url})} 
                    />
+                   <p className="mt-2 text-xs text-slate-400">Você pode continuar sem enviar agora, mas o cadastro só é concluído com todos os documentos.</p>
                 </div>
               </div>
             )}
@@ -273,12 +289,12 @@ function VendedorOnboarding() {
 
                 <div className="grid gap-6 md:grid-cols-2">
                    <FileUpload 
-                     label="CNH — Frente" 
+                     label="CNH — Frente *" 
                      value={files.cnhFrente} 
                      onChange={url => setFiles({...files, cnhFrente: url})} 
                    />
                    <FileUpload 
-                     label="CNH — Verso" 
+                     label="CNH — Verso *" 
                      value={files.cnhVerso} 
                      onChange={url => setFiles({...files, cnhVerso: url})} 
                    />
@@ -286,12 +302,12 @@ function VendedorOnboarding() {
 
                 <div className="pt-4 border-t border-slate-100">
                    <FileUpload 
-                     label="Documento do Veículo (CRLV-e)" 
-                     description="Se já tiver o veículo para vender, envie o CRLV-e."
+                     label="Documento do Veículo (CRLV-e) *" 
+                     description="Obrigatório para concluir o cadastro."
                      value={files.crlv} 
                      onChange={url => setFiles({...files, crlv: url})} 
                    />
-                   <p className="mt-2 text-[10px] text-slate-400 uppercase font-bold text-center">Opcional para conclusão do cadastro pessoal</p>
+                   <p className="mt-2 text-[10px] text-slate-400 uppercase font-bold text-center">Você pode pular agora, mas é exigido na conclusão</p>
                 </div>
               </div>
             )}
@@ -378,19 +394,18 @@ function VendedorOnboarding() {
                         <FileCheck className="w-5 h-5 text-teal-600" /> Documentos Enviados
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
-                       <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl">
-                          <Check className="w-3 h-3" /> CNH — Frente
-                       </div>
-                       <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl">
-                          <Check className="w-3 h-3" /> CNH — Verso
-                       </div>
-                       <div className={cn("flex items-center gap-2 text-xs font-bold px-3 py-2 rounded-xl", files.selfie ? "text-emerald-600 bg-emerald-50" : "text-slate-400 bg-slate-50")}>
-                          {files.selfie ? <Check className="w-3 h-3" /> : "○"} Selfie
-                       </div>
-                       <div className={cn("flex items-center gap-2 text-xs font-bold px-3 py-2 rounded-xl", files.crlv ? "text-emerald-600 bg-emerald-50" : "text-slate-400 bg-slate-50")}>
-                          {files.crlv ? <Check className="w-3 h-3" /> : "○"} CRLV-e
-                       </div>
+                       {DOCS_OBRIGATORIOS.map((d) => (
+                          <div key={d.label} className={cn("flex items-center gap-2 text-xs font-bold px-3 py-2 rounded-xl", d.ok ? "text-emerald-600 bg-emerald-50" : "text-amber-700 bg-amber-50")}>
+                             {d.ok ? <Check className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />} {d.label}
+                          </div>
+                       ))}
                     </div>
+                    {documentosFaltantes.length > 0 && (
+                      <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-xs text-amber-800">
+                        <p className="font-bold mb-1">Faltam {documentosFaltantes.length} documento(s) para concluir 100% do cadastro.</p>
+                        <p>Você pode salvar e voltar depois, mas o envio para análise só é liberado com todos os documentos.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -429,9 +444,9 @@ function VendedorOnboarding() {
                   <Button 
                     onClick={handleFinalizar} 
                     className="h-14 w-full md:flex-1 rounded-2xl bg-teal-600 text-white font-black text-lg shadow-xl shadow-teal-600/20"
-                    disabled={isSubmitting || !agreedTerms || !agreedPrivacy}
+                    disabled={isSubmitting || !agreedTerms || !agreedPrivacy || documentosFaltantes.length > 0}
                   >
-                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Enviar para análise"}
+                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : documentosFaltantes.length > 0 ? "Documentos pendentes" : "Enviar para análise"}
                   </Button>
                )}
                

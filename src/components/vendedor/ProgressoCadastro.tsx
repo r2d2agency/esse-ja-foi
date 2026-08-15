@@ -13,8 +13,17 @@ export function montarEtapas(profile: any): EtapaCadastro[] {
     { id: "conta", label: "Conta criada", concluida: true },
     { id: "dados", label: "Dados pessoais", concluida: Boolean(p.cpf) },
     { id: "endereco", label: "Endereço", concluida: Boolean(p.cidade && p.uf) },
-    { id: "documentos", label: "Documentos", concluida: Boolean(p.documento_cnh_url) },
-    { id: "validacao", label: "Validação", concluida: Boolean(p.documento_selfie_url) },
+    {
+      id: "documentos",
+      label: "Documentos (CNH, CRLV, comprovante)",
+      concluida: Boolean(
+        p.documento_cnh_url &&
+          p.documento_cnh_verso_url &&
+          p.documento_crlv_url &&
+          p.documento_comprovante_endereco_url
+      ),
+    },
+    { id: "validacao", label: "Selfie de validação", concluida: Boolean(p.documento_selfie_url) },
   ];
 }
 
