@@ -38,32 +38,83 @@ export const migrateDb = async () => {
     await migrate(db, { migrationsFolder: migrationsPath });
     // console.log('✅ Migrações concluídas.');
 
-    const { ensureAuthSchema, ensureSuperAdmin } = await import('./auth.server');
-    await ensureAuthSchema();
-    await ensureSuperAdmin();
-    
-    const { ensureCadastroSchema } = await import('./cadastro.server');
-    await ensureCadastroSchema();
+    // Trava global: impede que duas instâncias/requisições criem as mesmas
+    // tabelas ao mesmo tempo (causa de "duplicate key ... pg_type_typname_nsp_index").
+    const { sql } = await import('drizzle-orm');
+    await db.execute(sql`SELECT pg_advisory_lock(918273645)`);
+    try {
+      const { ensureAuthSchema, ensureSuperAdmin } = await import('./auth.server');
+      await ensureAuthSchema();
 
-    const { seedConfiguracoes, ensureLaudoSchema } = await import('./laudos.server');
-    await ensureLaudoSchema();
-    await seedConfiguracoes();
-    
-    const { ensureComunicacoesSchema } = await import('./comunicacoes.server');
-    await ensureComunicacoesSchema();
+      // Ordem importa: cada bloco depende das tabelas criadas pelos anteriores.
+      const { ensureCadastroSchema } = await import('./cadastro.server');
+      await ensureCadastroSchema();
 
-    const { ensureNegociacoesSchema } = await import('./negociacoes.server');
-    await ensureNegociacoesSchema();
-    
-    const { ensureAutomacoesSchema } = await import('./automacoes.server');
-    const { ensureConversasSchema } = await import("./conversas.server");
-    const { ensureRelatoriosSchema } = await import("./relatorios.server");
-    const { ensureMailSchema } = await import("./mail.server");
-    await ensureConversasSchema();
-    await ensureAutomacoesSchema();
-    await ensureRelatoriosSchema();
-    await ensureMailSchema();
+      const { ensureVeiculosAdminSchema } = await import('./admin-veiculos.server');
+      await ensureVeiculosAdminSchema();
 
+      const { ensureVendedoresSchema } = await import('./vendedores-compliance.server');
+      await ensureVendedoresSchema();
+
+      const { ensureContratosSchema } = await import('./contratos.server');
+      await ensureContratosSchema();
+
+      const { ensureVistoriaSchema } = await import('./vistorias.server');
+      await ensureVistoriaSchema();
+
+      const { seedConfiguracoes, ensureLaudoSchema } = await import('./laudos.server');
+      await ensureLaudoSchema();
+      await seedConfiguracoes();
+
+      const { ensureDepreciacaoSchema } = await import('./depreciacao.server');
+      await ensureDepreciacaoSchema();
+
+      const { ensureAnalisePosVistoriaSchema } = await import('./analise-pos-vistoria.server');
+      await ensureAnalisePosVistoriaSchema();
+
+      const { ensureAnunciosSchema } = await import('./anuncios.server');
+      await ensureAnunciosSchema();
+
+      const { ensureLeilaoSchema } = await import('./leilao.server');
+      await ensureLeilaoSchema();
+
+      const { ensureCompradorSchema } = await import('./comprador.server');
+      await ensureCompradorSchema();
+
+      const { ensureNegociacoesSchema } = await import('./negociacoes.server');
+      await ensureNegociacoesSchema();
+
+      const { ensurePagamentosSchema } = await import('./pagamentos.server');
+      await ensurePagamentosSchema();
+
+      const { ensureEntregasSchema } = await import('./entregas.server');
+      await ensureEntregasSchema();
+
+      const { ensureFinanceiroSchema } = await import('./financeiro.server');
+      await ensureFinanceiroSchema();
+
+      const { ensurePerfilSchema } = await import('./perfil.server');
+      await ensurePerfilSchema();
+
+      const { ensureTimelineSchema } = await import('./timeline.server');
+      await ensureTimelineSchema();
+
+      const { ensureComunicacoesSchema } = await import('./comunicacoes.server');
+      await ensureComunicacoesSchema();
+
+      const { ensureAutomacoesSchema } = await import('./automacoes.server');
+      const { ensureConversasSchema } = await import('./conversas.server');
+      const { ensureRelatoriosSchema } = await import('./relatorios.server');
+      const { ensureMailSchema } = await import('./mail.server');
+      await ensureConversasSchema();
+      await ensureAutomacoesSchema();
+      await ensureRelatoriosSchema();
+      await ensureMailSchema();
+
+      await ensureSuperAdmin();
+    } finally {
+      await db.execute(sql`SELECT pg_advisory_unlock(918273645)`);
+    }
 
   } catch (error) {
     console.error('❌ Falha na migração:', error);
