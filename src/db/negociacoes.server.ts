@@ -368,7 +368,7 @@ export async function getNegociacoesComprador(compradorId: string) {
     SELECT DISTINCT a.titulo, a.slug, a.codigo_publico, r.maior_lance, r.resultado, r.fechado_em
     FROM lances l
     JOIN leiloes le ON le.id = l.leilao_id
-    JOIN anuncios_veiculo a ON a.id = le.anuncio_id
+    JOIN anuncios_veiculo a ON a.veiculo_id = le.veiculo_id
     JOIN leiloes_resultado r ON r.leilao_id = le.id
     WHERE l.comprador_id = ${compradorId}::uuid
       AND (r.vencedor_id IS NULL OR r.vencedor_id <> ${compradorId}::uuid)
@@ -447,7 +447,7 @@ export async function listarLeiloesSemVenda() {
     SELECT r.*, a.titulo, a.codigo_publico
     FROM leiloes_resultado r
     JOIN leiloes l ON l.id = r.leilao_id
-    JOIN anuncios_veiculo a ON a.id = l.anuncio_id
+    JOIN anuncios_veiculo a ON a.veiculo_id = l.veiculo_id
     WHERE r.resultado IN ('ENCERRADO_SEM_MINIMO','ENCERRADO_SEM_OFERTAS')
     ORDER BY r.fechado_em DESC
   `);

@@ -14,7 +14,7 @@ export async function ensureLeilaoSchema() {
   await d.execute(sql`
     CREATE TABLE IF NOT EXISTS leiloes (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      anuncio_id uuid NOT NULL REFERENCES anuncios_veiculo(id) ON DELETE CASCADE,
+      veiculo_id uuid NOT NULL REFERENCES veiculos(id) ON DELETE CASCADE,
       inicio_em timestamptz NOT NULL,
       fim_em timestamptz NOT NULL,
       lance_inicial numeric(12,2) NOT NULL,
@@ -209,7 +209,7 @@ export async function listarLeiloesAdmin(status?: string) {
       (SELECT valor FROM lances WHERE leilao_id = l.id ORDER BY valor DESC LIMIT 1) as lance_atual,
       (SELECT count(*) FROM lances WHERE leilao_id = l.id) as qtd_lances
     FROM leiloes l
-    JOIN anuncios_veiculo a ON l.anuncio_id = a.id
+    JOIN anuncios_veiculo a ON l.veiculo_id = a.veiculo_id
     ${status ? sql`WHERE l.status = ${status}` : sql``}
     ORDER BY l.criado_em DESC
   `);
