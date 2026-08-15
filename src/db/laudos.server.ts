@@ -386,6 +386,23 @@ export async function registrarDivergenciaPlaca(input: { agendamentoId: string; 
     VALUES ('agendamento', ${input.agendamentoId}, 'Divergência de placa', ${texto});
   `);
   await d.execute(sql`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'notificacoes') THEN
+        CREATE TABLE notificacoes (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          destinatario_id uuid REFERENCES profiles(id),
+          titulo text NOT NULL,
+          mensagem text NOT NULL,
+          tipo text DEFAULT 'GERAL',
+          lida boolean DEFAULT false,
+          criado_em timestamptz DEFAULT now()
+        );
+      END IF;
+    END $$;
+  `);
+
+  await d.execute(sql`
     INSERT INTO notificacoes (destinatario_id, titulo, mensagem, tipo)
     VALUES (NULL, ${"Divergência de placa na vistoria"}, ${texto}, 'VISTORIA');
   `);
