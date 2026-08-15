@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Save, Settings, BrainCircuit, Mail } from "lucide-react";
-import { listarConfiguracoesFn, salvarConfiguracaoFn } from "@/lib/admin.functions";
+import { Save, Settings, BrainCircuit, Mail, Send } from "lucide-react";
+import { listarConfiguracoesFn, salvarConfiguracaoFn, enviarEmailTesteFn } from "@/lib/admin.functions";
+
 
 export const Route = createFileRoute("/admin/configuracoes")({
   component: ConfiguracoesAdminPage,
