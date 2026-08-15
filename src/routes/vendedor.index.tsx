@@ -3,11 +3,10 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CardsEntregaVendedor } from '@/components/entrega/cards-entrega';
 import { useServerFn } from '@tanstack/react-start';
-import { Car, Plus, CheckCircle2 } from 'lucide-react';
+import { Car, Plus, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { listarMeusVeiculosFn } from '@/lib/vendedor.functions';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
-import { AlertaAcao } from '@/components/vendedor/AlertaAcao';
 import { StatusBadge, statusVeiculo } from '@/components/vendedor/StatusBadge';
 import { ProgressoCadastro, montarEtapas, percentual } from '@/components/vendedor/ProgressoCadastro';
 import { CardContratoVendedor } from '@/components/contratos/CardContratoVendedor';
@@ -21,8 +20,7 @@ export const Route = createFileRoute('/vendedor/')({
 const CAMINHO = [
   'Complete seu cadastro',
   'Cadastre seu veículo',
-  'Passe pela análise',
-  'Agende a vistoria',
+  'Faça a vistoria',
   'Receba ofertas',
 ];
 
@@ -50,26 +48,17 @@ function DashboardVendedor() {
   const primeiroNome = user?.nome?.split(' ')[0] || 'vendedor';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       <div>
-        <h1 className="text-2xl font-black tracking-tight text-slate-900">Olá, {primeiroNome} 👋</h1>
-        <p className="mt-1 text-slate-500">Acompanhe por aqui seu cadastro, veículos e negociações.</p>
+        <h1 className="text-xl font-black tracking-tight text-slate-900 lg:text-2xl">Olá, {primeiroNome} 👋</h1>
+        <p className="mt-0.5 text-sm text-slate-500">Vamos deixar tudo pronto para você vender seu veículo.</p>
       </div>
 
       <CardsEntregaVendedor vendedorId={user?.id} />
 
-      {!completo && profile.cadastro_completo !== true && (
-        <AlertaAcao
-          titulo="Precisamos de você"
-          descricao={profile.cadastro_completo === false && pct > 80 ? "Seu cadastro está em análise. Aguarde a validação." : "Seu cadastro ainda possui informações pendentes."}
-          acaoLabel={profile.cadastro_completo === false && pct > 80 ? "Ver status" : "Resolver agora"}
-          onAcao={() => navigate({ to: '/vendedor/onboarding' })}
-        />
-      )}
-
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
         {/* Card cadastro */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-6">
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 lg:p-6">
           {profile.cadastro_completo === true ? (
             <div className="flex items-center gap-3">
               <CheckCircle2 className="h-6 w-6 text-emerald-600" />
@@ -81,10 +70,10 @@ function DashboardVendedor() {
                 <h2 className="text-lg font-bold text-slate-900">Cadastro em análise</h2>
                 <StatusBadge status="analise" />
               </div>
-              <p className="mt-2 text-sm text-slate-500">
+              <p className="mt-1.5 text-sm text-slate-500">
                 Recebemos suas informações e estamos fazendo a validação.
               </p>
-              <div className="mt-5 space-y-4">
+              <div className="mt-4 space-y-2.5">
                  <div className="flex items-center gap-3">
                     <div className="h-6 w-6 flex items-center justify-center rounded-full bg-emerald-600 text-white text-[10px]"><CheckCircle2 className="w-3 h-3" /></div>
                     <span className="text-sm text-slate-600">Dados enviados</span>
@@ -105,15 +94,19 @@ function DashboardVendedor() {
                 <h2 className="text-lg font-bold text-slate-900">Complete seu cadastro</h2>
                 <StatusBadge status="incompleto" />
               </div>
-              <p className="mt-2 text-sm text-slate-500">
+              <p className="mt-1.5 text-sm text-slate-500">
                 Precisamos validar algumas informações antes de liberar seu veículo para análise.
               </p>
-              <div className="mt-5">
+              <p className="mt-3 flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
+                <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
+                Existem informações pendentes no seu cadastro.
+              </p>
+              <div className="mt-4">
                 <ProgressoCadastro etapas={etapas} />
               </div>
               <Button
                 onClick={() => navigate({ to: '/vendedor/onboarding' })}
-                className="mt-6 h-12 w-full rounded-xl bg-teal-700 font-semibold text-white transition-colors hover:bg-teal-800"
+                className="mt-4 h-11 w-full rounded-xl bg-teal-700 font-semibold text-white transition-colors hover:bg-teal-800"
               >
                 Continuar cadastro
               </Button>
@@ -122,7 +115,7 @@ function DashboardVendedor() {
         </section>
 
         {/* Card veículos */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-6">
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 lg:p-6">
           {isLoading ? (
             <p className="text-sm text-slate-400">Carregando seus veículos...</p>
           ) : veiculos.length > 0 ? (
@@ -144,7 +137,7 @@ function DashboardVendedor() {
               <Button
                 variant="outline"
                 onClick={() => navigate({ to: '/vendedor/veiculos' })}
-                className="mt-5 h-12 w-full rounded-xl"
+                className="mt-4 h-11 w-full rounded-xl"
               >
                 Ver todos
               </Button>
@@ -158,23 +151,25 @@ function DashboardVendedor() {
               </div>
               <Button
                 onClick={() => navigate({ to: '/vendedor/cadastrar' })}
-                className="mt-6 h-12 w-full rounded-xl bg-teal-700 font-semibold text-white hover:bg-teal-800"
+                className="mt-4 h-11 w-full rounded-xl bg-teal-700 font-semibold text-white hover:bg-teal-800"
               >
                 Continuar cadastro do veículo
               </Button>
             </>
           ) : (
             <>
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50">
-                <Car className="h-6 w-6 text-teal-700" />
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50">
+                  <Car className="h-5 w-5 text-teal-700" />
+                </div>
+                <h2 className="text-lg font-bold text-slate-900">Cadastre seu primeiro veículo</h2>
               </div>
-              <h2 className="mt-4 text-lg font-bold text-slate-900">Venda seu primeiro veículo</h2>
               <p className="mt-2 text-sm text-slate-500">
-                Cadastre os dados básicos do seu carro para iniciar a análise.
+                Enquanto conclui seu cadastro, você já pode adiantar os dados do seu carro.
               </p>
               <Button
                 onClick={() => navigate({ to: '/vendedor/cadastrar' })}
-                className="mt-6 h-12 w-full rounded-xl bg-teal-700 font-semibold text-white hover:bg-teal-800"
+                className="mt-4 h-11 w-full rounded-xl bg-teal-700 font-semibold text-white hover:bg-teal-800"
               >
                 <Plus className="mr-2 h-4 w-4" /> Cadastrar veículo
               </Button>
@@ -188,13 +183,13 @@ function DashboardVendedor() {
       {user?.id && <CardContratoVendedor vendedorId={user.id} />}
 
       {/* Como funciona */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-400">Como funciona</h2>
-        <ol className="mt-5 grid gap-4 lg:grid-cols-5">
+      <section className="rounded-2xl border border-slate-200 bg-white px-4 py-3 lg:p-5">
+        <h2 className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Como funciona</h2>
+        <ol className="mt-2 grid gap-1.5 lg:grid-cols-4 lg:gap-4">
           {CAMINHO.map((etapa, i) => (
-            <li key={etapa} className="flex items-start gap-3 lg:block lg:border-t-2 lg:border-slate-900 lg:pt-3">
-              <span className="text-sm font-black text-teal-700">{i + 1}</span>
-              <span className="text-sm text-slate-600 lg:mt-1 lg:block">{etapa}</span>
+            <li key={etapa} className="flex items-center gap-2">
+              <span className="text-xs font-black text-teal-700">{i + 1}</span>
+              <span className="text-xs text-slate-500">{etapa}</span>
             </li>
           ))}
         </ol>

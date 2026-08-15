@@ -44,18 +44,18 @@ export function ProgressoCadastro({
       </div>
 
       {!compacto && (
-        <ul className="mt-5 space-y-3">
+        <ul className="mt-3 space-y-1.5">
           {etapas.map((e) => (
             <li key={e.id} className="flex items-center gap-3">
               <span
                 className={cn(
-                  "flex h-6 w-6 items-center justify-center rounded-full border text-[11px] transition-colors",
+                  "flex h-5 w-5 items-center justify-center rounded-full border text-[10px] transition-colors",
                   e.concluida
                     ? "border-teal-600 bg-teal-600 text-white"
                     : "border-slate-200 bg-white text-slate-300"
                 )}
               >
-                {e.concluida ? <Check className="h-3.5 w-3.5" /> : "○"}
+                {e.concluida ? <Check className="h-3 w-3" /> : "○"}
               </span>
               <span className={cn("text-sm", e.concluida ? "text-slate-800" : "text-slate-500")}>
                 {e.label}
