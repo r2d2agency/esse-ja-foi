@@ -38,15 +38,22 @@ export const migrateDb = async () => {
     await migrate(db, { migrationsFolder: migrationsPath });
     // console.log('✅ Migrações concluídas.');
 
-    const { ensureSuperAdmin } = await import('./auth.server');
+    const { ensureAuthSchema, ensureSuperAdmin } = await import('./auth.server');
+    await ensureAuthSchema();
     await ensureSuperAdmin();
     
+    const { ensureCadastroSchema } = await import('./cadastro.server');
+    await ensureCadastroSchema();
+
     const { seedConfiguracoes, ensureLaudoSchema } = await import('./laudos.server');
     await ensureLaudoSchema();
     await seedConfiguracoes();
     
     const { ensureComunicacoesSchema } = await import('./comunicacoes.server');
     await ensureComunicacoesSchema();
+
+    const { ensureNegociacoesSchema } = await import('./negociacoes.server');
+    await ensureNegociacoesSchema();
     
     const { ensureAutomacoesSchema } = await import('./automacoes.server');
     const { ensureConversasSchema } = await import("./conversas.server");
