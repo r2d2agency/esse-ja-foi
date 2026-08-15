@@ -158,6 +158,27 @@ export async function ensureComunicacoesSchema(silent = true) {
         atualizado_em timestamptz DEFAULT now()
       );
     `);
+    
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_segmentos' AND column_name = 'nome') THEN
+          ALTER TABLE whatsapp_segmentos ADD COLUMN nome text NOT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_segmentos' AND column_name = 'descricao') THEN
+          ALTER TABLE whatsapp_segmentos ADD COLUMN descricao text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_segmentos' AND column_name = 'tipo') THEN
+          ALTER TABLE whatsapp_segmentos ADD COLUMN tipo text NOT NULL DEFAULT 'DINAMICO';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_segmentos' AND column_name = 'filtros') THEN
+          ALTER TABLE whatsapp_segmentos ADD COLUMN filtros jsonb;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_segmentos' AND column_name = 'total_contatos') THEN
+          ALTER TABLE whatsapp_segmentos ADD COLUMN total_contatos integer DEFAULT 0;
+        END IF;
+      END $$;
+    `);
 
     // 4. Join table para segmentos manuais
     await d.execute(sql`
