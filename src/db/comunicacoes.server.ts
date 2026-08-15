@@ -211,6 +211,27 @@ export async function ensureComunicacoesSchema(silent = true) {
         atualizado_em timestamptz DEFAULT now()
       );
     `);
+    
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_campanhas' AND column_name = 'nome') THEN
+          ALTER TABLE whatsapp_campanhas ADD COLUMN nome text NOT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_campanhas' AND column_name = 'status') THEN
+          ALTER TABLE whatsapp_campanhas ADD COLUMN status text DEFAULT 'RASCUNHO';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_campanhas' AND column_name = 'agendado_para') THEN
+          ALTER TABLE whatsapp_campanhas ADD COLUMN agendado_para timestamptz;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_campanhas' AND column_name = 'total_destinatarios') THEN
+          ALTER TABLE whatsapp_campanhas ADD COLUMN total_destinatarios integer DEFAULT 0;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_campanhas' AND column_name = 'criado_por') THEN
+          ALTER TABLE whatsapp_campanhas ADD COLUMN criado_por uuid REFERENCES profiles(id);
+        END IF;
+      END $$;
+    `);
 
     // 6. Mensagens Individuais (Fila e Histórico)
     await d.execute(sql`
