@@ -110,8 +110,13 @@ export async function registrarLance(leilaoId: string, compradorId: string, valo
     }
 
     // 4. Registrar lance
-    await tx.execute(sql`
+    const res = await tx.execute(sql`
       INSERT INTO lances (leilao_id, comprador_id, valor, ip_origem, user_agent)
+      VALUES (${leilaoId}::uuid, ${compradorId}::uuid, ${valor}, ${ip || null}, ${ua || null})
+      RETURNING id
+    `);
+    const lanceId = (res as any).rows?.[0]?.id;
+
     const { processarEventoSistema } = await import("./automacoes-motor.server");
     if (maiorLanceAnterior) {
       await processarEventoSistema("LANCE_SUPERADO", {
@@ -119,11 +124,9 @@ export async function registrarLance(leilaoId: string, compradorId: string, valo
         comprador_superado_id: maiorLanceAnterior.comprador_id,
         veiculo: leilao.veiculo,
         lance: { valor_atual: valor },
-        referencia_id: leilaoId
+        referencia_id: lanceId
       });
     }
-      VALUES (${leilaoId}::uuid, ${compradorId}::uuid, ${valor}, ${ip || null}, ${ua || null})
-    `);
 
     // 5. Tratar prorrogação automática (Anti-sniping)
     let novoFim = leilao.fim_em;
