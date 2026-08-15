@@ -290,6 +290,15 @@ export async function ensureComunicacoesSchema(silent = true) {
         criado_em timestamptz DEFAULT now()
       );
     `);
+    
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_logs' AND column_name = 'acao') THEN
+          ALTER TABLE whatsapp_logs ADD COLUMN acao text NOT NULL;
+        END IF;
+      END $$;
+    `);
 
     // 8. Atualizar profiles com preferências e elegibilidade
     const profileCols: Array<[string, string]> = [
