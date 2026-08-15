@@ -34,22 +34,40 @@ async function getTransporter() {
     throw new Error("Configurações de SMTP incompletas. Verifique as configurações no painel administrativo.");
   }
 
-  return nodemailer.createTransport({
+  const port = parseInt(configs.smtp_port || "587");
+  // smtp_secure: "ssl" (conexão TLS direta, porta 465), "tls" (STARTTLS) ou "none"
+  const modo = (configs.smtp_secure || (port === 465 ? "ssl" : "tls")).toLowerCase();
+
+  const transporter = nodemailer.createTransport({
     host: configs.smtp_host,
-    port: parseInt(configs.smtp_port || "587"),
-    secure: configs.smtp_port === "465",
+    port,
+    secure: modo === "ssl",
+    requireTLS: modo === "tls",
+    ignoreTLS: modo === "none",
     auth: {
       user: configs.smtp_user,
       pass: configs.smtp_pass,
     },
+    tls: {
+      // muitos servidores compartilhados usam certificado do provedor
+      rejectUnauthorized: configs.smtp_reject_unauthorized === "true",
+    },
   });
+
+  // O remetente PRECISA ser um endereço aceito pelo servidor (erro 550 caso contrário)
+  const from = configs.smtp_from?.trim() || configs.smtp_user;
+  const fromName = configs.smtp_from_name?.trim() || "Esse Já Foi";
+
+  return { transporter, from: `"${fromName}" <${from}>` };
 }
 
 export async function enviarEmailTeste(destinatario: string) {
-  const transporter = await getTransporter();
-  
+  const { transporter, from } = await getTransporter();
+
+  await transporter.verify();
+
   await transporter.sendMail({
-    from: '"Esse Já Foi" <noreply@essejafoi.com.br>',
+    from,
     to: destinatario,
     subject: "Teste de Configuração SMTP - Esse Já Foi",
     text: "Se você recebeu este e-mail, as configurações de SMTP estão funcionando corretamente.",
@@ -71,8 +89,8 @@ export async function gerarEnviarOTP(email: string, type: 'LOGIN' | 'RECOVERY' |
     VALUES (${email}, ${code}, ${type}, ${expiresAt})
   `);
 
-  const transporter = await getTransporter();
-  
+  const { transporter, from } = await getTransporter();
+
   const subjects = {
     LOGIN: "Seu código de acesso - Esse Já Foi",
     RECOVERY: "Recuperação de senha - Esse Já Foi",
@@ -80,7 +98,7 @@ export async function gerarEnviarOTP(email: string, type: 'LOGIN' | 'RECOVERY' |
   };
 
   await transporter.sendMail({
-    from: '"Esse Já Foi" <noreply@essejafoi.com.br>',
+    from,
     to: email,
     subject: subjects[type],
     html: `
