@@ -46,8 +46,9 @@ function RelatoriosPage() {
     }
 
     if (periodo !== "custom") {
-      setDataInicio(inicio.toISOString().split("T")[0]);
-      setDataFim(agora.toISOString().split("T")[0]);
+      setDataInicio(inicio.toISOString().split("T")[0] || "");
+      setDataFim(agora.toISOString().split("T")[0] || "");
+
     }
   }, [periodo]);
 
