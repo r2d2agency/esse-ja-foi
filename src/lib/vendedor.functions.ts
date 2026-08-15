@@ -198,19 +198,18 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
     await db.execute(sql`
       UPDATE profiles 
       SET 
-        cpf = COALESCE(${data.cpf ?? null}, cpf),
-        cep = COALESCE(${data.cep ?? null}, cep),
-        endereco = COALESCE(${data.endereco ?? null}, endereco),
-        cidade = COALESCE(${data.cidade ?? null}, cidade),
-        uf = COALESCE(${data.uf ?? null}, uf),
-        documento_cnh_url = COALESCE(${data.cnhUrl ?? null}, documento_cnh_url),
-        documento_cnh_verso_url = COALESCE(${data.cnhVersoUrl ?? null}, documento_cnh_verso_url),
-        documento_crlv_url = COALESCE(${data.crlvUrl ?? null}, documento_crlv_url),
-        documento_selfie_url = COALESCE(${data.selfieUrl ?? null}, documento_selfie_url),
-        documento_comprovante_endereco_url = COALESCE(${data.comprovanteEnderecoUrl ?? null}, documento_comprovante_endereco_url),
+        cpf = COALESCE(${data.cpf || null}, cpf),
+        cep = COALESCE(${data.cep || null}, cep),
+        endereco = COALESCE(${data.endereco || null}, endereco),
+        cidade = COALESCE(${data.cidade || null}, cidade),
+        uf = COALESCE(${data.uf || null}, uf),
+        documento_cnh_url = COALESCE(${data.cnhUrl || null}, documento_cnh_url),
+        documento_cnh_verso_url = COALESCE(${data.cnhVersoUrl || null}, documento_cnh_verso_url),
+        documento_crlv_url = COALESCE(${data.crlvUrl || null}, documento_crlv_url),
+        documento_selfie_url = COALESCE(${data.selfieUrl || null}, documento_selfie_url),
+        documento_comprovante_endereco_url = COALESCE(${data.comprovanteEnderecoUrl || null}, documento_comprovante_endereco_url),
         cadastro_completo = CASE WHEN ${data.finalizar ?? false} = true THEN true ELSE cadastro_completo END
       WHERE id = ${data.perfilId}::uuid;
-
     `);
     
     return { ok: true as const };
