@@ -52,7 +52,11 @@ function ConfiguracoesAdminPage() {
   const getConfig = (chave: string) => configs.find(c => c.chave === chave)?.valor ?? "";
   
   const setConfig = (chave: string, valor: string) => {
-    setConfigs(prev => prev.map(c => c.chave === chave ? { ...c, valor } : c));
+    setConfigs(prev =>
+      prev.some(c => c.chave === chave)
+        ? prev.map(c => (c.chave === chave ? { ...c, valor } : c))
+        : [...prev, { chave, valor }],
+    );
   };
 
   if (loading) return <div className="p-8">Carregando...</div>;
