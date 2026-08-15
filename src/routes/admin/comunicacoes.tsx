@@ -1929,6 +1929,6 @@ function ComunicacoesPage() {
 
         </Tabs>
       </div>
-    </AdminLayout>
   );
 }
+
