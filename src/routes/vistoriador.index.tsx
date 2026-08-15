@@ -14,7 +14,7 @@ export const Route = createFileRoute("/vistoriador/")({
 
 
 function VistoriasHojePage() {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   
   const { data: vistoriasRes } = useSuspenseQuery({
     queryKey: ["vistorias-hoje", user?.id],
