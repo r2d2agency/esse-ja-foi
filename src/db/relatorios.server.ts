@@ -12,10 +12,14 @@ export async function getRelatoriosGerais(filtros: { dataInicio?: string | null;
     ? sql`WHERE criado_em BETWEEN ${filtros.dataInicio}::timestamptz AND ${filtros.dataFim}::timestamptz`
     : sql``;
 
+  const andWhereClause = filtros.dataInicio && filtros.dataFim 
+    ? sql` AND criado_em BETWEEN ${filtros.dataInicio}::timestamptz AND ${filtros.dataFim}::timestamptz`
+    : sql``;
+
   const stats = await db.execute(sql`
     SELECT
       (SELECT count(*)::int FROM veiculos ${whereClause}) as veiculos_cadastrados,
-      (SELECT count(*)::int FROM veiculos WHERE status_analise = 'PRONTO_PARA_VISTORIA' ${whereClause ? sql` AND criado_em BETWEEN ${filtros.dataInicio}::timestamptz AND ${filtros.dataFim}::timestamptz` : sql``}) as veiculos_aprovados,
+      (SELECT count(*)::int FROM veiculos WHERE status_analise = 'PRONTO_PARA_VISTORIA' ${andWhereClause}) as veiculos_aprovados,
       (SELECT count(*)::int FROM anuncios_veiculo ${whereClause}) as veiculos_publicados,
       (SELECT count(*)::int FROM leiloes WHERE status = 'encerrado' ${whereClause}) as leiloes_realizados,
       (SELECT count(*)::int FROM negociacoes WHERE status = 'CONCLUIDA' ${whereClause}) as vendas_concluidas,
@@ -28,26 +32,30 @@ export async function getRelatoriosGerais(filtros: { dataInicio?: string | null;
   const funnel = await db.execute(sql`
     SELECT
       (SELECT count(*)::int FROM veiculos ${whereClause}) as cadastrados,
-      (SELECT count(*)::int FROM veiculos WHERE status = 'ANALISE' ${whereClause}) as em_analise,
-      (SELECT count(*)::int FROM veiculos WHERE status_analise = 'PRONTO_PARA_VISTORIA' ${whereClause}) as aprovados_vistoria,
-      (SELECT count(*)::int FROM vistorias WHERE status = 'CONCLUIDA' ${whereClause}) as vistoriados,
-      (SELECT count(*)::int FROM veiculos WHERE status = 'PRONTO_PARA_ANUNCIO' ${whereClause}) as prontos_anuncio,
-      (SELECT count(*)::int FROM anuncios_veiculo ${whereClause}) as publicados,
-      (SELECT count(DISTINCT leilao_id)::int FROM leiloes_lances ${whereClause}) as com_lances,
-      (SELECT count(*)::int FROM negociacoes ${whereClause}) as com_vencedor,
-      (SELECT count(*)::int FROM cobrancas WHERE status = 'PAGO' ${whereClause}) as pagos,
-      (SELECT count(*)::int FROM entregas WHERE status = 'ENTREGA_CONFIRMADA' ${whereClause}) as entregues,
-      (SELECT count(*)::int FROM negociacoes WHERE status = 'CONCLUIDA' ${whereClause}) as concluidos
+      (SELECT count(*)::int FROM veiculos WHERE status = 'ANALISE' ${andWhereClause}) as em_analise,
+      (SELECT count(*)::int FROM veiculos WHERE status_analise = 'PRONTO_PARA_VISTORIA' ${andWhereClause}) as aprovados_vistoria,
+      (SELECT count(*)::int FROM vistorias WHERE status = 'CONCLUIDA' ${andWhereClause}) as vistoriados,
+      (SELECT count(*)::int FROM veiculos WHERE status = 'PRONTO_PARA_ANUNCIO' ${andWhereClause}) as prontos_anuncio,
+      (SELECT count(*)::int FROM anuncios_veiculo ${andWhereClause}) as publicados,
+      (SELECT count(DISTINCT leilao_id)::int FROM leiloes_lances ${andWhereClause}) as com_lances,
+      (SELECT count(*)::int FROM negociacoes ${andWhereClause}) as com_vencedor,
+      (SELECT count(*)::int FROM cobrancas WHERE status = 'PAGO' ${andWhereClause}) as pagos,
+      (SELECT count(*)::int FROM entregas WHERE status = 'ENTREGA_CONFIRMADA' ${andWhereClause}) as entregues,
+      (SELECT count(*)::int FROM negociacoes WHERE status = 'CONCLUIDA' ${andWhereClause}) as concluidos
   `);
 
+  const rows = (stats as any).rows || stats;
+  const funnelRows = (funnel as any).rows || funnel;
+
   return {
-    overview: (stats as any).rows?.[0] || (stats as any)[0],
-    funnel: (funnel as any).rows?.[0] || (funnel as any)[0]
+    overview: Array.isArray(rows) ? rows[0] : rows,
+    funnel: Array.isArray(funnelRows) ? funnelRows[0] : funnelRows
   };
 }
 
 export async function getRelatoriosVendas(filtros: { dataInicio?: string | null; dataFim?: string | null }) {
   if (!db) return null;
+  
   const whereClause = filtros.dataInicio && filtros.dataFim 
     ? sql`WHERE n.criado_em BETWEEN ${filtros.dataInicio}::timestamptz AND ${filtros.dataFim}::timestamptz`
     : sql``;
@@ -80,9 +88,11 @@ export async function getRelatoriosVendas(filtros: { dataInicio?: string | null;
     LIMIT 100
   `);
 
+  const statsRows = (stats as any).rows || stats;
+  const listaRows = (lista as any).rows || lista;
+
   return {
-    stats: (stats as any).rows?.[0] || (stats as any)[0],
-    lista: (lista as any).rows || lista
+    stats: Array.isArray(statsRows) ? statsRows[0] : statsRows,
+    lista: listaRows
   };
 }
-
