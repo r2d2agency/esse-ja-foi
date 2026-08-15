@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Car, Clock, MapPin, ChevronRight, AlertCircle } from "lucide-react";
+import { Car, Clock, MapPin, ChevronRight, AlertCircle, LogOut } from "lucide-react";
 import { useAuthStore } from "@/hooks/use-auth";
 import { getVistoriasHojeVistoriadorFn } from "@/lib/vistoriador.functions";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/vistoriador/")({
   component: VistoriasHojePage,
 });
+
 
 function VistoriasHojePage() {
   const { user } = useAuthStore();
