@@ -100,10 +100,11 @@ export async function registrarLance(leilaoId: string, compradorId: string, valo
 
     // 3. Buscar maior lance atual
     const maxRes = await tx.execute(sql`
-      SELECT valor FROM lances WHERE leilao_id = ${leilaoId}::uuid ORDER BY valor DESC LIMIT 1
+      SELECT valor, comprador_id FROM lances WHERE leilao_id = ${leilaoId}::uuid ORDER BY valor DESC LIMIT 1
     `);
-    const maiorLance = (maxRes as any).rows[0]?.valor || leilao.lance_inicial;
-    const lanceMinimoNecessario = Number(maiorLance) + Number(leilao.incremento_minimo);
+    const maiorLanceAnterior = (maxRes as any).rows[0];
+    const valorMaiorLance = maiorLanceAnterior?.valor || leilao.lance_inicial;
+    const lanceMinimoNecessario = Number(valorMaiorLance) + Number(leilao.incremento_minimo);
 
     if (valor < lanceMinimoNecessario) {
       throw new Error(`O próximo lance mínimo é R$ ${lanceMinimoNecessario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
