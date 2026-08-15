@@ -111,11 +111,16 @@ export async function ensureAuthSchema(silent = true) {
         cpf text,
         cep text,
         endereco text,
+        numero text,
+        bairro text,
+        complemento text,
         cidade text,
         uf text,
         documento_cnh_url text,
+        documento_cnh_verso_url text,
         documento_crlv_url text,
         documento_selfie_url text,
+        documento_comprovante_endereco_url text,
         cadastro_completo boolean NOT NULL DEFAULT false
       );
     `);
