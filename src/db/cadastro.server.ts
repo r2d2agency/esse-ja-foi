@@ -136,6 +136,12 @@ export async function ensureCadastroSchema(silent = true) {
       END IF;
     END $$;
   `);
+
+  // Compatibilidade: várias consultas usam veiculos.vendedor_id (equivalente a perfil_id)
+  await d.execute(sql`ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS vendedor_id uuid;`);
+  await d.execute(sql`UPDATE veiculos SET vendedor_id = perfil_id WHERE vendedor_id IS NULL AND perfil_id IS NOT NULL;`);
+  await d.execute(sql`UPDATE veiculos SET perfil_id = vendedor_id WHERE perfil_id IS NULL AND vendedor_id IS NOT NULL;`);
+  await d.execute(sql`CREATE INDEX IF NOT EXISTS veiculos_vendedor_idx ON veiculos (vendedor_id);`);
   
   await d.execute(sql`ALTER TABLE veiculos ALTER COLUMN status SET DEFAULT 'CADASTRADO';`);
   await d.execute(sql`UPDATE veiculos SET placa = upper(placa) WHERE placa <> upper(placa);`);
