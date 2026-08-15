@@ -58,6 +58,7 @@ function VendedoresPage() {
 
   return (
     <div className="p-8 space-y-8 max-w-7xl mx-auto">
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-950 uppercase tracking-tight">Vendedores</h1>

@@ -51,6 +51,7 @@ function DetalheCompradorPage() {
 
   return (
     <div className="p-8 space-y-6 max-w-5xl mx-auto">
+
       <div className="flex items-center gap-4">
         <Button variant="ghost" onClick={() => history.back()}><ArrowLeft className="mr-2 h-4 w-4" /> Voltar</Button>
         <h1 className="text-2xl font-black uppercase text-slate-950 tracking-tight">Detalhes do Comprador</h1>

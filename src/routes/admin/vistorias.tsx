@@ -66,6 +66,7 @@ function VistoriasAdminPage() {
 
   return (
     <div className="p-8 space-y-8 max-w-7xl mx-auto">
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-slate-950 uppercase tracking-tight">Vistorias</h1>

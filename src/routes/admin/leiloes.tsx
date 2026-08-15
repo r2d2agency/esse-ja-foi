@@ -31,6 +31,7 @@ function AdminLeiloesPage() {
 
   return (
     <div className="p-8 space-y-8 max-w-7xl mx-auto">
+
       <div className="flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tight">Gestão de Leilões</h1>

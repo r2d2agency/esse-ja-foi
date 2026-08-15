@@ -93,6 +93,7 @@ function DetalheAnaliseVistoriaPage() {
 
   return (
     <div className="flex flex-col h-full bg-slate-50">
+
       <div className="bg-white border-b border-slate-200 p-6 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/admin/vistorias" })}>

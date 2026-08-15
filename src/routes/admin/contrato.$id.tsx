@@ -84,6 +84,7 @@ function ContratoDetalhe() {
 
   return (
     <div className="p-8 space-y-6 max-w-[1500px] mx-auto">
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button asChild variant="ghost" size="icon"><Link to="/admin/contratos"><ArrowLeft className="h-4 w-4" /></Link></Button>

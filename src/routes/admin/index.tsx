@@ -59,6 +59,7 @@ function AdminDashboard() {
 
   return (
     <div className="p-8 space-y-8 max-w-7xl mx-auto">
+
       <div>
         <h1 className="text-2xl font-black text-slate-950 uppercase tracking-tight">Visão geral</h1>
         <p className="text-slate-500 font-medium">Acompanhe o que está acontecendo na operação do Esse Já Foi.</p>
