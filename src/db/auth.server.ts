@@ -192,21 +192,7 @@ export async function ensureSuperAdmin(silent = true) {
     const ensureAdminTables = adminModule.ensureAdminTables;
     await ensureAdminTables();
 
-
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS veiculos (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        placa text NOT NULL UNIQUE,
-        marca text NOT NULL,
-        modelo text NOT NULL,
-        status text NOT NULL DEFAULT 'cadastrado',
-        criado_em timestamp NOT NULL DEFAULT now(),
-        perfil_id uuid REFERENCES profiles(id),
-        km integer,
-        valor_interesse_cliente numeric,
-        observacoes text
-      );
-    `);
+    // Bloqueia exclusão e rebaixamento do superadmin diretamente no banco
 
     // Bloqueia exclusão e rebaixamento do superadmin diretamente no banco
     await db.execute(sql`
