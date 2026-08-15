@@ -136,6 +136,12 @@ export async function ensureCadastroSchema(silent = true) {
       END IF;
     END $$;
   `);
+
+  // Compatibilidade: várias consultas usam veiculos.vendedor_id (equivalente a perfil_id)
+  await d.execute(sql`ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS vendedor_id uuid;`);
+  await d.execute(sql`UPDATE veiculos SET vendedor_id = perfil_id WHERE vendedor_id IS NULL AND perfil_id IS NOT NULL;`);
+  await d.execute(sql`UPDATE veiculos SET perfil_id = vendedor_id WHERE perfil_id IS NULL AND vendedor_id IS NOT NULL;`);
+  await d.execute(sql`CREATE INDEX IF NOT EXISTS veiculos_vendedor_idx ON veiculos (vendedor_id);`);
   
   await d.execute(sql`ALTER TABLE veiculos ALTER COLUMN status SET DEFAULT 'CADASTRADO';`);
   await d.execute(sql`UPDATE veiculos SET placa = upper(placa) WHERE placa <> upper(placa);`);
@@ -418,12 +424,12 @@ export async function salvarVeiculo(input: VeiculoInput) {
   const rows = (await d.execute(sql`
     INSERT INTO veiculos (placa, marca, modelo, versao, cor, km, ano_fabricacao, ano_modelo, combustivel, cambio,
       cliente_id, valor_fipe, valor_interesse_cliente, tipo_expectativa, percentual_sobre_fipe, alerta_expectativa,
-      ciente_expectativa, cep, endereco, cidade, uf, latitude, longitude, observacoes, perfil_id, fotos, status, status_analise)
+      ciente_expectativa, cep, endereco, cidade, uf, latitude, longitude, observacoes, perfil_id, vendedor_id, fotos, status, status_analise)
     VALUES (${base.placa}, ${base.marca}, ${base.modelo}, ${base.versao}, ${base.cor}, ${base.km},
       ${base.anoFabricacao}, ${base.anoModelo}, ${base.combustivel}, ${base.cambio}, ${base.clienteId},
       ${base.fipe}, ${base.interesse}, ${base.tipoExpectativa}, ${base.percentual}, ${base.alerta},
       ${base.ciente}, ${base.cep}, ${base.endereco}, ${base.cidade}, ${base.uf}, ${base.latitude},
-      ${base.longitude}, ${base.observacoes}, ${base.perfilId}::uuid, ${base.fotos}::jsonb, ${base.status}, 'AGUARDANDO_ANALISE')
+      ${base.longitude}, ${base.observacoes}, ${base.perfilId}::uuid, ${base.perfilId}::uuid, ${base.fotos}::jsonb, ${base.status}, 'AGUARDANDO_ANALISE')
     RETURNING id;
   `)) as unknown as Array<{ id: string }>;
   const id = rows[0]?.id as string;

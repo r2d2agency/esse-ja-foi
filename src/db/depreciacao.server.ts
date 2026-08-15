@@ -8,6 +8,24 @@ function requireDb() {
   return db;
 }
 
+export async function ensureDepreciacaoSchema() {
+  const d = requireDb();
+  await d.execute(sql`
+    CREATE TABLE IF NOT EXISTS depreciacao_regras (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      item_id uuid,
+      gravidade text,
+      tipo text NOT NULL DEFAULT 'PERCENTUAL',
+      valor numeric(14,2) NOT NULL DEFAULT 0,
+      teto numeric(14,2),
+      ativo boolean NOT NULL DEFAULT true,
+      criado_em timestamptz NOT NULL DEFAULT now(),
+      atualizado_em timestamptz NOT NULL DEFAULT now()
+    );
+  `);
+  await d.execute(sql`CREATE INDEX IF NOT EXISTS depreciacao_regras_item_idx ON depreciacao_regras (item_id);`);
+}
+
 export async function getConfig(chave: string, padrao: string) {
   const d = requireDb();
   const rows = (await d.execute(sql`SELECT valor FROM configuracoes WHERE chave = ${chave}`)) as unknown as Array<{ valor: string }>;

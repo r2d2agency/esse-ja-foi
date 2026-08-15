@@ -94,12 +94,20 @@ export async function ensureAdminTables(silent = true) {
       );
     `);
 
-    // Adiciona constraint UNIQUE para documentos para permitir ON CONFLICT
-    try {
-      await d.execute(sql`
-        ALTER TABLE public.documentos ADD CONSTRAINT documentos_entidade_tipo_uidx UNIQUE (entidade, entidade_id, tipo);
-      `);
-    } catch (e) {}
+    // Adiciona constraint UNIQUE para documentos para permitir ON CONFLICT (idempotente)
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'documentos_entidade_tipo_uidx'
+        ) AND NOT EXISTS (
+          SELECT 1 FROM pg_class WHERE relname = 'documentos_entidade_tipo_uidx'
+        ) THEN
+          ALTER TABLE public.documentos
+            ADD CONSTRAINT documentos_entidade_tipo_uidx UNIQUE (entidade, entidade_id, tipo);
+        END IF;
+      END $$;
+    `);
 
 
 

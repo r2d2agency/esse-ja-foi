@@ -15,28 +15,12 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   }
 }
 
+// Mantido apenas como atalho: o schema oficial de leilões vive em leilao.server.ts
+// (definição antiga com veiculo_id causava divergência de colunas — ex.: l.anuncio_id).
 export async function ensureLeilaoSchema() {
   if (!db) return;
-  await db.execute(sql`
-    CREATE TABLE IF NOT EXISTS leiloes (
-      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      veiculo_id uuid NOT NULL,
-      inicio_em timestamptz NOT NULL DEFAULT now(),
-      fim_em timestamptz NOT NULL DEFAULT now(),
-      lance_inicial numeric(12,2) NOT NULL DEFAULT 0,
-      status text NOT NULL DEFAULT 'AGENDADO',
-      criado_em timestamptz NOT NULL DEFAULT now()
-    );
-  `);
-  await db.execute(sql`
-    CREATE TABLE IF NOT EXISTS lances (
-      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      leilao_id uuid NOT NULL REFERENCES leiloes(id) ON DELETE CASCADE,
-      comprador_email text NOT NULL,
-      valor numeric(12,2) NOT NULL,
-      criado_em timestamptz NOT NULL DEFAULT now()
-    );
-  `);
+  const { ensureLeilaoSchema: ensureOficial } = await import("./leilao.server");
+  await ensureOficial();
 }
 
 export async function indicadoresAdmin() {
