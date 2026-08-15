@@ -166,7 +166,14 @@ export async function ensureComunicacoesSchema(silent = true) {
 
     for (const [name, type] of profileCols) {
       try {
-        await d.execute(sql.raw(`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ${name} ${type};`));
+        await d.execute(sql.raw(`
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = '${name}') THEN
+              ALTER TABLE profiles ADD COLUMN ${name} ${type};
+            END IF;
+          END $$;
+        `));
       } catch (e) {}
     }
 
