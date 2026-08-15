@@ -117,8 +117,21 @@ function ConfiguracoesAdminPage() {
             }}>
               <Save className="mr-2 h-4 w-4" /> Salvar SMTP
             </Button>
+            <Button 
+              variant="outline" 
+              onClick={async () => {
+                const email = prompt("Digite o e-mail para teste:");
+                if (!email) return;
+                const res = await enviarEmailTesteFn({ data: { email } });
+                if (res.ok) toast.success("E-mail de teste enviado!");
+                else toast.error(res.message || "Erro ao enviar teste.");
+              }}
+            >
+              <Send className="mr-2 h-4 w-4" /> Enviar Teste
+            </Button>
           </div>
         </section>
+
 
         <section className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-2 text-lg font-semibold text-slate-900">
