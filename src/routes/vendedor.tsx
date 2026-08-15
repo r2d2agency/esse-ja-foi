@@ -84,12 +84,16 @@ function VendedorLayout() {
         <span className="text-sm font-black uppercase tracking-[0.18em]">
           Esse<span className="text-teal-700">JáFoi</span>
         </span>
-        <button onClick={sair} aria-label="Sair" className="text-slate-400">
-          <LogOut className="h-5 w-5" />
+        <button
+          onClick={sair}
+          aria-label="Sair"
+          className="-mr-1 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-colors hover:bg-slate-50 hover:text-rose-600"
+        >
+          <LogOut className="h-4 w-4" />
         </button>
       </header>
 
-      <main className="px-5 pb-28 pt-6 lg:ml-64 lg:px-10 lg:pb-12 lg:pt-10">
+      <main className="px-4 pb-28 pt-4 lg:ml-64 lg:px-10 lg:pb-12 lg:pt-10">
         <div className="mx-auto max-w-5xl">
           <Outlet />
         </div>
