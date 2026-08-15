@@ -117,21 +117,56 @@ function CriarConta() {
     }
   };
 
-  const confirmarCodigo = () => {
+  const confirmarCodigo = async () => {
     if (codigo.replace(/\D/g, "").length !== 6) {
       toast.error("Informe os 6 dígitos do código.");
       return;
     }
     if (!sessao) return;
-    const { user, accessToken } = sessao;
-    login({
-      user: { id: user.id, nome: user.nome, email: user.email, role: user.role as any },
-      accessToken,
-      refreshToken: accessToken,
-    });
-    setEtapa("sucesso");
-    setTimeout(() => navigate({ to: "/vendedor/boas-vindas" }), 1200);
+    
+    setLoading(true);
+    try {
+      const { validarOTPCadastroFn } = await import("@/lib/vendedor.functions");
+      const res = await validarOTPCadastroFn({ data: { email: form.email, code: codigo } });
+      
+      if (!res.ok) {
+        toast.error("Código inválido ou expirado.");
+        return;
+      }
+
+      const { user, accessToken } = sessao;
+      login({
+        user: { id: user.id, nome: user.nome, email: user.email, role: user.role as any },
+        accessToken,
+        refreshToken: accessToken,
+      });
+      setEtapa("sucesso");
+      setTimeout(() => navigate({ to: "/vendedor/boas-vindas" }), 1200);
+    } catch (err) {
+      toast.error("Erro ao validar código.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const reenviarCodigo = async () => {
+    setLoading(true);
+    try {
+      const { resenderOTPCadastroFn } = await import("@/lib/vendedor.functions");
+      const res = await resenderOTPCadastroFn({ data: { email: form.email } });
+      if (res.ok) {
+        setContador(30);
+        toast.success("Enviamos um novo código para o seu e-mail.");
+      } else {
+        toast.error(res.message || "Erro ao reenviar código.");
+      }
+    } catch (err) {
+      toast.error("Erro ao reenviar código.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const campo = (
     key: keyof typeof form,

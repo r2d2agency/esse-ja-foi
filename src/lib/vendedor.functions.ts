@@ -57,7 +57,16 @@ export const cadastrarVendedorFn = createServerFn({ method: "POST" })
       const { issueToken } = await import("@/db/auth.server");
       const accessToken = await issueToken(user.id);
       
+      // Dispara OTP para confirmação de cadastro
+      try {
+        const { gerarEnviarOTP } = await import("@/db/mail.server");
+        await gerarEnviarOTP(data.email.toLowerCase(), 'REGISTRATION');
+      } catch (mailErr) {
+        console.error("Erro ao enviar e-mail de boas-vindas/OTP:", mailErr);
+      }
+
       return { ok: true as const, user, accessToken };
+
     } catch (error: any) {
       console.error("Erro detalhado ao cadastrar vendedor:", error);
       
@@ -185,7 +194,29 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+
+export const validarOTPCadastroFn = createServerFn({ method: "POST" })
+  .validator(z.object({ email: z.string().email(), code: z.string() }))
+  .handler(async ({ data }) => {
+    const { validarOTP } = await import("@/db/mail.server");
+    const ok = await validarOTP(data.email, data.code, 'REGISTRATION');
+    return { ok };
+  });
+
+export const resenderOTPCadastroFn = createServerFn({ method: "POST" })
+  .validator(z.object({ email: z.string().email() }))
+  .handler(async ({ data }) => {
+    const { gerarEnviarOTP } = await import("@/db/mail.server");
+    try {
+      await gerarEnviarOTP(data.email, 'REGISTRATION');
+      return { ok: true as const };
+    } catch (e: any) {
+      return { ok: false as const, message: e.message };
+    }
+  });
+
 export const obterMeuPerfilFn = createServerFn({ method: "GET" })
+
   .validator(z.object({ perfilId: z.string().uuid() }))
   .handler(async ({ data }) => {
     const { db } = await import("@/db/index");
