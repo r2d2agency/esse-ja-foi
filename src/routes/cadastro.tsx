@@ -271,10 +271,11 @@ function CriarConta() {
 
           {etapa === "codigo" && (
             <div className="animate-in fade-in duration-300">
-              <h1 className="text-3xl font-black leading-tight tracking-tight">Confirme seu WhatsApp</h1>
+              <h1 className="text-3xl font-black leading-tight tracking-tight">Confirme seu e-mail</h1>
               <p className="mt-3 text-slate-500">
-                Enviamos um código para <strong className="text-slate-800">{form.whatsapp}</strong>.
+                Enviamos um código para <strong className="text-slate-800">{form.email}</strong>.
               </p>
+
 
               <Input
                 value={codigo}
@@ -286,23 +287,22 @@ function CriarConta() {
               />
 
               <Button
+                disabled={loading}
                 onClick={confirmarCodigo}
                 className="mt-5 h-14 w-full rounded-xl bg-teal-700 text-base font-bold text-white hover:bg-teal-800"
               >
-                Confirmar código
+                {loading ? <Loader2 className="animate-spin h-5 w-5" /> : "Confirmar código"}
               </Button>
 
               <button
                 type="button"
-                disabled={contador > 0}
-                onClick={() => {
-                  setContador(30);
-                  toast.success("Enviamos um novo código para o seu WhatsApp.");
-                }}
+                disabled={contador > 0 || loading}
+                onClick={reenviarCodigo}
                 className="mt-5 w-full text-sm text-slate-500 disabled:opacity-60"
               >
                 {contador > 0 ? `Reenviar código em ${contador}s` : "Reenviar código"}
               </button>
+
             </div>
           )}
 
