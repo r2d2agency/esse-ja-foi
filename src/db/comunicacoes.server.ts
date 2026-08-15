@@ -32,6 +32,48 @@ export async function ensureComunicacoesSchema(silent = true) {
         atualizado_em timestamptz DEFAULT now()
       );
     `);
+    
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'waba_id') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN waba_id text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'phone_number_id') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN phone_number_id text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'business_id') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN business_id text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'phone_number') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN phone_number text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'app_id') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN app_id text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'app_secret') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN app_secret text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'access_token') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN access_token text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'graph_api_version') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN graph_api_version text DEFAULT 'v20.0';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'webhook_verify_token') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN webhook_verify_token text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'status') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN status text DEFAULT 'DESCONECTADO';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'ultimo_teste') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN ultimo_teste timestamptz;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'detalhes_erro') THEN
+          ALTER TABLE whatsapp_config ADD COLUMN detalhes_erro text;
+        END IF;
+      END $$;
+    `);
 
     // 2. Logs de Webhook (Histórico de eventos recebidos da Meta)
     await d.execute(sql`
