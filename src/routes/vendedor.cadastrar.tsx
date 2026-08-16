@@ -202,6 +202,7 @@ function CadastrarVeiculo() {
           km: form.km ? Number(soDigitos(form.km)) : undefined,
           valorInteresse: valorNumero(form.valorDesejado) || undefined,
           fotos,
+          cep: form.cep || undefined,
           cidade: form.cidade || undefined,
           uf: form.uf || undefined,
           observacoes: JSON.stringify(condicao),
