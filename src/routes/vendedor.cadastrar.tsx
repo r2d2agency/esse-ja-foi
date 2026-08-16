@@ -146,7 +146,8 @@ function CadastrarVeiculo() {
     // Estrutura pronta para integração futura com API de consulta veicular.
     await new Promise((r) => setTimeout(r, 1200));
     
-    // Simulação de preenchimento automático via placa
+    // Simulação de preenchimento automático via placa desativada a pedido do usuário
+    /* 
     set({
       marca: 'Volkswagen',
       modelo: 'T-Cross',
@@ -158,6 +159,7 @@ function CadastrarVeiculo() {
       portas: '4',
       cor: 'Branco',
     });
+    */
 
     setBuscando(false);
     setBuscaFeita(true);
