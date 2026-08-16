@@ -331,7 +331,7 @@ function VendedorOnboarding() {
                      value={files.comprovanteEndereco} 
                      onChange={url => setFiles({...files, comprovanteEndereco: url})} 
                    />
-                   <p className="mt-2 text-xs text-slate-400">Você pode continuar sem enviar agora, mas o cadastro só é concluído com todos os documentos.</p>
+                   <p className="mt-2 text-xs text-slate-400">Você pode continuar sem enviar agora, o sistema salvará seu progresso.</p>
                 </div>
               </div>
             )}

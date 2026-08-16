@@ -117,8 +117,6 @@ function CadastrarVeiculo() {
 
   // Rascunho: hidratação + salvamento automático
   useEffect(() => {
-    // Rascunho desativado a pedido do usuário para garantir campos em branco ao retornar
-    /*
     const bruto = localStorage.getItem(DRAFT_KEY);
     if (bruto) {
       try { setForm({ ...INICIAL, ...JSON.parse(bruto) }); } catch { }
@@ -126,7 +124,6 @@ function CadastrarVeiculo() {
       const placa = sessionStorage.getItem('ejf_placa');
       if (placa) setForm((f) => ({ ...f, placa: maskPlaca(placa) }));
     }
-    */
     hidratado.current = true;
   }, []);
 
@@ -192,6 +189,7 @@ function CadastrarVeiculo() {
         proprietario: { emSeuNome: form.emSeuNome, relacao: form.relacaoProprietario, descricao: form.relacaoDescricao },
         financiamento: { financiado: form.financiado, instituicao: form.instituicao, saldo: form.saldoQuitacao },
         valorMinimoPrivado: form.temMinimo === 'Sim' ? valorNumero(form.valorMinimo) : null,
+        documento_crlv_url: form.crlv || undefined,
         crlvEnviado: Boolean(form.crlv),
       };
       const fotos = FOTOS.map((f) => form.fotos[f.id]).filter(Boolean) as string[];
@@ -210,6 +208,7 @@ function CadastrarVeiculo() {
           cep: form.cep || undefined,
           cidade: form.cidade || undefined,
           uf: form.uf || undefined,
+          documento_crlv_url: form.crlv || undefined,
           observacoes: JSON.stringify(condicao),
         },
       });

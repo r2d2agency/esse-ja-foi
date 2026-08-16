@@ -113,7 +113,8 @@ export async function ensureCadastroSchema(silent = true) {
       fotos jsonb,
       atualizado_em timestamptz NOT NULL DEFAULT now(),
       criado_em timestamptz NOT NULL DEFAULT now(),
-      status_analise text DEFAULT 'AGUARDANDO_ANALISE'
+      status_analise text DEFAULT 'AGUARDANDO_ANALISE',
+      documento_crlv_url text
     );
     `);
     
@@ -128,6 +129,9 @@ export async function ensureCadastroSchema(silent = true) {
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'veiculos' AND column_name = 'status_analise') THEN
           ALTER TABLE veiculos ADD COLUMN status_analise text DEFAULT 'AGUARDANDO_ANALISE';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'veiculos' AND column_name = 'documento_crlv_url') THEN
+          ALTER TABLE veiculos ADD COLUMN documento_crlv_url text;
         END IF;
       END $$;
     `);
@@ -433,12 +437,12 @@ export async function salvarVeiculo(input: VeiculoInput) {
   const rows = (await d.execute(sql`
     INSERT INTO veiculos (placa, marca, modelo, versao, cor, km, ano_fabricacao, ano_modelo, combustivel, cambio,
       cliente_id, valor_fipe, valor_interesse_cliente, tipo_expectativa, percentual_sobre_fipe, alerta_expectativa,
-      ciente_expectativa, cep, endereco, cidade, uf, latitude, longitude, observacoes, perfil_id, vendedor_id, fotos, status, status_analise)
+      ciente_expectativa, cep, endereco, cidade, uf, latitude, longitude, observacoes, perfil_id, vendedor_id, fotos, status, status_analise, documento_crlv_url)
     VALUES (${base.placa}, ${base.marca}, ${base.modelo}, ${base.versao}, ${base.cor}, ${base.km},
       ${base.anoFabricacao}, ${base.anoModelo}, ${base.combustivel}, ${base.cambio}, ${base.clienteId},
       ${base.fipe}, ${base.interesse}, ${base.tipoExpectativa}, ${base.percentual}, ${base.alerta},
       ${base.ciente}, ${base.cep}, ${base.endereco}, ${base.cidade}, ${base.uf}, ${base.latitude},
-      ${base.longitude}, ${base.observacoes}, ${base.perfilId}::uuid, ${base.perfilId}::uuid, ${base.fotos}::jsonb, ${base.status}, 'AGUARDANDO_ANALISE')
+      ${base.longitude}, ${base.observacoes}, ${base.perfilId}::uuid, ${base.perfilId}::uuid, ${base.fotos}::jsonb, ${base.status}, 'AGUARDANDO_ANALISE', ${input.documento_crlv_url || null})
     RETURNING id;
   `)) as unknown as Array<{ id: string }>;
   const id = rows[0]?.id as string;
