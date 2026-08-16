@@ -23,7 +23,12 @@ const COLUNAS: [string, string][] = [
   ['responsavel_nome', 'text'],
   ['pode_ver_valores', 'boolean NOT NULL DEFAULT false'],
   ['atualizado_em', 'timestamptz NOT NULL DEFAULT now()'],
+  ['data_nascimento', 'text'],
+  ['estado_civil', 'text'],
+  ['profissao', 'text'],
+  ['nome_mae', 'text'],
 ];
+
 
 let pronto = false;
 
