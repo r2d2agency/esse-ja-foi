@@ -141,6 +141,7 @@ export function FileUpload({ label, description, value, status = "vazio", onChan
             ref={fileInputRef} 
             className="hidden" 
             accept="image/*,application/pdf"
+            capture="environment"
             onChange={handleFileChange}
           />
         )}
