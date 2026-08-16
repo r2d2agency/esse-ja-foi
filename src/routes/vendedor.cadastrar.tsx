@@ -350,19 +350,34 @@ function CadastrarVeiculo() {
                   onChange={(v) => set({ marca: v, modelo: '' })}
                   placeholder="Selecione a marca"
                   allowOther
+                  otherLabel="Marca"
+                  otherPlaceholder="Ex: Porsche, BYD..."
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-bold text-slate-900">Modelo</Label>
                 <ComboboxSearch 
-                  options={MODELOS_POR_MARCA[form.marca] || ['Outro']} 
+                  options={MODELOS_POR_MARCA[form.marca] || []} 
                   value={form.modelo} 
-                  onChange={(v) => set({ modelo: v })}
+                  onChange={(v) => set({ modelo: v, versao: '' })}
                   placeholder={form.marca ? "Selecione o modelo" : "Selecione a marca antes"}
                   allowOther
+                  otherLabel="Modelo"
+                  otherPlaceholder="Ex: Cayenne, Dolphin..."
                 />
               </div>
-              <Campo label="Versão" value={form.versao} onChange={(v) => set({ versao: v })} />
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-slate-900">Versão</Label>
+                <ComboboxSearch 
+                  options={[]} 
+                  value={form.versao} 
+                  onChange={(v) => set({ versao: v })}
+                  placeholder="Selecione a versão"
+                  allowOther
+                  otherLabel="Versão"
+                  otherPlaceholder="Ex: 2.0 Turbo, GLS..."
+                />
+              </div>
               <div className="space-y-2">
                 <Label className="text-sm font-bold text-slate-900">Cor</Label>
                 <ComboboxSearch options={CORES} value={form.cor} onChange={(v) => set({ cor: v })} placeholder="Selecione a cor" allowOther />
