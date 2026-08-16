@@ -335,6 +335,7 @@ export type VeiculoInput = {
   perfilId?: string | null;
   fotos?: string[] | null;
   status?: string | null;
+  documento_crlv_url?: string | null;
 };
 
 export async function listarVeiculos(filtros: {
