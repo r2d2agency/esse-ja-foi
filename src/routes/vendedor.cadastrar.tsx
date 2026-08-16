@@ -168,7 +168,50 @@ function CadastrarVeiculo() {
   };
 
 
-  const avancar = () => { setStep((s) => Math.min(7, s + 1)); window.scrollTo(0, 0); };
+  const avancar = async () => {
+    // Tenta salvar o progresso parcial no banco sempre que avançar de etapa
+    if (user?.id) {
+      try {
+        const condicao = {
+          funcionamento: form.funcionamento, funcionamentoObs: form.funcionamentoObs,
+          motor: form.motor, motorObs: form.motorObs, cambio: form.cambioProblema,
+          lataria: form.lataria, latariaObs: form.latariaObs, interior: form.interior, pneus: form.pneus,
+          historico: { acidente: form.acidente, leilao: form.leilao, sinistro: form.sinistro, restricao: form.restricao, obs: form.historicoObs },
+          itens: { chaveReserva: form.chaveReserva, manual: form.manual, estepe: form.estepe, acessorios: form.acessoriosQuais },
+          proprietario: { emSeuNome: form.emSeuNome, relacao: form.relacaoProprietario, descricao: form.relacaoDescricao },
+          financiamento: { financiado: form.financiado, instituicao: form.instituicao, saldo: form.saldoQuitacao },
+          valorMinimoPrivado: form.temMinimo === 'Sim' ? valorNumero(form.valorMinimo) : null,
+        };
+        const fotos = FOTOS.map((f) => form.fotos[f.id]).filter(Boolean) as string[];
+
+        await salvarVeiculo({
+          data: {
+            perfilId: user.id,
+            placa: form.placa.replace(/[^A-Z0-9]/g, ''),
+            marca: form.marca,
+            modelo: form.modelo,
+            versao: form.versao || undefined,
+            cor: form.cor || undefined,
+            anoFabricacao: form.anoFabricacao || undefined,
+            anoModelo: form.anoModelo || undefined,
+            km: form.km ? Number(soDigitos(form.km)) : undefined,
+            valorInteresse: valorNumero(form.valorDesejado) || undefined,
+            fotos,
+            cep: form.cep || undefined,
+            cidade: form.cidade || undefined,
+            uf: form.uf || undefined,
+            documento_crlv_url: form.crlv || undefined,
+            observacoes: JSON.stringify(condicao),
+            status: 'RASCUNHO',
+          },
+        });
+      } catch (e) {
+        console.error("Erro ao salvar rascunho parcial:", e);
+      }
+    }
+    setStep((s) => Math.min(7, s + 1));
+    window.scrollTo(0, 0);
+  };
   const voltar = () => { setStep((s) => Math.max(1, s - 1)); window.scrollTo(0, 0); };
 
   const salvarESair = () => {
@@ -658,11 +701,25 @@ function CadastrarVeiculo() {
             {!cadastroLiberado && (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
                 <p className="font-bold text-amber-800">
-                  Seu veículo está pronto, mas precisamos concluir a validação do seu cadastro antes de enviá-lo para análise.
+                  Seu veículo está quase pronto, mas precisamos concluir a validação do seu cadastro antes de enviá-lo para análise.
+                </p>
+                <p className="mt-1 text-sm text-amber-700">
+                  Você precisa enviar todos os documentos obrigatórios no seu perfil (CNH, Selfie, Comprovante de Residência).
                 </p>
                 <Button onClick={() => navigate({ to: '/vendedor/onboarding' })} className="mt-4 h-11 rounded-xl bg-amber-500 font-bold text-white hover:bg-amber-600">
                   Resolver pendências do cadastro
                 </Button>
+              </div>
+            )}
+
+            {cadastroLiberado && (fotosEnviadas < 6 || !form.crlv) && (
+              <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
+                <p className="font-bold text-blue-800">
+                  Atenção: Itens obrigatórios pendentes.
+                </p>
+                <p className="mt-1 text-sm text-blue-700">
+                  Para concluir o anúncio, você deve enviar o CRLV e pelo menos 6 fotos do veículo.
+                </p>
               </div>
             )}
 
@@ -688,7 +745,7 @@ function CadastrarVeiculo() {
           ) : (
             <Button
               onClick={() => setConfirmando(true)}
-              disabled={!declaracao1 || !declaracao2 || !cadastroLiberado || enviando}
+              disabled={!declaracao1 || !declaracao2 || !cadastroLiberado || enviando || fotosEnviadas < 6 || !form.crlv}
               className="h-14 w-full rounded-2xl bg-teal-600 text-lg font-black text-white hover:bg-teal-700 md:flex-1"
             >
               {enviando ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Enviar veículo para análise'}

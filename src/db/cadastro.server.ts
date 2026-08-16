@@ -444,6 +444,16 @@ export async function salvarVeiculo(input: VeiculoInput) {
       ${base.fipe}, ${base.interesse}, ${base.tipoExpectativa}, ${base.percentual}, ${base.alerta},
       ${base.ciente}, ${base.cep}, ${base.endereco}, ${base.cidade}, ${base.uf}, ${base.latitude},
       ${base.longitude}, ${base.observacoes}, ${base.perfilId}::uuid, ${base.perfilId}::uuid, ${base.fotos}::jsonb, ${base.status}, 'AGUARDANDO_ANALISE', ${input.documento_crlv_url || null})
+    ON CONFLICT (placa) DO UPDATE SET
+      marca = EXCLUDED.marca, modelo = EXCLUDED.modelo, versao = EXCLUDED.versao, cor = EXCLUDED.cor,
+      km = EXCLUDED.km, ano_fabricacao = EXCLUDED.ano_fabricacao, ano_modelo = EXCLUDED.ano_modelo,
+      combustivel = EXCLUDED.combustivel, cambio = EXCLUDED.cambio, valor_fipe = EXCLUDED.valor_fipe,
+      valor_interesse_cliente = EXCLUDED.valor_interesse_cliente, tipo_expectativa = EXCLUDED.tipo_expectativa,
+      percentual_sobre_fipe = EXCLUDED.percentual_sobre_fipe, alerta_expectativa = EXCLUDED.alerta_expectativa,
+      ciente_expectativa = EXCLUDED.ciente_expectativa, cep = EXCLUDED.cep, endereco = EXCLUDED.endereco,
+      cidade = EXCLUDED.cidade, uf = EXCLUDED.uf, latitude = EXCLUDED.latitude, longitude = EXCLUDED.longitude,
+      observacoes = EXCLUDED.observacoes, fotos = EXCLUDED.fotos, status = EXCLUDED.status,
+      documento_crlv_url = EXCLUDED.documento_crlv_url, atualizado_em = now()
     RETURNING id;
   `)) as unknown as Array<{ id: string }>;
   const id = rows[0]?.id as string;
