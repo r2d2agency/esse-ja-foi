@@ -53,7 +53,7 @@ type Estado = {
   marca: string; modelo: string; versao: string;
   anoFabricacao: string; anoModelo: string; cor: string;
   combustivel: string; cambio: string; portas: string;
-  km: string; cidade: string; uf: string;
+  km: string; cep: string; cidade: string; uf: string;
   emSeuNome: string; relacaoProprietario: string; relacaoDescricao: string;
   financiado: string; instituicao: string; saldoQuitacao: string;
   crlv: string | null;
@@ -68,7 +68,7 @@ type Estado = {
 
 const INICIAL: Estado = {
   placa: '', marca: '', modelo: '', versao: '', anoFabricacao: '', anoModelo: '', cor: '',
-  combustivel: '', cambio: '', portas: '', km: '', cidade: '', uf: '',
+  combustivel: '', cambio: '', portas: '', km: '', cep: '', cidade: '', uf: '',
   emSeuNome: 'Sim', relacaoProprietario: '', relacaoDescricao: '',
   financiado: 'Não, está quitado', instituicao: '', saldoQuitacao: '',
   crlv: null,
@@ -202,6 +202,7 @@ function CadastrarVeiculo() {
           km: form.km ? Number(soDigitos(form.km)) : undefined,
           valorInteresse: valorNumero(form.valorDesejado) || undefined,
           fotos,
+          cep: form.cep || undefined,
           cidade: form.cidade || undefined,
           uf: form.uf || undefined,
           observacoes: JSON.stringify(condicao),
@@ -282,10 +283,11 @@ function CadastrarVeiculo() {
               <div className="space-y-2">
                 <Label className="text-xs font-black text-slate-400 uppercase tracking-widest">CEP (Onde o carro está?)</Label>
                 <Input
-                  value={form.uf ? `${form.cidade}/${form.uf} (${maskCep(form.uf)})` : form.cidade}
+                  value={form.cep || ''}
                   placeholder="00000-000"
                   onChange={async (e) => {
                     const val = maskCep(e.target.value);
+                    set({ cep: val });
                     const clean = val.replace(/\D/g, '');
                     if (clean.length === 8) {
                       setBuscando(true);
@@ -299,6 +301,11 @@ function CadastrarVeiculo() {
                   }}
                   className="h-14 w-full rounded-xl text-lg font-bold text-center"
                 />
+                {form.uf && (
+                  <p className="mt-1 text-center text-sm font-medium text-teal-700">
+                    {form.cidade} / {form.uf}
+                  </p>
+                )}
               </div>
               
               <Button onClick={buscarPlaca} disabled={buscando} className="h-16 w-full rounded-2xl bg-teal-800 text-lg font-black text-white hover:bg-teal-900 shadow-lg shadow-teal-900/20">
