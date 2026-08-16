@@ -161,6 +161,10 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
   .validator(z.object({
     perfilId: z.string().uuid(),
     cpf: z.string().optional().nullable(),
+    dataNascimento: z.string().optional().nullable(),
+    estadoCivil: z.string().optional().nullable(),
+    profissao: z.string().optional().nullable(),
+    nomeMae: z.string().optional().nullable(),
     cep: z.string().optional().nullable(),
     endereco: z.string().optional().nullable(),
     numero: z.string().optional().nullable(),
@@ -174,6 +178,7 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
     selfieUrl: z.string().optional().nullable(),
     comprovanteEnderecoUrl: z.string().optional().nullable(),
     finalizar: z.boolean().optional(),
+
   }))
   .handler(async ({ data }) => {
     const { db } = await import("@/db/index");
@@ -201,6 +206,10 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
     const updates: any[] = [];
     
     if (data.cpf !== undefined) updates.push(sql`cpf = ${data.cpf}`);
+    if (data.dataNascimento !== undefined) updates.push(sql`data_nascimento = ${data.dataNascimento}`);
+    if (data.estadoCivil !== undefined) updates.push(sql`estado_civil = ${data.estadoCivil}`);
+    if (data.profissao !== undefined) updates.push(sql`profissao = ${data.profissao}`);
+    if (data.nomeMae !== undefined) updates.push(sql`nome_mae = ${data.nomeMae}`);
     if (data.cep !== undefined) updates.push(sql`cep = ${data.cep}`);
     if (data.endereco !== undefined) updates.push(sql`endereco = ${data.endereco}`);
     if (data.numero !== undefined) updates.push(sql`numero = ${data.numero}`);
@@ -208,6 +217,7 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
     if (data.complemento !== undefined) updates.push(sql`complemento = ${data.complemento}`);
     if (data.cidade !== undefined) updates.push(sql`cidade = ${data.cidade}`);
     if (data.uf !== undefined) updates.push(sql`uf = ${data.uf}`);
+
     
     if (data.cnhUrl !== undefined) updates.push(sql`documento_cnh_url = ${data.cnhUrl}`);
     if (data.cnhVersoUrl !== undefined) updates.push(sql`documento_cnh_verso_url = ${data.cnhVersoUrl}`);
@@ -266,7 +276,9 @@ export const obterMeuPerfilFn = createServerFn({ method: "GET" })
     const rows = await db.execute(sql`
       SELECT id, nome, email, whatsapp, telefone, cpf, cep, endereco, cidade, uf, role,
              documento_cnh_url, documento_cnh_verso_url, documento_crlv_url, documento_selfie_url,
-             documento_comprovante_endereco_url, cadastro_completo, criado_em
+             documento_comprovante_endereco_url, cadastro_completo, criado_em,
+             data_nascimento, estado_civil, profissao, nome_mae
+
       FROM profiles WHERE id = ${data.perfilId}::uuid LIMIT 1;
     `);
     const perfil = (rows as any).rows?.[0] || (rows as any)[0] || null;

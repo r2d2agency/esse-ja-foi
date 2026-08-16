@@ -11,10 +11,11 @@ import { ESTADOS_CIVIS, PROFISSOES, UFS } from '@/lib/constants-veiculos';
 import { useState, useEffect, useRef } from 'react';
 import { useServerFn } from '@tanstack/react-start';
 import { toast } from 'sonner';
-import { atualizarDocumentosVendedorFn } from '@/lib/vendedor.functions';
+import { atualizarDocumentosVendedorFn, obterMeuPerfilFn } from '@/lib/vendedor.functions';
 import { buscarCep, maskCep, formatCurrency } from '@/lib/brasil';
 import { FileUpload } from '@/components/onboarding/FileUpload';
 import { EtapaProgresso } from '@/components/onboarding/EtapaProgresso';
+
 import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/vendedor/onboarding')({
@@ -31,6 +32,9 @@ function VendedorOnboarding() {
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [agreedPrivacy, setAgreedPrivacy] = useState(false);
   const updateDocs = useServerFn(atualizarDocumentosVendedorFn);
+  const getProfile = useServerFn(obterMeuPerfilFn);
+  const [loadingInitial, setLoadingInitial] = useState(true);
+
 
   const [personalData, setPersonalData] = useState({
     nomeCompleto: '',
@@ -63,16 +67,48 @@ function VendedorOnboarding() {
 
   // Pre-fill user data
   useEffect(() => {
-    if (user) {
-      setPersonalData(prev => ({
-        ...prev,
-        nomeCompleto: user.nome || '',
-        email: user.email || '',
-        whatsapp: (user as any).whatsapp || '',
-        cpf: (user as any).cpf || '',
-      }));
+    async function loadData() {
+      if (!user?.id) return;
+      try {
+        const res = await getProfile({ data: { perfilId: user.id } });
+        if (res.ok && res.perfil) {
+          const p = res.perfil;
+          setPersonalData({
+            nomeCompleto: p.nome || '',
+            email: p.email || '',
+            whatsapp: p.whatsapp || '',
+            cpf: p.cpf || '',
+            dataNascimento: p.data_nascimento || '',
+            estadoCivil: p.estado_civil || '',
+            profissao: p.profissao || '',
+            nomeMae: p.nome_mae || '',
+          });
+          setAddressData({
+            cep: p.cep || '',
+            endereco: p.endereco || '',
+            numero: p.numero || '',
+            complemento: p.complemento || '',
+            bairro: p.bairro || '',
+            cidade: p.cidade || '',
+            uf: p.uf || '',
+          });
+          setFiles({
+            cnhFrente: p.documento_cnh_url || null,
+            cnhVerso: p.documento_cnh_verso_url || null,
+            crlv: p.documento_crlv_url || null,
+            selfie: p.documento_selfie_url || null,
+            comprovanteEndereco: p.documento_comprovante_endereco_url || null,
+          });
+        }
+      } catch (err) {
+        console.error("Erro ao carregar dados iniciais:", err);
+      } finally {
+        setLoadingInitial(false);
+      }
     }
-  }, [user]);
+    loadData();
+  }, [user, getProfile]);
+
 
   const DOCS_OBRIGATORIOS: { label: string; ok: boolean }[] = [
     { label: "CNH (frente)", ok: !!files.cnhFrente },
@@ -90,6 +126,10 @@ function VendedorOnboarding() {
         data: {
           perfilId: user?.id || "",
           cpf: personalData.cpf,
+          dataNascimento: personalData.dataNascimento,
+          estadoCivil: personalData.estadoCivil,
+          profissao: personalData.profissao,
+          nomeMae: personalData.nomeMae,
           cep: addressData.cep,
           endereco: addressData.endereco,
           numero: addressData.numero,
@@ -97,6 +137,7 @@ function VendedorOnboarding() {
           complemento: addressData.complemento,
           cidade: addressData.cidade,
           uf: addressData.uf,
+
           cnhUrl: files.cnhFrente || undefined,
           cnhVersoUrl: files.cnhVerso || undefined,
           crlvUrl: files.crlv || undefined,
@@ -167,7 +208,14 @@ function VendedorOnboarding() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center py-10 px-4 md:py-16">
-      <div className="w-full max-w-3xl">
+      {loadingInitial ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <Loader2 className="w-10 h-10 text-teal-700 animate-spin" />
+          <p className="mt-4 text-slate-500 font-medium">Carregando seus dados...</p>
+        </div>
+      ) : (
+        <div className="w-full max-w-3xl">
+
         {/* Logo Section */}
         <div className="flex items-center justify-center gap-2 mb-10">
           <div className="w-12 h-12 bg-teal-900 rounded-2xl flex items-center justify-center shadow-lg">
@@ -490,7 +538,9 @@ function VendedorOnboarding() {
           © 2026 ESSE JÁ FOI — AMBIENTE SEGURO E CRIPTOGRAFADO
         </p>
       </div>
+      )}
     </div>
+
   );
 }
 
