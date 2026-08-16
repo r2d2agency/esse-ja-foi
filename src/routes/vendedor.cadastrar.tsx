@@ -117,13 +117,16 @@ function CadastrarVeiculo() {
 
   // Rascunho: hidratação + salvamento automático
   useEffect(() => {
+    // Rascunho desativado a pedido do usuário para garantir campos em branco ao retornar
+    /*
     const bruto = localStorage.getItem(DRAFT_KEY);
     if (bruto) {
-      try { setForm({ ...INICIAL, ...JSON.parse(bruto) }); } catch { /* rascunho inválido */ }
+      try { setForm({ ...INICIAL, ...JSON.parse(bruto) }); } catch { }
     } else {
       const placa = sessionStorage.getItem('ejf_placa');
       if (placa) setForm((f) => ({ ...f, placa: maskPlaca(placa) }));
     }
+    */
     hidratado.current = true;
   }, []);
 
