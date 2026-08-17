@@ -186,16 +186,15 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
   }))
   .handler(async ({ data }) => {
     const { db } = await import("@/db/index");
-    const { sql } = await import("drizzle-orm");
     if (!db) throw new Error("Banco de dados indisponível");
 
     if (data.finalizar) {
-      const atual = (await db.execute(sql`
+      const rows = (await db.execute(sql`
         SELECT documento_cnh_url, documento_cnh_verso_url, documento_crlv_url,
                documento_selfie_url, documento_comprovante_endereco_url
         FROM profiles WHERE id = ${data.perfilId}::uuid
       `)) as any;
-      const p = atual.rows?.[0] || atual[0] || {};
+      const p = rows.rows?.[0] || rows[0] || {};
       const faltando: string[] = [];
       if (!(data.cnhUrl || p.documento_cnh_url)) faltando.push("CNH (frente)");
       if (!(data.cnhVersoUrl || p.documento_cnh_verso_url)) faltando.push("CNH (verso)");
@@ -207,39 +206,39 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
       }
     }
 
-    const updates: string[] = [];
-    const values: any[] = [];
-    let i = 1;
+    const setClauses: any = {};
+    
+    if (data.cpf !== undefined) setClauses.cpf = data.cpf;
+    if (data.dataNascimento !== undefined) setClauses.data_nascimento = data.dataNascimento;
+    if (data.estadoCivil !== undefined) setClauses.estado_civil = data.estadoCivil;
+    if (data.profissao !== undefined) setClauses.profissao = data.profissao;
+    if (data.nomeMae !== undefined) setClauses.nome_mae = data.nomeMae;
+    if (data.cep !== undefined) setClauses.cep = data.cep;
+    if (data.endereco !== undefined) setClauses.endereco = data.endereco;
+    if (data.numero !== undefined) setClauses.numero = data.numero;
+    if (data.bairro !== undefined) setClauses.bairro = data.bairro;
+    if (data.complemento !== undefined) setClauses.complemento = data.complemento;
+    if (data.cidade !== undefined) setClauses.cidade = data.cidade;
+    if (data.uf !== undefined) setClauses.uf = data.uf;
+    if (data.cnhUrl !== undefined) setClauses.documento_cnh_url = data.cnhUrl;
+    if (data.cnhVersoUrl !== undefined) setClauses.documento_cnh_verso_url = data.cnhVersoUrl;
+    if (data.crlvUrl !== undefined) setClauses.documento_crlv_url = data.crlvUrl;
+    if (data.selfieUrl !== undefined) setClauses.documento_selfie_url = data.selfieUrl;
+    if (data.comprovanteEnderecoUrl !== undefined) setClauses.documento_comprovante_endereco_url = data.comprovanteEnderecoUrl;
+    
+    if (data.finalizar !== undefined) {
+      setClauses.cadastro_completo = data.finalizar;
+    }
 
-    const addUpdate = (col: string, val: any) => {
-        updates.push(`${col} = $${i++}`);
-        values.push(val);
-    };
-
-    if (data.cpf !== undefined) addUpdate("cpf", data.cpf);
-    if (data.dataNascimento !== undefined) addUpdate("data_nascimento", data.dataNascimento);
-    if (data.estadoCivil !== undefined) addUpdate("estado_civil", data.estadoCivil);
-    if (data.profissao !== undefined) addUpdate("profissao", data.profissao);
-    if (data.nomeMae !== undefined) addUpdate("nome_mae", data.nomeMae);
-    if (data.cep !== undefined) addUpdate("cep", data.cep);
-    if (data.endereco !== undefined) addUpdate("endereco", data.endereco);
-    if (data.numero !== undefined) addUpdate("numero", data.numero);
-    if (data.bairro !== undefined) addUpdate("bairro", data.bairro);
-    if (data.complemento !== undefined) addUpdate("complemento", data.complemento);
-    if (data.cidade !== undefined) addUpdate("cidade", data.cidade);
-    if (data.uf !== undefined) addUpdate("uf", data.uf);
-    if (data.cnhUrl !== undefined) addUpdate("documento_cnh_url", data.cnhUrl);
-    if (data.cnhVersoUrl !== undefined) addUpdate("documento_cnh_verso_url", data.cnhVersoUrl);
-    if (data.crlvUrl !== undefined) addUpdate("documento_crlv_url", data.crlvUrl);
-    if (data.selfieUrl !== undefined) addUpdate("documento_selfie_url", data.selfieUrl);
-    if (data.comprovanteEnderecoUrl !== undefined) addUpdate("documento_comprovante_endereco_url", data.comprovanteEnderecoUrl);
-    if (data.finalizar !== undefined) addUpdate("cadastro_completo", data.finalizar);
-
-    if (updates.length > 0) {
-      updates.push(`atualizado_em = now()`);
-      const setClause = updates.join(", ");
-      const query = `UPDATE profiles SET ${setClause} WHERE id = $${i}`;
-      await db.execute(sql.raw(query), [...values, data.perfilId]);
+    if (Object.keys(setClauses).length > 0) {
+      setClauses.atualizado_em = new Date();
+      
+      const cols = Object.keys(setClauses);
+      const vals = Object.values(setClauses);
+      const updates = cols.map((col, i) => `${col} = $${i + 1}`).join(", ");
+      const query = `UPDATE profiles SET ${updates} WHERE id = $${cols.length + 1}`;
+      
+      await db.execute(sql.raw(query), [...vals, data.perfilId]);
     }
     
     return { ok: true as const };
