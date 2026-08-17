@@ -185,8 +185,8 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
 
   }))
   .handler(async ({ data }) => {
-    const { db, client } = await import("@/db/index");
-    if (!db || !client) throw new Error("Banco de dados indisponível");
+    const { db } = await import("@/db/index");
+    if (!db) throw new Error("Banco de dados indisponível");
 
     if (data.finalizar) {
       const rows = (await db.execute(sql`
@@ -206,41 +206,37 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
       }
     }
 
-    const setClauses: Record<string, any> = {};
+    const setClauses: any[] = [];
     
-    if (data.cpf !== undefined) setClauses.cpf = data.cpf;
-    if (data.dataNascimento !== undefined) setClauses.data_nascimento = data.dataNascimento;
-    if (data.estadoCivil !== undefined) setClauses.estado_civil = data.estadoCivil;
-    if (data.profissao !== undefined) setClauses.profissao = data.profissao;
-    if (data.nomeMae !== undefined) setClauses.nome_mae = data.nomeMae;
-    if (data.cep !== undefined) setClauses.cep = data.cep;
-    if (data.endereco !== undefined) setClauses.endereco = data.endereco;
-    if (data.numero !== undefined) setClauses.numero = data.numero;
-    if (data.bairro !== undefined) setClauses.bairro = data.bairro;
-    if (data.complemento !== undefined) setClauses.complemento = data.complemento;
-    if (data.cidade !== undefined) setClauses.cidade = data.cidade;
-    if (data.uf !== undefined) setClauses.uf = data.uf;
-    if (data.cnhUrl !== undefined) setClauses.documento_cnh_url = data.cnhUrl;
-    if (data.cnhVersoUrl !== undefined) setClauses.documento_cnh_verso_url = data.cnhVersoUrl;
-    if (data.crlvUrl !== undefined) setClauses.documento_crlv_url = data.crlvUrl;
-    if (data.selfieUrl !== undefined) setClauses.documento_selfie_url = data.selfieUrl;
-    if (data.comprovanteEnderecoUrl !== undefined) setClauses.documento_comprovante_endereco_url = data.comprovanteEnderecoUrl;
+    if (data.cpf !== undefined) setClauses.push(sql`cpf = ${data.cpf}`);
+    if (data.dataNascimento !== undefined) setClauses.push(sql`data_nascimento = ${data.dataNascimento}`);
+    if (data.estadoCivil !== undefined) setClauses.push(sql`estado_civil = ${data.estadoCivil}`);
+    if (data.profissao !== undefined) setClauses.push(sql`profissao = ${data.profissao}`);
+    if (data.nomeMae !== undefined) setClauses.push(sql`nome_mae = ${data.nomeMae}`);
+    if (data.cep !== undefined) setClauses.push(sql`cep = ${data.cep}`);
+    if (data.endereco !== undefined) setClauses.push(sql`endereco = ${data.endereco}`);
+    if (data.numero !== undefined) setClauses.push(sql`numero = ${data.numero}`);
+    if (data.bairro !== undefined) setClauses.push(sql`bairro = ${data.bairro}`);
+    if (data.complemento !== undefined) setClauses.push(sql`complemento = ${data.complemento}`);
+    if (data.cidade !== undefined) setClauses.push(sql`cidade = ${data.cidade}`);
+    if (data.uf !== undefined) setClauses.push(sql`uf = ${data.uf}`);
+    if (data.cnhUrl !== undefined) setClauses.push(sql`documento_cnh_url = ${data.cnhUrl}`);
+    if (data.cnhVersoUrl !== undefined) setClauses.push(sql`documento_cnh_verso_url = ${data.cnhVersoUrl}`);
+    if (data.crlvUrl !== undefined) setClauses.push(sql`documento_crlv_url = ${data.crlvUrl}`);
+    if (data.selfieUrl !== undefined) setClauses.push(sql`documento_selfie_url = ${data.selfieUrl}`);
+    if (data.comprovanteEnderecoUrl !== undefined) setClauses.push(sql`documento_comprovante_endereco_url = ${data.comprovanteEnderecoUrl}`);
     
     if (data.finalizar !== undefined) {
-      setClauses.cadastro_completo = data.finalizar;
+      setClauses.push(sql`cadastro_completo = ${data.finalizar}`);
     }
 
-    if (Object.keys(setClauses).length > 0) {
-      setClauses.atualizado_em = new Date().toISOString();
+    if (setClauses.length > 0) {
+      setClauses.push(sql`atualizado_em = now()`);
       
-      const cols = Object.keys(setClauses);
-      const vals = Object.values(setClauses);
-      const updates = cols.map((col, i) => `${col} = $${i + 1}`).join(", ");
-      const query = `UPDATE profiles SET ${updates} WHERE id = $${cols.length + 1}`;
-      
-      // Using postgres.js directly as Drizzle's execute(sql.raw()) wrapper
-      // might have different signatures or type issues in this environment
-      await client(query, [...vals, data.perfilId]);
+      const setClause = sql.join(setClauses, sql`, `);
+      await db.execute(sql`
+        UPDATE profiles SET ${setClause} WHERE id = ${data.perfilId}::uuid
+      `);
     }
     
     return { ok: true as const };
