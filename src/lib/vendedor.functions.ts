@@ -185,8 +185,8 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
 
   }))
   .handler(async ({ data }) => {
-    const { db } = await import("@/db/index");
-    if (!db) throw new Error("Banco de dados indisponível");
+    const { db, client } = await import("@/db/index");
+    if (!db || !client) throw new Error("Banco de dados indisponível");
 
     if (data.finalizar) {
       const rows = (await db.execute(sql`
@@ -206,7 +206,7 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
       }
     }
 
-    const setClauses: any = {};
+    const setClauses: Record<string, any> = {};
     
     if (data.cpf !== undefined) setClauses.cpf = data.cpf;
     if (data.dataNascimento !== undefined) setClauses.data_nascimento = data.dataNascimento;
@@ -231,14 +231,16 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
     }
 
     if (Object.keys(setClauses).length > 0) {
-      setClauses.atualizado_em = new Date();
+      setClauses.atualizado_em = new Date().toISOString();
       
       const cols = Object.keys(setClauses);
       const vals = Object.values(setClauses);
       const updates = cols.map((col, i) => `${col} = $${i + 1}`).join(", ");
       const query = `UPDATE profiles SET ${updates} WHERE id = $${cols.length + 1}`;
       
-      await db.execute(sql.raw(query), [...vals, data.perfilId]);
+      // Using postgres.js directly as Drizzle's execute(sql.raw()) wrapper
+      // might have different signatures or type issues in this environment
+      await client(query, [...vals, data.perfilId]);
     }
     
     return { ok: true as const };
