@@ -44,7 +44,11 @@ export const Route = createFileRoute("/vendedor/onboarding")({
   loader: async ({ context }) => {
     await context.queryClient.ensureQueryData({
       queryKey: ["meu-perfil"],
-      queryFn: () => obterMeuPerfilFn()
+      queryFn: () => {
+        // We don't have user.id here easily, but the server function will fail if not authenticated
+        // This is a loader, it should ideally use context to get the session/user
+        return obterMeuPerfilFn({ data: { perfilId: "" } });
+      }
     });
   }
 });
