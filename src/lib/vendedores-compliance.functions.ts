@@ -2,56 +2,91 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 export const listarVendedoresFn = createServerFn({ method: "GET" })
-  .validator((d: unknown) => z.object({ 
-    status: z.string().optional(), 
-    busca: z.string().optional() 
+  .inputValidator((d) => z.object({
+    status: z.string().optional(),
+    busca: z.string().optional()
   }).parse(d))
   .handler(async ({ data }) => {
     const { listarVendedores } = await import("@/db/vendedores-compliance.server");
-    return { 
-      ok: true, 
-      data: await listarVendedores({
-        status: data.status,
-        busca: data.busca
-      }) 
-    };
+    try {
+      const vendedores = await listarVendedores(data);
+      return { ok: true as const, data: vendedores };
+    } catch (e: any) {
+      return { ok: false as const, message: e.message };
+    }
   });
 
 export const obterDetalheVendedorFn = createServerFn({ method: "GET" })
-  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .inputValidator((d) => z.object({ id: z.string() }).parse(d))
   .handler(async ({ data }) => {
     const { obterDetalheVendedor } = await import("@/db/vendedores-compliance.server");
     try {
-      return { ok: true as const, data: await obterDetalheVendedor(data.id) };
+      const vendedor = await obterDetalheVendedor(data.id);
+      return { ok: true as const, data: vendedor };
     } catch (e: any) {
       return { ok: false as const, message: e.message };
     }
   });
 
 export const assumirAnaliseFn = createServerFn({ method: "POST" })
-  .validator((d: unknown) => z.object({ vendedorId: z.string().uuid(), responsavelId: z.string().uuid() }).parse(d))
+  .inputValidator((d) => z.object({
+    vendedorId: z.string(),
+    responsavelId: z.string()
+  }).parse(d))
   .handler(async ({ data }) => {
     const { assumirAnalise } = await import("@/db/vendedores-compliance.server");
     try {
-      return await assumirAnalise(data.vendedorId, data.responsavelId);
+      await assumirAnalise(data.vendedorId, data.responsavelId);
+      return { ok: true as const };
     } catch (e: any) {
-      return { ok: false, message: e.message };
+      return { ok: false as const, message: e.message };
     }
   });
 
 export const atualizarStatusDocumentoFn = createServerFn({ method: "POST" })
-  .validator((d: unknown) => z.object({ 
-    vendedorId: z.string().uuid(), 
-    documentoTipo: z.string(), 
+  .inputValidator((d) => z.object({
+    vendedorId: z.string(),
+    documentoTipo: z.string(),
     status: z.string(),
-    autorId: z.string().uuid()
+    autorId: z.string()
   }).parse(d))
   .handler(async ({ data }) => {
     const { atualizarStatusDocumento } = await import("@/db/vendedores-compliance.server");
     try {
-      return await atualizarStatusDocumento(data.vendedorId, data.documentoTipo, data.status, data.autorId);
+      await atualizarStatusDocumento(data.vendedorId, data.documentoTipo, data.status, data.autorId);
+      return { ok: true as const };
     } catch (e: any) {
-      return { ok: false, message: e.message };
+      return { ok: false as const, message: e.message };
     }
   });
 
+export const aprovarVendedorComplianceFn = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({
+    vendedorId: z.string(),
+    autorId: z.string()
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const { aprovarVendedorCompliance } = await import("@/db/vendedores-compliance.server");
+    try {
+      await aprovarVendedorCompliance(data.vendedorId, data.autorId);
+      return { ok: true as const };
+    } catch (e: any) {
+      return { ok: false as const, message: e.message };
+    }
+  });
+
+export const solicitarPendenciaComplianceFn = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({
+    vendedorId: z.string(),
+    autorId: z.string(),
+    motivo: z.string()
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const { solicitarPendenciaCompliance } = await import("@/db/vendedores-compliance.server");
+    try {
+      await solicitarPendenciaCompliance(data.vendedorId, data.autorId, data.motivo);
+      return { ok: true as const };
+    } catch (e: any) {
+      return { ok: false as const, message: e.message };
+    }
+  });

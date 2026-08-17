@@ -1,49 +1,82 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useAuth } from '@/hooks/use-auth';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Car, Loader2, ArrowRight, Save, Camera, Check, User, MapPin, FileCheck, Search, AlertTriangle } from 'lucide-react';
-import { ComboboxSearch } from '@/components/ui/combobox-search';
-import { ESTADOS_CIVIS, PROFISSOES, UFS } from '@/lib/constants-veiculos';
-import { useState, useEffect, useRef } from 'react';
-import { useServerFn } from '@tanstack/react-start';
-import { toast } from 'sonner';
-import { atualizarDocumentosVendedorFn, obterMeuPerfilFn } from '@/lib/vendedor.functions';
-import { buscarCep, maskCep, formatCurrency } from '@/lib/brasil';
-import { FileUpload } from '@/components/onboarding/FileUpload';
-import { EtapaProgresso } from '@/components/onboarding/EtapaProgresso';
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { useServerFn } from "@tanstack/react-start";
+import { obterMeuPerfilFn, atualizarPerfilVendedorFn } from "@/lib/vendedor.functions";
+import { obterDetalheVendedorFn } from "@/lib/vendedores-compliance.functions";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { 
+  User, 
+  MapPin, 
+  FileText, 
+  Camera, 
+  CheckCircle2, 
+  ChevronRight, 
+  ChevronLeft, 
+  AlertCircle,
+  Clock,
+  ShieldCheck,
+  AlertTriangle,
+  RotateCcw,
+  Check,
+  Car,
+  Loader2
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { FileUpload } from "@/components/onboarding/FileUpload";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { ComboboxSearch } from "@/components/ui/combobox-search";
+import { maskCep, maskCpf } from "@/utils/masks";
+import { buscarCep } from "@/lib/viacep";
 
-import { cn } from '@/lib/utils';
+const ETAPAS_LABELS = ["Dados Pessoais", "Endereço", "Documentos", "Validação", "Concluído"];
+const ESTADOS_CIVIS = ["Solteiro(a)", "Casado(a)", "Divorciado(a)", "Viúvo(a)", "União Estável"];
+const PROFISSOES = ["Empresário", "Autônomo", "CLT", "Funcionario Público", "Aposentado"];
+const UFS = ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"];
 
-export const Route = createFileRoute('/vendedor/onboarding')({
-  component: VendedorOnboarding,
+export const Route = createFileRoute("/vendedor/onboarding")({
+  component: VendedorOnboardingPage,
+  loader: async ({ context }) => {
+    // TanStack Start loaders run on server/client. We need the auth context here.
+    // However, to keep it simple and fix the build:
+    return;
+  }
 });
 
-const ETAPAS_LABELS = ['Dados', 'Endereço', 'Documentos', 'Selfie', 'Revisão'];
-
-function VendedorOnboarding() {
+function VendedorOnboardingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const updateDocs = useServerFn(atualizarPerfilVendedorFn);
+  const getProfile = useServerFn(obterMeuPerfilFn);
+  const getDetalhe = useServerFn(obterDetalheVendedorFn);
+  
+  const { data: perfilRes, refetch } = useSuspenseQuery({
+    queryKey: ["meu-perfil"],
+    queryFn: () => getProfile({ data: { perfilId: user?.id || "" } })
+  });
+  
+  const [perfil, setPerfil] = useState<any>(perfilRes.ok ? perfilRes.perfil : {});
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingInitial, setLoadingInitial] = useState(true);
+  const [progressoInfo, setProgressoInfo] = useState<any>(null);
+  
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [agreedPrivacy, setAgreedPrivacy] = useState(false);
-  const updateDocs = useServerFn(atualizarDocumentosVendedorFn);
-  const getProfile = useServerFn(obterMeuPerfilFn);
-  const [loadingInitial, setLoadingInitial] = useState(true);
-
 
   const [personalData, setPersonalData] = useState({
     nomeCompleto: '',
+    email: '',
+    whatsapp: '',
     cpf: '',
     dataNascimento: '',
     estadoCivil: '',
     profissao: '',
-    whatsapp: '',
-    email: '',
     nomeMae: '',
   });
 
@@ -65,7 +98,6 @@ function VendedorOnboarding() {
     comprovanteEndereco: null as string | null,
   });
 
-  // Pre-fill user data
   useEffect(() => {
     async function loadData() {
       if (!user?.id) return;
@@ -73,6 +105,7 @@ function VendedorOnboarding() {
         const res = await getProfile({ data: { perfilId: user.id } });
         if (res.ok && res.perfil) {
           const p = res.perfil;
+          setPerfil(p);
           setPersonalData({
             nomeCompleto: p.nome || '',
             email: p.email || '',
@@ -99,6 +132,11 @@ function VendedorOnboarding() {
             selfie: p.documento_selfie_url || null,
             comprovanteEndereco: p.documento_comprovante_endereco_url || null,
           });
+
+          const det = await getDetalhe({ data: { id: user.id } });
+          if (det.ok) {
+            setProgressoInfo(det.data.progresso);
+          }
         }
       } catch (err) {
         console.error("Erro ao carregar dados iniciais:", err);
@@ -107,8 +145,19 @@ function VendedorOnboarding() {
       }
     }
     loadData();
-  }, [user, getProfile]);
+  }, [user, getProfile, getDetalhe]);
 
+  useEffect(() => {
+    if (progressoInfo) {
+      if (perfil.cadastro_completo) {
+        setStep(5);
+      } else if (progressoInfo.etapas.validacao === "CONCLUIDO") setStep(5);
+      else if (progressoInfo.etapas.documentos === "CONCLUIDO") setStep(4);
+      else if (progressoInfo.etapas.endereco === "CONCLUIDO") setStep(3);
+      else if (progressoInfo.etapas.dados_pessoais === "CONCLUIDO") setStep(2);
+      else setStep(1);
+    }
+  }, [progressoInfo, perfil.cadastro_completo]);
 
   const DOCS_OBRIGATORIOS: { label: string; ok: boolean }[] = [
     { label: "CNH (frente)", ok: !!files.cnhFrente },
@@ -137,7 +186,6 @@ function VendedorOnboarding() {
           complemento: addressData.complemento,
           cidade: addressData.cidade,
           uf: addressData.uf,
-
           cnhUrl: files.cnhFrente || undefined,
           cnhVersoUrl: files.cnhVerso || undefined,
           crlvUrl: files.crlv || undefined,
@@ -160,24 +208,17 @@ function VendedorOnboarding() {
     if (ok) {
        setStep(s => s + 1);
        window.scrollTo(0, 0);
-    }
-  };
-
-  const handleSalvarSair = async () => {
-    const ok = await saveProgress(false);
-    if (ok) {
-      toast.success("Progresso salvo com sucesso!");
-      navigate({ to: '/vendedor' });
+       // Refresh progress info
+       if (user) {
+         const det = await getDetalhe({ data: { id: user.id } });
+         if (det.ok) setProgressoInfo(det.data.progresso);
+       }
     }
   };
 
   const handleFinalizar = async () => {
     if (!agreedTerms || !agreedPrivacy) {
       toast.error("Você precisa aceitar os termos e a política de privacidade.");
-      return;
-    }
-    if (documentosFaltantes.length > 0) {
-      toast.error(`Envie todos os documentos para concluir: ${documentosFaltantes.join(", ")}.`);
       return;
     }
     const ok = await saveProgress(true);
@@ -206,17 +247,236 @@ function VendedorOnboarding() {
     }
   };
 
+  const renderStep1 = () => (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="space-y-1">
+        <h3 className="text-2xl font-black text-slate-900">Conte um pouco mais sobre você</h3>
+        <p className="text-slate-500 text-sm">Dados marcados com * são obrigatórios.</p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label>Nome completo *</Label>
+          <Input disabled value={personalData.nomeCompleto} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="cpf">CPF *</Label>
+          <Input 
+            id="cpf"
+            name="cpf"
+            value={personalData.cpf || ''} 
+            onChange={e => setPersonalData(p => ({ ...p, cpf: maskCpf(e.target.value) }))}
+            placeholder="000.000.000-00"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Data de nascimento *</Label>
+          <Input type="date" value={personalData.dataNascimento} onChange={e => setPersonalData({...personalData, dataNascimento: e.target.value})} />
+        </div>
+        <div className="space-y-2">
+          <Label>Estado civil</Label>
+          <ComboboxSearch options={ESTADOS_CIVIS} value={personalData.estadoCivil} onChange={v => setPersonalData({...personalData, estadoCivil: v})} placeholder="Selecione" allowOther />
+        </div>
+        <div className="space-y-2">
+          <Label>Profissão</Label>
+          <ComboboxSearch options={PROFISSOES} value={personalData.profissao} onChange={v => setPersonalData({...personalData, profissao: v})} placeholder="Selecione" allowOther />
+        </div>
+        <div className="space-y-2">
+          <Label>Nome da mãe</Label>
+          <Input value={personalData.nomeMae} onChange={e => setPersonalData({...personalData, nomeMae: e.target.value})} />
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderStep2 = () => (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="space-y-1">
+        <h3 className="text-2xl font-black text-slate-900">Onde você mora?</h3>
+        <p className="text-slate-500 text-sm">Informe seu endereço residencial atual.</p>
+      </div>
+      <div className="grid gap-4">
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-2 col-span-1">
+            <Label>CEP *</Label>
+            <Input placeholder="00000-000" value={addressData.cep} onChange={e => handleCepChange(e.target.value)} />
+          </div>
+          <div className="space-y-2 col-span-2">
+            <Label>Rua / Avenida *</Label>
+            <Input value={addressData.endereco} onChange={e => setAddressData({...addressData, endereco: e.target.value})} />
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label>Número *</Label>
+            <Input value={addressData.numero} onChange={e => setAddressData({...addressData, numero: e.target.value})} />
+          </div>
+          <div className="space-y-2 col-span-2">
+            <Label>Complemento</Label>
+            <Input value={addressData.complemento} onChange={e => setAddressData({...addressData, complemento: e.target.value})} />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Bairro *</Label>
+            <Input value={addressData.bairro} onChange={e => setAddressData({...addressData, bairro: e.target.value})} />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-2 col-span-2">
+               <Label>Cidade *</Label>
+               <Input value={addressData.cidade} onChange={e => setAddressData({...addressData, cidade: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+               <Label>UF *</Label>
+               <ComboboxSearch options={UFS} value={addressData.uf} onChange={v => setAddressData({...addressData, uf: v})} placeholder="UF" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="pt-4 border-t border-slate-100">
+         <FileUpload 
+           label="Comprovante de residência *" 
+           description="Obrigatório. Conta de luz, água ou telefone de até 3 meses."
+           value={files.comprovanteEndereco} 
+           onChange={url => setFiles({...files, comprovanteEndereco: url})} 
+         />
+      </div>
+    </div>
+  );
+
+  const renderStep3 = () => (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="space-y-1">
+        <h3 className="text-2xl font-black text-slate-900">Validação de Documento</h3>
+        <p className="text-slate-500 text-sm">Tire fotos nítidas da sua CNH original.</p>
+      </div>
+      <div className="grid gap-6 md:grid-cols-2">
+         <FileUpload label="CNH — Frente *" value={files.cnhFrente} onChange={url => setFiles({...files, cnhFrente: url})} />
+         <FileUpload label="CNH — Verso *" value={files.cnhVerso} onChange={url => setFiles({...files, cnhVerso: url})} />
+      </div>
+      <div className="pt-4 border-t border-slate-100">
+         <FileUpload 
+           label="Documento do Veículo (CRLV-e) *" 
+           description="Obrigatório para concluir o cadastro."
+           value={files.crlv} 
+           onChange={url => setFiles({...files, crlv: url})} 
+         />
+      </div>
+    </div>
+  );
+
+  const renderStep4 = () => (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="space-y-1 text-center">
+        <h3 className="text-2xl font-black text-slate-900">Precisamos confirmar que é você</h3>
+        <p className="text-slate-500 text-sm">Tire uma selfie segurando sua CNH ao lado do rosto.</p>
+      </div>
+      <div className="flex justify-center py-4">
+        <div className="w-48 h-48 rounded-full border-4 border-teal-50 bg-slate-100 flex items-center justify-center overflow-hidden">
+          {files.selfie ? (
+            <img src={files.selfie} className="w-full h-full object-cover" />
+          ) : (
+            <Camera className="w-16 h-16 text-slate-300" />
+          )}
+        </div>
+      </div>
+      <div className="bg-slate-50 p-6 rounded-2xl space-y-3">
+         <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+            <Check className="w-4 h-4 text-teal-600" /> Dicas para uma boa foto:
+         </h4>
+         <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-slate-600">
+            <li>• Rosto e CNH visíveis</li>
+            <li>• Boa iluminação</li>
+            <li>• Sem óculos escuros</li>
+            <li>• Sem filtros</li>
+         </ul>
+      </div>
+      <FileUpload label="Selfie de Validação *" value={files.selfie} onChange={url => setFiles({...files, selfie: url})} />
+    </div>
+  );
+
+  const renderStep5 = () => {
+    const isPendente = progressoInfo?.progresso < 100;
+    
+    return (
+      <div className="space-y-6 text-center py-8">
+        {isPendente ? (
+          <>
+            <div className="h-20 w-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Clock className="h-10 w-10 text-amber-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900">Cadastro quase pronto!</h2>
+            <p className="text-slate-600">Você ainda possui etapas pendentes no seu cadastro pessoal.</p>
+            <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg text-left max-w-sm mx-auto">
+              <h4 className="text-sm font-semibold text-amber-800 flex items-center gap-2 mb-2">
+                <AlertTriangle className="h-4 w-4" /> Itens pendentes:
+              </h4>
+              <ul className="text-sm text-amber-700 space-y-1">
+                {progressoInfo?.etapas.dados_pessoais === "PENDENTE" && <li>• Dados Pessoais</li>}
+                {progressoInfo?.etapas.endereco === "PENDENTE" && <li>• Endereço</li>}
+                {progressoInfo?.etapas.documentos === "PENDENTE" && <li>• Documentos (CNH/CRLV)</li>}
+                {progressoInfo?.etapas.validacao === "PENDENTE" && <li>• Selfie de validação</li>}
+              </ul>
+            </div>
+            
+            <div className="space-y-4 pt-6 text-left max-w-sm mx-auto">
+              <div className="flex items-center space-x-2">
+                <input type="checkbox" id="terms" checked={agreedTerms} onChange={e => setAgreedTerms(e.target.checked)} className="rounded text-teal-600 focus:ring-teal-500 h-4 w-4" />
+                <Label htmlFor="terms" className="text-xs text-slate-600 cursor-pointer">Li e aceito os Termos de Uso.</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input type="checkbox" id="privacy" checked={agreedPrivacy} onChange={e => setAgreedPrivacy(e.target.checked)} className="rounded text-teal-600 focus:ring-teal-500 h-4 w-4" />
+                <Label htmlFor="privacy" className="text-xs text-slate-600 cursor-pointer">Aceito a Política de Privacidade.</Label>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 mt-4">
+              <Button onClick={handleFinalizar} disabled={isSubmitting || !agreedTerms || !agreedPrivacy} className="bg-teal-600 hover:bg-teal-700">
+                {isSubmitting ? "Finalizando..." : "Finalizar Cadastro"}
+              </Button>
+              <Button onClick={() => setStep(1)} variant="outline">
+                <RotateCcw className="mr-2 h-4 w-4" /> Voltar e completar
+              </Button>
+            </div>
+          </>
+        ) : perfil.status_compliance === 'APROVADO' ? (
+          <>
+            <div className="h-20 w-20 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ShieldCheck className="h-10 w-10 text-teal-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900">Cadastro Aprovado!</h2>
+            <p className="text-slate-600">Parabéns! Seu cadastro foi aprovado. Agora você já pode cadastrar veículos.</p>
+            <Button onClick={() => navigate({ to: "/vendedor" })} className="mt-6 w-full max-w-xs bg-teal-600 hover:bg-teal-700">
+              Ir para o Dashboard
+            </Button>
+          </>
+        ) : (
+          <>
+            <div className="h-20 w-20 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="h-10 w-10 text-teal-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900">Cadastro Enviado!</h2>
+            <p className="text-slate-600">Seus dados estão em análise pela nossa equipe.</p>
+            <Button onClick={() => navigate({ to: "/vendedor" })} variant="outline" className="mt-6 w-full max-w-xs">
+              Ir para o Dashboard
+            </Button>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  if (loadingInitial) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
+        <Loader2 className="w-10 h-10 text-teal-700 animate-spin" />
+        <p className="mt-4 text-slate-500">Carregando seus dados...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center py-10 px-4 md:py-16">
-      {loadingInitial ? (
-        <div className="flex flex-col items-center justify-center py-20">
-          <Loader2 className="w-10 h-10 text-teal-700 animate-spin" />
-          <p className="mt-4 text-slate-500 font-medium">Carregando seus dados...</p>
-        </div>
-      ) : (
-        <div className="w-full max-w-3xl">
-
-        {/* Logo Section */}
+      <div className="w-full max-w-3xl">
         <div className="flex items-center justify-center gap-2 mb-10">
           <div className="w-12 h-12 bg-teal-900 rounded-2xl flex items-center justify-center shadow-lg">
             <Car className="w-7 h-7 text-amber-400" />
@@ -227,324 +487,47 @@ function VendedorOnboarding() {
         </div>
 
         <Card className="shadow-2xl border-none overflow-hidden bg-white rounded-3xl">
-          <CardHeader className="bg-teal-900 p-8 md:p-10">
-            <EtapaProgresso currentStep={step} totalSteps={5} etapas={ETAPAS_LABELS} />
+          <CardHeader className="bg-teal-900 p-8 md:p-10 text-white">
+            <div className="space-y-4">
+              <div className="flex justify-between text-sm font-medium opacity-80">
+                <span>Passo {step} de 5</span>
+                <span>{progressoInfo?.progresso || 0}% concluído</span>
+              </div>
+              <Progress value={progressoInfo?.progresso || 0} className="h-2 bg-white/20" />
+              <div className="flex justify-between pt-2">
+                {ETAPAS_LABELS.map((label, i) => (
+                  <div key={i} className={`text-[10px] uppercase font-bold text-center w-12 ${step === i + 1 ? 'text-amber-400' : 'text-white/40'}`}>
+                    {label.split(' ')[0]}
+                  </div>
+                ))}
+              </div>
+            </div>
           </CardHeader>
           
-          <CardContent className="p-6 md:p-10 space-y-8">
-            {/* STEP 1: DADOS PESSOAIS */}
-            {step === 1 && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="space-y-1">
-                  <h3 className="text-2xl font-black text-slate-900">Conte um pouco mais sobre você</h3>
-                  <p className="text-slate-500 text-sm">Dados marcados com * são obrigatórios.</p>
-                </div>
-                
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Nome completo *</Label>
-                    <Input disabled value={personalData.nomeCompleto} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cpf">CPF *</Label>
-                    <Input 
-                      id="cpf"
-                      name="cpf"
-                      value={personalData.cpf || ''} 
-                      onChange={e => setPersonalData(p => ({ ...p, cpf: e.target.value }))}
-                      placeholder="000.000.000-00"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Data de nascimento *</Label>
-                    <Input type="date" value={personalData.dataNascimento} onChange={e => setPersonalData({...personalData, dataNascimento: e.target.value})} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Estado civil</Label>
-                    <ComboboxSearch options={ESTADOS_CIVIS} value={personalData.estadoCivil} onChange={v => setPersonalData({...personalData, estadoCivil: v})} placeholder="Selecione" allowOther />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Profissão</Label>
-                    <ComboboxSearch options={PROFISSOES} value={personalData.profissao} onChange={v => setPersonalData({...personalData, profissao: v})} placeholder="Selecione" allowOther />
-                  </div>
+          <CardContent className="p-6 md:p-10">
+            {step === 1 && renderStep1()}
+            {step === 2 && renderStep2()}
+            {step === 3 && renderStep3()}
+            {step === 4 && renderStep4()}
+            {step === 5 && renderStep5()}
 
-                  <div className="space-y-2">
-                    <Label>Nome da mãe</Label>
-                    <Input value={personalData.nomeMae} onChange={e => setPersonalData({...personalData, nomeMae: e.target.value})} />
-                  </div>
+            {step < 5 && (
+              <div className="mt-8 flex items-center justify-between pt-6 border-t border-slate-100">
+                <Button variant="ghost" onClick={() => step > 1 && setStep(step - 1)} disabled={step === 1 || isSubmitting}>
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
+                </Button>
+                <div className="flex gap-2">
+                   <Button variant="outline" onClick={() => navigate({ to: '/vendedor' })} disabled={isSubmitting}>Sair</Button>
+                   <Button onClick={handleNext} disabled={isSubmitting} className="bg-teal-600 hover:bg-teal-700 min-w-[120px]">
+                     {isSubmitting ? "Salvando..." : step === 4 ? "Revisar" : "Continuar"}
+                     {!isSubmitting && step < 4 && <ChevronRight className="ml-2 h-4 w-4" />}
+                   </Button>
                 </div>
               </div>
             )}
-
-            {/* STEP 2: ENDEREÇO */}
-            {step === 2 && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="space-y-1">
-                  <h3 className="text-2xl font-black text-slate-900">Onde você mora?</h3>
-                  <p className="text-slate-500 text-sm">Informe seu endereço residencial atual.</p>
-                </div>
-
-                <div className="grid gap-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2 col-span-1">
-                      <Label>CEP *</Label>
-                      <Input placeholder="00000-000" value={addressData.cep} onChange={e => handleCepChange(e.target.value)} />
-                    </div>
-                    <div className="space-y-2 col-span-2">
-                      <Label>Rua / Avenida *</Label>
-                      <Input value={addressData.endereco} onChange={e => setAddressData({...addressData, endereco: e.target.value})} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Número *</Label>
-                      <Input value={addressData.numero} onChange={e => setAddressData({...addressData, numero: e.target.value})} />
-                    </div>
-                    <div className="space-y-2 col-span-2">
-                      <Label>Complemento</Label>
-                      <Input value={addressData.complemento} onChange={e => setAddressData({...addressData, complemento: e.target.value})} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Bairro *</Label>
-                      <Input value={addressData.bairro} onChange={e => setAddressData({...addressData, bairro: e.target.value})} />
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="space-y-2 col-span-2">
-                         <Label>Cidade *</Label>
-                         <Input value={addressData.cidade} onChange={e => setAddressData({...addressData, cidade: e.target.value})} />
-                      </div>
-                      <div className="space-y-2">
-                         <Label>UF *</Label>
-                         <ComboboxSearch options={UFS} value={addressData.uf} onChange={v => setAddressData({...addressData, uf: v})} placeholder="UF" />
-                      </div>
-
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-slate-100">
-                   <FileUpload 
-                     label="Comprovante de residência *" 
-                     description="Obrigatório. Conta de luz, água ou telefone de até 3 meses."
-                     value={files.comprovanteEndereco} 
-                     onChange={url => setFiles({...files, comprovanteEndereco: url})} 
-                   />
-                   <p className="mt-2 text-xs text-slate-400">Você pode continuar sem enviar agora, o sistema salvará seu progresso.</p>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 3: DOCUMENTOS */}
-            {step === 3 && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="space-y-1">
-                  <h3 className="text-2xl font-black text-slate-900">Validação de Documento</h3>
-                  <p className="text-slate-500 text-sm">Tire fotos nítidas da sua CNH original.</p>
-                </div>
-
-                <div className="grid gap-6 md:grid-cols-2">
-                   <FileUpload 
-                     label="CNH — Frente *" 
-                     value={files.cnhFrente} 
-                     onChange={url => setFiles({...files, cnhFrente: url})} 
-                   />
-                   <FileUpload 
-                     label="CNH — Verso *" 
-                     value={files.cnhVerso} 
-                     onChange={url => setFiles({...files, cnhVerso: url})} 
-                   />
-                </div>
-
-                <div className="pt-4 border-t border-slate-100">
-                   <FileUpload 
-                     label="Documento do Veículo (CRLV-e) *" 
-                     description="Obrigatório para concluir o cadastro."
-                     value={files.crlv} 
-                     onChange={url => setFiles({...files, crlv: url})} 
-                   />
-                   <p className="mt-2 text-[10px] text-slate-400 uppercase font-bold text-center">Você pode pular agora, mas é exigido na conclusão</p>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 4: SELFIE */}
-            {step === 4 && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="space-y-1 text-center">
-                  <h3 className="text-2xl font-black text-slate-900">Precisamos confirmar que é você</h3>
-                  <p className="text-slate-500 text-sm">Tire uma selfie segurando sua CNH ao lado do rosto.</p>
-                </div>
-
-                <div className="flex justify-center py-4">
-                  <div className="w-48 h-48 rounded-full border-4 border-teal-50 bg-slate-100 flex items-center justify-center overflow-hidden">
-                    {files.selfie ? (
-                      <img src={files.selfie} className="w-full h-full object-cover" />
-                    ) : (
-                      <Camera className="w-16 h-16 text-slate-300" />
-                    )}
-                  </div>
-                </div>
-
-                <div className="bg-slate-50 p-6 rounded-2xl space-y-3">
-                   <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                      <Check className="w-4 h-4 text-teal-600" /> Dicas para uma boa foto:
-                   </h4>
-                   <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-slate-600">
-                      <li>• Rosto e CNH visíveis</li>
-                      <li>• Boa iluminação</li>
-                      <li>• Sem óculos escuros</li>
-                      <li>• Sem filtros</li>
-                   </ul>
-                </div>
-
-                <FileUpload 
-                  label="Selfie de Validação" 
-                  value={files.selfie} 
-                  onChange={url => setFiles({...files, selfie: url})} 
-                />
-              </div>
-            )}
-
-            {/* STEP 5: REVISÃO */}
-            {step === 5 && (
-              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h3 className="text-2xl font-black text-slate-900">Confira seus dados</h3>
-
-                <div className="space-y-6">
-                  {/* Bloco Dados */}
-                  <div className="rounded-2xl border border-slate-100 p-5 space-y-4">
-                    <div className="flex justify-between items-center">
-                       <h4 className="font-bold text-slate-900 flex items-center gap-2">
-                          <User className="w-5 h-5 text-teal-600" /> Dados Pessoais
-                       </h4>
-                       <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="h-7 text-teal-700 font-bold">Editar</Button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                       <div><p className="text-slate-400 text-[10px] uppercase font-bold">Nome</p><p className="font-medium">{personalData.nomeCompleto}</p></div>
-                       <div><p className="text-slate-400 text-[10px] uppercase font-bold">CPF</p><p className="font-medium">{personalData.cpf}</p></div>
-                       <div><p className="text-slate-400 text-[10px] uppercase font-bold">Nascimento</p><p className="font-medium">{personalData.dataNascimento}</p></div>
-                       <div><p className="text-slate-400 text-[10px] uppercase font-bold">WhatsApp</p><p className="font-medium">{personalData.whatsapp}</p></div>
-                    </div>
-                  </div>
-
-                  {/* Bloco Endereço */}
-                  <div className="rounded-2xl border border-slate-100 p-5 space-y-4">
-                    <div className="flex justify-between items-center">
-                       <h4 className="font-bold text-slate-900 flex items-center gap-2">
-                          <MapPin className="w-5 h-5 text-teal-600" /> Endereço
-                       </h4>
-                       <Button variant="ghost" size="sm" onClick={() => setStep(2)} className="h-7 text-teal-700 font-bold">Editar</Button>
-                    </div>
-                    <div className="text-sm">
-                       <p className="text-slate-400 text-[10px] uppercase font-bold">Localização</p>
-                       <p className="font-medium">{addressData.endereco}, {addressData.numero}</p>
-                       <p className="text-slate-500">{addressData.bairro} — {addressData.cidade}/{addressData.uf}</p>
-                       <p className="text-slate-400 mt-1">{addressData.cep}</p>
-                    </div>
-                  </div>
-
-                  {/* Bloco Documentos */}
-                  <div className="rounded-2xl border border-slate-100 p-5 space-y-4">
-                    <h4 className="font-bold text-slate-900 flex items-center gap-2">
-                        <FileCheck className="w-5 h-5 text-teal-600" /> Documentos Enviados
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4">
-                       {DOCS_OBRIGATORIOS.map((d) => (
-                          <div key={d.label} className={cn("flex items-center gap-2 text-xs font-bold px-3 py-2 rounded-xl", d.ok ? "text-emerald-600 bg-emerald-50" : "text-amber-700 bg-amber-50")}>
-                             {d.ok ? <Check className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />} {d.label}
-                          </div>
-                       ))}
-                    </div>
-                    {documentosFaltantes.length > 0 && (
-                      <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-xs text-amber-800">
-                        <p className="font-bold mb-1">Faltam {documentosFaltantes.length} documento(s) para concluir 100% do cadastro.</p>
-                        <p>Você pode salvar e voltar depois, mas o envio para análise só é liberado com todos os documentos.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-4 pt-4">
-                  <div className="flex items-start gap-3">
-                    <Checkbox id="terms" checked={agreedTerms} onCheckedChange={(v) => setAgreedTerms(!!v)} className="mt-1" />
-                    <Label htmlFor="terms" className="text-xs leading-relaxed text-slate-600">
-                      Declaro que as informações fornecidas são verdadeiras e que os documentos enviados pertencem a mim.
-                    </Label>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Checkbox id="privacy" checked={agreedPrivacy} onCheckedChange={(v) => setAgreedPrivacy(!!v)} className="mt-1" />
-                    <Label htmlFor="privacy" className="text-xs leading-relaxed text-slate-600">
-                      Autorizo o Esse Já Foi a realizar as verificações necessárias para análise cadastral, conforme os <Link to="/ajuda" className="text-teal-700 font-bold underline">Termos de Uso</Link> e <Link to="/ajuda" className="text-teal-700 font-bold underline">Privacidade</Link>.
-                    </Label>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Navegação Inferior */}
-            <div className="flex flex-col gap-3 md:flex-row md:items-center pt-6 border-t border-slate-100">
-               {step < 5 ? (
-                  <Button 
-                    onClick={handleNext} 
-                    className="h-14 w-full md:flex-1 rounded-2xl bg-teal-900 text-white font-black text-lg shadow-xl shadow-teal-900/20 group"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                      <>
-                        Continuar <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                      </>
-                    )}
-                  </Button>
-               ) : (
-                  <Button 
-                    onClick={handleFinalizar} 
-                    className="h-14 w-full md:flex-1 rounded-2xl bg-teal-600 text-white font-black text-lg shadow-xl shadow-teal-600/20"
-                    disabled={isSubmitting || !agreedTerms || !agreedPrivacy || documentosFaltantes.length > 0}
-                  >
-                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : documentosFaltantes.length > 0 ? "Documentos pendentes" : "Enviar para análise"}
-                  </Button>
-               )}
-               
-                 <div className="flex gap-2 w-full md:w-auto">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        if (step > 1) {
-                          setStep(s => s - 1);
-                          window.scrollTo(0, 0);
-                        }
-                      }} 
-                      className="h-14 px-6 rounded-2xl border-slate-200 text-slate-600 font-bold flex-1 md:flex-initial"
-                      disabled={isSubmitting || step === 1}
-                    >
-                      Voltar
-                    </Button>
-                 <Button 
-                    variant="ghost" 
-                    onClick={handleSalvarSair} 
-                    className="h-14 px-6 rounded-2xl text-slate-400 font-bold hover:bg-slate-50 flex-1 md:flex-initial"
-                    disabled={isSubmitting}
-                 >
-                   <Save className="mr-2 w-4 h-4" /> Salvar e sair
-                 </Button>
-               </div>
-            </div>
           </CardContent>
         </Card>
-
-        <p className="mt-8 text-center text-slate-400 text-[10px] uppercase tracking-widest font-black">
-          © 2026 ESSE JÁ FOI — AMBIENTE SEGURO E CRIPTOGRAFADO
-        </p>
       </div>
-      )}
     </div>
-
   );
-}
-
-// Link dummy component if not imported
-function Link({ to, children, className }: { to: string, children: React.ReactNode, className?: string }) {
-  return <a href={to} className={className}>{children}</a>;
 }

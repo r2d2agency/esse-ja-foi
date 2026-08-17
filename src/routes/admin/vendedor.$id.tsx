@@ -5,7 +5,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { 
   obterDetalheVendedorFn, 
   assumirAnaliseFn,
-  atualizarStatusDocumentoFn 
+  atualizarStatusDocumentoFn,
+  aprovarVendedorComplianceFn,
+  solicitarPendenciaComplianceFn
 } from "@/lib/vendedores-compliance.functions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,6 +56,8 @@ function DetalheVendedorPage() {
   const loadVendedor = useServerFn(obterDetalheVendedorFn);
   const assumir = useServerFn(assumirAnaliseFn);
   const updateDoc = useServerFn(atualizarStatusDocumentoFn);
+  const aprovar = useServerFn(aprovarVendedorComplianceFn);
+  const solicitarPendencia = useServerFn(solicitarPendenciaComplianceFn);
 
   const { data: res, refetch } = useSuspenseQuery({
     queryKey: ["admin-vendedor", id],
@@ -61,7 +65,7 @@ function DetalheVendedorPage() {
   });
 
   if (!res.ok) return <div className="p-8 text-destructive">Erro: {res.message}</div>;
-  const { perfil, compliance, historico, veiculos } = res.data;
+  const { perfil, historico, veiculos } = res.data;
 
   const handleAssumir = async () => {
     if (!user) return;
@@ -91,6 +95,37 @@ function DetalheVendedorPage() {
     }
   };
 
+  const handleAprovar = async () => {
+    if (!user) return;
+    if (!window.confirm("Deseja realmente APROVAR este vendedor?")) return;
+    const loading = toast.loading("Aprovando vendedor...");
+    try {
+      await aprovar({ data: { vendedorId: id, autorId: user.id } });
+      toast.success("Vendedor aprovado com sucesso!");
+      refetch();
+    } catch (e) {
+      toast.error("Erro ao aprovar vendedor.");
+    } finally {
+      toast.dismiss(loading);
+    }
+  };
+
+  const handleSolicitarPendencia = async () => {
+    if (!user) return;
+    const motivo = window.prompt("Informe o motivo da pendência:");
+    if (!motivo) return;
+    const loading = toast.loading("Registrando pendência...");
+    try {
+      await solicitarPendencia({ data: { vendedorId: id, autorId: user.id, motivo } });
+      toast.success("Pendência registrada com sucesso.");
+      refetch();
+    } catch (e) {
+      toast.error("Erro ao registrar pendência.");
+    } finally {
+      toast.dismiss(loading);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 p-6">
       {/* Header */}
@@ -105,7 +140,7 @@ function DetalheVendedorPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {!compliance?.responsavel_id ? (
+          {!perfil.compliance_responsavel_id ? (
             <Button onClick={handleAssumir} className="bg-teal-600 hover:bg-teal-700">
               <UserCheck className="mr-2 h-4 w-4" />
               Assumir Análise
@@ -113,11 +148,13 @@ function DetalheVendedorPage() {
           ) : (
             <div className="flex flex-col items-end">
               <Badge variant="outline" className="text-teal-600 border-teal-200 bg-teal-50">
-                Responsável: {compliance.responsavel_nome}
+                Responsável: {perfil.responsavel_nome}
               </Badge>
-              <span className="text-[10px] text-slate-400 mt-1">
-                Desde {format(new Date(compliance.atualizado_em), "dd/MM/yy 'às' HH:mm")}
-              </span>
+              {perfil.compliance_data_analise && (
+                <span className="text-[10px] text-slate-400 mt-1">
+                  Última ação {format(new Date(perfil.compliance_data_analise), "dd/MM/yy 'às' HH:mm")}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -169,8 +206,8 @@ function DetalheVendedorPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-500">Compliance</span>
                   <Badge className={
-                    compliance?.status === 'APROVADO' ? "bg-teal-600" : "bg-amber-500"
-                  }>{compliance?.status || "AGUARDANDO"}</Badge>
+                    perfil.status_compliance === 'APROVADO' ? "bg-teal-600" : "bg-amber-500"
+                  }>{perfil.compliance_status_label || "AGUARDANDO"}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-500">CNH</span>
@@ -270,13 +307,22 @@ function DetalheVendedorPage() {
                 <div className="space-y-4">
                   <h4 className="font-medium text-sm text-slate-500 border-b pb-2">Ações de Compliance</h4>
                   <div className="flex flex-col gap-3">
-                    <Button variant="outline" className="justify-start">
-                      <Clock className="mr-2 h-4 w-4" /> Solicitar Pendências por E-mail
+                    <Button 
+                      variant="outline" 
+                      className="justify-start"
+                      onClick={handleSolicitarPendencia}
+                      disabled={perfil.status_compliance === 'APROVADO'}
+                    >
+                      <Clock className="mr-2 h-4 w-4" /> Solicitar Pendências
                     </Button>
                     <Button variant="destructive" className="justify-start">
                       <XCircle className="mr-2 h-4 w-4" /> Bloquear Cadastro permanentemente
                     </Button>
-                    <Button className="justify-start bg-green-600 hover:bg-green-700">
+                    <Button 
+                      className="justify-start bg-green-600 hover:bg-green-700"
+                      onClick={handleAprovar}
+                      disabled={perfil.status_compliance === 'APROVADO'}
+                    >
                       <ShieldCheck className="mr-2 h-4 w-4" /> Finalizar Análise e Aprovar Vendedor
                     </Button>
                   </div>

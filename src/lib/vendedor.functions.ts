@@ -161,7 +161,7 @@ export const cadastrarMeuVeiculoFn = createServerFn({ method: "POST" })
     } as any);
   });
 
-export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
+export const atualizarPerfilVendedorFn = createServerFn({ method: "POST" })
   .validator(z.object({
     perfilId: z.string().uuid(),
     cpf: z.string().optional().nullable(),
@@ -186,16 +186,15 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
   }))
   .handler(async ({ data }) => {
     const { db } = await import("@/db/index");
-    const { sql } = await import("drizzle-orm");
     if (!db) throw new Error("Banco de dados indisponível");
 
     if (data.finalizar) {
-      const atual = (await db.execute(sql`
+      const rows = (await db.execute(sql`
         SELECT documento_cnh_url, documento_cnh_verso_url, documento_crlv_url,
                documento_selfie_url, documento_comprovante_endereco_url
         FROM profiles WHERE id = ${data.perfilId}::uuid
       `)) as any;
-      const p = atual.rows?.[0] || atual[0] || {};
+      const p = rows.rows?.[0] || rows[0] || {};
       const faltando: string[] = [];
       if (!(data.cnhUrl || p.documento_cnh_url)) faltando.push("CNH (frente)");
       if (!(data.cnhVersoUrl || p.documento_cnh_verso_url)) faltando.push("CNH (verso)");
@@ -207,39 +206,36 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
       }
     }
 
-    const updates: any[] = [];
+    const setClauses: any[] = [];
     
-    if (data.cpf !== undefined) updates.push(sql`cpf = ${data.cpf}`);
-    if (data.dataNascimento !== undefined) updates.push(sql`data_nascimento = ${data.dataNascimento}`);
-    if (data.estadoCivil !== undefined) updates.push(sql`estado_civil = ${data.estadoCivil}`);
-    if (data.profissao !== undefined) updates.push(sql`profissao = ${data.profissao}`);
-    if (data.nomeMae !== undefined) updates.push(sql`nome_mae = ${data.nomeMae}`);
-    if (data.cep !== undefined) updates.push(sql`cep = ${data.cep}`);
-    if (data.endereco !== undefined) updates.push(sql`endereco = ${data.endereco}`);
-    if (data.numero !== undefined) updates.push(sql`numero = ${data.numero}`);
-    if (data.bairro !== undefined) updates.push(sql`bairro = ${data.bairro}`);
-    if (data.complemento !== undefined) updates.push(sql`complemento = ${data.complemento}`);
-    if (data.cidade !== undefined) updates.push(sql`cidade = ${data.cidade}`);
-    if (data.uf !== undefined) updates.push(sql`uf = ${data.uf}`);
-
-    
-    if (data.cnhUrl !== undefined) updates.push(sql`documento_cnh_url = ${data.cnhUrl}`);
-    if (data.cnhVersoUrl !== undefined) updates.push(sql`documento_cnh_verso_url = ${data.cnhVersoUrl}`);
-    if (data.crlvUrl !== undefined) updates.push(sql`documento_crlv_url = ${data.crlvUrl}`);
-    if (data.selfieUrl !== undefined) updates.push(sql`documento_selfie_url = ${data.selfieUrl}`);
-    if (data.comprovanteEnderecoUrl !== undefined) updates.push(sql`documento_comprovante_endereco_url = ${data.comprovanteEnderecoUrl}`);
+    if (data.cpf !== undefined) setClauses.push(sql`cpf = ${data.cpf}`);
+    if (data.dataNascimento !== undefined) setClauses.push(sql`data_nascimento = ${data.dataNascimento}`);
+    if (data.estadoCivil !== undefined) setClauses.push(sql`estado_civil = ${data.estadoCivil}`);
+    if (data.profissao !== undefined) setClauses.push(sql`profissao = ${data.profissao}`);
+    if (data.nomeMae !== undefined) setClauses.push(sql`nome_mae = ${data.nomeMae}`);
+    if (data.cep !== undefined) setClauses.push(sql`cep = ${data.cep}`);
+    if (data.endereco !== undefined) setClauses.push(sql`endereco = ${data.endereco}`);
+    if (data.numero !== undefined) setClauses.push(sql`numero = ${data.numero}`);
+    if (data.bairro !== undefined) setClauses.push(sql`bairro = ${data.bairro}`);
+    if (data.complemento !== undefined) setClauses.push(sql`complemento = ${data.complemento}`);
+    if (data.cidade !== undefined) setClauses.push(sql`cidade = ${data.cidade}`);
+    if (data.uf !== undefined) setClauses.push(sql`uf = ${data.uf}`);
+    if (data.cnhUrl !== undefined) setClauses.push(sql`documento_cnh_url = ${data.cnhUrl}`);
+    if (data.cnhVersoUrl !== undefined) setClauses.push(sql`documento_cnh_verso_url = ${data.cnhVersoUrl}`);
+    if (data.crlvUrl !== undefined) setClauses.push(sql`documento_crlv_url = ${data.crlvUrl}`);
+    if (data.selfieUrl !== undefined) setClauses.push(sql`documento_selfie_url = ${data.selfieUrl}`);
+    if (data.comprovanteEnderecoUrl !== undefined) setClauses.push(sql`documento_comprovante_endereco_url = ${data.comprovanteEnderecoUrl}`);
     
     if (data.finalizar !== undefined) {
-      updates.push(sql`cadastro_completo = ${data.finalizar}`);
+      setClauses.push(sql`cadastro_completo = ${data.finalizar}`);
     }
 
-    if (updates.length > 0) {
-      updates.push(sql`atualizado_em = now()`);
-      const setClause = sql.join(updates, sql`, `);
+    if (setClauses.length > 0) {
+      setClauses.push(sql`atualizado_em = now()`);
+      
+      const setClause = sql.join(setClauses, sql`, `);
       await db.execute(sql`
-        UPDATE profiles 
-        SET ${setClause}
-        WHERE id = ${data.perfilId}::uuid;
+        UPDATE profiles SET ${setClause} WHERE id = ${data.perfilId}::uuid
       `);
     }
     

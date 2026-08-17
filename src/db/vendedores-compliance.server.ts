@@ -10,12 +10,15 @@ function requireDb() {
 export async function ensureVendedoresSchema() {
   const d = requireDb();
   
-  // Garantir colunas documento status no profile
+  // Garantir colunas documento status no profile e novos campos compliance
   await d.execute(sql`
     ALTER TABLE profiles 
     ADD COLUMN IF NOT EXISTS documento_cnh_status text DEFAULT 'PENDENTE',
     ADD COLUMN IF NOT EXISTS documento_crlv_status text DEFAULT 'PENDENTE',
-    ADD COLUMN IF NOT EXISTS documento_selfie_status text DEFAULT 'PENDENTE';
+    ADD COLUMN IF NOT EXISTS documento_selfie_status text DEFAULT 'PENDENTE',
+    ADD COLUMN IF NOT EXISTS compliance_motivo_pendencia text,
+    ADD COLUMN IF NOT EXISTS compliance_data_analise timestamptz,
+    ADD COLUMN IF NOT EXISTS compliance_responsavel_id uuid;
   `);
 
   await d.execute(sql`
@@ -54,27 +57,86 @@ export async function ensureVendedoresSchema() {
   `);
 }
 
+/** 
+ * Centraliza o cálculo de progresso do vendedor.
+ * Define o que é obrigatório para cada etapa.
+ */
+export function calcularProgressoVendedor(p: any) {
+  const etapas = {
+    conta: "CONCLUIDO",
+    dados_pessoais: "PENDENTE",
+    endereco: "PENDENTE",
+    documentos: "PENDENTE",
+    validacao: "PENDENTE"
+  };
+
+  // 1. Dados Pessoais: Nome, Email, CPF, Data Nascimento
+  if (p.nome && p.email && p.cpf && p.data_nascimento) {
+    etapas.dados_pessoais = "CONCLUIDO";
+  }
+
+  // 2. Endereço: CEP, Logradouro, Número, Bairro, Cidade, UF
+  if (p.cep && p.endereco && p.numero && p.bairro && p.cidade && p.uf) {
+    etapas.endereco = "CONCLUIDO";
+  }
+
+  // 3. Documentos: CNH Frente, Verso, CRLV, Comprovante Residência
+  if (p.documento_cnh_url && p.documento_cnh_verso_url && p.documento_crlv_url && p.documento_comprovante_endereco_url) {
+    etapas.documentos = "CONCLUIDO";
+  }
+
+  // 4. Validação: Selfie
+  if (p.documento_selfie_url) {
+    etapas.validacao = "CONCLUIDO";
+  }
+
+  const concluidas = Object.values(etapas).filter(v => v === "CONCLUIDO").length;
+  const total = Object.keys(etapas).length;
+  const progresso = Math.round((concluidas / total) * 100);
+
+  return {
+    progresso,
+    etapas,
+    isCompleto: progresso === 100
+  };
+}
+
+export const COMPLIANCE_STATUS_LABELS: Record<string, string> = {
+  'NAO_ENVIADO': 'Não Enviado',
+  'AGUARDANDO_ANALISE': 'Aguardando análise',
+  'EM_ANALISE': 'Em análise',
+  'PENDENCIA': 'Pendência',
+  'APROVADO': 'Aprovado',
+  'REPROVADO': 'Reprovado',
+  'BLOQUEADO': 'Bloqueado'
+};
+
 export async function listarVendedores(filtros: { status?: string | undefined, busca?: string | undefined }) {
   const d = requireDb();
   await ensureVendedoresSchema();
   
   const busca = `%${filtros.busca || ""}%`;
-  const whereStatus = filtros.status ? sql`AND c.status = ${filtros.status}` : sql``;
+  const whereStatus = filtros.status ? sql`AND p.status_compliance = ${filtros.status}` : sql``;
   
-  return (await d.execute(sql`
+  const rows = (await d.execute(sql`
     SELECT 
       p.id, p.nome, p.cpf, p.email, p.whatsapp, p.criado_em,
-      COALESCE(c.status, 'INCOMPLETO') as compliance_status,
+      p.status_compliance as compliance_status,
+      p.cadastro_completo,
       (SELECT count(*)::int FROM veiculos v WHERE v.perfil_id = p.id) as total_veiculos,
       res.nome as responsavel_nome
     FROM profiles p
-    LEFT JOIN compliance_analise c ON c.vendedor_id = p.id
-    LEFT JOIN profiles res ON res.id = c.responsavel_id
+    LEFT JOIN profiles res ON res.id = p.compliance_responsavel_id
     WHERE p.role = 'vendedor'::app_role
       ${whereStatus}
       AND (p.nome ILIKE ${busca} OR p.cpf ILIKE ${busca} OR p.email ILIKE ${busca})
     ORDER BY p.criado_em DESC;
   `)) as any;
+
+  return (rows.rows || rows).map((r: any) => ({
+    ...r,
+    compliance_status_label: COMPLIANCE_STATUS_LABELS[r.compliance_status] || r.compliance_status
+  }));
 }
 
 export async function obterDetalheVendedor(id: string) {
@@ -87,13 +149,6 @@ export async function obterDetalheVendedor(id: string) {
   
   if (!perfil.rows?.[0] && !perfil[0]) throw new RegraNegocioError("Vendedor não encontrado.", 404);
   const p = perfil.rows?.[0] || perfil[0];
-
-  const compliance = (await d.execute(sql`
-    SELECT c.*, res.nome as responsavel_nome 
-    FROM compliance_analise c 
-    LEFT JOIN profiles res ON res.id = c.responsavel_id
-    WHERE c.vendedor_id = ${id}::uuid
-  `)) as any;
 
   const historico = (await d.execute(sql`
     SELECT h.*, p.nome as autor_nome
@@ -108,9 +163,14 @@ export async function obterDetalheVendedor(id: string) {
     FROM veiculos WHERE perfil_id = ${id}::uuid
   `)) as any;
 
+  const progresso = calcularProgressoVendedor(p);
+
   return {
-    perfil: p,
-    compliance: compliance.rows?.[0] || compliance[0] || null,
+    perfil: {
+      ...p,
+      compliance_status_label: COMPLIANCE_STATUS_LABELS[p.status_compliance] || p.status_compliance
+    },
+    progresso,
     historico: historico.rows || historico,
     veiculos: veiculos.rows || veiculos
   };
@@ -129,12 +189,11 @@ export async function assumirAnalise(vendedorId: string, responsavelId: string) 
   await ensureVendedoresSchema();
   
   await d.execute(sql`
-    INSERT INTO compliance_analise (vendedor_id, responsavel_id, status)
-    VALUES (${vendedorId}::uuid, ${responsavelId}::uuid, 'EM_COMPLIANCE')
-    ON CONFLICT (vendedor_id) DO UPDATE SET 
-      responsavel_id = EXCLUDED.responsavel_id,
-      status = 'EM_COMPLIANCE',
-      atualizado_em = now();
+    UPDATE profiles SET 
+      compliance_responsavel_id = ${responsavelId}::uuid,
+      status_compliance = 'EM_ANALISE',
+      atualizado_em = now()
+    WHERE id = ${vendedorId}::uuid;
   `);
   
   await registrarAcaoCompliance(vendedorId, responsavelId, "ASSUMIU_ANALISE", "Administrador assumiu a análise de compliance.");
@@ -145,11 +204,37 @@ export async function atualizarStatusDocumento(vendedorId: string, documentoTipo
   const d = requireDb();
   const col = `documento_${documentoTipo.toLowerCase()}_status`;
   
-  await d.execute(sql.raw(`
-    UPDATE profiles SET ${col} = '${status}', atualizado_em = now() WHERE id = '${vendedorId}';
-  `));
+  // Usar query parametrizada segura via postgres client ou sql.raw com placeholders
+  // Para TanStack Start, podemos usar db.execute(sql.raw(...)) mas passando os parâmetros corretamente
+  await d.execute(sql.raw(`UPDATE profiles SET ${col} = '${status}', atualizado_em = now() WHERE id = '${vendedorId}'`));
   
   await registrarAcaoCompliance(vendedorId, autorId, `DOC_${status}`, `Status do documento ${documentoTipo.toUpperCase()} alterado para ${status}.`);
+  return { ok: true };
+}
+
+export async function aprovarVendedorCompliance(vendedorId: string, autorId: string) {
+  const d = requireDb();
+  await d.execute(sql`
+    UPDATE profiles SET 
+      status_compliance = 'APROVADO',
+      compliance_data_analise = now(),
+      atualizado_em = now()
+    WHERE id = ${vendedorId}::uuid;
+  `);
+  await registrarAcaoCompliance(vendedorId, autorId, "COMPLIANCE_APROVADO", "Vendedor aprovado em compliance.");
+  return { ok: true };
+}
+
+export async function solicitarPendenciaCompliance(vendedorId: string, autorId: string, motivo: string) {
+  const d = requireDb();
+  await d.execute(sql`
+    UPDATE profiles SET 
+      status_compliance = 'PENDENCIA',
+      compliance_motivo_pendencia = ${motivo},
+      atualizado_em = now()
+    WHERE id = ${vendedorId}::uuid;
+  `);
+  await registrarAcaoCompliance(vendedorId, autorId, "COMPLIANCE_PENDENCIA", `Pendência solicitada: ${motivo}`);
   return { ok: true };
 }
 
