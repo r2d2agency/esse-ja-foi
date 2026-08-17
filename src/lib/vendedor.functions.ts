@@ -161,7 +161,7 @@ export const cadastrarMeuVeiculoFn = createServerFn({ method: "POST" })
     } as any);
   });
 
-export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
+export const atualizarPerfilVendedorFn = createServerFn({ method: "POST" })
   .validator(z.object({
     perfilId: z.string().uuid(),
     cpf: z.string().optional().nullable(),

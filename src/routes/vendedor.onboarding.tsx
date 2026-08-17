@@ -58,10 +58,10 @@ function VendedorOnboardingPage() {
   
   const { data: perfilRes, refetch } = useSuspenseQuery({
     queryKey: ["meu-perfil"],
-    queryFn: () => obterMeuPerfilFn()
+    queryFn: () => getProfile({ data: { perfilId: user?.id || "" } })
   });
-
-  const [perfil, setPerfil] = useState<any>(perfilRes.ok ? perfilRes.data : {});
+  
+  const [perfil, setPerfil] = useState<any>(perfilRes.ok ? perfilRes.perfil : {});
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
