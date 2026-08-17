@@ -61,7 +61,7 @@ function DetalheVendedorPage() {
   });
 
   if (!res.ok) return <div className="p-8 text-destructive">Erro: {res.message}</div>;
-  const { perfil, compliance, historico, veiculos } = res.data;
+  const { perfil, historico, veiculos } = res.data;
 
   const handleAssumir = async () => {
     if (!user) return;
@@ -105,7 +105,7 @@ function DetalheVendedorPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {!compliance?.responsavel_id ? (
+          {!perfil.compliance_responsavel_id ? (
             <Button onClick={handleAssumir} className="bg-teal-600 hover:bg-teal-700">
               <UserCheck className="mr-2 h-4 w-4" />
               Assumir Análise
@@ -113,11 +113,13 @@ function DetalheVendedorPage() {
           ) : (
             <div className="flex flex-col items-end">
               <Badge variant="outline" className="text-teal-600 border-teal-200 bg-teal-50">
-                Responsável: {compliance.responsavel_nome}
+                Responsável: {perfil.responsavel_nome}
               </Badge>
-              <span className="text-[10px] text-slate-400 mt-1">
-                Desde {format(new Date(compliance.atualizado_em), "dd/MM/yy 'às' HH:mm")}
-              </span>
+              {perfil.compliance_data_analise && (
+                <span className="text-[10px] text-slate-400 mt-1">
+                  Última ação {format(new Date(perfil.compliance_data_analise), "dd/MM/yy 'às' HH:mm")}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -169,8 +171,8 @@ function DetalheVendedorPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-500">Compliance</span>
                   <Badge className={
-                    compliance?.status === 'APROVADO' ? "bg-teal-600" : "bg-amber-500"
-                  }>{compliance?.status || "AGUARDANDO"}</Badge>
+                    perfil.status_compliance === 'APROVADO' ? "bg-teal-600" : "bg-amber-500"
+                  }>{perfil.compliance_status_label || "AGUARDANDO"}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-500">CNH</span>
