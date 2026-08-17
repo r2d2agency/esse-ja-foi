@@ -27,11 +27,12 @@ export const Route = createFileRoute("/admin/vendedores")({
 
 const STATUS_CONFIG: Record<string, { label: string, color: string, bg: string }> = {
   'AGUARDANDO_ANALISE': { label: 'Aguardando Análise', color: 'text-amber-600', bg: 'bg-amber-500' },
-  'EM_COMPLIANCE': { label: 'Em Compliance', color: 'text-blue-600', bg: 'bg-blue-500' },
+  'EM_ANALISE': { label: 'Em análise', color: 'text-blue-600', bg: 'bg-blue-500' },
   'PENDENCIA': { label: 'Pendência', color: 'text-red-600', bg: 'bg-red-500' },
   'APROVADO': { label: 'Aprovado', color: 'text-teal-600', bg: 'bg-teal-500' },
   'REPROVADO': { label: 'Reprovado', color: 'text-slate-600', bg: 'bg-slate-500' },
-  'INCOMPLETO': { label: 'Cadastro Incompleto', color: 'text-slate-400', bg: 'bg-slate-400' },
+  'NAO_ENVIADO': { label: 'Não Enviado', color: 'text-slate-400', bg: 'bg-slate-400' },
+  'BLOQUEADO': { label: 'Bloqueado', color: 'text-red-700', bg: 'bg-red-700' },
 };
 
 function VendedoresPage() {
@@ -81,9 +82,10 @@ function VendedoresPage() {
             {[
               { label: 'Todos', value: undefined },
               { label: 'Aguardando análise', value: 'AGUARDANDO_ANALISE' },
-              { label: 'Em compliance', value: 'EM_COMPLIANCE' },
+              { label: 'Em análise', value: 'EM_ANALISE' },
               { label: 'Pendência', value: 'PENDENCIA' },
               { label: 'Aprovados', value: 'APROVADO' },
+              { label: 'Reprovados', value: 'REPROVADO' },
             ].map((f) => (
               <Button
                 key={f.label}
