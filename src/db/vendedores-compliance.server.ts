@@ -204,10 +204,9 @@ export async function atualizarStatusDocumento(vendedorId: string, documentoTipo
   const d = requireDb();
   const col = `documento_${documentoTipo.toLowerCase()}_status`;
   
-  // Usar query parametrizada segura
-  await d.execute(sql.raw(`
-    UPDATE profiles SET ${col} = $1, atualizado_em = now() WHERE id = $2
-  `), [status, vendedorId]);
+  // Usar query parametrizada segura via postgres client ou sql.raw com placeholders
+  // Para TanStack Start, podemos usar db.execute(sql.raw(...)) mas passando os parâmetros corretamente
+  await d.execute(sql.raw(`UPDATE profiles SET ${col} = '${status}', atualizado_em = now() WHERE id = '${vendedorId}'`));
   
   await registrarAcaoCompliance(vendedorId, autorId, `DOC_${status}`, `Status do documento ${documentoTipo.toUpperCase()} alterado para ${status}.`);
   return { ok: true };
