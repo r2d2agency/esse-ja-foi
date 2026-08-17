@@ -207,40 +207,42 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
       }
     }
 
-    const updates: any[] = [];
-    
-    if (data.cpf !== undefined) updates.push(sql`cpf = ${data.cpf}`);
-    if (data.dataNascimento !== undefined) updates.push(sql`data_nascimento = ${data.dataNascimento}`);
-    if (data.estadoCivil !== undefined) updates.push(sql`estado_civil = ${data.estadoCivil}`);
-    if (data.profissao !== undefined) updates.push(sql`profissao = ${data.profissao}`);
-    if (data.nomeMae !== undefined) updates.push(sql`nome_mae = ${data.nomeMae}`);
-    if (data.cep !== undefined) updates.push(sql`cep = ${data.cep}`);
-    if (data.endereco !== undefined) updates.push(sql`endereco = ${data.endereco}`);
-    if (data.numero !== undefined) updates.push(sql`numero = ${data.numero}`);
-    if (data.bairro !== undefined) updates.push(sql`bairro = ${data.bairro}`);
-    if (data.complemento !== undefined) updates.push(sql`complemento = ${data.complemento}`);
-    if (data.cidade !== undefined) updates.push(sql`cidade = ${data.cidade}`);
-    if (data.uf !== undefined) updates.push(sql`uf = ${data.uf}`);
+    const updates: string[] = [];
+    const values: any[] = [];
+    let i = 1;
 
-    
-    if (data.cnhUrl !== undefined) updates.push(sql`documento_cnh_url = ${data.cnhUrl}`);
-    if (data.cnhVersoUrl !== undefined) updates.push(sql`documento_cnh_verso_url = ${data.cnhVersoUrl}`);
-    if (data.crlvUrl !== undefined) updates.push(sql`documento_crlv_url = ${data.crlvUrl}`);
-    if (data.selfieUrl !== undefined) updates.push(sql`documento_selfie_url = ${data.selfieUrl}`);
-    if (data.comprovanteEnderecoUrl !== undefined) updates.push(sql`documento_comprovante_endereco_url = ${data.comprovanteEnderecoUrl}`);
-    
-    if (data.finalizar !== undefined) {
-      updates.push(sql`cadastro_completo = ${data.finalizar}`);
-    }
+    const addUpdate = (col: string, val: any) => {
+        updates.push(`${col} = $${i++}`);
+        values.push(val);
+    };
+
+    if (data.cpf !== undefined) addUpdate("cpf", data.cpf);
+    if (data.dataNascimento !== undefined) addUpdate("data_nascimento", data.dataNascimento);
+    if (data.estadoCivil !== undefined) addUpdate("estado_civil", data.estadoCivil);
+    if (data.profissao !== undefined) addUpdate("profissao", data.profissao);
+    if (data.nomeMae !== undefined) addUpdate("nome_mae", data.nomeMae);
+    if (data.cep !== undefined) addUpdate("cep", data.cep);
+    if (data.endereco !== undefined) addUpdate("endereco", data.endereco);
+    if (data.numero !== undefined) addUpdate("numero", data.numero);
+    if (data.bairro !== undefined) addUpdate("bairro", data.bairro);
+    if (data.complemento !== undefined) addUpdate("complemento", data.complemento);
+    if (data.cidade !== undefined) addUpdate("cidade", data.cidade);
+    if (data.uf !== undefined) addUpdate("uf", data.uf);
+    if (data.cnhUrl !== undefined) addUpdate("documento_cnh_url", data.cnhUrl);
+    if (data.cnhVersoUrl !== undefined) addUpdate("documento_cnh_verso_url", data.cnhVersoUrl);
+    if (data.crlvUrl !== undefined) addUpdate("documento_crlv_url", data.crlvUrl);
+    if (data.selfieUrl !== undefined) addUpdate("documento_selfie_url", data.selfieUrl);
+    if (data.comprovanteEnderecoUrl !== undefined) addUpdate("documento_comprovante_endereco_url", data.comprovanteEnderecoUrl);
+    if (data.finalizar !== undefined) addUpdate("cadastro_completo", data.finalizar);
 
     if (updates.length > 0) {
-      updates.push(sql`atualizado_em = now()`);
-      const setClause = sql.join(updates, sql`, `);
-      await db.execute(sql`
+      updates.push(`atualizado_em = now()`);
+      const setClause = updates.join(", ");
+      await db.execute(sql.raw(`
         UPDATE profiles 
         SET ${setClause}
-        WHERE id = ${data.perfilId}::uuid;
-      `);
+        WHERE id = '${data.perfilId}'
+      `), values);
     }
     
     return { ok: true as const };
