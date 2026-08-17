@@ -238,11 +238,8 @@ export const atualizarDocumentosVendedorFn = createServerFn({ method: "POST" })
     if (updates.length > 0) {
       updates.push(`atualizado_em = now()`);
       const setClause = updates.join(", ");
-      await db.execute(sql.raw(`
-        UPDATE profiles 
-        SET ${setClause}
-        WHERE id = '${data.perfilId}'
-      `), values);
+      const query = `UPDATE profiles SET ${setClause} WHERE id = $${i}`;
+      await db.execute(sql.raw(query), [...values, data.perfilId]);
     }
     
     return { ok: true as const };
