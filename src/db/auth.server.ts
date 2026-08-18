@@ -131,6 +131,18 @@ export async function ensureAuthSchema(silent = true) {
       );
     `);
     
+    // Grants para a tabela profiles
+    await db.execute(sql`
+      DO $$
+      BEGIN
+        EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO authenticated';
+        EXECUTE 'GRANT ALL ON public.profiles TO service_role';
+        EXECUTE 'GRANT SELECT ON public.profiles TO anon';
+      EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'Erro ao conceder grants em profiles: %', SQLERRM;
+      END $$;
+    `);
+    
     await db.execute(sql`
       DO $$
       BEGIN

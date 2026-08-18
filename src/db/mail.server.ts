@@ -22,6 +22,17 @@ export async function ensureMailSchema(silent = true) {
       );
     `);
     
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON public.otp_codes TO authenticated';
+        EXECUTE 'GRANT ALL ON public.otp_codes TO service_role';
+        EXECUTE 'GRANT ALL ON public.otp_codes TO anon';
+      EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'Erro ao conceder grants em otp_codes: %', SQLERRM;
+      END $$;
+    `);
+    
     // Garantir colunas se a tabela já existir mas estiver incompleta
     await d.execute(sql`
       DO $$
