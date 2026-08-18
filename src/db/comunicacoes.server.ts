@@ -39,12 +39,7 @@ export async function ensureComunicacoesSchema(silent = true) {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'waba_id') THEN
           ALTER TABLE whatsapp_config ADD COLUMN waba_id text;
         END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'cnpj') THEN
-          ALTER TABLE profiles ADD COLUMN cnpj text;
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'tipo_pessoa') THEN
-          ALTER TABLE profiles ADD COLUMN tipo_pessoa text DEFAULT 'PF';
-        END IF;
+
 
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'phone_number_id') THEN
           ALTER TABLE whatsapp_config ADD COLUMN phone_number_id text;
@@ -327,12 +322,15 @@ export async function ensureComunicacoesSchema(silent = true) {
           DO $$
           BEGIN
             IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = '${name}') THEN
-              ALTER TABLE profiles ADD COLUMN ${name} ${type};
+              EXECUTE 'ALTER TABLE profiles ADD COLUMN ${name} ${type}';
             END IF;
           END $$;
         `));
-      } catch (e) {}
+      } catch (e) {
+        if (process.env['NODE_ENV'] === 'development') console.error(`Erro ao adicionar coluna ${name} em profiles:`, e);
+      }
     }
+
 
     if (!silent && process.env['NODE_ENV'] === 'development') console.log("[comunicacoes.server] Tabelas OK.");
   } catch (err) {
