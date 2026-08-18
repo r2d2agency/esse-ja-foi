@@ -31,6 +31,23 @@ export async function ensureLaudoSchema(silent = true) {
   await d.execute(sql`CREATE INDEX IF NOT EXISTS laudos_vistoriador_idx ON laudos (vistoriador_id, status);`);
 
   await d.execute(sql`
+    CREATE TABLE IF NOT EXISTS public.laudos (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      agendamento_id uuid UNIQUE,
+      veiculo_id uuid NOT NULL,
+      vistoriador_id uuid,
+      modelo_id uuid,
+      modelo_versao integer,
+      placa_confirmada text,
+      status text DEFAULT 'RASCUNHO',
+      bloqueado boolean DEFAULT false,
+      criado_em timestamptz DEFAULT now(),
+      atualizado_em timestamptz DEFAULT now()
+    );
+  `);
+
+  await d.execute(sql`
+
     CREATE TABLE IF NOT EXISTS laudo_respostas (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       laudo_id uuid NOT NULL REFERENCES laudos(id) ON DELETE CASCADE,

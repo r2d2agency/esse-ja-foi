@@ -39,6 +39,13 @@ export async function ensureComunicacoesSchema(silent = true) {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'waba_id') THEN
           ALTER TABLE whatsapp_config ADD COLUMN waba_id text;
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'cnpj') THEN
+          ALTER TABLE profiles ADD COLUMN cnpj text;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'tipo_pessoa') THEN
+          ALTER TABLE profiles ADD COLUMN tipo_pessoa text DEFAULT 'PF';
+        END IF;
+
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'phone_number_id') THEN
           ALTER TABLE whatsapp_config ADD COLUMN phone_number_id text;
         END IF;
@@ -302,6 +309,8 @@ export async function ensureComunicacoesSchema(silent = true) {
 
     // 8. Atualizar profiles com preferências e elegibilidade
     const profileCols: Array<[string, string]> = [
+      ["cnpj", "text"],
+      ["tipo_pessoa", "text DEFAULT 'PF'"],
       ["pode_receber_comunicacoes", "boolean DEFAULT true"],
       ["whatsapp_status", "text DEFAULT 'ATIVO'"], // ATIVO, INVALIDO, DESABILITADO, BLOQUEADO, DESCADASTRADO
       ["whatsapp_validado_em", "timestamptz"],
@@ -310,6 +319,7 @@ export async function ensureComunicacoesSchema(silent = true) {
       ["interesses_regioes", "jsonb DEFAULT '[]'"],
       ["interesses_anos", "jsonb DEFAULT '[]'"]
     ];
+
 
     for (const [name, type] of profileCols) {
       try {
