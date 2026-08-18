@@ -228,6 +228,9 @@ export const atualizarPerfilVendedorFn = createServerFn({ method: "POST" })
     
     if (data.finalizar !== undefined) {
       setClauses.push(sql`cadastro_completo = ${data.finalizar}`);
+      if (data.finalizar === true) {
+        setClauses.push(sql`status_compliance = 'AGUARDANDO_ANALISE'`);
+      }
     }
 
     if (setClauses.length > 0) {

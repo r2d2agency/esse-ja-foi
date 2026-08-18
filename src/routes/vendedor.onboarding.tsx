@@ -149,6 +149,16 @@ function VendedorOnboardingPage() {
 
   useEffect(() => {
     if (progressoInfo) {
+      // Se já estiver em análise ou aprovado, e NÃO houver pendência, redireciona para a home
+      if (perfil.status_compliance === 'APROVADO' || 
+          perfil.status_compliance === 'AGUARDANDO_ANALISE' || 
+          perfil.status_compliance === 'EM_ANALISE') {
+        if (perfil.status_compliance !== 'PENDENCIA') {
+          navigate({ to: '/vendedor' });
+          return;
+        }
+      }
+
       if (perfil.cadastro_completo) {
         setStep(5);
       } else if (progressoInfo.etapas.validacao === "CONCLUIDO") setStep(5);
@@ -157,7 +167,7 @@ function VendedorOnboardingPage() {
       else if (progressoInfo.etapas.dados_pessoais === "CONCLUIDO") setStep(2);
       else setStep(1);
     }
-  }, [progressoInfo, perfil.cadastro_completo]);
+  }, [progressoInfo, perfil.cadastro_completo, perfil.status_compliance]);
 
   const DOCS_OBRIGATORIOS: { label: string; ok: boolean }[] = [
     { label: "CNH (frente)", ok: !!files.cnhFrente },
@@ -224,7 +234,9 @@ function VendedorOnboardingPage() {
     const ok = await saveProgress(true);
     if (ok) {
       toast.success("Cadastro enviado para análise!");
-      navigate({ to: '/vendedor' });
+      // Força recarregamento do perfil e status para evitar cache
+      await refetch();
+      navigate({ to: '/vendedor', replace: true });
     }
   };
 
