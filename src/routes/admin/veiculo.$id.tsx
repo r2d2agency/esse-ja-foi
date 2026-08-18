@@ -258,7 +258,11 @@ function DetalheVeiculoAdminPage() {
               disabled={v.status_analise === 'PRONTO_PARA_VISTORIA' || !res.validacao?.ready}
               onClick={() => handleMudarStatus('PRONTO_PARA_VISTORIA')}
             >
-              <CheckCircle2 className="mr-2 h-4 w-4" /> Liberar para vistoria
+              {v.status_analise === 'PRONTO_PARA_VISTORIA' ? (
+                <><CheckCircle2 className="mr-2 h-4 w-4" /> Liberado</>
+              ) : (
+                <><CheckCircle2 className="mr-2 h-4 w-4" /> Liberar para vistoria</>
+              )}
             </Button>
           )}
         </div>
