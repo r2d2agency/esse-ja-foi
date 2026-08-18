@@ -163,7 +163,8 @@ function VendedorOnboardingPage() {
 
       if (perfil.cadastro_completo) {
         setStep(5);
-      } else if (progressoInfo.etapas.validacao === "CONCLUIDO") setStep(5);
+      } else if (progressoInfo.progresso === 100) setStep(5);
+      else if (progressoInfo.etapas.validacao === "CONCLUIDO") setStep(5);
       else if (progressoInfo.etapas.documentos === "CONCLUIDO") setStep(4);
       else if (progressoInfo.etapas.endereco === "CONCLUIDO") setStep(3);
       else if (progressoInfo.etapas.dados_pessoais === "CONCLUIDO") setStep(2);
@@ -237,7 +238,10 @@ function VendedorOnboardingPage() {
     if (ok) {
       toast.success("Cadastro enviado para análise!");
       // Força recarregamento do perfil e status para evitar cache
-      await refetch();
+      await Promise.all([
+        refetch(),
+        getOnboardingStatus({ data: { perfilId: user?.id || "" } })
+      ]);
       navigate({ to: '/vendedor', replace: true });
     }
   };
