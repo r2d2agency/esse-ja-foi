@@ -237,7 +237,14 @@ function DetalheVeiculoAdminPage() {
             <XCircle className="mr-2 h-4 w-4" /> Reprovar
           </Button>
           
-          {v.status_analise === 'PRONTO_PARA_VISTORIA' ? (
+          {v.status_analise === 'VISTORIADO' ? (
+            <Button 
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold"
+              onClick={() => navigate({ to: `/admin/veiculo/${id}/pos-vistoria` } as any)}
+            >
+              <Calculator className="mr-2 h-4 w-4" /> Análise Pós-Vistoria
+            </Button>
+          ) : v.status_analise === 'PRONTO_PARA_VISTORIA' ? (
             <Button 
               className="bg-teal-600 hover:bg-teal-700 text-white font-bold"
               onClick={() => navigate({ to: "/admin/vistorias" })}
