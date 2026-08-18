@@ -473,8 +473,8 @@ function VendedorOnboardingPage() {
               <CheckCircle2 className="h-10 w-10 text-teal-600" />
             </div>
             <h2 className="text-2xl font-bold text-slate-900">Cadastro Enviado!</h2>
-            <p className="text-slate-600">Seus dados estão em análise pela nossa equipe.</p>
-            <Button onClick={() => navigate({ to: "/vendedor" })} variant="outline" className="mt-6 w-full max-w-xs">
+            <p className="text-slate-600">Solicitação de cadastro enviada com sucesso, aguardando aprovação. Seus dados estão bloqueados para edição no momento.</p>
+            <Button onClick={() => navigate({ to: "/vendedor" })} className="mt-6 w-full max-w-xs bg-teal-600 hover:bg-teal-700">
               Ir para o Dashboard
             </Button>
           </>

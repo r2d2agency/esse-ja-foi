@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CardsEntregaVendedor } from '@/components/entrega/cards-entrega';
 import { useServerFn } from '@tanstack/react-start';
-import { Car, Plus, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Car, Plus, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
 import { listarMeusVeiculosFn } from '@/lib/vendedor.functions';
 import { getOnboardingStatusFn } from '@/lib/onboarding.functions';
 import { useAuth } from '@/hooks/use-auth';
@@ -113,25 +113,36 @@ function DashboardVendedor() {
               <p className="mt-1.5 text-sm text-slate-500">
                 {profile.status_compliance === 'EM_ANALISE' 
                   ? 'Nossa equipe já iniciou a análise das suas informações.' 
-                  : 'Recebemos suas informações. Nossa equipe está analisando seu cadastro.'}
+                  : 'Solicitação de cadastro enviada com sucesso, aguardando aprovação.'}
               </p>
               <div className="mt-4 space-y-2.5">
                  <div className="flex items-center gap-3">
                     <div className="h-6 w-6 flex items-center justify-center rounded-full bg-emerald-600 text-white text-[10px]"><CheckCircle2 className="w-3 h-3" /></div>
-                    <span className="text-sm text-slate-600">✓ Cadastro 100% concluído</span>
+                    <span className="text-sm text-slate-600 font-medium">Cadastro 100% concluído</span>
                  </div>
                  <div className="flex items-center gap-3">
                     <div className={`h-6 w-6 flex items-center justify-center rounded-full ${profile.status_compliance === 'EM_ANALISE' ? 'bg-teal-600 text-white' : 'bg-teal-100 text-teal-700'} text-[10px] ${profile.status_compliance === 'EM_ANALISE' ? '' : 'animate-pulse'}`}>
                       {profile.status_compliance === 'EM_ANALISE' ? <CheckCircle2 className="w-3 h-3" /> : '●'}
                     </div>
-                    <span className={`text-sm ${profile.status_compliance === 'EM_ANALISE' ? 'text-slate-600' : 'text-slate-900 font-bold'}`}>
-                      {profile.status_compliance === 'EM_ANALISE' ? 'Em análise' : 'Aguardando análise'}
+                    <span className={`text-sm ${profile.status_compliance === 'EM_ANALISE' ? 'text-slate-600 font-medium' : 'text-slate-900 font-bold'}`}>
+                      {profile.status_compliance === 'EM_ANALISE' ? 'Em análise' : 'Aguardando aprovação'}
                     </span>
                  </div>
                  <div className="flex items-center gap-3">
                     <div className="h-6 w-6 flex items-center justify-center rounded-full bg-slate-100 text-slate-300 text-[10px]">○</div>
-                    <span className="text-sm text-slate-400">Você será avisado quando houver uma atualização.</span>
+                    <span className="text-sm text-slate-400">Liberação do perfil</span>
                  </div>
+              </div>
+              <div className="mt-6 rounded-xl bg-slate-50 border border-slate-200 p-4">
+                <div className="flex items-start gap-3">
+                  <Clock className="h-5 w-5 text-slate-400 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">Cadastro bloqueado para edição</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Enquanto seus dados estão em análise, as alterações no perfil ficam desabilitadas.
+                    </p>
+                  </div>
+                </div>
               </div>
             </>
           ) : (
