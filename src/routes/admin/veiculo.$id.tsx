@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getVeiculoDetalheAdminFn, assumirAnaliseVeiculoFn, atualizarStatusAnaliseFn } from "@/lib/admin-veiculo-detalhe.functions";
+import { getVeiculoDetalheAdminFn, assumirAnaliseVeiculoFn, atualizarStatusAnaliseFn, atualizarStatusDocumentoVeiculoFn } from "@/lib/admin-veiculo-detalhe.functions";
 import { salvarConfiguracaoLeilao } from "@/lib/leilao.functions";
 import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
@@ -13,6 +13,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   Car, 
   User, 
@@ -48,10 +64,16 @@ function DetalheVeiculoAdminPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("resumo");
+  const [showApproveDialog, setShowApproveDialog] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectObservation, setRejectObservation] = useState("");
+  const queryClient = useQueryClient();
   
   const getDetalhe = useServerFn(getVeiculoDetalheAdminFn);
   const assumir = useServerFn(assumirAnaliseVeiculoFn);
   const atualizarStatus = useServerFn(atualizarStatusAnaliseFn);
+  const atualizarStatusDoc = useServerFn(atualizarStatusDocumentoVeiculoFn);
 
   const { data: res, isLoading, refetch } = useQuery({
     queryKey: ["admin-veiculo-detalhe", id],
@@ -99,6 +121,66 @@ function DetalheVeiculoAdminPage() {
       }
     } catch (err) {
       toast.error("Erro técnico", { id: toastId });
+    }
+  };
+
+  const handleAprovarDocumento = async () => {
+    if (!user?.id) return;
+    const toastId = toast.loading("Aprovando CRLV-e...");
+    try {
+      const res = await atualizarStatusDoc({ 
+        data: { 
+          veiculoId: id, 
+          perfilId: v.perfil_id,
+          documentoTipo: 'CRLV',
+          status: 'APROVADO',
+          responsavelId: user.id
+        } 
+      });
+      if (res.ok) {
+        toast.success("CRLV-e aprovado com sucesso.", { id: toastId });
+        setShowApproveDialog(false);
+        queryClient.invalidateQueries({ queryKey: ["admin-veiculo-detalhe", id] });
+        queryClient.invalidateQueries({ queryKey: ["onboarding-status", v.perfil_id] });
+      } else {
+        toast.error("Erro ao aprovar documento", { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Erro técnico.", { id: toastId });
+    }
+  };
+
+  const handleSolicitarNovoEnvio = async () => {
+    if (!user?.id) return;
+    if (!rejectReason) {
+      toast.error("Por favor, selecione um motivo.");
+      return;
+    }
+    const toastId = toast.loading("Enviando solicitação...");
+    try {
+      const res = await atualizarStatusDoc({ 
+        data: { 
+          veiculoId: id, 
+          perfilId: v.perfil_id,
+          documentoTipo: 'CRLV',
+          status: 'NOVO_ENVIO_SOLICITADO',
+          motivo: rejectReason,
+          observacao: rejectObservation,
+          responsavelId: user.id
+        } 
+      });
+      if (res.ok) {
+        toast.success("Solicitação enviada com sucesso.", { id: toastId });
+        setShowRejectDialog(false);
+        setRejectReason("");
+        setRejectObservation("");
+        queryClient.invalidateQueries({ queryKey: ["admin-veiculo-detalhe", id] });
+        queryClient.invalidateQueries({ queryKey: ["onboarding-status", v.perfil_id] });
+      } else {
+        toast.error("Erro ao solicitar novo envio", { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Erro técnico.", { id: toastId });
     }
   };
 
@@ -307,7 +389,16 @@ function DetalheVeiculoAdminPage() {
                     <CardTitle className="text-xs font-black uppercase text-slate-400 flex items-center gap-2">
                       <FileText className="h-3 w-3" /> CRLV-e
                     </CardTitle>
-                    <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 uppercase text-[10px] font-bold">Aguardando Análise</Badge>
+                    <Badge className={cn(
+                      "uppercase text-[10px] font-bold",
+                      v.vendedor_crlv_status === 'APROVADO' ? "bg-green-100 text-green-700" :
+                      v.vendedor_crlv_status === 'NOVO_ENVIO_SOLICITADO' ? "bg-red-100 text-red-700" :
+                      "bg-amber-100 text-amber-700"
+                    )}>
+                      {v.vendedor_crlv_status === 'APROVADO' ? '✓ Aprovado' : 
+                       v.vendedor_crlv_status === 'NOVO_ENVIO_SOLICITADO' ? 'Novo envio solicitado' : 
+                       'Aguardando Análise'}
+                    </Badge>
                   </CardHeader>
                   <CardContent className="p-6">
                     <div className="flex gap-8">
@@ -349,8 +440,32 @@ function DetalheVeiculoAdminPage() {
                         </div>
 
                         <div className="flex flex-col gap-2">
-                          <Button className="bg-teal-600 hover:bg-teal-700 text-white font-bold w-full">Aprovar documento</Button>
-                          <Button variant="outline" className="font-bold w-full">Solicitar novo envio</Button>
+                          {v.vendedor_crlv_status !== 'APROVADO' && (
+                            <>
+                              <Button 
+                                className="bg-teal-600 hover:bg-teal-700 text-white font-bold w-full"
+                                onClick={() => setShowApproveDialog(true)}
+                              >
+                                Aprovar documento
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                className="font-bold w-full"
+                                onClick={() => setShowRejectDialog(true)}
+                              >
+                                Solicitar novo envio
+                              </Button>
+                            </>
+                          )}
+                          {v.vendedor_crlv_status === 'APROVADO' && (
+                            <Button 
+                              variant="outline" 
+                              className="font-bold w-full text-amber-600 border-amber-200 hover:bg-amber-50"
+                              onClick={() => setShowRejectDialog(true)}
+                            >
+                              Reabrir análise / Solicitar novo
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -407,7 +522,7 @@ function DetalheVeiculoAdminPage() {
                       <div className="space-y-2">
                         {[
                           { label: "Dados cadastrais", status: "PENDENTE", color: "text-amber-600" },
-                          { label: "CRLV-e", status: "PENDENTE", color: "text-amber-600" },
+                          { label: "CRLV-e", status: v.vendedor_crlv_status === 'APROVADO' ? "CONCLUÍDO" : "PENDENTE", color: v.vendedor_crlv_status === 'APROVADO' ? "text-green-600" : "text-amber-600" },
                           { label: "Fotos obrigatórias", status: "CONCLUÍDO", color: "text-green-600" },
                         ].map((item, idx) => (
                           <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
@@ -452,6 +567,65 @@ function DetalheVeiculoAdminPage() {
           </ScrollArea>
         </Tabs>
       </div>
+      {/* Modais de Documentação */}
+      <Dialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Aprovar CRLV-e?</DialogTitle>
+            <DialogDescription>
+              Confirme que o documento foi conferido e está válido.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowApproveDialog(false)}>Cancelar</Button>
+            <Button className="bg-teal-600 hover:bg-teal-700 text-white" onClick={handleAprovarDocumento}>Aprovar documento</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Solicitar novo CRLV-e</DialogTitle>
+            <DialogDescription>
+              Informe o motivo pelo qual o documento foi rejeitado.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Motivo da solicitação</Label>
+              <Select value={rejectReason} onValueChange={setRejectReason}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um motivo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Documento ilegível">Documento ilegível</SelectItem>
+                  <SelectItem value="Documento incompleto">Documento incompleto</SelectItem>
+                  <SelectItem value="Documento divergente">Documento divergente</SelectItem>
+                  <SelectItem value="Documento desatualizado">Documento desatualizado</SelectItem>
+                  <SelectItem value="Dados não conferem">Dados não conferem</SelectItem>
+                  <SelectItem value="Outro">Outro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {(rejectReason === 'Outro' || rejectReason) && (
+              <div className="space-y-2">
+                <Label>Observação complementar</Label>
+                <Textarea 
+                  placeholder={rejectReason === 'Outro' ? "Descreva o motivo..." : "Observações adicionais..."}
+                  value={rejectObservation}
+                  onChange={(e) => setRejectObservation(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleSolicitarNovoEnvio}>Solicitar novo envio</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

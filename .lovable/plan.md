@@ -1,32 +1,49 @@
-# Plano de Ação - Correção das Ações de Documentação do Veículo (Admin)
+# Plano de Ação - Módulo de Análise Pós-Vistoria e Aprovação de Valor
 
-Este plano visa implementar as funcionalidades de aprovação e solicitação de novo envio para o CRLV-e na aba de documentação do veículo no painel administrativo, garantindo persistência no banco de dados e sincronização com o status do veículo.
+Este plano detalha a implementação do módulo de análise pós-vistoria, onde o administrador define o valor de oferta do veículo com base no laudo do vistoriador e o vendedor aprova ou recusa a proposta.
 
-## 1. Backend (Banco de Dados e Server Functions)
+## Alterações Fiscais e Banco de Dados
 
-- **Schema**: Garantir que a tabela `profiles` tenha as colunas de status de documentos (já existem no `vendedores-compliance.server.ts`, mas verificaremos a integridade).
-- **Server Functions**:
-    - Criar `atualizarStatusDocumentoVeiculoFn` em `src/lib/admin-veiculo-detalhe.functions.ts` para lidar com a atualização do status do CRLV no perfil vinculado ao veículo.
-    - Esta função também registrará o histórico em `compliance_historico` ou na tabela de `logs`.
-    - Adicionar validação para impedir a liberação do veículo para vistoria se o CRLV não estiver `APROVADO`.
+- **Novos Campos em `veiculos`**:
+  - `valor_fipe_atual`: Valor de referência FIPE no momento da análise.
+  - `valor_oferta_essejafoi`: Valor final proposto pela plataforma.
+  - `margem_seguranca_percentual`: Margem aplicada sobre a FIPE (ex: 15-20%).
+  - `data_proposta`: Data em que a proposta foi enviada ao vendedor.
+  - `data_validade_proposta`: Prazo para aceite (ex: 48h).
+  - `status_proposta`: `PENDENTE`, `ACEITA`, `RECUSADA`, `EXPIRADA`.
+  - `motivo_recusa_proposta`: Texto livre se o vendedor recusar.
 
-## 2. Frontend (Interface do Admin)
+- **Tabela `veiculos_depreciacao_detalhe`**:
+  - Para registrar cada item de depreciação aplicado (Ex: Pneus -R$ 500, Funilaria -R$ 1.200).
 
-- **Componente de Documentação** (em `src/routes/admin/veiculo.$id.tsx`):
-    - Implementar o botão "Aprovar documento" com um modal de confirmação do shadcn/ui.
-    - Implementar o botão "Solicitar novo envio" com um modal contendo:
-        - Motivos pré-definidos (Ilegível, Incompleto, Divergente, Desatualizado, Dados não conferem, Outro).
-        - Campo de observação complementar.
-    - Adicionar estados de loading e toasts de sucesso/erro.
-    - Realizar o refetch das queries `admin-veiculo-detalhe` e `onboarding-status` após as ações para atualizar a interface imediatamente.
+## Backend (Server Functions)
 
-## 3. Lógica de Negócio e Checklist
+- **`getAnalisePosVistoriaFn`**: Recupera o laudo completo + dados do veículo para o admin.
+- **`salvarPropostaValorFn`**:
+  - Calcula o valor final baseado em: FIPE - Depreciações (Matriz) - Margem.
+  - Atualiza o status do veículo para `AGUARDANDO_APROVACAO_VENDEDOR`.
+  - Dispara notificação WhatsApp/E-mail para o vendedor.
+- **`responderPropostaVendedorFn`**: Permite ao vendedor aceitar ou recusar (se recusar, volta para análise admin ou encerra).
 
-- **Sincronização**: O checklist da análise do veículo refletirá o status do CRLV. Só aparecerá como "Concluído" se o status for `APROVADO`.
-- **Bloqueio de Fluxo**: O botão "Liberar para vistoria" no cabeçalho será bloqueado no backend se o CRLV estiver pendente, e a UI refletirá isso com um tooltip ou mensagem de alerta se necessário.
+## Frontend - Painel Administrativo (`/admin/veiculo/$id/pos-vistoria`)
+
+- **Interface de Precificação**:
+  - Visualização resumida do laudo técnico (pontos críticos).
+  - Calculadora de Depreciação: Lista de itens do checklist que geram desconto.
+  - Campo para entrada manual do valor FIPE atualizado.
+  - Ajuste fino da margem comercial.
+  - Botão "Enviar Proposta ao Vendedor".
+
+## Frontend - Portal do Vendedor (`/vendedor/veiculo/$id/proposta`)
+
+- **Tela de Decisão**:
+  - Apresentação do valor de oferta.
+  - Justificativa básica (resumo do laudo).
+  - Botões "Aceitar Proposta" e "Recusar Proposta".
+  - Se Aceitar: Transição para `PRONTO_PARA_ANUNCIO`.
 
 ## Detalhes Técnicos
 
-- **Status do Documento**: `AGUARDANDO_ANALISE`, `APROVADO`, `NOVO_ENVIO_SOLICITADO`, `REJEITADO`.
-- **Persistência**: As alterações serão feitas diretamente na tabela `profiles` do vendedor, já que o CRLV está vinculado ao perfil dele neste fluxo.
-- **Auditoria**: Cada ação será registrada com o ID do administrador, timestamp e detalhes da alteração.
+- **Matriz de Depreciação**: Implementar lógica que lê o checklist (ex: se `pneus === 'ruim'`, aplica valor X de desconto configurado).
+- **Notificações**: Integrar com `processarEventoSistema` para o evento `PROPOSTA_GERADA`.
+- **Status de Veículo**: Adicionar `AGUARDANDO_APROVACAO_VENDEDOR` e `PROPOSTA_RECUSADA` à máquina de estados.
