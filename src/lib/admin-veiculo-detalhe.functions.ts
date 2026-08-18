@@ -36,19 +36,14 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
     
     let veiculo = (rows as any).rows?.[0] || (rows as any)[0];
 
-    // Se não encontrou pelo ID UUID real, tentar localizar por código (caso o ID na URL seja um alias)
-    if (!veiculo) {
-      console.log(`[getVeiculoDetalheAdminFn] Não encontrado por UUID. Tentando localizar por código/placa...`);
-      // O código costuma ser VEI-XXXXXX onde XXXXXX são os 6 primeiros caracteres do UUID
-      // Mas para garantir, buscamos por placa se o ID for reconhecível ou simplesmente tentamos uma busca mais ampla
-      // Aqui, se o usuário clicou no Onix e a listagem mandou um UUID que o detalhe não achou, 
-      // pode haver uma inconsistência de tabela ou ID.
-    }
+    // LOG DE DIAGNÓSTICO
+    console.log(`[getVeiculoDetalheAdminFn] Resultado da busca para ${data.id}:`, veiculo ? "ENCONTRADO" : "NÃO ENCONTRADO");
 
     if (!veiculo) {
       console.warn(`[getVeiculoDetalheAdminFn] Veículo ${data.id} não encontrado.`);
-      return { ok: false as const, message: `Veículo não encontrado (${data.id}). Verifique se o ID está correto ou se o registro foi removido.` };
+      return { ok: false as const, message: `Veículo não encontrado (ID: ${data.id}).` };
     }
+
 
 
 
