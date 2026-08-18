@@ -65,6 +65,7 @@ import { Route as AdminLeiloesIdRouteImport } from './routes/admin/leiloes.$id'
 import { Route as AdminNegociacaoIdRouteImport } from './routes/admin/negociacao.$id'
 import { Route as AdminPagamentoIdRouteImport } from './routes/admin/pagamento.$id'
 import { Route as AdminVeiculoIdRouteImport } from './routes/admin/veiculo.$id'
+import { Route as AdminVeiculoPosVistoriaRouteImport } from './routes/admin/veiculo..pos-vistoria'
 import { Route as AdminVendedorIdRouteImport } from './routes/admin/vendedor.$id'
 import { Route as CompradorEntregaIdRouteImport } from './routes/comprador/entrega.$id'
 import { Route as CompradorPagamentoIdRouteImport } from './routes/comprador/pagamento.$id'
@@ -359,6 +360,11 @@ const AdminVeiculoIdRoute = AdminVeiculoIdRouteImport.update({
   path: '/veiculo/$id',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminVeiculoPosVistoriaRoute = AdminVeiculoPosVistoriaRouteImport.update({
+  id: '/veiculo/pos-vistoria',
+  path: '/veiculo/pos-vistoria',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminVendedorIdRoute = AdminVendedorIdRouteImport.update({
   id: '/vendedor/$id',
   path: '/vendedor/$id',
@@ -487,6 +493,7 @@ export interface FileRoutesByFullPath {
   '/admin/negociacao/$id': typeof AdminNegociacaoIdRoute
   '/admin/pagamento/$id': typeof AdminPagamentoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRouteWithChildren
+  '/admin/veiculo/pos-vistoria': typeof AdminVeiculoPosVistoriaRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
   '/comprador/entrega/$id': typeof CompradorEntregaIdRoute
   '/comprador/pagamento/$id': typeof CompradorPagamentoIdRoute
@@ -553,6 +560,7 @@ export interface FileRoutesByTo {
   '/admin/negociacao/$id': typeof AdminNegociacaoIdRoute
   '/admin/pagamento/$id': typeof AdminPagamentoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRouteWithChildren
+  '/admin/veiculo/pos-vistoria': typeof AdminVeiculoPosVistoriaRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
   '/comprador/entrega/$id': typeof CompradorEntregaIdRoute
   '/comprador/pagamento/$id': typeof CompradorPagamentoIdRoute
@@ -625,6 +633,7 @@ export interface FileRoutesById {
   '/admin/negociacao/$id': typeof AdminNegociacaoIdRoute
   '/admin/pagamento/$id': typeof AdminPagamentoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRouteWithChildren
+  '/admin/veiculo/pos-vistoria': typeof AdminVeiculoPosVistoriaRoute
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
   '/comprador/entrega/$id': typeof CompradorEntregaIdRoute
   '/comprador/pagamento/$id': typeof CompradorPagamentoIdRoute
@@ -698,6 +707,7 @@ export interface FileRouteTypes {
     | '/admin/negociacao/$id'
     | '/admin/pagamento/$id'
     | '/admin/veiculo/$id'
+    | '/admin/veiculo/pos-vistoria'
     | '/admin/vendedor/$id'
     | '/comprador/entrega/$id'
     | '/comprador/pagamento/$id'
@@ -764,6 +774,7 @@ export interface FileRouteTypes {
     | '/admin/negociacao/$id'
     | '/admin/pagamento/$id'
     | '/admin/veiculo/$id'
+    | '/admin/veiculo/pos-vistoria'
     | '/admin/vendedor/$id'
     | '/comprador/entrega/$id'
     | '/comprador/pagamento/$id'
@@ -835,6 +846,7 @@ export interface FileRouteTypes {
     | '/admin/negociacao/$id'
     | '/admin/pagamento/$id'
     | '/admin/veiculo/$id'
+    | '/admin/veiculo/pos-vistoria'
     | '/admin/vendedor/$id'
     | '/comprador/entrega/$id'
     | '/comprador/pagamento/$id'
@@ -1259,6 +1271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminVeiculoIdRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/veiculo/pos-vistoria': {
+      id: '/admin/veiculo/pos-vistoria'
+      path: '/veiculo/pos-vistoria'
+      fullPath: '/admin/veiculo/pos-vistoria'
+      preLoaderRoute: typeof AdminVeiculoPosVistoriaRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/vendedor/$id': {
       id: '/admin/vendedor/$id'
       path: '/vendedor/$id'
@@ -1413,6 +1432,7 @@ interface AdminRouteChildren {
   AdminNegociacaoIdRoute: typeof AdminNegociacaoIdRoute
   AdminPagamentoIdRoute: typeof AdminPagamentoIdRoute
   AdminVeiculoIdRoute: typeof AdminVeiculoIdRouteWithChildren
+  AdminVeiculoPosVistoriaRoute: typeof AdminVeiculoPosVistoriaRoute
   AdminVendedorIdRoute: typeof AdminVendedorIdRoute
 }
 
@@ -1440,6 +1460,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminNegociacaoIdRoute: AdminNegociacaoIdRoute,
   AdminPagamentoIdRoute: AdminPagamentoIdRoute,
   AdminVeiculoIdRoute: AdminVeiculoIdRouteWithChildren,
+  AdminVeiculoPosVistoriaRoute: AdminVeiculoPosVistoriaRoute,
   AdminVendedorIdRoute: AdminVendedorIdRoute,
 }
 
