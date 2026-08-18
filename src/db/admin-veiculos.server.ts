@@ -34,11 +34,11 @@ export async function listarVeiculosAdmin(filtros: {
   const rows = await d.execute(sql`
     SELECT 
       v.id, v.marca, v.modelo, v.placa, v.ano_modelo, v.valor_interesse_cliente, 
-      v.status_analise, v.atualizado_em, v.cor, v.km,
+      v.status_analise, v.atualizado_em, v.cor, v.km, v.criado_em,
       p.nome as vendedor_nome,
       resp.nome as responsavel_nome
     FROM veiculos v
-    LEFT JOIN profiles p ON p.id = v.perfil_id
+    LEFT JOIN profiles p ON p.id = v.perfil_id OR p.id = v.vendedor_id
     LEFT JOIN profiles resp ON resp.id = v.responsavel_analise_id
     WHERE 1=1
       ${status ? sql`AND v.status_analise = ${status}` : sql``}
