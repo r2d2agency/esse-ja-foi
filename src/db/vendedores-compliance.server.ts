@@ -21,7 +21,8 @@ export async function ensureVendedoresSchema() {
     ADD COLUMN IF NOT EXISTS compliance_motivo_pendencia text,
     ADD COLUMN IF NOT EXISTS compliance_data_analise timestamptz,
     ADD COLUMN IF NOT EXISTS verificado boolean DEFAULT false,
-    ADD COLUMN IF NOT EXISTS compliance_responsavel_id uuid;
+    ADD COLUMN IF NOT EXISTS compliance_responsavel_id uuid,
+    ADD COLUMN IF NOT EXISTS status_compliance text DEFAULT 'PENDENTE';
   `);
 
 
@@ -80,17 +81,17 @@ export function calcularProgressoVendedor(p: any) {
   }
 
   // 2. Endereço: CEP, Logradouro, Número, Bairro, Cidade, UF e Comprovante
-  if (p.cep && p.endereco && p.numero && p.bairro && p.cidade && p.uf && p.documento_comprovante_endereco_url) {
+  if (p.cep && p.endereco && p.numero && p.bairro && p.cidade && p.uf && (p.documento_comprovante_endereco_url || p.doc_comprovante)) {
     etapas.endereco = "CONCLUIDO";
   }
 
   // 3. Documentos: CNH Frente, Verso, CRLV
-  if (p.documento_cnh_url && p.documento_cnh_verso_url && p.documento_crlv_url) {
+  if ((p.documento_cnh_url || p.doc_cnh_frente) && (p.documento_cnh_verso_url || p.doc_cnh_verso) && (p.documento_crlv_url || p.doc_crlv)) {
     etapas.documentos = "CONCLUIDO";
   }
 
   // 4. Validação: Selfie
-  if (p.documento_selfie_url) {
+  if (p.documento_selfie_url || p.doc_selfie) {
     etapas.validacao = "CONCLUIDO";
   }
 

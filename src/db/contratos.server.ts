@@ -220,11 +220,11 @@ export async function listarContratos(filtros: {
     try {
       naoGerados = rows(
         await d.execute(sql`
-          SELECT p.id as vendedor_id, p.nome as vendedor_nome, p.cpf as vendedor_cpf, p.criado_em
           FROM profiles p
           LEFT JOIN compliance_analise ca ON ca.vendedor_id = p.id
           WHERE p.role = 'vendedor'::app_role
-            AND COALESCE(ca.status,'') = 'APROVADO'
+            AND (COALESCE(ca.status,'') = 'APROVADO' OR p.status_compliance = 'APROVADO')
+
             AND NOT EXISTS (
               SELECT 1 FROM contratos c
               WHERE c.vendedor_id = p.id AND c.status NOT IN ('CANCELADO','RECUSADO','EXPIRADO')
@@ -352,7 +352,7 @@ export async function gerarContrato(input: {
   await ensureContratosSchema();
 
   const { perfil, complianceStatus, contratoAtual } = await obterContratoVendedor(input.vendedorId);
-  if (complianceStatus !== "APROVADO") {
+  if (complianceStatus !== "APROVADO" && perfil.status_compliance !== "APROVADO") {
     throw new RegraNegocioError("O contrato será liberado após a conclusão do compliance.", 400);
   }
   if (contratoAtual && !["CANCELADO", "RECUSADO", "EXPIRADO"].includes(contratoAtual.status)) {

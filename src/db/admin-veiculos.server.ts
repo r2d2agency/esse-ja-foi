@@ -13,11 +13,20 @@ export async function ensureVeiculosAdminSchema() {
   // Garantir coluna de responsável
   await d.execute(sql`
     ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS responsavel_analise_id uuid REFERENCES profiles(id);
-  `);
-  
-  // Garantir coluna de status da análise (para filtros rápidos)
-  await d.execute(sql`
     ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS status_analise text DEFAULT 'AGUARDANDO_ANALISE';
+    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS perfil_id uuid REFERENCES profiles(id);
+    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS vendedor_id uuid REFERENCES profiles(id);
+    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS fotos text;
+    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS documento_crlv_url text;
+  `);
+
+  // Garantir colunas de vínculo com o vendedor
+  await d.execute(sql`
+    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS perfil_id uuid REFERENCES profiles(id);
+  `);
+
+  await d.execute(sql`
+    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS vendedor_id uuid REFERENCES profiles(id);
   `);
 }
 
@@ -34,11 +43,12 @@ export async function listarVeiculosAdmin(filtros: {
   const rows = await d.execute(sql`
     SELECT 
       v.id, v.marca, v.modelo, v.placa, v.ano_modelo, v.valor_interesse_cliente, 
-      v.status_analise, v.atualizado_em, v.cor, v.km,
+      v.status_analise, v.atualizado_em, v.cor, v.km, v.criado_em,
       p.nome as vendedor_nome,
+      p.status_compliance as compliance_status,
       resp.nome as responsavel_nome
     FROM veiculos v
-    LEFT JOIN profiles p ON p.id = v.perfil_id
+    LEFT JOIN profiles p ON p.id = v.perfil_id OR p.id = v.vendedor_id
     LEFT JOIN profiles resp ON resp.id = v.responsavel_analise_id
     WHERE 1=1
       ${status ? sql`AND v.status_analise = ${status}` : sql``}
