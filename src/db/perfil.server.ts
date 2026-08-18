@@ -4,6 +4,7 @@ import { db } from './index';
 const COLUNAS: [string, string][] = [
   ['senha_hash', 'text'],
   ['cpf', 'text'],
+  ['cnpj', 'text'],
   ['cep', 'text'],
   ['endereco', 'text'],
   ['numero', 'text'],
@@ -18,7 +19,6 @@ const COLUNAS: [string, string][] = [
   ['documento_comprovante_endereco_url', 'text'],
   ['cadastro_completo', 'boolean NOT NULL DEFAULT false'],
   ['tipo_pessoa', 'text DEFAULT \'PF\''],
-  ['cnpj', 'text'],
   ['status_compliance', 'text DEFAULT \'NAO_ENVIADO\''],
   ['compliance_motivo_pendencia', 'text'],
   ['compliance_data_analise', 'timestamptz'],
@@ -31,7 +31,6 @@ const COLUNAS: [string, string][] = [
   ['profissao', 'text'],
   ['nome_mae', 'text'],
 ];
-
 
 let pronto = false;
 
@@ -48,8 +47,21 @@ export async function ensurePerfilSchema() {
         }
       }
     }
+    
+    // Garantir grants
+    await db.execute(sql`
+      DO $$ 
+      BEGIN
+        EXECUTE 'GRANT SELECT, UPDATE ON public.profiles TO authenticated';
+        EXECUTE 'GRANT ALL ON public.profiles TO service_role';
+      EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'Erro ao conceder grants em profiles: %', SQLERRM;
+      END $$;
+    `);
+
     pronto = true;
   } catch (e) {
     if (process.env['NODE_ENV'] === 'development') console.error('Falha ao garantir colunas de profiles:', e);
   }
 }
+

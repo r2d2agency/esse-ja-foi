@@ -323,6 +323,7 @@ export async function listarNegociacoesAdmin(status?: string) {
     JOIN anuncios_veiculo a ON a.id = n.anuncio_id
     JOIN profiles pv ON pv.id = n.vendedor_id
     JOIN profiles pc ON pc.id = n.comprador_id
+
     ${status ? sql`WHERE n.status = ${status}` : sql``}
     ORDER BY n.criado_em DESC
   `);

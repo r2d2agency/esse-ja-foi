@@ -38,13 +38,14 @@ export async function ensureAnunciosSchema() {
     CREATE TABLE IF NOT EXISTS anuncios_fotos (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       anuncio_id uuid NOT NULL REFERENCES anuncios_veiculo(id) ON DELETE CASCADE,
-      foto_original_id uuid REFERENCES laudo_fotos(id),
+      foto_original_id uuid, -- Referência opcional ao ID da foto no laudo
       foto_url text NOT NULL,
       eh_capa boolean DEFAULT false,
       ordem integer DEFAULT 0,
       legenda text,
       criado_em timestamptz DEFAULT now()
     );
+
   `);
 
   // Tabela de Apontamentos Públicos do Anúncio
