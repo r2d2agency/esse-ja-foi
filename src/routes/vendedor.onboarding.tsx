@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useServerFn } from "@tanstack/react-start";
 import { obterMeuPerfilFn, atualizarPerfilVendedorFn } from "@/lib/vendedor.functions";
 import { obterDetalheVendedorFn } from "@/lib/vendedores-compliance.functions";
+import { getOnboardingStatusFn } from "@/lib/onboarding.functions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -54,6 +55,7 @@ function VendedorOnboardingPage() {
   const updateDocs = useServerFn(atualizarPerfilVendedorFn);
   const getProfile = useServerFn(obterMeuPerfilFn);
   const getDetalhe = useServerFn(obterDetalheVendedorFn);
+  const getOnboardingStatus = useServerFn(getOnboardingStatusFn);
   
   const { data: perfilRes, refetch } = useSuspenseQuery({
     queryKey: ["meu-perfil"],
@@ -133,9 +135,9 @@ function VendedorOnboardingPage() {
             comprovanteEndereco: p.documento_comprovante_endereco_url || null,
           });
 
-          const det = await getDetalhe({ data: { id: user.id } });
+          const det = await getOnboardingStatus({ data: { perfilId: user.id } });
           if (det.ok) {
-            setProgressoInfo(det.data.progresso);
+            setProgressoInfo(det);
           }
         }
       } catch (err) {
@@ -161,7 +163,8 @@ function VendedorOnboardingPage() {
 
       if (perfil.cadastro_completo) {
         setStep(5);
-      } else if (progressoInfo.etapas.validacao === "CONCLUIDO") setStep(5);
+      } else if (progressoInfo.progresso === 100) setStep(5);
+      else if (progressoInfo.etapas.validacao === "CONCLUIDO") setStep(5);
       else if (progressoInfo.etapas.documentos === "CONCLUIDO") setStep(4);
       else if (progressoInfo.etapas.endereco === "CONCLUIDO") setStep(3);
       else if (progressoInfo.etapas.dados_pessoais === "CONCLUIDO") setStep(2);
@@ -220,8 +223,8 @@ function VendedorOnboardingPage() {
        window.scrollTo(0, 0);
        // Refresh progress info
        if (user) {
-         const det = await getDetalhe({ data: { id: user.id } });
-         if (det.ok) setProgressoInfo(det.data.progresso);
+         const det = await getOnboardingStatus({ data: { perfilId: user.id } });
+         if (det.ok) setProgressoInfo(det);
        }
     }
   };
@@ -235,7 +238,10 @@ function VendedorOnboardingPage() {
     if (ok) {
       toast.success("Cadastro enviado para análise!");
       // Força recarregamento do perfil e status para evitar cache
-      await refetch();
+      await Promise.all([
+        refetch(),
+        getOnboardingStatus({ data: { perfilId: user?.id || "" } })
+      ]);
       navigate({ to: '/vendedor', replace: true });
     }
   };
@@ -507,11 +513,15 @@ function VendedorOnboardingPage() {
               </div>
               <Progress value={progressoInfo?.progresso || 0} className="h-2 bg-white/20" />
               <div className="flex justify-between pt-2">
-                {ETAPAS_LABELS.map((label, i) => (
-                  <div key={i} className={`text-[10px] uppercase font-bold text-center w-12 ${step === i + 1 ? 'text-amber-400' : 'text-white/40'}`}>
-                    {label.split(' ')[0]}
-                  </div>
-                ))}
+                {ETAPAS_LABELS.map((label, i) => {
+                  const etapaKey = i === 0 ? 'conta' : i === 1 ? 'dados_pessoais' : i === 2 ? 'endereco' : i === 3 ? 'documentos' : 'validacao';
+                  const concluida = progressoInfo?.etapas?.[etapaKey] === 'CONCLUIDO';
+                  return (
+                    <div key={i} className={`text-[10px] uppercase font-bold text-center w-12 ${step === i + 1 ? 'text-amber-400' : concluida ? 'text-emerald-400' : 'text-white/40'}`}>
+                      {label.split(' ')[0]}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </CardHeader>

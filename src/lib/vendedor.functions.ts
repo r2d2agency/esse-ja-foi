@@ -190,19 +190,40 @@ export const atualizarPerfilVendedorFn = createServerFn({ method: "POST" })
 
     if (data.finalizar) {
       const rows = (await db.execute(sql`
-        SELECT documento_cnh_url, documento_cnh_verso_url, documento_crlv_url,
-               documento_selfie_url, documento_comprovante_endereco_url
-        FROM profiles WHERE id = ${data.perfilId}::uuid
+        SELECT * FROM profiles WHERE id = ${data.perfilId}::uuid
       `)) as any;
       const p = rows.rows?.[0] || rows[0] || {};
-      const faltando: string[] = [];
-      if (!(data.cnhUrl || p.documento_cnh_url)) faltando.push("CNH (frente)");
-      if (!(data.cnhVersoUrl || p.documento_cnh_verso_url)) faltando.push("CNH (verso)");
-      if (!(data.crlvUrl || p.documento_crlv_url)) faltando.push("CRLV-e");
-      if (!(data.comprovanteEnderecoUrl || p.documento_comprovante_endereco_url)) faltando.push("Comprovante de residência");
-      if (!(data.selfieUrl || p.documento_selfie_url)) faltando.push("Selfie de validação");
-      if (faltando.length) {
-        throw new Error(`Envie todos os documentos para concluir: ${faltando.join(", ")}.`);
+      
+      const { calcularProgressoVendedor } = await import("@/db/vendedores-compliance.server");
+      // Mesclar dados atuais com os novos dados recebidos para calcular o progresso real
+      const perfilSimulado = {
+        ...p,
+        cpf: data.cpf ?? p.cpf,
+        data_nascimento: data.dataNascimento ?? p.data_nascimento,
+        cep: data.cep ?? p.cep,
+        endereco: data.endereco ?? p.endereco,
+        numero: data.numero ?? p.numero,
+        bairro: data.bairro ?? p.bairro,
+        cidade: data.cidade ?? p.cidade,
+        uf: data.uf ?? p.uf,
+        documento_cnh_url: data.cnhUrl ?? p.documento_cnh_url,
+        documento_cnh_verso_url: data.cnhVersoUrl ?? p.documento_cnh_verso_url,
+        documento_crlv_url: data.crlvUrl ?? p.documento_crlv_url,
+        documento_selfie_url: data.selfieUrl ?? p.documento_selfie_url,
+        documento_comprovante_endereco_url: data.comprovanteEnderecoUrl ?? p.documento_comprovante_endereco_url
+      };
+
+      const status = calcularProgressoVendedor(perfilSimulado);
+      
+      if (!status.isCompleto) {
+        const faltando: string[] = [];
+        const e = status.etapas;
+        if (e.dados_pessoais !== "CONCLUIDO") faltando.push("Dados Pessoais");
+        if (e.endereco !== "CONCLUIDO") faltando.push("Endereço e Comprovante");
+        if (e.documentos !== "CONCLUIDO") faltando.push("CNH e CRLV-e");
+        if (e.validacao !== "CONCLUIDO") faltando.push("Selfie");
+        
+        throw new Error(`Cadastro incompleto (${status.progresso}%). Itens pendentes: ${faltando.join(", ")}`);
       }
     }
 

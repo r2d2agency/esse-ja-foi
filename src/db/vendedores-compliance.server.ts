@@ -70,18 +70,18 @@ export function calcularProgressoVendedor(p: any) {
     validacao: "PENDENTE"
   };
 
-  // 1. Dados Pessoais: Nome, Email, CPF, Data Nascimento
-  if (p.nome && p.email && p.cpf && p.data_nascimento) {
+  // 1. Dados Pessoais: Nome, CPF, Data Nascimento
+  if (p.nome && p.cpf && p.data_nascimento) {
     etapas.dados_pessoais = "CONCLUIDO";
   }
 
-  // 2. Endereço: CEP, Logradouro, Número, Bairro, Cidade, UF
-  if (p.cep && p.endereco && p.numero && p.bairro && p.cidade && p.uf) {
+  // 2. Endereço: CEP, Logradouro, Número, Bairro, Cidade, UF e Comprovante
+  if (p.cep && p.endereco && p.numero && p.bairro && p.cidade && p.uf && p.documento_comprovante_endereco_url) {
     etapas.endereco = "CONCLUIDO";
   }
 
-  // 3. Documentos: CNH Frente, Verso, CRLV, Comprovante Residência
-  if (p.documento_cnh_url && p.documento_cnh_verso_url && p.documento_crlv_url && p.documento_comprovante_endereco_url) {
+  // 3. Documentos: CNH Frente, Verso, CRLV
+  if (p.documento_cnh_url && p.documento_cnh_verso_url && p.documento_crlv_url) {
     etapas.documentos = "CONCLUIDO";
   }
 
@@ -94,10 +94,13 @@ export function calcularProgressoVendedor(p: any) {
   const total = Object.keys(etapas).length;
   const progresso = Math.round((concluidas / total) * 100);
 
+  // Consideramos 100% apenas se todas as etapas individuais estiverem CONCLUIDO
+  const isRealmenteCompleto = progresso === 100;
+
   return {
     progresso,
     etapas,
-    isCompleto: progresso === 100
+    isCompleto: isRealmenteCompleto
   };
 }
 
