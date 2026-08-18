@@ -202,6 +202,7 @@ export async function fecharLeilao(leilaoId: string) {
       JOIN veiculos v ON v.id = le.veiculo_id
       JOIN anuncios_veiculo a ON a.veiculo_id = v.id
 
+
       LEFT JOIN LATERAL (
         SELECT * FROM propostas_veiculo pv WHERE pv.veiculo_id = v.id ORDER BY pv.versao DESC LIMIT 1
       ) pr ON true
