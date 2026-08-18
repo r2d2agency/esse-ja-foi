@@ -30,6 +30,10 @@ const COLUNAS: [string, string][] = [
   ['estado_civil', 'text'],
   ['profissao', 'text'],
   ['nome_mae', 'text'],
+  ['documento_cnh_status', "text DEFAULT 'PENDENTE'"],
+  ['documento_crlv_status', "text DEFAULT 'PENDENTE'"],
+  ['documento_selfie_status', "text DEFAULT 'PENDENTE'"],
+  ['verificado', 'boolean DEFAULT false'],
 ];
 
 let pronto = false;
