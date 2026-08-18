@@ -196,7 +196,8 @@ export async function fecharLeilao(leilaoId: string) {
 
     // Dados de suporte (veículo, vendedor, valores acordados)
     const ctxRes = await tx.execute(sql`
-      SELECT a.id as anuncio_id, a.codigo_publico, a.titulo, v.id as veiculo_id, v.vendedor_id,
+      SELECT a.id as anuncio_id, a.codigo_publico, a.titulo, v.id as veiculo_id, 
+        COALESCE(v.vendedor_id, v.perfil_id) as vendedor_id,
         pr.valor_minimo_acordado, pr.comissao_valor, pr.valor_liquido_vendedor
       FROM leiloes le
       JOIN veiculos v ON v.id = le.veiculo_id
