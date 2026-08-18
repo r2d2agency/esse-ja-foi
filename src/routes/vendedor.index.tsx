@@ -59,32 +59,59 @@ function DashboardVendedor() {
       <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
         {/* Card cadastro */}
         <section className="rounded-2xl border border-slate-200 bg-white p-4 lg:p-6">
-          {profile.cadastro_completo === true ? (
+          {profile.status_compliance === 'APROVADO' ? (
             <div className="flex items-center gap-3">
               <CheckCircle2 className="h-6 w-6 text-emerald-600" />
-              <p className="text-lg font-bold text-slate-900">Cadastro verificado</p>
+              <div>
+                <p className="text-lg font-bold text-slate-900">Cadastro aprovado</p>
+                <p className="text-sm text-slate-500">Sua conta está ativa e pronta para operar.</p>
+              </div>
             </div>
-          ) : profile.cadastro_completo === false && pct > 80 ? (
+          ) : profile.status_compliance === 'PENDENCIA' ? (
             <>
               <div className="flex items-start justify-between gap-3">
-                <h2 className="text-lg font-bold text-slate-900">Cadastro em análise</h2>
+                <h2 className="text-lg font-bold text-slate-900">Precisamos de algumas informações</h2>
+                <StatusBadge status="aguardando" label="Pendência" />
+              </div>
+              <p className="mt-1.5 text-sm text-slate-500">
+                {profile.compliance_motivo_pendencia || "Existem itens no seu cadastro que precisam de correção."}
+              </p>
+              <Button
+                onClick={() => navigate({ to: '/vendedor/onboarding' })}
+                className="mt-4 h-11 w-full rounded-xl bg-amber-600 font-semibold text-white transition-colors hover:bg-amber-700"
+              >
+                Resolver pendência
+              </Button>
+            </>
+          ) : (profile.status_compliance === 'AGUARDANDO_ANALISE' || profile.status_compliance === 'EM_ANALISE') ? (
+            <>
+              <div className="flex items-start justify-between gap-3">
+                <h2 className="text-lg font-bold text-slate-900">
+                  {profile.status_compliance === 'EM_ANALISE' ? 'Cadastro em análise' : 'Cadastro enviado para análise'}
+                </h2>
                 <StatusBadge status="analise" />
               </div>
               <p className="mt-1.5 text-sm text-slate-500">
-                Recebemos suas informações e estamos fazendo a validação.
+                {profile.status_compliance === 'EM_ANALISE' 
+                  ? 'Nossa equipe já iniciou a análise das suas informações.' 
+                  : 'Recebemos suas informações. Nossa equipe está analisando seu cadastro.'}
               </p>
               <div className="mt-4 space-y-2.5">
                  <div className="flex items-center gap-3">
                     <div className="h-6 w-6 flex items-center justify-center rounded-full bg-emerald-600 text-white text-[10px]"><CheckCircle2 className="w-3 h-3" /></div>
-                    <span className="text-sm text-slate-600">Dados enviados</span>
+                    <span className="text-sm text-slate-600">✓ Cadastro 100% concluído</span>
                  </div>
                  <div className="flex items-center gap-3">
-                    <div className="h-6 w-6 flex items-center justify-center rounded-full bg-teal-100 text-teal-700 text-[10px] animate-pulse">●</div>
-                    <span className="text-sm text-slate-900 font-bold">Em análise</span>
+                    <div className={`h-6 w-6 flex items-center justify-center rounded-full ${profile.status_compliance === 'EM_ANALISE' ? 'bg-teal-600 text-white' : 'bg-teal-100 text-teal-700'} text-[10px] ${profile.status_compliance === 'EM_ANALISE' ? '' : 'animate-pulse'}`}>
+                      {profile.status_compliance === 'EM_ANALISE' ? <CheckCircle2 className="w-3 h-3" /> : '●'}
+                    </div>
+                    <span className={`text-sm ${profile.status_compliance === 'EM_ANALISE' ? 'text-slate-600' : 'text-slate-900 font-bold'}`}>
+                      {profile.status_compliance === 'EM_ANALISE' ? 'Em análise' : 'Aguardando análise'}
+                    </span>
                  </div>
                  <div className="flex items-center gap-3">
                     <div className="h-6 w-6 flex items-center justify-center rounded-full bg-slate-100 text-slate-300 text-[10px]">○</div>
-                    <span className="text-sm text-slate-400">Cadastro aprovado</span>
+                    <span className="text-sm text-slate-400">Você será avisado quando houver uma atualização.</span>
                  </div>
               </div>
             </>
