@@ -150,12 +150,15 @@ export const cadastrarMeuVeiculoFn = createServerFn({ method: "POST" })
     versao: z.string().optional().nullable(),
     cor: z.string().optional().nullable(),
     status: z.string().optional(),
+    id: z.string().uuid().optional(),
   }))
   .handler(async ({ data }) => {
     const { salvarVeiculo } = await import("@/db/cadastro.server");
     return await salvarVeiculo({
       ...data,
+      id: data.id,
       valorInteresseCliente: data.valorInteresse,
+
       status: data.status || 'AGUARDANDO_APROVACAO',
       observacoes: `Opcionais: ${(data.opcionais || []).join(', ')}. ${data.observacoes || ''}`
     } as any);

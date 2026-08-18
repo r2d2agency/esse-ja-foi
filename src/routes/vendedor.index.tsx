@@ -76,8 +76,9 @@ function DashboardVendedor() {
             {profile.verificado && (
               <div 
                 className="cursor-help transition-transform hover:scale-110"
-                title={`Verificado em ${new Date(profile.dataVerificacao).toLocaleDateString('pt-BR')}`}
-                onClick={() => alert(`Perfil verificado em: ${new Date(profile.dataVerificacao).toLocaleString('pt-BR')}`)}
+                title={`Verificado em ${profile.dataVerificacao ? new Date(profile.dataVerificacao).toLocaleDateString('pt-BR') : 'data pendente'}`}
+                onClick={() => alert(`Perfil verificado em: ${profile.dataVerificacao ? new Date(profile.dataVerificacao).toLocaleString('pt-BR') : 'data pendente'}`)}
+
               >
                 <BadgeCheck className="h-6 w-6 fill-teal-600 text-white lg:h-7 lg:w-7" />
               </div>
@@ -88,8 +89,9 @@ function DashboardVendedor() {
         {profile.verificado && (
           <div className="hidden lg:flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-teal-700 border border-teal-100">
             <Calendar className="h-3 w-3" />
-            Verificado em {new Date(profile.dataVerificacao).toLocaleDateString('pt-BR')}
+            Verificado em {profile.dataVerificacao ? new Date(profile.dataVerificacao).toLocaleDateString('pt-BR') : 'data pendente'}
           </div>
+
         )}
       </div>
 

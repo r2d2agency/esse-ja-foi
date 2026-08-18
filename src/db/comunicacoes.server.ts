@@ -39,6 +39,8 @@ export async function ensureComunicacoesSchema(silent = true) {
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'waba_id') THEN
           ALTER TABLE whatsapp_config ADD COLUMN waba_id text;
         END IF;
+
+
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'whatsapp_config' AND column_name = 'phone_number_id') THEN
           ALTER TABLE whatsapp_config ADD COLUMN phone_number_id text;
         END IF;
@@ -302,14 +304,19 @@ export async function ensureComunicacoesSchema(silent = true) {
 
     // 8. Atualizar profiles com preferências e elegibilidade
     const profileCols: Array<[string, string]> = [
+      ["cnpj", "text"],
+      ["tipo_pessoa", "text DEFAULT 'PF'"],
       ["pode_receber_comunicacoes", "boolean DEFAULT true"],
       ["whatsapp_status", "text DEFAULT 'ATIVO'"], // ATIVO, INVALIDO, DESABILITADO, BLOQUEADO, DESCADASTRADO
       ["whatsapp_validado_em", "timestamptz"],
       ["interesses_veiculos", "jsonb DEFAULT '[]'"], // Hatch, Sedan, SUV, etc.
       ["interesses_marcas", "jsonb DEFAULT '[]'"],
       ["interesses_regioes", "jsonb DEFAULT '[]'"],
-      ["interesses_anos", "jsonb DEFAULT '[]'"]
+      ["interesses_anos", "jsonb DEFAULT '[]'"],
+      ["verificado", "boolean DEFAULT false"]
     ];
+
+
 
     for (const [name, type] of profileCols) {
       try {
@@ -317,12 +324,15 @@ export async function ensureComunicacoesSchema(silent = true) {
           DO $$
           BEGIN
             IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = '${name}') THEN
-              ALTER TABLE profiles ADD COLUMN ${name} ${type};
+              EXECUTE 'ALTER TABLE profiles ADD COLUMN ${name} ${type}';
             END IF;
           END $$;
         `));
-      } catch (e) {}
+      } catch (e) {
+        if (process.env['NODE_ENV'] === 'development') console.error(`Erro ao adicionar coluna ${name} em profiles:`, e);
+      }
     }
+
 
     if (!silent && process.env['NODE_ENV'] === 'development') console.log("[comunicacoes.server] Tabelas OK.");
   } catch (err) {

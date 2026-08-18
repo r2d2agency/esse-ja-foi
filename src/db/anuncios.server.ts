@@ -8,6 +8,11 @@ function requireDb() {
 
 export async function ensureAnunciosSchema() {
   const d = requireDb();
+  
+  // Dependência de laudos para a tabela de fotos
+  const { ensureLaudoSchema } = await import("./laudos.server");
+  await ensureLaudoSchema();
+
 
   // Tabela de Anúncios
   await d.execute(sql`
@@ -25,7 +30,7 @@ export async function ensureAnunciosSchema() {
       publicado_em timestamptz,
       encerrado_em timestamptz,
       motivo_pausa_cancelamento text,
-      responsavel_id uuid REFERENCES profiles(id),
+      responsavel_id uuid, -- Remover FK para profiles para evitar erro circular inicial
       config_exibicao jsonb DEFAULT '{}',
       copy_compartilhamento text,
       criado_em timestamptz DEFAULT now(),
@@ -38,13 +43,14 @@ export async function ensureAnunciosSchema() {
     CREATE TABLE IF NOT EXISTS anuncios_fotos (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       anuncio_id uuid NOT NULL REFERENCES anuncios_veiculo(id) ON DELETE CASCADE,
-      foto_original_id uuid REFERENCES laudo_fotos(id),
+      foto_original_id uuid, -- Referência opcional ao ID da foto no laudo
       foto_url text NOT NULL,
       eh_capa boolean DEFAULT false,
       ordem integer DEFAULT 0,
       legenda text,
       criado_em timestamptz DEFAULT now()
     );
+
   `);
 
   // Tabela de Apontamentos Públicos do Anúncio

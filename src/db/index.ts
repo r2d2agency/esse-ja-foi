@@ -46,15 +46,17 @@ export const migrateDb = async () => {
       const { ensureAuthSchema, ensureSuperAdmin } = await import('./auth.server');
       await ensureAuthSchema();
 
-      // Ordem importa: cada bloco depende das tabelas criadas pelos anteriores.
+      const { ensurePerfilSchema } = await import('./perfil.server');
+      await ensurePerfilSchema();
+
       const { ensureCadastroSchema } = await import('./cadastro.server');
       await ensureCadastroSchema();
 
-      const { ensureVeiculosAdminSchema } = await import('./admin-veiculos.server');
-      await ensureVeiculosAdminSchema();
-
       const { ensureVendedoresSchema } = await import('./vendedores-compliance.server');
       await ensureVendedoresSchema();
+
+      const { ensureVeiculosAdminSchema } = await import('./admin-veiculos.server');
+      await ensureVeiculosAdminSchema();
 
       const { ensureContratosSchema } = await import('./contratos.server');
       await ensureContratosSchema();
@@ -62,7 +64,7 @@ export const migrateDb = async () => {
       const { ensureVistoriaSchema } = await import('./vistorias.server');
       await ensureVistoriaSchema();
 
-      const { seedConfiguracoes, ensureLaudoSchema } = await import('./laudos.server');
+      const { ensureLaudoSchema, seedConfiguracoes } = await import('./laudos.server');
       await ensureLaudoSchema();
       await seedConfiguracoes();
 
@@ -93,9 +95,6 @@ export const migrateDb = async () => {
       const { ensureFinanceiroSchema } = await import('./financeiro.server');
       await ensureFinanceiroSchema();
 
-      const { ensurePerfilSchema } = await import('./perfil.server');
-      await ensurePerfilSchema();
-
       const { ensureTimelineSchema } = await import('./timeline.server');
       await ensureTimelineSchema();
 
@@ -110,6 +109,7 @@ export const migrateDb = async () => {
       await ensureAutomacoesSchema();
       await ensureRelatoriosSchema();
       await ensureMailSchema();
+
 
       await ensureSuperAdmin();
     } finally {

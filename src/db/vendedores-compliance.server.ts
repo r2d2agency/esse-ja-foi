@@ -13,6 +13,8 @@ export async function ensureVendedoresSchema() {
   // Garantir colunas documento status no profile e novos campos compliance
   await d.execute(sql`
     ALTER TABLE profiles 
+    ADD COLUMN IF NOT EXISTS cnpj text,
+    ADD COLUMN IF NOT EXISTS tipo_pessoa text DEFAULT 'PF',
     ADD COLUMN IF NOT EXISTS documento_cnh_status text DEFAULT 'PENDENTE',
     ADD COLUMN IF NOT EXISTS documento_crlv_status text DEFAULT 'PENDENTE',
     ADD COLUMN IF NOT EXISTS documento_selfie_status text DEFAULT 'PENDENTE',
@@ -21,6 +23,7 @@ export async function ensureVendedoresSchema() {
     ADD COLUMN IF NOT EXISTS verificado boolean DEFAULT false,
     ADD COLUMN IF NOT EXISTS compliance_responsavel_id uuid;
   `);
+
 
   await d.execute(sql`
     CREATE TABLE IF NOT EXISTS compliance_analise (

@@ -201,6 +201,8 @@ export async function fecharLeilao(leilaoId: string) {
       FROM leiloes le
       JOIN veiculos v ON v.id = le.veiculo_id
       JOIN anuncios_veiculo a ON a.veiculo_id = v.id
+
+
       LEFT JOIN LATERAL (
         SELECT * FROM propostas_veiculo pv WHERE pv.veiculo_id = v.id ORDER BY pv.versao DESC LIMIT 1
       ) pr ON true
@@ -323,6 +325,7 @@ export async function listarNegociacoesAdmin(status?: string) {
     JOIN anuncios_veiculo a ON a.id = n.anuncio_id
     JOIN profiles pv ON pv.id = n.vendedor_id
     JOIN profiles pc ON pc.id = n.comprador_id
+
     ${status ? sql`WHERE n.status = ${status}` : sql``}
     ORDER BY n.criado_em DESC
   `);

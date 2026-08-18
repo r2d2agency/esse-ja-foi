@@ -8,6 +8,7 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
     const { sql } = await import("drizzle-orm");
     if (!db) throw new Error("Banco de dados indisponível");
 
+    console.log(`[getVeiculoDetalheAdminFn] Buscando veículo ID: ${data.id}`);
     const rows = await db.execute(sql`
       SELECT 
         v.*, 
@@ -26,7 +27,11 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
     `);
     
     const veiculo = (rows as any).rows?.[0] || (rows as any)[0];
-    if (!veiculo) return { ok: false as const, message: "Veículo não encontrado." };
+    if (!veiculo) {
+      console.warn(`[getVeiculoDetalheAdminFn] Veículo ${data.id} não encontrado.`);
+      return { ok: false as const, message: "Veículo não encontrado." };
+    }
+
 
     const logsRows = await db.execute(sql`
       SELECT * FROM logs 
