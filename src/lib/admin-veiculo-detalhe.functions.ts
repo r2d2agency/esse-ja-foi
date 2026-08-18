@@ -14,7 +14,9 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
     await ensureVeiculosAdminSchema();
 
     console.log(`[getVeiculoDetalheAdminFn] Buscando veículo ID: ${data.id}`);
-    const rows = await db.execute(sql`
+    
+    // Tentar buscar por ID diretamente
+    let rows = await db.execute(sql`
       SELECT 
         v.*, 
         p.nome as vendedor_nome, p.email as vendedor_email, p.whatsapp as vendedor_whatsapp,
@@ -32,11 +34,17 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
       LIMIT 1
     `);
     
-    const veiculo = (rows as any).rows?.[0] || (rows as any)[0];
+    let veiculo = (rows as any).rows?.[0] || (rows as any)[0];
+
+    // LOG DE DIAGNÓSTICO
+    console.log(`[getVeiculoDetalheAdminFn] Resultado da busca para ${data.id}:`, veiculo ? "ENCONTRADO" : "NÃO ENCONTRADO");
+
     if (!veiculo) {
       console.warn(`[getVeiculoDetalheAdminFn] Veículo ${data.id} não encontrado.`);
-      return { ok: false as const, message: "Veículo não encontrado no banco de dados." };
+      return { ok: false as const, message: `Veículo não encontrado (ID: ${data.id}).` };
     }
+
+
 
 
     const logsRows = await db.execute(sql`
