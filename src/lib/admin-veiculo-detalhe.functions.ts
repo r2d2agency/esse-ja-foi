@@ -13,6 +13,7 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
       SELECT 
         v.*, 
         p.nome as vendedor_nome, p.email as vendedor_email, p.whatsapp as vendedor_whatsapp,
+        p.cpf as vendedor_cpf, p.cnpj as vendedor_cnpj, p.tipo_pessoa as vendedor_tipo_pessoa,
         p.documento_cnh_url as vendedor_cnh, p.documento_crlv_url as vendedor_crlv, p.documento_selfie_url as vendedor_selfie,
         p.documento_crlv_status as vendedor_crlv_status,
         p.cadastro_completo as vendedor_cadastro_completo,
@@ -20,7 +21,7 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
         (SELECT status FROM contratos WHERE veiculo_id = v.id ORDER BY criado_em DESC LIMIT 1) as contrato_status,
         resp.nome as responsavel_nome
       FROM veiculos v
-      LEFT JOIN profiles p ON p.id = v.perfil_id
+      LEFT JOIN profiles p ON p.id = v.perfil_id OR p.id = v.vendedor_id
       LEFT JOIN profiles resp ON resp.id = v.responsavel_analise_id
       WHERE v.id = ${data.id}::uuid
       LIMIT 1
@@ -29,7 +30,7 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
     const veiculo = (rows as any).rows?.[0] || (rows as any)[0];
     if (!veiculo) {
       console.warn(`[getVeiculoDetalheAdminFn] Veículo ${data.id} não encontrado.`);
-      return { ok: false as const, message: "Veículo não encontrado." };
+      return { ok: false as const, message: "Veículo não encontrado no banco de dados." };
     }
 
 
