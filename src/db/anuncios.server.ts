@@ -30,7 +30,7 @@ export async function ensureAnunciosSchema() {
       publicado_em timestamptz,
       encerrado_em timestamptz,
       motivo_pausa_cancelamento text,
-      responsavel_id uuid REFERENCES profiles(id),
+      responsavel_id uuid, -- Remover FK para profiles para evitar erro circular inicial
       config_exibicao jsonb DEFAULT '{}',
       copy_compartilhamento text,
       criado_em timestamptz DEFAULT now(),

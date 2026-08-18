@@ -312,8 +312,10 @@ export async function ensureComunicacoesSchema(silent = true) {
       ["interesses_veiculos", "jsonb DEFAULT '[]'"], // Hatch, Sedan, SUV, etc.
       ["interesses_marcas", "jsonb DEFAULT '[]'"],
       ["interesses_regioes", "jsonb DEFAULT '[]'"],
-      ["interesses_anos", "jsonb DEFAULT '[]'"]
+      ["interesses_anos", "jsonb DEFAULT '[]'"],
+      ["verificado", "boolean DEFAULT false"]
     ];
+
 
 
     for (const [name, type] of profileCols) {

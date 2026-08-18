@@ -53,11 +53,13 @@ export async function ensurePerfilSchema() {
       DO $$ 
       BEGIN
         EXECUTE 'GRANT SELECT, UPDATE ON public.profiles TO authenticated';
+        EXECUTE 'GRANT SELECT ON public.profiles TO anon';
         EXECUTE 'GRANT ALL ON public.profiles TO service_role';
       EXCEPTION WHEN OTHERS THEN
         RAISE NOTICE 'Erro ao conceder grants em profiles: %', SQLERRM;
       END $$;
     `);
+
 
     pronto = true;
   } catch (e) {
