@@ -14,7 +14,7 @@ export const Route = createFileRoute("/vendedor/veiculo/$id/proposta")({
 });
 
 function PropostaVendedorPage() {
-  const { id } = Route.useParams();
+  const { id } = Route.useParams() as { id: string };
   const navigate = useNavigate();
   const getDetalhe = useServerFn(getDetalheAnaliseVistoriaFn);
   const responder = useServerFn(responderPropostaVendedorFn);

@@ -25,7 +25,13 @@ export const salvarPropostaValorFn = createServerFn({ method: "POST" })
   }))
   .handler(async ({ data }) => {
     const { salvarProposta } = await import("@/db/pos-vistoria.server");
-    const res = await salvarProposta(data);
+    const res = await salvarProposta({
+      ...data,
+      depreciacoes: data.depreciacoes.map(d => ({
+        ...d,
+        descricao: d.descricao || ""
+      }))
+    });
     
     if (res.ok) {
       const { processarEventoSistema } = await import("@/db/automacoes-motor.server");
