@@ -513,11 +513,15 @@ function VendedorOnboardingPage() {
               </div>
               <Progress value={progressoInfo?.progresso || 0} className="h-2 bg-white/20" />
               <div className="flex justify-between pt-2">
-                {ETAPAS_LABELS.map((label, i) => (
-                  <div key={i} className={`text-[10px] uppercase font-bold text-center w-12 ${step === i + 1 ? 'text-amber-400' : 'text-white/40'}`}>
-                    {label.split(' ')[0]}
-                  </div>
-                ))}
+                {ETAPAS_LABELS.map((label, i) => {
+                  const etapaKey = i === 0 ? 'conta' : i === 1 ? 'dados_pessoais' : i === 2 ? 'endereco' : i === 3 ? 'documentos' : 'validacao';
+                  const concluida = progressoInfo?.etapas?.[etapaKey] === 'CONCLUIDO';
+                  return (
+                    <div key={i} className={`text-[10px] uppercase font-bold text-center w-12 ${step === i + 1 ? 'text-amber-400' : concluida ? 'text-emerald-400' : 'text-white/40'}`}>
+                      {label.split(' ')[0]}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </CardHeader>
