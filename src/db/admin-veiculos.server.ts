@@ -19,6 +19,15 @@ export async function ensureVeiculosAdminSchema() {
   await d.execute(sql`
     ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS status_analise text DEFAULT 'AGUARDANDO_ANALISE';
   `);
+
+  // Garantir colunas de vínculo com o vendedor
+  await d.execute(sql`
+    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS perfil_id uuid REFERENCES profiles(id);
+  `);
+
+  await d.execute(sql`
+    ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS vendedor_id uuid REFERENCES profiles(id);
+  `);
 }
 
 export async function listarVeiculosAdmin(filtros: {

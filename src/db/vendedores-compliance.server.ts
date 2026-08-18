@@ -21,7 +21,8 @@ export async function ensureVendedoresSchema() {
     ADD COLUMN IF NOT EXISTS compliance_motivo_pendencia text,
     ADD COLUMN IF NOT EXISTS compliance_data_analise timestamptz,
     ADD COLUMN IF NOT EXISTS verificado boolean DEFAULT false,
-    ADD COLUMN IF NOT EXISTS compliance_responsavel_id uuid;
+    ADD COLUMN IF NOT EXISTS compliance_responsavel_id uuid,
+    ADD COLUMN IF NOT EXISTS status_compliance text DEFAULT 'PENDENTE';
   `);
 
 

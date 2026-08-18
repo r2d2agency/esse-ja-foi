@@ -6,7 +6,12 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { db } = await import("@/db/index");
     const { sql } = await import("drizzle-orm");
+    const { ensureVeiculosAdminSchema } = await import("@/db/admin-veiculos.server");
+    
     if (!db) throw new Error("Banco de dados indisponível");
+
+    // Garantir que a tabela tenha todas as colunas necessárias (perfil_id, status_analise, etc)
+    await ensureVeiculosAdminSchema();
 
     console.log(`[getVeiculoDetalheAdminFn] Buscando veículo ID: ${data.id}`);
     const rows = await db.execute(sql`
