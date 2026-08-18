@@ -52,14 +52,14 @@ function DashboardVendedor() {
   const veiculos: any[] = (veiculosData as any)?.data || [];
   const profile = (onboardingData as any) || {};
   
-  // Mapear campos para compatibilidade com ProgressoCadastro se necessário
+  // Mapear campos para compatibilidade com ProgressoCadastro
   const statusEtapas = profile.etapas || {};
   const etapas = [
-    { label: "Conta criada", concluida: true },
-    { label: "Dados pessoais", concluida: statusEtapas.dados_pessoais === "CONCLUIDO" },
-    { label: "Endereço", concluida: statusEtapas.endereco === "CONCLUIDO" },
-    { label: "Documentos", concluida: statusEtapas.documentos === "CONCLUIDO" },
-    { label: "Selfie de validação", concluida: statusEtapas.validacao === "CONCLUIDO" },
+    { id: "conta", label: "Conta criada", concluida: true },
+    { id: "dados", label: "Dados pessoais", concluida: statusEtapas.dados_pessoais === "CONCLUIDO" },
+    { id: "endereco", label: "Endereço", concluida: statusEtapas.endereco === "CONCLUIDO" },
+    { id: "documentos", label: "Documentos", concluida: statusEtapas.documentos === "CONCLUIDO" },
+    { id: "validacao", label: "Selfie de validação", concluida: statusEtapas.validacao === "CONCLUIDO" },
   ];
 
   const pct = profile.progresso || 0;
