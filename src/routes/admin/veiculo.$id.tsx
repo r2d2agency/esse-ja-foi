@@ -467,8 +467,6 @@ function DetalheVeiculoAdminPage() {
                             </Button>
                           )}
                         </div>
-                          <Button variant="outline" className="font-bold w-full">Solicitar novo envio</Button>
-                        </div>
                       </div>
                     </div>
                   </CardContent>
