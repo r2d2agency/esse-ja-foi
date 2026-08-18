@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useServerFn } from "@tanstack/react-start";
 import { obterMeuPerfilFn, atualizarPerfilVendedorFn } from "@/lib/vendedor.functions";
 import { obterDetalheVendedorFn } from "@/lib/vendedores-compliance.functions";
+import { getOnboardingStatusFn } from "@/lib/onboarding.functions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -54,6 +55,7 @@ function VendedorOnboardingPage() {
   const updateDocs = useServerFn(atualizarPerfilVendedorFn);
   const getProfile = useServerFn(obterMeuPerfilFn);
   const getDetalhe = useServerFn(obterDetalheVendedorFn);
+  const getOnboardingStatus = useServerFn(getOnboardingStatusFn);
   
   const { data: perfilRes, refetch } = useSuspenseQuery({
     queryKey: ["meu-perfil"],
@@ -133,9 +135,9 @@ function VendedorOnboardingPage() {
             comprovanteEndereco: p.documento_comprovante_endereco_url || null,
           });
 
-          const det = await getDetalhe({ data: { id: user.id } });
+          const det = await getOnboardingStatus({ data: { perfilId: user.id } });
           if (det.ok) {
-            setProgressoInfo(det.data.progresso);
+            setProgressoInfo(det);
           }
         }
       } catch (err) {
@@ -220,8 +222,8 @@ function VendedorOnboardingPage() {
        window.scrollTo(0, 0);
        // Refresh progress info
        if (user) {
-         const det = await getDetalhe({ data: { id: user.id } });
-         if (det.ok) setProgressoInfo(det.data.progresso);
+         const det = await getOnboardingStatus({ data: { perfilId: user.id } });
+         if (det.ok) setProgressoInfo(det);
        }
     }
   };
