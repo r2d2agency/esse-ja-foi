@@ -144,8 +144,11 @@ function AnalisePosVistoriaPage() {
                             value={dep.item}
                             onChange={e => {
                               const newDeps = [...depreciacoes];
-                              newDeps[idx].item = e.target.value;
-                              setDepreciacoes(newDeps);
+                              const targetDep = newDeps[idx];
+                              if (targetDep) {
+                                targetDep.item = e.target.value;
+                                setDepreciacoes(newDeps);
+                              }
                             }}
                             className="h-8 text-xs font-bold"
                           />
@@ -154,8 +157,11 @@ function AnalisePosVistoriaPage() {
                             value={dep.descricao}
                             onChange={e => {
                               const newDeps = [...depreciacoes];
-                              newDeps[idx].descricao = e.target.value;
-                              setDepreciacoes(newDeps);
+                              const targetDep = newDeps[idx];
+                              if (targetDep) {
+                                targetDep.descricao = e.target.value;
+                                setDepreciacoes(newDeps);
+                              }
                             }}
                             className="h-16 text-xs resize-none"
                           />
@@ -167,8 +173,11 @@ function AnalisePosVistoriaPage() {
                             value={dep.valor}
                             onChange={e => {
                               const newDeps = [...depreciacoes];
-                              newDeps[idx].valor = Number(e.target.value);
-                              setDepreciacoes(newDeps);
+                              const targetDep = newDeps[idx];
+                              if (targetDep) {
+                                targetDep.valor = Number(e.target.value);
+                                setDepreciacoes(newDeps);
+                              }
                             }}
                             className="h-8 text-xs font-bold text-right"
                           />
