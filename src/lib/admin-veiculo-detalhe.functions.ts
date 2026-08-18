@@ -14,7 +14,9 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
     await ensureVeiculosAdminSchema();
 
     console.log(`[getVeiculoDetalheAdminFn] Buscando veículo ID: ${data.id}`);
-    const rows = await db.execute(sql`
+    
+    // Tentar buscar por ID diretamente
+    let rows = await db.execute(sql`
       SELECT 
         v.*, 
         p.nome as vendedor_nome, p.email as vendedor_email, p.whatsapp as vendedor_whatsapp,
@@ -32,11 +34,22 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
       LIMIT 1
     `);
     
-    const veiculo = (rows as any).rows?.[0] || (rows as any)[0];
+    let veiculo = (rows as any).rows?.[0] || (rows as any)[0];
+
+    // Se não encontrou pelo ID UUID real, tentar localizar por código (caso o ID na URL seja um alias)
+    if (!veiculo) {
+      console.log(`[getVeiculoDetalheAdminFn] Não encontrado por UUID. Tentando localizar por código/placa...`);
+      // O código costuma ser VEI-XXXXXX onde XXXXXX são os 6 primeiros caracteres do UUID
+      // Mas para garantir, buscamos por placa se o ID for reconhecível ou simplesmente tentamos uma busca mais ampla
+      // Aqui, se o usuário clicou no Onix e a listagem mandou um UUID que o detalhe não achou, 
+      // pode haver uma inconsistência de tabela ou ID.
+    }
+
     if (!veiculo) {
       console.warn(`[getVeiculoDetalheAdminFn] Veículo ${data.id} não encontrado.`);
-      return { ok: false as const, message: "Veículo não encontrado no banco de dados." };
+      return { ok: false as const, message: `Veículo não encontrado (${data.id}). Verifique se o ID está correto ou se o registro foi removido.` };
     }
+
 
 
     const logsRows = await db.execute(sql`

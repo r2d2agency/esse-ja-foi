@@ -48,14 +48,15 @@ export async function listarVeiculosAdmin(filtros: {
       p.status_compliance as compliance_status,
       resp.nome as responsavel_nome
     FROM veiculos v
-    LEFT JOIN profiles p ON p.id = v.perfil_id OR p.id = v.vendedor_id
-    LEFT JOIN profiles resp ON resp.id = v.responsavel_analise_id
+    LEFT JOIN profiles p ON (p.id = v.perfil_id OR p.id = v.vendedor_id)
+    LEFT JOIN profiles resp ON (resp.id = v.responsavel_analise_id)
     WHERE 1=1
       ${status ? sql`AND v.status_analise = ${status}` : sql``}
       ${termo ? sql`AND (v.placa ILIKE ${termo} OR v.marca ILIKE ${termo} OR v.modelo ILIKE ${termo} OR p.nome ILIKE ${termo})` : sql``}
     ORDER BY v.criado_em DESC
     LIMIT 100
   `);
+
   
   return (rows as any).rows || rows;
 }
