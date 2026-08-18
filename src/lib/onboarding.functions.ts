@@ -24,6 +24,8 @@ export const getOnboardingStatusFn = createServerFn({ method: "GET" })
       etapas: status.etapas,
       cadastroCompleto: profile.cadastro_completo,
       complianceStatus: profile.status_compliance,
-      motivoPendencia: profile.compliance_motivo_pendencia
+      motivoPendencia: profile.compliance_motivo_pendencia,
+      verificado: profile.verificado,
+      dataVerificacao: profile.compliance_data_analise
     };
   });

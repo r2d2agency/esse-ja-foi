@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CardsEntregaVendedor } from '@/components/entrega/cards-entrega';
 import { useServerFn } from '@tanstack/react-start';
-import { Car, Plus, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
+import { Car, Plus, CheckCircle2, AlertTriangle, Clock, BadgeCheck, Calendar } from 'lucide-react';
 import { listarMeusVeiculosFn } from '@/lib/vendedor.functions';
 import { getOnboardingStatusFn } from '@/lib/onboarding.functions';
 import { useAuth } from '@/hooks/use-auth';
@@ -69,9 +69,28 @@ function DashboardVendedor() {
 
   return (
     <div className="space-y-4 lg:space-y-6">
-      <div>
-        <h1 className="text-xl font-black tracking-tight text-slate-900 lg:text-2xl">Olá, {primeiroNome} 👋</h1>
-        <p className="mt-0.5 text-sm text-slate-500">Vamos deixar tudo pronto para você vender seu veículo.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-black tracking-tight text-slate-900 lg:text-2xl">Olá, {primeiroNome} 👋</h1>
+            {profile.verificado && (
+              <div 
+                className="cursor-help transition-transform hover:scale-110"
+                title={`Verificado em ${new Date(profile.dataVerificacao).toLocaleDateString('pt-BR')}`}
+                onClick={() => alert(`Perfil verificado em: ${new Date(profile.dataVerificacao).toLocaleString('pt-BR')}`)}
+              >
+                <BadgeCheck className="h-6 w-6 fill-teal-600 text-white lg:h-7 lg:w-7" />
+              </div>
+            )}
+          </div>
+          <p className="mt-0.5 text-sm text-slate-500">Vamos deixar tudo pronto para você vender seu veículo.</p>
+        </div>
+        {profile.verificado && (
+          <div className="hidden lg:flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-teal-700 border border-teal-100">
+            <Calendar className="h-3 w-3" />
+            Verificado em {new Date(profile.dataVerificacao).toLocaleDateString('pt-BR')}
+          </div>
+        )}
       </div>
 
       <CardsEntregaVendedor vendedorId={user?.id} />
