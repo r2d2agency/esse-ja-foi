@@ -255,7 +255,7 @@ function DetalheVeiculoAdminPage() {
           ) : (
             <Button 
               className="bg-slate-950 hover:bg-slate-900 text-white font-bold"
-              disabled={v.status_analise === 'PRONTO_PARA_VISTORIA'}
+              disabled={v.status_analise === 'PRONTO_PARA_VISTORIA' || !res.validacao?.ready}
               onClick={() => handleMudarStatus('PRONTO_PARA_VISTORIA')}
             >
               <CheckCircle2 className="mr-2 h-4 w-4" /> Liberar para vistoria
@@ -529,21 +529,67 @@ function DetalheVeiculoAdminPage() {
                       <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Veículo</h4>
                       <div className="space-y-2">
                         {[
-                          { label: "Dados cadastrais", status: "PENDENTE", color: "text-amber-600" },
-                          { label: "CRLV-e", status: v.vendedor_crlv_status === 'APROVADO' ? "CONCLUÍDO" : "PENDENTE", color: v.vendedor_crlv_status === 'APROVADO' ? "text-green-600" : "text-amber-600" },
-                          { label: "Fotos obrigatórias", status: "CONCLUÍDO", color: "text-green-600" },
+                          { 
+                            label: "Dados cadastrais", 
+                            status: res.progresso?.dadosCadastrais?.isCompleto ? "CONCLUÍDO" : "PENDENTE", 
+                            color: res.progresso?.dadosCadastrais?.isCompleto ? "text-green-600" : "text-amber-600",
+                            pendencias: res.progresso?.dadosCadastrais?.pendencias
+                          },
+                          { 
+                            label: "CRLV-e", 
+                            status: v.vendedor_crlv_status === 'APROVADO' ? "CONCLUÍDO" : "PENDENTE", 
+                            color: v.vendedor_crlv_status === 'APROVADO' ? "text-green-600" : "text-amber-600" 
+                          },
+                          { 
+                            label: "Fotos obrigatórias", 
+                            status: res.progresso?.fotos?.isCompleto ? "CONCLUÍDO" : "PENDENTE", 
+                            color: res.progresso?.fotos?.isCompleto ? "text-green-600" : "text-amber-600",
+                            info: `${res.progresso?.fotos?.total || 0} de ${res.progresso?.fotos?.minimo || 4} enviadas`
+                          },
                         ].map((item, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                            <span className="text-sm font-bold text-slate-700">{item.label}</span>
-                            <span className={cn("text-xs font-black uppercase", item.color)}>{item.status}</span>
+                          <div key={idx} className="flex flex-col gap-2 p-3 bg-slate-50 rounded-lg">
+                            <div className="flex items-center justify-between w-full">
+                              <span className="text-sm font-bold text-slate-700">{item.label}</span>
+                              <div className="flex items-center gap-3">
+                                {item.label === "Dados cadastrais" && item.status === "PENDENTE" && (
+                                  <Button 
+                                    variant="link" 
+                                    className="h-auto p-0 text-[10px] font-black uppercase text-teal-600"
+                                    onClick={() => setActiveTab("dados")}
+                                  >
+                                    Revisar dados
+                                  </Button>
+                                )}
+                                <span className={cn("text-xs font-black uppercase", item.color)}>{item.status}</span>
+                              </div>
+                            </div>
+                            
+                            {item.info && (
+                              <p className="text-[10px] font-bold text-slate-400 uppercase">{item.info}</p>
+                            )}
+
+                            {item.pendencias && item.pendencias.length > 0 && (
+                              <div className="pl-2 border-l-2 border-amber-200 mt-1">
+                                <p className="text-[10px] font-bold text-amber-700 uppercase mb-1">Pendências:</p>
+                                <ul className="space-y-0.5">
+                                  {item.pendencias.map((p: string, i: number) => (
+                                    <li key={i} className="text-[10px] text-amber-600 font-medium">• {p}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
                     </div>
 
                     <div className="pt-6">
-                      <Button className="w-full bg-slate-950 hover:bg-slate-900 text-white font-black h-12 uppercase tracking-tight" disabled={v.status_analise === 'PRONTO_PARA_VISTORIA'} onClick={() => handleMudarStatus('PRONTO_PARA_VISTORIA')}>
-                        Liberar para vistoria
+                      <Button 
+                        className="w-full bg-slate-950 hover:bg-slate-900 text-white font-black h-12 uppercase tracking-tight" 
+                        disabled={v.status_analise === 'PRONTO_PARA_VISTORIA' || !res.validacao?.ready} 
+                        onClick={() => handleMudarStatus('PRONTO_PARA_VISTORIA')}
+                      >
+                        {res.validacao?.ready ? "Liberar para vistoria" : "Requisitos pendentes"}
                       </Button>
                     </div>
                   </CardContent>
