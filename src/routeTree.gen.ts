@@ -72,6 +72,7 @@ import { Route as CompradorPagamentoIdRouteImport } from './routes/comprador/pag
 import { Route as VendedorEntregaIdRouteImport } from './routes/vendedor.entrega.$id'
 import { Route as VendedorVeiculoRouteImport } from './routes/vendedor.veiculo.'
 import { Route as VendedorVeiculoIdRouteImport } from './routes/vendedor.veiculo.$id'
+import { Route as VendedorVeiculoPropostaRouteImport } from './routes/vendedor.veiculo..proposta'
 import { Route as VistoriadorExecucaoIdRouteImport } from './routes/vistoriador.execucao.$id'
 import { Route as VistoriadorVistoriaIdRouteImport } from './routes/vistoriador.vistoria.$id'
 import { Route as AdminAnunciosNovoRouteImport } from './routes/admin/anuncios.novo.'
@@ -394,6 +395,11 @@ const VendedorVeiculoIdRoute = VendedorVeiculoIdRouteImport.update({
   path: '/veiculo/$id',
   getParentRoute: () => VendedorRoute,
 } as any)
+const VendedorVeiculoPropostaRoute = VendedorVeiculoPropostaRouteImport.update({
+  id: '/veiculo/proposta',
+  path: '/veiculo/proposta',
+  getParentRoute: () => VendedorRoute,
+} as any)
 const VistoriadorExecucaoIdRoute = VistoriadorExecucaoIdRouteImport.update({
   id: '/execucao/$id',
   path: '/execucao/$id',
@@ -492,6 +498,7 @@ export interface FileRoutesByFullPath {
   '/comprador/pagamento/$id': typeof CompradorPagamentoIdRoute
   '/vendedor/entrega/$id': typeof VendedorEntregaIdRoute
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRouteWithChildren
+  '/vendedor/veiculo/proposta': typeof VendedorVeiculoPropostaRoute
   '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
   '/admin/anuncios/novo/': typeof AdminAnunciosNovoRoute
@@ -558,6 +565,7 @@ export interface FileRoutesByTo {
   '/comprador/pagamento/$id': typeof CompradorPagamentoIdRoute
   '/vendedor/entrega/$id': typeof VendedorEntregaIdRoute
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRouteWithChildren
+  '/vendedor/veiculo/proposta': typeof VendedorVeiculoPropostaRoute
   '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
   '/admin/anuncios/novo': typeof AdminAnunciosNovoRoute
@@ -630,6 +638,7 @@ export interface FileRoutesById {
   '/comprador/pagamento/$id': typeof CompradorPagamentoIdRoute
   '/vendedor/entrega/$id': typeof VendedorEntregaIdRoute
   '/vendedor/veiculo/$id': typeof VendedorVeiculoIdRouteWithChildren
+  '/vendedor/veiculo/proposta': typeof VendedorVeiculoPropostaRoute
   '/vistoriador/execucao/$id': typeof VistoriadorExecucaoIdRoute
   '/vistoriador/vistoria/$id': typeof VistoriadorVistoriaIdRoute
   '/admin/anuncios/novo/': typeof AdminAnunciosNovoRoute
@@ -703,6 +712,7 @@ export interface FileRouteTypes {
     | '/comprador/pagamento/$id'
     | '/vendedor/entrega/$id'
     | '/vendedor/veiculo/$id'
+    | '/vendedor/veiculo/proposta'
     | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
     | '/admin/anuncios/novo/'
@@ -769,6 +779,7 @@ export interface FileRouteTypes {
     | '/comprador/pagamento/$id'
     | '/vendedor/entrega/$id'
     | '/vendedor/veiculo/$id'
+    | '/vendedor/veiculo/proposta'
     | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
     | '/admin/anuncios/novo'
@@ -840,6 +851,7 @@ export interface FileRouteTypes {
     | '/comprador/pagamento/$id'
     | '/vendedor/entrega/$id'
     | '/vendedor/veiculo/$id'
+    | '/vendedor/veiculo/proposta'
     | '/vistoriador/execucao/$id'
     | '/vistoriador/vistoria/$id'
     | '/admin/anuncios/novo/'
@@ -1307,6 +1319,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendedorVeiculoIdRouteImport
       parentRoute: typeof VendedorRoute
     }
+    '/vendedor/veiculo/proposta': {
+      id: '/vendedor/veiculo/proposta'
+      path: '/veiculo/proposta'
+      fullPath: '/vendedor/veiculo/proposta'
+      preLoaderRoute: typeof VendedorVeiculoPropostaRouteImport
+      parentRoute: typeof VendedorRoute
+    }
     '/vistoriador/execucao/$id': {
       id: '/vistoriador/execucao/$id'
       path: '/execucao/$id'
@@ -1498,6 +1517,7 @@ interface VendedorRouteChildren {
   VendedorVeiculoRoute: typeof VendedorVeiculoRoute
   VendedorEntregaIdRoute: typeof VendedorEntregaIdRoute
   VendedorVeiculoIdRoute: typeof VendedorVeiculoIdRouteWithChildren
+  VendedorVeiculoPropostaRoute: typeof VendedorVeiculoPropostaRoute
 }
 
 const VendedorRouteChildren: VendedorRouteChildren = {
@@ -1513,6 +1533,7 @@ const VendedorRouteChildren: VendedorRouteChildren = {
   VendedorVeiculoRoute: VendedorVeiculoRoute,
   VendedorEntregaIdRoute: VendedorEntregaIdRoute,
   VendedorVeiculoIdRoute: VendedorVeiculoIdRouteWithChildren,
+  VendedorVeiculoPropostaRoute: VendedorVeiculoPropostaRoute,
 }
 
 const VendedorRouteWithChildren = VendedorRoute._addFileChildren(
