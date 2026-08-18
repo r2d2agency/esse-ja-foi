@@ -85,6 +85,7 @@ function DetalheVeiculoAdminPage() {
   if (!res?.ok || !res.data) return <div className="p-8 text-red-500">Erro: {res?.message || "Veículo não encontrado"}</div>;
 
   const v = res.data;
+  console.log("[DetalheVeiculoAdminPage] Veículo:", v);
   const historico = res.historico || [];
 
   const handleAssumir = async () => {
@@ -403,21 +404,21 @@ function DetalheVeiculoAdminPage() {
                     </CardTitle>
                     <Badge className={cn(
                       "uppercase text-[10px] font-bold",
-                      v.vendedor_crlv_status === 'APROVADO' ? "bg-green-100 text-green-700" :
-                      v.vendedor_crlv_status === 'NOVO_ENVIO_SOLICITADO' ? "bg-red-100 text-red-700" :
+                      v.documento_crlv_status === 'APROVADO' ? "bg-green-100 text-green-700" :
+                      v.documento_crlv_status === 'NOVO_ENVIO_SOLICITADO' ? "bg-red-100 text-red-700" :
                       "bg-amber-100 text-amber-700"
                     )}>
-                      {v.vendedor_crlv_status === 'APROVADO' ? '✓ Aprovado' : 
-                       v.vendedor_crlv_status === 'NOVO_ENVIO_SOLICITADO' ? 'Novo envio solicitado' : 
+                      {v.documento_crlv_status === 'APROVADO' ? '✓ Aprovado' : 
+                       v.documento_crlv_status === 'NOVO_ENVIO_SOLICITADO' ? 'Novo envio solicitado' : 
                        'Aguardando Análise'}
                     </Badge>
                   </CardHeader>
                   <CardContent className="p-6">
                     <div className="flex gap-8">
                       <div className="flex-1 max-w-sm aspect-[3/4] bg-slate-100 rounded-lg border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 p-8 text-center group cursor-pointer hover:bg-slate-50 transition-colors">
-                        {v.vendedor_crlv ? (
+                        {v.documento_crlv_url ? (
                           <div className="w-full h-full relative group">
-                            <img src={v.vendedor_crlv} alt="CRLV" className="w-full h-full object-contain" />
+                            <img src={v.documento_crlv_url} alt="CRLV" className="w-full h-full object-contain" />
                             <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                               <Button variant="secondary" size="sm" className="font-bold">
                                 <Eye className="mr-2 h-4 w-4" /> Visualizar
@@ -452,7 +453,7 @@ function DetalheVeiculoAdminPage() {
                         </div>
 
                         <div className="flex flex-col gap-2">
-                          {v.vendedor_crlv_status !== 'APROVADO' && (
+                          {v.documento_crlv_status !== 'APROVADO' && (
                             <>
                               <Button 
                                 className="bg-teal-600 hover:bg-teal-700 text-white font-bold w-full"
@@ -469,7 +470,7 @@ function DetalheVeiculoAdminPage() {
                               </Button>
                             </>
                           )}
-                          {v.vendedor_crlv_status === 'APROVADO' && (
+                          {v.documento_crlv_status === 'APROVADO' && (
                             <Button 
                               variant="outline" 
                               className="font-bold w-full text-amber-600 border-amber-200 hover:bg-amber-50"
@@ -541,8 +542,9 @@ function DetalheVeiculoAdminPage() {
                           },
                           { 
                             label: "CRLV-e", 
-                            status: v.vendedor_crlv_status === 'APROVADO' ? "CONCLUÍDO" : "PENDENTE", 
-                            color: v.vendedor_crlv_status === 'APROVADO' ? "text-green-600" : "text-amber-600" 
+                             status: v.documento_crlv_status === 'APROVADO' ? "CONCLUÍDO" : "PENDENTE", 
+                             color: v.documento_crlv_status === 'APROVADO' ? "text-green-600" : "text-amber-600" 
+
                           },
                           { 
                             label: "Fotos obrigatórias", 
