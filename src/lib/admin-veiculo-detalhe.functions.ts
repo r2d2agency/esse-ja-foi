@@ -13,6 +13,7 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
         v.*, 
         p.nome as vendedor_nome, p.email as vendedor_email, p.whatsapp as vendedor_whatsapp,
         p.documento_cnh_url as vendedor_cnh, p.documento_crlv_url as vendedor_crlv, p.documento_selfie_url as vendedor_selfie,
+        p.documento_crlv_status as vendedor_crlv_status,
         p.cadastro_completo as vendedor_cadastro_completo,
         ca.status as compliance_status,
         resp.nome as responsavel_nome
