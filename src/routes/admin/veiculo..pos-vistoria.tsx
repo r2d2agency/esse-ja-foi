@@ -23,7 +23,7 @@ import {
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
 
-export const Route = createFileRoute("/admin/veiculo/$id/pos-vistoria")({
+export const Route = createFileRoute("/admin/veiculo/pos-vistoria")({
   component: AnalisePosVistoriaPage,
 });
 
