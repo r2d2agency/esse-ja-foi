@@ -71,7 +71,7 @@ function DashboardVendedor() {
             <>
               <div className="flex items-start justify-between gap-3">
                 <h2 className="text-lg font-bold text-slate-900">Precisamos de algumas informações</h2>
-                <StatusBadge status="pendente" />
+                <StatusBadge status="aguardando" label="Pendência" />
               </div>
               <p className="mt-1.5 text-sm text-slate-500">
                 {profile.compliance_motivo_pendencia || "Existem itens no seu cadastro que precisam de correção."}
