@@ -45,6 +45,7 @@ export async function listarVeiculosAdmin(filtros: {
       v.id, v.marca, v.modelo, v.placa, v.ano_modelo, v.valor_interesse_cliente, 
       v.status_analise, v.atualizado_em, v.cor, v.km, v.criado_em,
       p.nome as vendedor_nome,
+      p.status_compliance as compliance_status,
       resp.nome as responsavel_nome
     FROM veiculos v
     LEFT JOIN profiles p ON p.id = v.perfil_id OR p.id = v.vendedor_id

@@ -68,7 +68,7 @@ export function canReleaseForInspection(v: any) {
   const isReady = (
     progresso.dadosCadastrais.isCompleto &&
     progresso.fotos.isCompleto &&
-    (v.documento_crlv_status === 'APROVADO' || v.status_analise === 'EM_ANALISE')
+    (v.documento_crlv_status === 'APROVADO' || v.status_analise === 'EM_ANALISE' || v.status_analise === 'AGUARDANDO_ANALISE')
   );
 
   return {

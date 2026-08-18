@@ -21,7 +21,9 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
         p.cpf as vendedor_cpf, 
         p.cadastro_completo as vendedor_cadastro_completo,
         p.status_compliance as compliance_status,
-        (SELECT status FROM contratos WHERE veiculo_id = v.id ORDER BY criado_em DESC LIMIT 1) as contrato_status,
+        p.documento_crlv_status,
+        p.documento_crlv_url,
+        (SELECT status FROM contratos WHERE vendedor_id = v.perfil_id OR vendedor_id = v.vendedor_id ORDER BY criado_em DESC LIMIT 1) as contrato_status,
         resp.nome as responsavel_nome
       FROM veiculos v
       LEFT JOIN profiles p ON p.id = v.perfil_id OR p.id = v.vendedor_id
