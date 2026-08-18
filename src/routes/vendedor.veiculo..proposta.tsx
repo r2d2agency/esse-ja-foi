@@ -16,7 +16,7 @@ import {
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
 
-export const Route = createFileRoute("/vendedor/veiculo/$id/proposta")({
+export const Route = createFileRoute("/vendedor/veiculo/proposta")({
   component: PropostaVendedorPage,
 });
 
