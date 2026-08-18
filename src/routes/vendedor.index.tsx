@@ -5,6 +5,7 @@ import { CardsEntregaVendedor } from '@/components/entrega/cards-entrega';
 import { useServerFn } from '@tanstack/react-start';
 import { Car, Plus, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { listarMeusVeiculosFn } from '@/lib/vendedor.functions';
+import { getOnboardingStatusFn } from '@/lib/onboarding.functions';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { StatusBadge, statusVeiculo } from '@/components/vendedor/StatusBadge';
@@ -28,23 +29,41 @@ function DashboardVendedor() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const listar = useServerFn(listarMeusVeiculosFn);
+  const getOnboardingStatus = useServerFn(getOnboardingStatusFn);
   const [placaPendente, setPlacaPendente] = useState('');
 
   useEffect(() => {
     setPlacaPendente(sessionStorage.getItem('ejf_placa') || '');
   }, []);
 
-  const { data, isLoading } = useQuery({
+  const { data: veiculosData, isLoading: loadingVeiculos } = useQuery({
     queryKey: ['meus-veiculos', user?.id],
     queryFn: () => listar({ data: { perfilId: user?.id || '' } }),
     enabled: !!user?.id,
   });
 
-  const veiculos: any[] = (data as any)?.data || [];
-  const profile = (data as any)?.profile || {};
-  const etapas = montarEtapas(profile);
-  const pct = percentual(etapas);
-  const completo = pct === 100;
+  const { data: onboardingData, isLoading: loadingOnboarding } = useQuery({
+    queryKey: ['onboarding-status', user?.id],
+    queryFn: () => getOnboardingStatus({ data: { perfilId: user?.id || '' } }),
+    enabled: !!user?.id,
+  });
+
+  const isLoading = loadingVeiculos || loadingOnboarding;
+  const veiculos: any[] = (veiculosData as any)?.data || [];
+  const profile = (onboardingData as any) || {};
+  
+  // Mapear campos para compatibilidade com ProgressoCadastro se necessário
+  const statusEtapas = profile.etapas || {};
+  const etapas = [
+    { label: "Conta criada", concluida: true },
+    { label: "Dados pessoais", concluida: statusEtapas.dados_pessoais === "CONCLUIDO" },
+    { label: "Endereço", concluida: statusEtapas.endereco === "CONCLUIDO" },
+    { label: "Documentos", concluida: statusEtapas.documentos === "CONCLUIDO" },
+    { label: "Selfie de validação", concluida: statusEtapas.validacao === "CONCLUIDO" },
+  ];
+
+  const pct = profile.progresso || 0;
+  const completo = profile.cadastroCompleto || pct === 100;
   const primeiroNome = user?.nome?.split(' ')[0] || 'vendedor';
 
   return (
