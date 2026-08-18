@@ -58,6 +58,16 @@ export async function ensureCadastroSchema(silent = true) {
     await d.execute(sql`
       DO $$
       BEGIN
+        EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON public.clientes TO authenticated';
+        EXECUTE 'GRANT ALL ON public.clientes TO service_role';
+      EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'Erro ao conceder grants em clientes: %', SQLERRM;
+      END $$;
+    `);
+    
+    await d.execute(sql`
+      DO $$
+      BEGIN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'clientes' AND column_name = 'documento') THEN
           ALTER TABLE clientes ADD COLUMN documento text NOT NULL;
         END IF;
@@ -116,6 +126,17 @@ export async function ensureCadastroSchema(silent = true) {
       status_analise text DEFAULT 'AGUARDANDO_ANALISE',
       documento_crlv_url text
     );
+    `);
+    
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON public.veiculos TO authenticated';
+        EXECUTE 'GRANT ALL ON public.veiculos TO service_role';
+        EXECUTE 'GRANT SELECT ON public.veiculos TO anon';
+      EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'Erro ao conceder grants em veiculos: %', SQLERRM;
+      END $$;
     `);
     
     await d.execute(sql`

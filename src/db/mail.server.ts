@@ -7,19 +7,55 @@ function requireDb() {
   return db;
 }
 
-export async function ensureMailSchema() {
+export async function ensureMailSchema(silent = true) {
   const d = requireDb();
-  await d.execute(sql`
-    CREATE TABLE IF NOT EXISTS otp_codes (
-      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      email text NOT NULL,
-      code text NOT NULL,
-      type text NOT NULL, -- 'LOGIN', 'RECOVERY', 'REGISTRATION'
-      expires_at timestamptz NOT NULL,
-      used_at timestamptz,
-      criado_em timestamptz DEFAULT now()
-    );
-  `);
+  try {
+    await d.execute(sql`
+      CREATE TABLE IF NOT EXISTS otp_codes (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        email text NOT NULL,
+        code text NOT NULL,
+        type text NOT NULL, -- 'LOGIN', 'RECOVERY', 'REGISTRATION'
+        expires_at timestamptz NOT NULL,
+        used_at timestamptz,
+        criado_em timestamptz DEFAULT now()
+      );
+    `);
+    
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON public.otp_codes TO authenticated';
+        EXECUTE 'GRANT ALL ON public.otp_codes TO service_role';
+        EXECUTE 'GRANT ALL ON public.otp_codes TO anon';
+      EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'Erro ao conceder grants em otp_codes: %', SQLERRM;
+      END $$;
+    `);
+    
+    // Garantir colunas se a tabela já existir mas estiver incompleta
+    await d.execute(sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'otp_codes' AND column_name = 'email') THEN
+          ALTER TABLE otp_codes ADD COLUMN email text NOT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'otp_codes' AND column_name = 'code') THEN
+          ALTER TABLE otp_codes ADD COLUMN code text NOT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'otp_codes' AND column_name = 'type') THEN
+          ALTER TABLE otp_codes ADD COLUMN type text NOT NULL;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'otp_codes' AND column_name = 'expires_at') THEN
+          ALTER TABLE otp_codes ADD COLUMN expires_at timestamptz NOT NULL;
+        END IF;
+      END $$;
+    `);
+
+    if (!silent && process.env['NODE_ENV'] === 'development') console.log("[mail.server] Schema OTP OK.");
+  } catch (err) {
+    console.error("[mail.server] Erro ao garantir schema de e-mail:", err);
+  }
 }
 
 async function getTransporter() {
@@ -79,15 +115,24 @@ export async function enviarEmailTeste(destinatario: string) {
 
 export async function gerarEnviarOTP(email: string, type: 'LOGIN' | 'RECOVERY' | 'REGISTRATION') {
   const d = requireDb();
-  await ensureMailSchema();
+  await ensureMailSchema(true);
 
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutos
 
-  await d.execute(sql`
-    INSERT INTO otp_codes (email, code, type, expires_at)
-    VALUES (${email}, ${code}, ${type}, ${expiresAt})
-  `);
+  try {
+    await d.execute(sql`
+      INSERT INTO otp_codes (email, code, type, expires_at)
+      VALUES (${email}, ${code}, ${type}, ${expiresAt})
+    `);
+  } catch (err: any) {
+    console.error("[mail.server] Falha ao inserir OTP no banco:", err);
+    // Em ambiente de desenvolvimento, se falhar a persistência, ainda permitimos o envio do e-mail
+    // para não travar o fluxo do usuário se for apenas um problema de permissão temporário no banco
+    if (process.env['NODE_ENV'] !== 'development') {
+      throw new Error("Erro interno ao gerar código de acesso.");
+    }
+  }
 
   const { transporter, from } = await getTransporter();
 
