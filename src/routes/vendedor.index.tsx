@@ -13,6 +13,7 @@ import { ProgressoCadastro, montarEtapas, percentual } from '@/components/vended
 import { CardContratoVendedor } from '@/components/contratos/CardContratoVendedor';
 import { CardVistoriaVendedor } from '@/components/vendedor/CardVistoriaVendedor';
 import { CardOfertaVencedora } from '@/components/negociacao/CardOfertaVencedora';
+import { CardPropostaVendedor } from '@/components/vendedor/CardPropostaVendedor';
 
 export const Route = createFileRoute('/vendedor/')({
   component: DashboardVendedor,
@@ -235,6 +236,7 @@ function DashboardVendedor() {
         </section>
       </div>
 
+      {user?.id && <CardPropostaVendedor vendedorId={user.id} />}
       {user?.id && <CardOfertaVencedora vendedorId={user.id} />}
       {user?.id && <CardVistoriaVendedor vendedorId={user.id} />}
       {user?.id && <CardContratoVendedor vendedorId={user.id} />}
