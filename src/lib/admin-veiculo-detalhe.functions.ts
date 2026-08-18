@@ -15,11 +15,11 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
         p.documento_cnh_url as vendedor_cnh, p.documento_crlv_url as vendedor_crlv, p.documento_selfie_url as vendedor_selfie,
         p.documento_crlv_status as vendedor_crlv_status,
         p.cadastro_completo as vendedor_cadastro_completo,
-        ca.status as compliance_status,
+        p.status_compliance as compliance_status,
+        (SELECT status FROM contratos WHERE veiculo_id = v.id ORDER BY criado_em DESC LIMIT 1) as contrato_status,
         resp.nome as responsavel_nome
       FROM veiculos v
       LEFT JOIN profiles p ON p.id = v.perfil_id
-      LEFT JOIN compliance_analise ca ON ca.vendedor_id = p.id
       LEFT JOIN profiles resp ON resp.id = v.responsavel_analise_id
       WHERE v.id = ${data.id}::uuid
       LIMIT 1
@@ -34,9 +34,15 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
       ORDER BY criado_em DESC
     `);
 
+    const { calcularProgressoVeiculo, canReleaseForInspection } = await import("@/db/veiculos-compliance.server");
+    const progresso = calcularProgressoVeiculo(veiculo);
+    const validacao = canReleaseForInspection(veiculo);
+
     return { 
       ok: true as const, 
       data: veiculo,
+      progresso,
+      validacao,
       historico: (logsRows as any).rows || logsRows
     };
   });
@@ -84,15 +90,20 @@ export const atualizarStatusAnaliseFn = createServerFn({ method: "POST" })
     // Validação extra: Se estiver tentando liberar para vistoria, verificar CRLV
     if (data.status === 'PRONTO_PARA_VISTORIA') {
       const vQuery = await db.execute(sql`
-        SELECT p.documento_crlv_status 
+        SELECT v.*, p.status_compliance as compliance_status,
+               (SELECT status FROM contratos WHERE veiculo_id = v.id ORDER BY criado_em DESC LIMIT 1) as contrato_status,
+               p.documento_crlv_status
         FROM veiculos v 
         JOIN profiles p ON p.id = v.perfil_id 
         WHERE v.id = ${data.veiculoId}::uuid
       `);
       const v = (vQuery as any).rows?.[0] || (vQuery as any)[0];
       
-      if (v?.documento_crlv_status !== 'APROVADO') {
-        return { ok: false as const, message: "O CRLV-e deve estar APROVADO para liberar para vistoria." };
+      const { canReleaseForInspection } = await import("@/db/veiculos-compliance.server");
+      const check = canReleaseForInspection(v);
+      
+      if (!check.ready) {
+        return { ok: false as const, message: "Existem pendências impeditivas para a vistoria." };
       }
     }
 
