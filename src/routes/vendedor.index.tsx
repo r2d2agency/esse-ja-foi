@@ -54,12 +54,12 @@ function DashboardVendedor() {
   const profile = (onboardingData as any) || {};
   
   // Mapear campos para compatibilidade com ProgressoCadastro
-  const statusEtapas = profile.etapas || {};
+  const statusEtapas = (onboardingData as any)?.etapas || {};
   const etapas = [
     { id: "conta", label: "Conta criada", concluida: true },
     { id: "dados", label: "Dados pessoais", concluida: statusEtapas.dados_pessoais === "CONCLUIDO" },
-    { id: "endereco", label: "Endereço", concluida: statusEtapas.endereco === "CONCLUIDO" },
-    { id: "documentos", label: "Documentos", concluida: statusEtapas.documentos === "CONCLUIDO" },
+    { id: "endereco", label: "Endereço e Comprovante", concluida: statusEtapas.endereco === "CONCLUIDO" },
+    { id: "documentos", label: "Documentos (CNH, CRLV)", concluida: statusEtapas.documentos === "CONCLUIDO" },
     { id: "validacao", label: "Selfie de validação", concluida: statusEtapas.validacao === "CONCLUIDO" },
   ];
 

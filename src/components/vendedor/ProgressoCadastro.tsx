@@ -8,19 +8,32 @@ export interface EtapaCadastro {
 }
 
 export function montarEtapas(profile: any): EtapaCadastro[] {
+  // A lógica de progresso deve vir preferencialmente do backend via getOnboardingStatusFn
+  // Mas mantemos este fallback sincronizado com a lógica de calcularProgressoVendedor
   const p = profile || {};
+  const steps = p.etapas || {};
+
+  if (steps.conta) {
+    return [
+      { id: "conta", label: "Conta criada", concluida: steps.conta === "CONCLUIDO" },
+      { id: "dados", label: "Dados pessoais", concluida: steps.dados_pessoais === "CONCLUIDO" },
+      { id: "endereco", label: "Endereço e Comprovante", concluida: steps.endereco === "CONCLUIDO" },
+      { id: "documentos", label: "Documentos (CNH, CRLV)", concluida: steps.documentos === "CONCLUIDO" },
+      { id: "validacao", label: "Selfie de validação", concluida: steps.validacao === "CONCLUIDO" },
+    ];
+  }
+
   return [
     { id: "conta", label: "Conta criada", concluida: true },
-    { id: "dados", label: "Dados pessoais", concluida: Boolean(p.cpf) },
-    { id: "endereco", label: "Endereço", concluida: Boolean(p.cidade && p.uf) },
+    { id: "dados", label: "Dados pessoais", concluida: Boolean(p.cpf && p.nome && p.data_nascimento) },
+    { id: "endereco", label: "Endereço e Comprovante", concluida: Boolean(p.cep && p.cidade && p.documento_comprovante_endereco_url) },
     {
       id: "documentos",
-      label: "Documentos (CNH, CRLV, comprovante)",
+      label: "Documentos (CNH, CRLV)",
       concluida: Boolean(
         p.documento_cnh_url &&
           p.documento_cnh_verso_url &&
-          p.documento_crlv_url &&
-          p.documento_comprovante_endereco_url
+          p.documento_crlv_url
       ),
     },
     { id: "validacao", label: "Selfie de validação", concluida: Boolean(p.documento_selfie_url) },
