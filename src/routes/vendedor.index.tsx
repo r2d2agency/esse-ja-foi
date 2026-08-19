@@ -54,7 +54,7 @@ function DashboardVendedor() {
   const profile = (onboardingData as any) || {};
   
   // Mapear campos para compatibilidade com ProgressoCadastro
-  const statusEtapas = onboardingData?.etapas || {};
+  const statusEtapas = (onboardingData as any)?.etapas || {};
   const etapas = [
     { id: "conta", label: "Conta criada", concluida: true },
     { id: "dados", label: "Dados pessoais", concluida: statusEtapas.dados_pessoais === "CONCLUIDO" },
