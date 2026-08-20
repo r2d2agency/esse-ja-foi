@@ -191,8 +191,22 @@ function CadastrarVeiculo() {
   useEffect(() => {
     if (!hidratado.current) return;
     const t = setTimeout(() => {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
-      setSalvoEm(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
+        setSalvoEm(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+      } catch (e) {
+        if (e instanceof DOMException && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+          console.warn("Espaço insuficiente no localStorage para o rascunho completo. As fotos podem não ter sido salvas localmente.");
+          // Tentativa de salvar sem fotos para não perder os dados textuais
+          try {
+            const formSemFotos = { ...form, fotos: {} };
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(formSemFotos));
+            setSalvoEm(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + " (sem fotos)");
+          } catch (e2) {
+            console.error("Falha crítica ao salvar rascunho:", e2);
+          }
+        }
+      }
     }, 800);
     return () => clearTimeout(t);
   }, [form]);
@@ -282,7 +296,11 @@ function CadastrarVeiculo() {
   const voltar = () => { setStep((s) => Math.max(1, s - 1)); window.scrollTo(0, 0); };
 
   const salvarESair = () => {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
+    } catch (e) {
+      console.warn("Não foi possível salvar rascunho completo no localStorage ao sair.");
+    }
     toast.success('Rascunho salvo. Você pode continuar depois.');
     navigate({ to: '/vendedor/veiculos' });
   };
