@@ -9,7 +9,7 @@ export function CardVeiculo({
 }: {
   veiculo: any;
   onAbrir: () => void;
-  onEditar?: () => void;
+  onEditar?: (() => void) | undefined;
 }) {
   const foto: string | undefined = (veiculo.fotos && veiculo.fotos[0]) || undefined;
   const enviadoEm = veiculo.criado_em ? new Date(veiculo.criado_em).toLocaleDateString("pt-BR") : null;
