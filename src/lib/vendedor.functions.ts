@@ -185,8 +185,8 @@ export const atualizarPerfilVendedorFn = createServerFn({ method: "POST" })
     selfieUrl: z.string().optional().nullable(),
     comprovanteEnderecoUrl: z.string().optional().nullable(),
     finalizar: z.boolean().optional(),
-
   }))
+
   .handler(async ({ data }) => {
     const { db } = await import("@/db/index");
     if (!db) throw new Error("Banco de dados indisponível");
@@ -222,12 +222,19 @@ export const atualizarPerfilVendedorFn = createServerFn({ method: "POST" })
         const faltando: string[] = [];
         const e = status.etapas;
         if (e.dados_pessoais !== "CONCLUIDO") faltando.push("Dados Pessoais");
-        if (e.endereco !== "CONCLUIDO") faltando.push("Endereço e Comprovante");
-        if (e.documentos !== "CONCLUIDO") faltando.push("CNH e CRLV-e");
+        if (e.endereco !== "CONCLUIDO") faltando.push("Endereço/Comprovante");
+        if (e.documentos !== "CONCLUIDO") {
+          const docs = [];
+          if (!(perfilSimulado.documento_cnh_url || perfilSimulado.cnh_url)) docs.push("CNH Frente");
+          if (!(perfilSimulado.documento_cnh_verso_url || perfilSimulado.cnh_verso_url)) docs.push("CNH Verso");
+          if (!(perfilSimulado.documento_crlv_url || perfilSimulado.crlv_url)) docs.push("CRLV-e");
+          faltando.push(`Documentos (${docs.join(", ")})`);
+        }
         if (e.validacao !== "CONCLUIDO") faltando.push("Selfie");
         
         throw new Error(`Cadastro incompleto (${status.progresso}%). Itens pendentes: ${faltando.join(", ")}`);
       }
+
     }
 
     const setClauses: any[] = [];
