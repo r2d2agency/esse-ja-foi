@@ -82,19 +82,19 @@ export function calcularProgressoVendedor(p: any) {
 
   // 2. Endereço: CEP, Logradouro, Número, Bairro, Cidade, UF e Comprovante
   if (p.cep && p.endereco && p.numero && p.bairro && p.cidade && p.uf && 
-     (p.documento_comprovante_endereco_url || p.doc_comprovante)) {
+     (p.documento_comprovante_endereco_url || p.doc_comprovante || p.comprovante_endereco_url)) {
     etapas.endereco = "CONCLUIDO";
   }
 
   // 3. Documentos: CNH Frente, Verso, CRLV
-  if ((p.documento_cnh_url || p.doc_cnh_frente) && 
-      (p.documento_cnh_verso_url || p.doc_cnh_verso) && 
-      (p.documento_crlv_url || p.doc_crlv)) {
+  if ((p.documento_cnh_url || p.doc_cnh_frente || p.cnh_url) && 
+      (p.documento_cnh_verso_url || p.doc_cnh_verso || p.cnh_verso_url) && 
+      (p.documento_crlv_url || p.doc_crlv || p.crlv_url)) {
     etapas.documentos = "CONCLUIDO";
   }
 
   // 4. Validação: Selfie
-  if (p.documento_selfie_url || p.doc_selfie) {
+  if (p.documento_selfie_url || p.doc_selfie || p.selfie_url) {
     etapas.validacao = "CONCLUIDO";
   }
 
