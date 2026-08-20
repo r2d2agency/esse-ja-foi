@@ -127,7 +127,18 @@ function CadastrarVeiculo() {
       const veiculo = ((data as any)?.data || []).find((v: any) => v.id === search.id);
       if (veiculo) {
         try {
-          const obs = JSON.parse(veiculo.observacoes || '{}');
+          const obsRaw = veiculo.observacoes || '{}';
+          let obs = {};
+          if (obsRaw.trim().startsWith('{')) {
+            try {
+              obs = JSON.parse(obsRaw);
+            } catch (e) {
+              console.warn("Observações não são um JSON válido, tratando como texto puro.");
+              obs = { observacoesPuras: obsRaw };
+            }
+          } else {
+            obs = { observacoesPuras: obsRaw };
+          }
           
           // Mapear fotos do array para o Record<string, string>
           const fotosMap: Record<string, string> = {};
