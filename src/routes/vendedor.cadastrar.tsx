@@ -296,7 +296,11 @@ function CadastrarVeiculo() {
   const voltar = () => { setStep((s) => Math.max(1, s - 1)); window.scrollTo(0, 0); };
 
   const salvarESair = () => {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
+    } catch (e) {
+      console.warn("Não foi possível salvar rascunho completo no localStorage ao sair.");
+    }
     toast.success('Rascunho salvo. Você pode continuar depois.');
     navigate({ to: '/vendedor/veiculos' });
   };
