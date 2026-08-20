@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
@@ -29,6 +29,9 @@ import { TODAS_MARCAS, MARCAS_POPULARES, MODELOS_POR_MARCA, CORES, COMBUSTIVEIS,
 
 
 export const Route = createFileRoute('/vendedor/cadastrar')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    id: (search['id'] as string) || undefined,
+  }),
   component: CadastrarVeiculo,
 });
 
@@ -89,11 +92,13 @@ const valorNumero = (v: string) => Number(soDigitos(v)) / 100;
 function CadastrarVeiculo() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const search = useSearch({ from: '/vendedor/cadastrar' });
   const salvarVeiculo = useServerFn(cadastrarMeuVeiculoFn);
   const listar = useServerFn(listarMeusVeiculosFn);
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<Estado>(INICIAL);
+  const [idExistente, setIdExistente] = useState<string | undefined>(search.id);
   const [buscando, setBuscando] = useState(false);
   const [buscaFeita, setBuscaFeita] = useState(false);
   const [veiculoEncontrado, setVeiculoEncontrado] = useState<null | { marca: string; modelo: string; versao: string; ano: string }>(null);
@@ -117,6 +122,41 @@ function CadastrarVeiculo() {
 
   // Rascunho: hidratação + salvamento automático
   useEffect(() => {
+    // Se temos um ID na URL, tentamos carregar do banco primeiro
+    if (search.id && data) {
+      const veiculo = ((data as any)?.data || []).find((v: any) => v.id === search.id);
+      if (veiculo) {
+        try {
+          const obs = JSON.parse(veiculo.observacoes || '{}');
+          setForm({
+            ...INICIAL,
+            placa: maskPlaca(veiculo.placa || ''),
+            marca: veiculo.marca || '',
+            modelo: veiculo.modelo || '',
+            anoFabricacao: veiculo.ano_fabricacao || '',
+            anoModelo: veiculo.ano_modelo || '',
+            cor: veiculo.cor || '',
+            km: veiculo.km ? String(veiculo.km) : '',
+            valorDesejado: veiculo.valor_interesse_cliente ? String(veiculo.valor_interesse_cliente * 100) : '',
+            cep: veiculo.cep || '',
+            cidade: veiculo.cidade || '',
+            uf: veiculo.uf || '',
+            versao: veiculo.versao || '',
+            ...obs,
+            fotos: veiculo.fotos?.reduce((acc: any, f: string, i: number) => {
+               // Mapeamento simples de fotos se necessário ou manter como array
+               return acc;
+            }, {}) || {},
+          });
+          setBuscaFeita(true);
+          hidratado.current = true;
+          return;
+        } catch (e) {
+          console.error("Erro ao hidratar veículo:", e);
+        }
+      }
+    }
+
     const bruto = localStorage.getItem(DRAFT_KEY);
     if (bruto) {
       try { setForm({ ...INICIAL, ...JSON.parse(bruto) }); } catch { }
@@ -125,7 +165,7 @@ function CadastrarVeiculo() {
       if (placa) setForm((f) => ({ ...f, placa: maskPlaca(placa) }));
     }
     hidratado.current = true;
-  }, []);
+  }, [search.id, data]);
 
   useEffect(() => {
     if (!hidratado.current) return;

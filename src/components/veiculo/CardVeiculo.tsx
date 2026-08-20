@@ -5,9 +5,11 @@ import { StatusBadge, statusVeiculo } from "@/components/vendedor/StatusBadge";
 export function CardVeiculo({
   veiculo,
   onAbrir,
+  onEditar,
 }: {
   veiculo: any;
   onAbrir: () => void;
+  onEditar?: (() => void) | undefined;
 }) {
   const foto: string | undefined = (veiculo.fotos && veiculo.fotos[0]) || undefined;
   const enviadoEm = veiculo.criado_em ? new Date(veiculo.criado_em).toLocaleDateString("pt-BR") : null;
@@ -35,9 +37,16 @@ export function CardVeiculo({
           <StatusBadge status={statusVeiculo(veiculo.status)} />
         </div>
         {enviadoEm && <p className="text-xs text-slate-400">Enviado em {enviadoEm}</p>}
-        <Button variant="outline" className="h-11 w-full rounded-xl" onClick={onAbrir}>
-          Ver acompanhamento
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" className="h-11 flex-1 rounded-xl" onClick={onAbrir}>
+            Ver acompanhamento
+          </Button>
+          {onEditar && (
+            <Button className="h-11 flex-1 rounded-xl bg-teal-600 hover:bg-teal-700 text-white" onClick={onEditar}>
+              Ajustar Cadastro
+            </Button>
+          )}
+        </div>
       </div>
     </article>
   );

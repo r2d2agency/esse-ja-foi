@@ -54,7 +54,7 @@ function MeusVeiculos() {
           <p className="mt-1 text-slate-500">Acompanhe o status de cada veículo cadastrado.</p>
         </div>
         <Button
-          onClick={() => navigate({ to: '/vendedor/cadastrar' })}
+          onClick={() => navigate({ to: '/vendedor/cadastrar', search: { id: undefined } })}
           className="h-12 w-full rounded-xl bg-teal-700 font-semibold text-white hover:bg-teal-800 sm:w-auto"
         >
           <Plus className="mr-2 h-4 w-4" /> Cadastrar veículo
@@ -87,7 +87,12 @@ function MeusVeiculos() {
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {lista.map((v) => (
-            <CardVeiculo key={v.id} veiculo={v} onAbrir={() => navigate({ to: '/vendedor/veiculo/$id', params: { id: v.id } })} />
+            <CardVeiculo 
+              key={v.id} 
+              veiculo={v} 
+              onAbrir={() => { navigate({ to: '/vendedor/veiculo/$id', params: { id: v.id } }); }}
+              onEditar={v.status === 'RASCUNHO' || v.status === 'CADASTRO_INCOMPLETO' ? () => { navigate({ to: '/vendedor/cadastrar', search: { id: v.id } }); } : undefined}
+            />
           ))}
         </div>
       )}
