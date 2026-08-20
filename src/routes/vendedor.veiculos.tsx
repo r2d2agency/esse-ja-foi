@@ -87,7 +87,12 @@ function MeusVeiculos() {
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {lista.map((v) => (
-            <CardVeiculo key={v.id} veiculo={v} onAbrir={() => navigate({ to: '/vendedor/veiculo/$id', params: { id: v.id } })} />
+            <CardVeiculo 
+              key={v.id} 
+              veiculo={v} 
+              onAbrir={() => navigate({ to: '/vendedor/veiculo/$id', params: { id: v.id } })}
+              onEditar={v.status === 'RASCUNHO' || v.status === 'CADASTRO_INCOMPLETO' ? () => navigate({ to: '/vendedor/cadastrar', search: { id: v.id } }) : undefined}
+            />
           ))}
         </div>
       )}
