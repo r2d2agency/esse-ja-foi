@@ -90,8 +90,8 @@ function MeusVeiculos() {
             <CardVeiculo 
               key={v.id} 
               veiculo={v} 
-              onAbrir={() => navigate({ to: '/vendedor/veiculo/$id', params: { id: v.id } })}
-              onEditar={v.status === 'RASCUNHO' || v.status === 'CADASTRO_INCOMPLETO' ? () => navigate({ to: '/vendedor/cadastrar', search: { id: v.id } }) : undefined}
+              onAbrir={() => { navigate({ to: '/vendedor/veiculo/$id', params: { id: v.id } }); }}
+              onEditar={v.status === 'RASCUNHO' || v.status === 'CADASTRO_INCOMPLETO' ? () => { navigate({ to: '/vendedor/cadastrar', search: { id: v.id } }); } : undefined}
             />
           ))}
         </div>
