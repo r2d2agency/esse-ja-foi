@@ -30,7 +30,7 @@ import { TODAS_MARCAS, MARCAS_POPULARES, MODELOS_POR_MARCA, CORES, COMBUSTIVEIS,
 
 export const Route = createFileRoute('/vendedor/cadastrar')({
   validateSearch: (search: Record<string, unknown>) => ({
-    id: (search.id as string) || undefined,
+    id: (search['id'] as string) || undefined,
   }),
   component: CadastrarVeiculo,
 });

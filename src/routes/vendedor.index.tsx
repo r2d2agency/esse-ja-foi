@@ -229,7 +229,7 @@ function DashboardVendedor() {
                 <StatusBadge status="incompleto" label="Cadastro não concluído" />
               </div>
               <Button
-                onClick={() => navigate({ to: '/vendedor/cadastrar' })}
+                onClick={() => navigate({ to: '/vendedor/cadastrar', search: { id: undefined } })}
                 className="mt-4 h-11 w-full rounded-xl bg-teal-700 font-semibold text-white hover:bg-teal-800"
               >
                 Continuar cadastro do veículo
@@ -247,7 +247,7 @@ function DashboardVendedor() {
                 Enquanto conclui seu cadastro, você já pode adiantar os dados do seu carro.
               </p>
               <Button
-                onClick={() => navigate({ to: '/vendedor/cadastrar' })}
+                onClick={() => navigate({ to: '/vendedor/cadastrar', search: { id: undefined } })}
                 className="mt-4 h-11 w-full rounded-xl bg-teal-700 font-semibold text-white hover:bg-teal-800"
               >
                 <Plus className="mr-2 h-4 w-4" /> Cadastrar veículo

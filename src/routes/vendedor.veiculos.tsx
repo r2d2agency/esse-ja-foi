@@ -54,7 +54,7 @@ function MeusVeiculos() {
           <p className="mt-1 text-slate-500">Acompanhe o status de cada veículo cadastrado.</p>
         </div>
         <Button
-          onClick={() => navigate({ to: '/vendedor/cadastrar' })}
+          onClick={() => navigate({ to: '/vendedor/cadastrar', search: { id: undefined } })}
           className="h-12 w-full rounded-xl bg-teal-700 font-semibold text-white hover:bg-teal-800 sm:w-auto"
         >
           <Plus className="mr-2 h-4 w-4" /> Cadastrar veículo
