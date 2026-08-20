@@ -128,6 +128,18 @@ function CadastrarVeiculo() {
       if (veiculo) {
         try {
           const obs = JSON.parse(veiculo.observacoes || '{}');
+          
+          // Mapear fotos do array para o Record<string, string>
+          const fotosMap: Record<string, string> = {};
+          if (veiculo.fotos && Array.isArray(veiculo.fotos)) {
+            // Se as fotos forem um array, tentamos mapear pelos IDs definidos em FOTOS
+            // ou apenas armazenar no estado para não perder
+            veiculo.fotos.forEach((f: string, i: number) => {
+              const config = FOTOS[i];
+              if (config) fotosMap[config.id] = f;
+            });
+          }
+
           setForm({
             ...INICIAL,
             placa: maskPlaca(veiculo.placa || ''),
@@ -142,11 +154,9 @@ function CadastrarVeiculo() {
             cidade: veiculo.cidade || '',
             uf: veiculo.uf || '',
             versao: veiculo.versao || '',
+            crlv: veiculo.documento_crlv_url || null,
             ...obs,
-            fotos: veiculo.fotos?.reduce((acc: any, f: string, i: number) => {
-               // Mapeamento simples de fotos se necessário ou manter como array
-               return acc;
-            }, {}) || {},
+            fotos: fotosMap,
           });
           setBuscaFeita(true);
           hidratado.current = true;
@@ -222,10 +232,15 @@ function CadastrarVeiculo() {
           financiamento: { financiado: form.financiado, instituicao: form.instituicao, saldo: form.saldoQuitacao },
           valorMinimoPrivado: form.temMinimo === 'Sim' ? valorNumero(form.valorMinimo) : null,
         };
-        const fotos = FOTOS.map((f) => form.fotos[f.id]).filter(Boolean) as string[];
+        const fotosMap: Record<string, string> = {};
+        Object.entries(form.fotos).forEach(([k, v]) => {
+          if (v) fotosMap[k] = v;
+        });
+        const fotosArray = Object.values(fotosMap);
 
-        await salvarVeiculo({
+        const res: any = await salvarVeiculo({
           data: {
+            id: idExistente,
             perfilId: user.id,
             placa: form.placa.replace(/[^A-Z0-9]/g, ''),
             marca: form.marca,
@@ -236,7 +251,7 @@ function CadastrarVeiculo() {
             anoModelo: form.anoModelo || undefined,
             km: form.km ? Number(soDigitos(form.km)) : undefined,
             valorInteresse: valorNumero(form.valorDesejado) || undefined,
-            fotos,
+            fotos: fotosArray,
             cep: form.cep || undefined,
             cidade: form.cidade || undefined,
             uf: form.uf || undefined,
@@ -245,6 +260,7 @@ function CadastrarVeiculo() {
             status: 'RASCUNHO',
           },
         });
+        if (res?.id) setIdExistente(res.id);
       } catch (e) {
         console.error("Erro ao salvar rascunho parcial:", e);
       }
@@ -275,10 +291,15 @@ function CadastrarVeiculo() {
         documento_crlv_url: form.crlv || undefined,
         crlvEnviado: Boolean(form.crlv),
       };
-      const fotos = FOTOS.map((f) => form.fotos[f.id]).filter(Boolean) as string[];
+      const fotosMap: Record<string, string> = {};
+      Object.entries(form.fotos).forEach(([k, v]) => {
+        if (v) fotosMap[k] = v;
+      });
+      const fotosArray = Object.values(fotosMap);
 
       const res: any = await salvarVeiculo({
         data: {
+          id: idExistente,
           perfilId: user?.id || '',
           placa: form.placa.replace(/[^A-Z0-9]/g, ''),
           marca: form.marca,
@@ -287,12 +308,13 @@ function CadastrarVeiculo() {
           anoModelo: form.anoModelo || undefined,
           km: form.km ? Number(soDigitos(form.km)) : undefined,
           valorInteresse: valorNumero(form.valorDesejado) || undefined,
-          fotos,
+          fotos: fotosArray,
           cep: form.cep || undefined,
           cidade: form.cidade || undefined,
           uf: form.uf || undefined,
           documento_crlv_url: form.crlv || undefined,
           observacoes: JSON.stringify(condicao),
+          status: 'AGUARDANDO_APROVACAO',
         },
       });
       if (res?.ok === false) throw new Error(res.message || 'Não foi possível enviar o veículo.');
