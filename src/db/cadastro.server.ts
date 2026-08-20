@@ -436,8 +436,9 @@ export async function salvarVeiculo(input: VeiculoInput) {
     longitude: input.longitude ?? null,
     observacoes: input.observacoes ?? null,
     perfilId: input.perfilId ?? null,
-    fotos: input.fotos && input.fotos.length > 0 ? JSON.stringify(input.fotos) : null,
+    fotos: input.fotos && input.fotos.length > 0 ? (typeof input.fotos === 'string' ? input.fotos : JSON.stringify(input.fotos)) : null,
     status: (input.status ?? "CADASTRADO").toUpperCase(),
+    documento_crlv_url: input.documento_crlv_url || null,
   };
 
   if (input.id) {

@@ -154,13 +154,20 @@ export const cadastrarMeuVeiculoFn = createServerFn({ method: "POST" })
   }))
   .handler(async ({ data }) => {
     const { salvarVeiculo } = await import("@/db/cadastro.server");
+    
+    // Garantir que observacoes seja um JSON válido ou string limpa
+    let observacoesFinal = data.observacoes || '';
+    if (data.opcionais && data.opcionais.length > 0) {
+      const opcionaisStr = `Opcionais: ${data.opcionais.join(', ')}.`;
+      observacoesFinal = observacoesFinal ? `${opcionaisStr} ${observacoesFinal}` : opcionaisStr;
+    }
+
     return await salvarVeiculo({
       ...data,
       id: data.id,
       valorInteresseCliente: data.valorInteresse,
-
       status: data.status || 'AGUARDANDO_APROVACAO',
-      observacoes: `Opcionais: ${(data.opcionais || []).join(', ')}. ${data.observacoes || ''}`
+      observacoes: observacoesFinal
     } as any);
   });
 
