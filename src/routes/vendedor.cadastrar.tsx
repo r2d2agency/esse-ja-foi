@@ -192,24 +192,45 @@ function CadastrarVeiculo() {
     if (!hidratado.current) return;
     const t = setTimeout(() => {
       try {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
+        // Removemos fotos do localStorage para evitar QuotaExceededError
+        // O salvamento agora é imediato no banco ao subir a foto
+        const formCompacto = { ...form, fotos: {} };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(formCompacto));
         setSalvoEm(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
       } catch (e) {
-        if (e instanceof DOMException && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
-          console.warn("Espaço insuficiente no localStorage para o rascunho completo. As fotos podem não ter sido salvas localmente.");
-          // Tentativa de salvar sem fotos para não perder os dados textuais
-          try {
-            const formSemFotos = { ...form, fotos: {} };
-            localStorage.setItem(DRAFT_KEY, JSON.stringify(formSemFotos));
-            setSalvoEm(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + " (sem fotos)");
-          } catch (e2) {
-            console.error("Falha crítica ao salvar rascunho:", e2);
-          }
-        }
+        console.warn("Erro ao salvar rascunho compacto:", e);
       }
     }, 800);
     return () => clearTimeout(t);
-  }, [form]);
+  }, [form.placa, form.marca, form.modelo, form.versao]);
+
+  // Efeito específico para salvar fotos no banco imediatamente ao mudar
+  useEffect(() => {
+    if (!hidratado.current || !idExistente || !user?.id) return;
+    
+    const salvarFotosNoBanco = async () => {
+      try {
+        const fotosArray = Object.values(form.fotos).filter(Boolean) as string[];
+        if (fotosArray.length === 0) return;
+
+        await salvarVeiculo({
+          data: {
+            id: idExistente,
+            perfilId: user.id,
+            placa: form.placa.replace(/[^A-Z0-9]/g, ''),
+            marca: form.marca || 'Em preenchimento',
+            modelo: form.modelo || 'Em preenchimento',
+            fotos: fotosArray,
+            status: 'RASCUNHO',
+          },
+        });
+      } catch (e) {
+        console.error("Erro ao persistir fotos:", e);
+      }
+    };
+
+    salvarFotosNoBanco();
+  }, [form.fotos, idExistente, user?.id]);
 
   const buscarPlaca = async () => {
     if (soDigitos(form.placa).length + form.placa.replace(/[^A-Z]/g, '').length < 7) {

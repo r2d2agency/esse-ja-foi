@@ -33,16 +33,30 @@ export function FileUpload({ label, description, value, status = "vazio", onChan
   const config = STATUS_CONFIG[effectiveStatus];
   const Icon = config.icon;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsUploading(true);
-    // Simulação de upload
-    setTimeout(() => {
-      onChange("https://placehold.co/600x400?text=" + encodeURIComponent(label));
+    
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/public/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Erro no upload");
+      
+      const data = await response.json();
+      onChange(data.url);
+    } catch (error) {
+      console.error("Erro ao subir arquivo:", error);
+    } finally {
       setIsUploading(false);
-    }, 1500);
+    }
   };
 
   return (
