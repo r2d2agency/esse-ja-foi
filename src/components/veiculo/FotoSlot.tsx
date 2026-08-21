@@ -13,16 +13,30 @@ export function FotoSlot({ label, dica, value, onChange }: FotoSlotProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [carregando, setCarregando] = useState(false);
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
     setCarregando(true);
-    const reader = new FileReader();
-    reader.onload = () => {
-      onChange(String(reader.result));
+    
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/public/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Erro no upload");
+      
+      const data = await response.json();
+      onChange(data.url);
+    } catch (error) {
+      console.error("Erro ao subir foto:", error);
+    } finally {
       setCarregando(false);
-    };
-    reader.readAsDataURL(file);
+    }
   };
 
   return (

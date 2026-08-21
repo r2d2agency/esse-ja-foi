@@ -66,6 +66,7 @@ import { Route as AdminNegociacaoIdRouteImport } from './routes/admin/negociacao
 import { Route as AdminPagamentoIdRouteImport } from './routes/admin/pagamento.$id'
 import { Route as AdminVeiculoIdRouteImport } from './routes/admin/veiculo.$id'
 import { Route as AdminVendedorIdRouteImport } from './routes/admin/vendedor.$id'
+import { Route as ApiPublicUploadRouteImport } from './routes/api/public/upload'
 import { Route as CompradorEntregaIdRouteImport } from './routes/comprador/entrega.$id'
 import { Route as CompradorPagamentoIdRouteImport } from './routes/comprador/pagamento.$id'
 import { Route as VendedorEntregaIdRouteImport } from './routes/vendedor.entrega.$id'
@@ -365,6 +366,11 @@ const AdminVendedorIdRoute = AdminVendedorIdRouteImport.update({
   path: '/vendedor/$id',
   getParentRoute: () => AdminRoute,
 } as any)
+const ApiPublicUploadRoute = ApiPublicUploadRouteImport.update({
+  id: '/api/public/upload',
+  path: '/api/public/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CompradorEntregaIdRoute = CompradorEntregaIdRouteImport.update({
   id: '/entrega/$id',
   path: '/entrega/$id',
@@ -494,6 +500,7 @@ export interface FileRoutesByFullPath {
   '/admin/pagamento/$id': typeof AdminPagamentoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRouteWithChildren
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
+  '/api/public/upload': typeof ApiPublicUploadRoute
   '/comprador/entrega/$id': typeof CompradorEntregaIdRoute
   '/comprador/pagamento/$id': typeof CompradorPagamentoIdRoute
   '/vendedor/entrega/$id': typeof VendedorEntregaIdRoute
@@ -561,6 +568,7 @@ export interface FileRoutesByTo {
   '/admin/pagamento/$id': typeof AdminPagamentoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRouteWithChildren
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
+  '/api/public/upload': typeof ApiPublicUploadRoute
   '/comprador/entrega/$id': typeof CompradorEntregaIdRoute
   '/comprador/pagamento/$id': typeof CompradorPagamentoIdRoute
   '/vendedor/entrega/$id': typeof VendedorEntregaIdRoute
@@ -634,6 +642,7 @@ export interface FileRoutesById {
   '/admin/pagamento/$id': typeof AdminPagamentoIdRoute
   '/admin/veiculo/$id': typeof AdminVeiculoIdRouteWithChildren
   '/admin/vendedor/$id': typeof AdminVendedorIdRoute
+  '/api/public/upload': typeof ApiPublicUploadRoute
   '/comprador/entrega/$id': typeof CompradorEntregaIdRoute
   '/comprador/pagamento/$id': typeof CompradorPagamentoIdRoute
   '/vendedor/entrega/$id': typeof VendedorEntregaIdRoute
@@ -708,6 +717,7 @@ export interface FileRouteTypes {
     | '/admin/pagamento/$id'
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
+    | '/api/public/upload'
     | '/comprador/entrega/$id'
     | '/comprador/pagamento/$id'
     | '/vendedor/entrega/$id'
@@ -775,6 +785,7 @@ export interface FileRouteTypes {
     | '/admin/pagamento/$id'
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
+    | '/api/public/upload'
     | '/comprador/entrega/$id'
     | '/comprador/pagamento/$id'
     | '/vendedor/entrega/$id'
@@ -847,6 +858,7 @@ export interface FileRouteTypes {
     | '/admin/pagamento/$id'
     | '/admin/veiculo/$id'
     | '/admin/vendedor/$id'
+    | '/api/public/upload'
     | '/comprador/entrega/$id'
     | '/comprador/pagamento/$id'
     | '/vendedor/entrega/$id'
@@ -873,6 +885,7 @@ export interface RootRouteChildren {
   VendedorRoute: typeof VendedorRouteWithChildren
   VenderRoute: typeof VenderRoute
   VistoriadorRoute: typeof VistoriadorRouteWithChildren
+  ApiPublicUploadRoute: typeof ApiPublicUploadRoute
   ApiPublicWebhooksPagamentosRoute: typeof ApiPublicWebhooksPagamentosRoute
   ApiPublicWebhooksWhatsappRoute: typeof ApiPublicWebhooksWhatsappRoute
 }
@@ -1278,6 +1291,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminVendedorIdRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/api/public/upload': {
+      id: '/api/public/upload'
+      path: '/api/public/upload'
+      fullPath: '/api/public/upload'
+      preLoaderRoute: typeof ApiPublicUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/comprador/entrega/$id': {
       id: '/comprador/entrega/$id'
       path: '/entrega/$id'
@@ -1585,6 +1605,7 @@ const rootRouteChildren: RootRouteChildren = {
   VendedorRoute: VendedorRouteWithChildren,
   VenderRoute: VenderRoute,
   VistoriadorRoute: VistoriadorRouteWithChildren,
+  ApiPublicUploadRoute: ApiPublicUploadRoute,
   ApiPublicWebhooksPagamentosRoute: ApiPublicWebhooksPagamentosRoute,
   ApiPublicWebhooksWhatsappRoute: ApiPublicWebhooksWhatsappRoute,
 }
