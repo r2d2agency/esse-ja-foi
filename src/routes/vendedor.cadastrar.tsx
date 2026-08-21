@@ -192,17 +192,22 @@ function CadastrarVeiculo() {
     if (!hidratado.current) return;
     const t = setTimeout(() => {
       try {
-        // Removemos fotos do localStorage para evitar QuotaExceededError
-        // O salvamento agora é imediato no banco ao subir a foto
-        const formCompacto = { ...form, fotos: {} };
-        localStorage.setItem(DRAFT_KEY, JSON.stringify(formCompacto));
+        // No rascunho compacto do localStorage, preservamos as URLs das fotos
+        // para que a "thumb" apareça ao recarregar a página antes da sincronização com o banco.
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
         setSalvoEm(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
       } catch (e) {
-        console.warn("Erro ao salvar rascunho compacto:", e);
+        // Se falhar por espaço (Base64 grandes), tentamos salvar sem fotos
+        try {
+          const formCompacto = { ...form, fotos: {} };
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(formCompacto));
+        } catch (e2) {
+          console.warn("Erro ao salvar rascunho no localStorage:", e2);
+        }
       }
     }, 800);
     return () => clearTimeout(t);
-  }, [form.placa, form.marca, form.modelo, form.versao]);
+  }, [form]);
 
   // Efeito específico para salvar fotos no banco imediatamente ao mudar
   useEffect(() => {
@@ -316,13 +321,29 @@ function CadastrarVeiculo() {
   };
   const voltar = () => { setStep((s) => Math.max(1, s - 1)); window.scrollTo(0, 0); };
 
-  const salvarESair = () => {
+  const salvarESair = async () => {
     try {
+      // Força um salvamento final no banco antes de sair
+      if (user?.id) {
+        const fotosArray = Object.values(form.fotos).filter(Boolean) as string[];
+        await salvarVeiculo({
+          data: {
+            id: idExistente,
+            perfilId: user.id,
+            placa: form.placa.replace(/[^A-Z0-9]/g, ''),
+            marca: form.marca || 'Em preenchimento',
+            modelo: form.modelo || 'Em preenchimento',
+            fotos: fotosArray,
+            documento_crlv_url: form.crlv || undefined,
+            status: 'RASCUNHO',
+          },
+        });
+      }
       localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
     } catch (e) {
-      console.warn("Não foi possível salvar rascunho completo no localStorage ao sair.");
+      console.warn("Não foi possível salvar rascunho completo ao sair.");
     }
-    toast.success('Rascunho salvo. Você pode continuar depois.');
+    toast.success('Rascunho salvo com sucesso.');
     navigate({ to: '/vendedor/veiculos' });
   };
 
