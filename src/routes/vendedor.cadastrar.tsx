@@ -36,7 +36,7 @@ export const Route = createFileRoute('/vendedor/cadastrar')({
 });
 
 const ETAPAS = ['Placa', 'Dados', 'Documentação', 'Condição', 'Fotos', 'Valor', 'Revisão'];
-const DRAFT_KEY = 'ejf_veiculo_rascunho';
+const DRAFT_KEY_PREFIX = 'ejf_veiculo_rascunho';
 
 const FOTOS = [
   { id: 'frente45', label: 'Frente 45°', dica: 'Mostre a frente e uma lateral.' },
@@ -83,11 +83,177 @@ const INICIAL: Estado = {
 };
 
 const soDigitos = (v: string) => v.replace(/\D/g, '');
+const limparPlaca = (placa?: string | null) => (placa || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
 const moeda = (v: string) => {
   const n = Number(soDigitos(v)) / 100;
   return n > 0 ? formatCurrency(n) : '';
 };
 const valorNumero = (v: string) => Number(soDigitos(v)) / 100;
+
+const valorMonetarioInicial = (valor: unknown) => {
+  if (typeof valor === 'string') {
+    const texto = valor.trim();
+    if (!texto) return '';
+    if (texto.includes('R$') || texto.includes(',')) return texto;
+
+    const numero = Number(texto);
+    return Number.isFinite(numero) && numero > 0 ? formatCurrency(numero) : texto;
+  }
+  const numero = Number(valor ?? 0);
+  return Number.isFinite(numero) && numero > 0 ? formatCurrency(numero) : '';
+};
+
+const mapearObservacoesParaEstado = (obs: unknown): Partial<Estado> => {
+  if (!obs || typeof obs !== 'object' || Array.isArray(obs)) return {};
+
+  const dados = obs as Record<string, any>;
+  const historico = dados.historico && typeof dados.historico === 'object' ? dados.historico : {};
+  const itens = dados.itens && typeof dados.itens === 'object' ? dados.itens : {};
+  const proprietario = dados.proprietario && typeof dados.proprietario === 'object' ? dados.proprietario : {};
+  const financiamento = dados.financiamento && typeof dados.financiamento === 'object' ? dados.financiamento : {};
+  const acessoriosQuais =
+    typeof itens.acessorios === 'string'
+      ? itens.acessorios
+      : typeof dados.acessoriosQuais === 'string'
+        ? dados.acessoriosQuais
+        : '';
+  const valorMinimoPrivado = Number(dados.valorMinimoPrivado ?? 0);
+
+  return {
+    funcionamento: typeof dados.funcionamento === 'string' ? dados.funcionamento : '',
+    funcionamentoObs: typeof dados.funcionamentoObs === 'string' ? dados.funcionamentoObs : '',
+    motor: typeof dados.motor === 'string' ? dados.motor : '',
+    motorObs: typeof dados.motorObs === 'string' ? dados.motorObs : '',
+    cambioProblema:
+      typeof dados.cambio === 'string'
+        ? dados.cambio
+        : typeof dados.cambioProblema === 'string'
+          ? dados.cambioProblema
+          : '',
+    lataria: typeof dados.lataria === 'string' ? dados.lataria : '',
+    latariaObs: typeof dados.latariaObs === 'string' ? dados.latariaObs : '',
+    interior: typeof dados.interior === 'string' ? dados.interior : '',
+    pneus: typeof dados.pneus === 'string' ? dados.pneus : '',
+    acidente: typeof historico.acidente === 'string' ? historico.acidente : typeof dados.acidente === 'string' ? dados.acidente : '',
+    leilao: typeof historico.leilao === 'string' ? historico.leilao : typeof dados.leilao === 'string' ? dados.leilao : '',
+    sinistro: typeof historico.sinistro === 'string' ? historico.sinistro : typeof dados.sinistro === 'string' ? dados.sinistro : '',
+    restricao: typeof historico.restricao === 'string' ? historico.restricao : typeof dados.restricao === 'string' ? dados.restricao : '',
+    historicoObs: typeof historico.obs === 'string' ? historico.obs : typeof dados.historicoObs === 'string' ? dados.historicoObs : '',
+    chaveReserva: typeof itens.chaveReserva === 'string' ? itens.chaveReserva : typeof dados.chaveReserva === 'string' ? dados.chaveReserva : '',
+    manual: typeof itens.manual === 'string' ? itens.manual : typeof dados.manual === 'string' ? dados.manual : '',
+    estepe: typeof itens.estepe === 'string' ? itens.estepe : typeof dados.estepe === 'string' ? dados.estepe : '',
+    acessorios: acessoriosQuais ? 'Sim' : typeof dados.acessorios === 'string' ? dados.acessorios : '',
+    acessoriosQuais,
+    emSeuNome:
+      typeof proprietario.emSeuNome === 'string'
+        ? proprietario.emSeuNome
+        : typeof dados.emSeuNome === 'string'
+          ? dados.emSeuNome
+          : 'Sim',
+    relacaoProprietario:
+      typeof proprietario.relacao === 'string'
+        ? proprietario.relacao
+        : typeof dados.relacaoProprietario === 'string'
+          ? dados.relacaoProprietario
+          : '',
+    relacaoDescricao:
+      typeof proprietario.descricao === 'string'
+        ? proprietario.descricao
+        : typeof dados.relacaoDescricao === 'string'
+          ? dados.relacaoDescricao
+          : '',
+    financiado:
+      (typeof financiamento.financiado === 'string' ? financiamento.financiado : dados.financiado) === 'Sim'
+        ? 'Sim'
+        : 'Não, está quitado',
+    instituicao:
+      typeof financiamento.instituicao === 'string'
+        ? financiamento.instituicao
+        : typeof dados.instituicao === 'string'
+          ? dados.instituicao
+          : '',
+    saldoQuitacao:
+      typeof financiamento.saldo === 'string'
+        ? financiamento.saldo
+        : typeof dados.saldoQuitacao === 'string'
+          ? dados.saldoQuitacao
+          : valorMonetarioInicial(financiamento.saldo),
+    temMinimo: Number.isFinite(valorMinimoPrivado) && valorMinimoPrivado > 0 ? 'Sim' : 'Não',
+    valorMinimo: valorMonetarioInicial(valorMinimoPrivado),
+    portas: typeof dados.portas === 'string' ? dados.portas : '',
+  };
+};
+
+const extrairEstadoObservacoes = (obsRaw: unknown): Partial<Estado> => {
+  if (!obsRaw) return {};
+  if (typeof obsRaw === 'string') {
+    const bruto = obsRaw.trim();
+    if (!bruto.startsWith('{')) return {};
+    try {
+      return mapearObservacoesParaEstado(JSON.parse(bruto));
+    } catch (e) {
+      console.warn('Observações não são um JSON válido, ignorando hidratação complementar.', e);
+      return {};
+    }
+  }
+  return mapearObservacoesParaEstado(obsRaw);
+};
+
+const montarChavesRascunho = (params: { userId?: string; id?: string; placa?: string | null; incluirGeral?: boolean }) => {
+  const { userId, id, placa, incluirGeral = true } = params;
+  if (!userId) return [] as string[];
+
+  const keys: string[] = [];
+  if (id) keys.push(`${DRAFT_KEY_PREFIX}:${userId}:id:${id}`);
+
+  const placaLimpa = limparPlaca(placa);
+  if (placaLimpa.length >= 7) keys.push(`${DRAFT_KEY_PREFIX}:${userId}:placa:${placaLimpa}`);
+  if (incluirGeral) keys.push(`${DRAFT_KEY_PREFIX}:${userId}:geral`);
+
+  return Array.from(new Set(keys));
+};
+
+const carregarRascunhoLocal = (params: { userId?: string; id?: string; placa?: string | null; incluirGeral?: boolean }) => {
+  const keys = montarChavesRascunho(params);
+  for (const key of keys) {
+    const bruto = localStorage.getItem(key);
+    if (!bruto) continue;
+    try {
+      const parsed = JSON.parse(bruto);
+      const form = parsed && typeof parsed === 'object' && 'form' in parsed ? parsed.form : parsed;
+      if (form && typeof form === 'object') return { ...INICIAL, ...form } as Estado;
+    } catch (e) {
+      console.warn('Erro ao ler rascunho local:', e);
+    }
+  }
+  return null;
+};
+
+const salvarRascunhoLocal = (params: { userId?: string; id?: string; placa?: string | null; form: Estado }) => {
+  const keys = montarChavesRascunho({ ...params, incluirGeral: true });
+  if (keys.length === 0) return false;
+
+  const payload = { form: params.form, savedAt: new Date().toISOString() };
+  try {
+    const serializado = JSON.stringify(payload);
+    keys.forEach((key) => localStorage.setItem(key, serializado));
+    return true;
+  } catch (e) {
+    const compacto = JSON.stringify({ ...payload, form: { ...params.form, fotos: {} } });
+    try {
+      keys.forEach((key) => localStorage.setItem(key, compacto));
+      return true;
+    } catch (e2) {
+      console.warn('Erro ao salvar rascunho no localStorage:', e2);
+      return false;
+    }
+  }
+};
+
+const removerRascunhoLocal = (params: { userId?: string; id?: string; placa?: string | null }) => {
+  const keys = montarChavesRascunho({ ...params, incluirGeral: true });
+  keys.forEach((key) => localStorage.removeItem(key));
+};
 
 function CadastrarVeiculo() {
   const { user } = useAuth();
@@ -104,6 +270,7 @@ function CadastrarVeiculo() {
   const [veiculoEncontrado, setVeiculoEncontrado] = useState<null | { marca: string; modelo: string; versao: string; ano: string }>(null);
   const [confirmando, setConfirmando] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [salvandoSaida, setSalvandoSaida] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [declaracao1, setDeclaracao1] = useState(false);
   const [declaracao2, setDeclaracao2] = useState(false);
@@ -119,33 +286,98 @@ function CadastrarVeiculo() {
   const cadastroLiberado = profile.cadastro_completo === true || percentual(montarEtapas(profile)) >= 80;
 
   const set = (patch: Partial<Estado>) => setForm((f) => ({ ...f, ...patch }));
+  const obterFotosArray = () => FOTOS.map((foto) => form.fotos[foto.id]).filter(Boolean) as string[];
+  const montarCondicao = (incluirDocumento = false) => ({
+    funcionamento: form.funcionamento,
+    funcionamentoObs: form.funcionamentoObs,
+    motor: form.motor,
+    motorObs: form.motorObs,
+    cambio: form.cambioProblema,
+    lataria: form.lataria,
+    latariaObs: form.latariaObs,
+    interior: form.interior,
+    pneus: form.pneus,
+    portas: form.portas,
+    historico: {
+      acidente: form.acidente,
+      leilao: form.leilao,
+      sinistro: form.sinistro,
+      restricao: form.restricao,
+      obs: form.historicoObs,
+    },
+    itens: {
+      chaveReserva: form.chaveReserva,
+      manual: form.manual,
+      estepe: form.estepe,
+      acessorios: form.acessoriosQuais,
+    },
+    acessorios: form.acessorios,
+    proprietario: {
+      emSeuNome: form.emSeuNome,
+      relacao: form.relacaoProprietario,
+      descricao: form.relacaoDescricao,
+    },
+    financiamento: {
+      financiado: form.financiado === 'Sim' ? 'Sim' : 'Não',
+      instituicao: form.instituicao,
+      saldo: form.saldoQuitacao,
+    },
+    valorMinimoPrivado: form.temMinimo === 'Sim' ? valorNumero(form.valorMinimo) : null,
+    ...(incluirDocumento
+      ? {
+          documento_crlv_url: form.crlv || undefined,
+          crlvEnviado: Boolean(form.crlv),
+        }
+      : {}),
+  });
+  const montarPayloadVeiculo = (status: 'RASCUNHO' | 'AGUARDANDO_APROVACAO') => ({
+    id: idExistente,
+    perfilId: user?.id || '',
+    placa: limparPlaca(form.placa),
+    marca: status === 'RASCUNHO' ? form.marca || 'Em preenchimento' : form.marca,
+    modelo: status === 'RASCUNHO' ? form.modelo || 'Em preenchimento' : form.modelo,
+    versao: form.versao || undefined,
+    cor: form.cor || undefined,
+    anoFabricacao: form.anoFabricacao || undefined,
+    anoModelo: form.anoModelo || undefined,
+    combustivel: form.combustivel || undefined,
+    cambio: form.cambio || undefined,
+    km: form.km ? Number(soDigitos(form.km)) : undefined,
+    valorInteresse: valorNumero(form.valorDesejado) || undefined,
+    fotos: obterFotosArray(),
+    cep: form.cep || undefined,
+    cidade: form.cidade || undefined,
+    uf: form.uf || undefined,
+    documento_crlv_url: form.crlv || undefined,
+    observacoes: JSON.stringify(montarCondicao(status === 'AGUARDANDO_APROVACAO')),
+    status,
+  });
 
   // Rascunho: hidratação + salvamento automático
   useEffect(() => {
+    const rascunhoLocal = carregarRascunhoLocal({
+      userId: user?.id,
+      id: search.id,
+      incluirGeral: !search.id,
+    });
+
     // Se temos um ID na URL, tentamos carregar do banco primeiro
     if (search.id && data) {
       const veiculo = ((data as any)?.data || []).find((v: any) => v.id === search.id);
       if (veiculo) {
         try {
-          const obsRaw = veiculo.observacoes || '{}';
-          let obs = {};
-          if (obsRaw.trim().startsWith('{')) {
-            try {
-              obs = JSON.parse(obsRaw);
-            } catch (e) {
-              console.warn("Observações não são um JSON válido, tratando como texto puro.");
-              obs = { observacoesPuras: obsRaw };
-            }
-          } else {
-            obs = { observacoesPuras: obsRaw };
-          }
-          
+          const obs = extrairEstadoObservacoes(veiculo.observacoes);
+
           // Mapear fotos do array para o Record<string, string>
           const fotosMap: Record<string, string> = {};
-          if (veiculo.fotos && Array.isArray(veiculo.fotos)) {
+          const fotosOriginais =
+            typeof veiculo.fotos === 'string'
+              ? JSON.parse(veiculo.fotos)
+              : veiculo.fotos;
+          if (fotosOriginais && Array.isArray(fotosOriginais)) {
             // Se as fotos forem um array, tentamos mapear pelos IDs definidos em FOTOS
             // ou apenas armazenar no estado para não perder
-            veiculo.fotos.forEach((f: string, i: number) => {
+            fotosOriginais.forEach((f: string, i: number) => {
               const config = FOTOS[i];
               if (config) fotosMap[config.id] = f;
             });
@@ -159,8 +391,10 @@ function CadastrarVeiculo() {
             anoFabricacao: veiculo.ano_fabricacao || '',
             anoModelo: veiculo.ano_modelo || '',
             cor: veiculo.cor || '',
+            combustivel: veiculo.combustivel || '',
+            cambio: veiculo.cambio || '',
             km: veiculo.km ? String(veiculo.km) : '',
-            valorDesejado: veiculo.valor_interesse_cliente ? String(veiculo.valor_interesse_cliente * 100) : '',
+            valorDesejado: valorMonetarioInicial(veiculo.valor_interesse_cliente),
             cep: veiculo.cep || '',
             cidade: veiculo.cidade || '',
             uf: veiculo.uf || '',
@@ -176,38 +410,39 @@ function CadastrarVeiculo() {
           console.error("Erro ao hidratar veículo:", e);
         }
       }
+
+      if (rascunhoLocal) {
+        setForm(rascunhoLocal);
+        setBuscaFeita(true);
+        hidratado.current = true;
+        return;
+      }
     }
 
-    const bruto = localStorage.getItem(DRAFT_KEY);
-    if (bruto) {
-      try { setForm({ ...INICIAL, ...JSON.parse(bruto) }); } catch { }
+    if (rascunhoLocal) {
+      setForm(rascunhoLocal);
     } else {
       const placa = sessionStorage.getItem('ejf_placa');
       if (placa) setForm((f) => ({ ...f, placa: maskPlaca(placa) }));
     }
     hidratado.current = true;
-  }, [search.id, data]);
+  }, [search.id, data, user?.id]);
 
   useEffect(() => {
     if (!hidratado.current) return;
     const t = setTimeout(() => {
-      try {
-        // No rascunho compacto do localStorage, preservamos as URLs das fotos
-        // para que a "thumb" apareça ao recarregar a página antes da sincronização com o banco.
-        localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
+      const salvo = salvarRascunhoLocal({
+        userId: user?.id,
+        id: idExistente || search.id,
+        placa: form.placa,
+        form,
+      });
+      if (salvo) {
         setSalvoEm(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
-      } catch (e) {
-        // Se falhar por espaço (Base64 grandes), tentamos salvar sem fotos
-        try {
-          const formCompacto = { ...form, fotos: {} };
-          localStorage.setItem(DRAFT_KEY, JSON.stringify(formCompacto));
-        } catch (e2) {
-          console.warn("Erro ao salvar rascunho no localStorage:", e2);
-        }
       }
     }, 800);
     return () => clearTimeout(t);
-  }, [form]);
+  }, [form, user?.id, idExistente, search.id]);
 
   // Efeito para salvar fotos no banco imediatamente ao mudar
   useEffect(() => {
@@ -216,24 +451,11 @@ function CadastrarVeiculo() {
     
     const sincronizarComBanco = async () => {
       try {
-        const fotosArray = Object.values(form.fotos).filter(Boolean) as string[];
-        
         // Se não tem ID mas tem dados mínimos, cria o rascunho no banco
-        const placaLimpa = form.placa.replace(/[^A-Z0-9]/g, '');
-        if (!idExistente && placaLimpa.length < 7) return;
+        const placaAtual = limparPlaca(form.placa);
+        if (!idExistente && placaAtual.length < 7) return;
 
-        const res: any = await salvarVeiculo({
-          data: {
-            id: idExistente,
-            perfilId: user.id,
-            placa: placaLimpa,
-            marca: form.marca || 'Em preenchimento',
-            modelo: form.modelo || 'Em preenchimento',
-            fotos: fotosArray,
-            documento_crlv_url: form.crlv || undefined,
-            status: 'RASCUNHO',
-          },
-        });
+        const res: any = await salvarVeiculo({ data: montarPayloadVeiculo('RASCUNHO') });
 
         if (res?.id && !idExistente) {
           setIdExistente(res.id);
@@ -283,44 +505,7 @@ function CadastrarVeiculo() {
     // Tenta salvar o progresso parcial no banco sempre que avançar de etapa
     if (user?.id) {
       try {
-        const condicao = {
-          funcionamento: form.funcionamento, funcionamentoObs: form.funcionamentoObs,
-          motor: form.motor, motorObs: form.motorObs, cambio: form.cambioProblema,
-          lataria: form.lataria, latariaObs: form.latariaObs, interior: form.interior, pneus: form.pneus,
-          historico: { acidente: form.acidente, leilao: form.leilao, sinistro: form.sinistro, restricao: form.restricao, obs: form.historicoObs },
-          itens: { chaveReserva: form.chaveReserva, manual: form.manual, estepe: form.estepe, acessorios: form.acessoriosQuais },
-          proprietario: { emSeuNome: form.emSeuNome, relacao: form.relacaoProprietario, descricao: form.relacaoDescricao },
-          financiamento: { financiado: form.financiado, instituicao: form.instituicao, saldo: form.saldoQuitacao },
-          valorMinimoPrivado: form.temMinimo === 'Sim' ? valorNumero(form.valorMinimo) : null,
-        };
-        const fotosMap: Record<string, string> = {};
-        Object.entries(form.fotos).forEach(([k, v]) => {
-          if (v) fotosMap[k] = v;
-        });
-        const fotosArray = Object.values(fotosMap);
-
-        const res: any = await salvarVeiculo({
-          data: {
-            id: idExistente,
-            perfilId: user.id,
-            placa: form.placa.replace(/[^A-Z0-9]/g, ''),
-            marca: form.marca,
-            modelo: form.modelo,
-            versao: form.versao || undefined,
-            cor: form.cor || undefined,
-            anoFabricacao: form.anoFabricacao || undefined,
-            anoModelo: form.anoModelo || undefined,
-            km: form.km ? Number(soDigitos(form.km)) : undefined,
-            valorInteresse: valorNumero(form.valorDesejado) || undefined,
-            fotos: fotosArray,
-            cep: form.cep || undefined,
-            cidade: form.cidade || undefined,
-            uf: form.uf || undefined,
-            documento_crlv_url: form.crlv || undefined,
-            observacoes: JSON.stringify(condicao),
-            status: 'RASCUNHO',
-          },
-        });
+        const res: any = await salvarVeiculo({ data: montarPayloadVeiculo('RASCUNHO') });
         if (res?.id) setIdExistente(res.id);
       } catch (e) {
         console.error("Erro ao salvar rascunho parcial:", e);
@@ -332,74 +517,49 @@ function CadastrarVeiculo() {
   const voltar = () => { setStep((s) => Math.max(1, s - 1)); window.scrollTo(0, 0); };
 
   const salvarESair = async () => {
+    setSalvandoSaida(true);
+    const rascunhoLocalSalvo = salvarRascunhoLocal({
+      userId: user?.id,
+      id: idExistente || search.id,
+      placa: form.placa,
+      form,
+    });
+
     try {
-      // Força um salvamento final no banco antes de sair
-      if (user?.id) {
-        const fotosArray = Object.values(form.fotos).filter(Boolean) as string[];
-        await salvarVeiculo({
-          data: {
-            id: idExistente,
-            perfilId: user.id,
-            placa: form.placa.replace(/[^A-Z0-9]/g, ''),
-            marca: form.marca || 'Em preenchimento',
-            modelo: form.modelo || 'Em preenchimento',
-            fotos: fotosArray,
-            documento_crlv_url: form.crlv || undefined,
-            status: 'RASCUNHO',
-          },
-        });
+      if (!user?.id) {
+        throw new Error('Sua sessão expirou. Entre novamente para salvar o rascunho.');
       }
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
-    } catch (e) {
-      console.warn("Não foi possível salvar rascunho completo ao sair.");
+
+      const res: any = await salvarVeiculo({ data: montarPayloadVeiculo('RASCUNHO') });
+      if (res?.ok === false) throw new Error(res.message || 'Não foi possível salvar o rascunho.');
+
+      const novoId = res?.id || idExistente || search.id;
+      if (novoId) {
+        setIdExistente(novoId);
+        salvarRascunhoLocal({ userId: user.id, id: novoId, placa: form.placa, form });
+      }
+
+      toast.success('Rascunho salvo com sucesso.');
+      navigate({ to: '/vendedor/veiculos' });
+    } catch (e: any) {
+      const mensagem = e?.message || 'Não foi possível salvar o rascunho agora.';
+      toast.error(rascunhoLocalSalvo ? `${mensagem} Seus dados ficaram salvos neste navegador.` : mensagem);
+      console.warn('Não foi possível salvar rascunho completo ao sair.', e);
+    } finally {
+      setSalvandoSaida(false);
     }
-    toast.success('Rascunho salvo com sucesso.');
-    navigate({ to: '/vendedor/veiculos' });
   };
 
   const enviar = async () => {
     setEnviando(true);
     try {
-      const condicao = {
-        funcionamento: form.funcionamento, funcionamentoObs: form.funcionamentoObs,
-        motor: form.motor, motorObs: form.motorObs, cambio: form.cambioProblema,
-        lataria: form.lataria, latariaObs: form.latariaObs, interior: form.interior, pneus: form.pneus,
-        historico: { acidente: form.acidente, leilao: form.leilao, sinistro: form.sinistro, restricao: form.restricao, obs: form.historicoObs },
-        itens: { chaveReserva: form.chaveReserva, manual: form.manual, estepe: form.estepe, acessorios: form.acessoriosQuais },
-        proprietario: { emSeuNome: form.emSeuNome, relacao: form.relacaoProprietario, descricao: form.relacaoDescricao },
-        financiamento: { financiado: form.financiado, instituicao: form.instituicao, saldo: form.saldoQuitacao },
-        valorMinimoPrivado: form.temMinimo === 'Sim' ? valorNumero(form.valorMinimo) : null,
-        documento_crlv_url: form.crlv || undefined,
-        crlvEnviado: Boolean(form.crlv),
-      };
-      const fotosMap: Record<string, string> = {};
-      Object.entries(form.fotos).forEach(([k, v]) => {
-        if (v) fotosMap[k] = v;
-      });
-      const fotosArray = Object.values(fotosMap);
-
-      const res: any = await salvarVeiculo({
-        data: {
-          id: idExistente,
-          perfilId: user?.id || '',
-          placa: form.placa.replace(/[^A-Z0-9]/g, ''),
-          marca: form.marca,
-          modelo: form.modelo,
-          anoFabricacao: form.anoFabricacao || undefined,
-          anoModelo: form.anoModelo || undefined,
-          km: form.km ? Number(soDigitos(form.km)) : undefined,
-          valorInteresse: valorNumero(form.valorDesejado) || undefined,
-          fotos: fotosArray,
-          cep: form.cep || undefined,
-          cidade: form.cidade || undefined,
-          uf: form.uf || undefined,
-          documento_crlv_url: form.crlv || undefined,
-          observacoes: JSON.stringify(condicao),
-          status: 'AGUARDANDO_APROVACAO',
-        },
-      });
+      const res: any = await salvarVeiculo({ data: montarPayloadVeiculo('AGUARDANDO_APROVACAO') });
       if (res?.ok === false) throw new Error(res.message || 'Não foi possível enviar o veículo.');
-      localStorage.removeItem(DRAFT_KEY);
+      removerRascunhoLocal({
+        userId: user?.id,
+        id: res?.id || idExistente || search.id,
+        placa: form.placa,
+      });
       sessionStorage.removeItem('ejf_placa');
       setEnviado(true);
       window.scrollTo(0, 0);
@@ -898,8 +1058,14 @@ function CadastrarVeiculo() {
             <Button variant="outline" onClick={voltar} disabled={step === 1} className="h-14 flex-1 rounded-2xl px-6 font-bold md:flex-initial">
               Voltar
             </Button>
-            <Button variant="ghost" onClick={salvarESair} className="h-14 flex-1 rounded-2xl px-6 font-bold text-slate-400 md:flex-initial">
-              <Save className="mr-2 h-4 w-4" /> Salvar e sair
+            <Button
+              variant="ghost"
+              onClick={salvarESair}
+              disabled={salvandoSaida}
+              className="h-14 flex-1 rounded-2xl px-6 font-bold text-slate-400 md:flex-initial"
+            >
+              {salvandoSaida ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              {salvandoSaida ? 'Salvando...' : 'Salvar e sair'}
             </Button>
           </div>
         </div>
