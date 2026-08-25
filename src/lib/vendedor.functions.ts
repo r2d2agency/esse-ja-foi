@@ -134,6 +134,8 @@ export const cadastrarMeuVeiculoFn = createServerFn({ method: "POST" })
     modelo: z.string().min(2),
     anoFabricacao: z.string().optional(),
     anoModelo: z.string().optional(),
+    combustivel: z.string().optional().nullable(),
+    cambio: z.string().optional().nullable(),
     km: z.number().optional(),
     valorInteresse: z.number().optional(),
     opcionais: z.array(z.string()).optional(),

@@ -88,6 +88,81 @@ const moeda = (v: string) => {
   return n > 0 ? formatCurrency(n) : '';
 };
 const valorNumero = (v: string) => Number(soDigitos(v)) / 100;
+const valorMoeda = (v?: number | string | null) => {
+  const n = Number(v ?? 0);
+  return n > 0 ? formatCurrency(n) : '';
+};
+
+function serializarObservacoes(form: Estado) {
+  const { fotos, crlv, ...snapshot } = form;
+  return JSON.stringify({
+    versao: 2,
+    snapshot,
+  });
+}
+
+function normalizarFotosSalvas(fotos: unknown) {
+  let lista: string[] = [];
+
+  if (typeof fotos === 'string') {
+    try {
+      const parsed = JSON.parse(fotos);
+      if (Array.isArray(parsed)) lista = parsed.filter((item): item is string => typeof item === 'string');
+    } catch {
+      lista = [];
+    }
+  } else if (Array.isArray(fotos)) {
+    lista = fotos.filter((item): item is string => typeof item === 'string');
+  }
+
+  return lista.reduce<Record<string, string>>((acc, foto, index) => {
+    const config = FOTOS[index];
+    if (config) acc[config.id] = foto;
+    return acc;
+  }, {});
+}
+
+function desserializarObservacoes(obsRaw?: string | null): Partial<Estado> {
+  if (!obsRaw) return {};
+
+  try {
+    const parsed = JSON.parse(obsRaw);
+    if (!parsed || typeof parsed !== 'object') return {};
+
+    const snapshot = typeof parsed.snapshot === 'object' && parsed.snapshot
+      ? parsed.snapshot as Partial<Estado>
+      : parsed as Partial<Estado>;
+
+    const historico = (parsed.historico || {}) as Record<string, string | undefined>;
+    const itens = (parsed.itens || {}) as Record<string, string | undefined>;
+    const proprietario = (parsed.proprietario || {}) as Record<string, string | undefined>;
+    const financiamento = (parsed.financiamento || {}) as Record<string, string | undefined>;
+
+    return {
+      ...snapshot,
+      emSeuNome: snapshot.emSeuNome ?? proprietario.emSeuNome ?? INICIAL.emSeuNome,
+      relacaoProprietario: snapshot.relacaoProprietario ?? proprietario.relacao ?? '',
+      relacaoDescricao: snapshot.relacaoDescricao ?? proprietario.descricao ?? '',
+      financiado: snapshot.financiado ?? financiamento.financiado ?? INICIAL.financiado,
+      instituicao: snapshot.instituicao ?? financiamento.instituicao ?? '',
+      saldoQuitacao: snapshot.saldoQuitacao ?? financiamento.saldo ?? '',
+      cambioProblema: snapshot.cambioProblema ?? parsed.cambio ?? '',
+      acidente: snapshot.acidente ?? historico.acidente ?? '',
+      leilao: snapshot.leilao ?? historico.leilao ?? '',
+      sinistro: snapshot.sinistro ?? historico.sinistro ?? '',
+      restricao: snapshot.restricao ?? historico.restricao ?? '',
+      historicoObs: snapshot.historicoObs ?? historico.obs ?? '',
+      chaveReserva: snapshot.chaveReserva ?? itens.chaveReserva ?? '',
+      manual: snapshot.manual ?? itens.manual ?? '',
+      estepe: snapshot.estepe ?? itens.estepe ?? '',
+      acessoriosQuais: snapshot.acessoriosQuais ?? itens.acessorios ?? '',
+      temMinimo: snapshot.temMinimo ?? (parsed.valorMinimoPrivado != null ? 'Sim' : INICIAL.temMinimo),
+      valorMinimo: snapshot.valorMinimo ?? valorMoeda(parsed.valorMinimoPrivado),
+    };
+  } catch {
+    return {};
+  }
+}
 
 function CadastrarVeiculo() {
   const { user } = useAuth();
@@ -119,6 +194,28 @@ function CadastrarVeiculo() {
   const cadastroLiberado = profile.cadastro_completo === true || percentual(montarEtapas(profile)) >= 80;
 
   const set = (patch: Partial<Estado>) => setForm((f) => ({ ...f, ...patch }));
+  const montarPayloadVeiculo = (status: string) => ({
+    id: idExistente,
+    perfilId: user?.id || '',
+    placa: form.placa.replace(/[^A-Z0-9]/g, ''),
+    marca: form.marca || 'Em preenchimento',
+    modelo: form.modelo || 'Em preenchimento',
+    versao: form.versao || undefined,
+    cor: form.cor || undefined,
+    anoFabricacao: form.anoFabricacao || undefined,
+    anoModelo: form.anoModelo || undefined,
+    combustivel: form.combustivel || undefined,
+    cambio: form.cambio || undefined,
+    km: form.km ? Number(soDigitos(form.km)) : undefined,
+    valorInteresse: valorNumero(form.valorDesejado) || undefined,
+    fotos: Object.values(form.fotos).filter(Boolean) as string[],
+    cep: form.cep || undefined,
+    cidade: form.cidade || undefined,
+    uf: form.uf || undefined,
+    documento_crlv_url: form.crlv || undefined,
+    observacoes: serializarObservacoes(form),
+    status,
+  });
 
   // Rascunho: hidratação + salvamento automático
   useEffect(() => {
@@ -127,46 +224,27 @@ function CadastrarVeiculo() {
       const veiculo = ((data as any)?.data || []).find((v: any) => v.id === search.id);
       if (veiculo) {
         try {
-          const obsRaw = veiculo.observacoes || '{}';
-          let obs = {};
-          if (obsRaw.trim().startsWith('{')) {
-            try {
-              obs = JSON.parse(obsRaw);
-            } catch (e) {
-              console.warn("Observações não são um JSON válido, tratando como texto puro.");
-              obs = { observacoesPuras: obsRaw };
-            }
-          } else {
-            obs = { observacoesPuras: obsRaw };
-          }
-          
-          // Mapear fotos do array para o Record<string, string>
-          const fotosMap: Record<string, string> = {};
-          if (veiculo.fotos && Array.isArray(veiculo.fotos)) {
-            // Se as fotos forem um array, tentamos mapear pelos IDs definidos em FOTOS
-            // ou apenas armazenar no estado para não perder
-            veiculo.fotos.forEach((f: string, i: number) => {
-              const config = FOTOS[i];
-              if (config) fotosMap[config.id] = f;
-            });
-          }
+          const obs = desserializarObservacoes(veiculo.observacoes);
+          const fotosMap = normalizarFotosSalvas(veiculo.fotos);
 
           setForm({
             ...INICIAL,
-            placa: maskPlaca(veiculo.placa || ''),
-            marca: veiculo.marca || '',
-            modelo: veiculo.modelo || '',
-            anoFabricacao: veiculo.ano_fabricacao || '',
-            anoModelo: veiculo.ano_modelo || '',
-            cor: veiculo.cor || '',
-            km: veiculo.km ? String(veiculo.km) : '',
-            valorDesejado: veiculo.valor_interesse_cliente ? String(veiculo.valor_interesse_cliente * 100) : '',
-            cep: veiculo.cep || '',
-            cidade: veiculo.cidade || '',
-            uf: veiculo.uf || '',
-            versao: veiculo.versao || '',
-            crlv: veiculo.documento_crlv_url || null,
             ...obs,
+            placa: maskPlaca(veiculo.placa || obs.placa || ''),
+            marca: veiculo.marca || obs.marca || '',
+            modelo: veiculo.modelo || obs.modelo || '',
+            versao: veiculo.versao || obs.versao || '',
+            anoFabricacao: veiculo.ano_fabricacao || obs.anoFabricacao || '',
+            anoModelo: veiculo.ano_modelo || obs.anoModelo || '',
+            cor: veiculo.cor || obs.cor || '',
+            combustivel: veiculo.combustivel || obs.combustivel || '',
+            cambio: veiculo.cambio || obs.cambio || '',
+            km: veiculo.km ? String(veiculo.km) : obs.km || '',
+            valorDesejado: veiculo.valor_interesse_cliente ? valorMoeda(veiculo.valor_interesse_cliente) : obs.valorDesejado || '',
+            cep: veiculo.cep || obs.cep || '',
+            cidade: veiculo.cidade || obs.cidade || '',
+            uf: veiculo.uf || obs.uf || '',
+            crlv: veiculo.documento_crlv_url || obs.crlv || null,
             fotos: fotosMap,
           });
           setBuscaFeita(true);
@@ -216,23 +294,12 @@ function CadastrarVeiculo() {
     
     const sincronizarComBanco = async () => {
       try {
-        const fotosArray = Object.values(form.fotos).filter(Boolean) as string[];
-        
         // Se não tem ID mas tem dados mínimos, cria o rascunho no banco
         const placaLimpa = form.placa.replace(/[^A-Z0-9]/g, '');
         if (!idExistente && placaLimpa.length < 7) return;
 
         const res: any = await salvarVeiculo({
-          data: {
-            id: idExistente,
-            perfilId: user.id,
-            placa: placaLimpa,
-            marca: form.marca || 'Em preenchimento',
-            modelo: form.modelo || 'Em preenchimento',
-            fotos: fotosArray,
-            documento_crlv_url: form.crlv || undefined,
-            status: 'RASCUNHO',
-          },
+          data: montarPayloadVeiculo('RASCUNHO'),
         });
 
         if (res?.id && !idExistente) {
@@ -283,43 +350,8 @@ function CadastrarVeiculo() {
     // Tenta salvar o progresso parcial no banco sempre que avançar de etapa
     if (user?.id) {
       try {
-        const condicao = {
-          funcionamento: form.funcionamento, funcionamentoObs: form.funcionamentoObs,
-          motor: form.motor, motorObs: form.motorObs, cambio: form.cambioProblema,
-          lataria: form.lataria, latariaObs: form.latariaObs, interior: form.interior, pneus: form.pneus,
-          historico: { acidente: form.acidente, leilao: form.leilao, sinistro: form.sinistro, restricao: form.restricao, obs: form.historicoObs },
-          itens: { chaveReserva: form.chaveReserva, manual: form.manual, estepe: form.estepe, acessorios: form.acessoriosQuais },
-          proprietario: { emSeuNome: form.emSeuNome, relacao: form.relacaoProprietario, descricao: form.relacaoDescricao },
-          financiamento: { financiado: form.financiado, instituicao: form.instituicao, saldo: form.saldoQuitacao },
-          valorMinimoPrivado: form.temMinimo === 'Sim' ? valorNumero(form.valorMinimo) : null,
-        };
-        const fotosMap: Record<string, string> = {};
-        Object.entries(form.fotos).forEach(([k, v]) => {
-          if (v) fotosMap[k] = v;
-        });
-        const fotosArray = Object.values(fotosMap);
-
         const res: any = await salvarVeiculo({
-          data: {
-            id: idExistente,
-            perfilId: user.id,
-            placa: form.placa.replace(/[^A-Z0-9]/g, ''),
-            marca: form.marca,
-            modelo: form.modelo,
-            versao: form.versao || undefined,
-            cor: form.cor || undefined,
-            anoFabricacao: form.anoFabricacao || undefined,
-            anoModelo: form.anoModelo || undefined,
-            km: form.km ? Number(soDigitos(form.km)) : undefined,
-            valorInteresse: valorNumero(form.valorDesejado) || undefined,
-            fotos: fotosArray,
-            cep: form.cep || undefined,
-            cidade: form.cidade || undefined,
-            uf: form.uf || undefined,
-            documento_crlv_url: form.crlv || undefined,
-            observacoes: JSON.stringify(condicao),
-            status: 'RASCUNHO',
-          },
+          data: montarPayloadVeiculo('RASCUNHO'),
         });
         if (res?.id) setIdExistente(res.id);
       } catch (e) {
@@ -335,18 +367,8 @@ function CadastrarVeiculo() {
     try {
       // Força um salvamento final no banco antes de sair
       if (user?.id) {
-        const fotosArray = Object.values(form.fotos).filter(Boolean) as string[];
         await salvarVeiculo({
-          data: {
-            id: idExistente,
-            perfilId: user.id,
-            placa: form.placa.replace(/[^A-Z0-9]/g, ''),
-            marca: form.marca || 'Em preenchimento',
-            modelo: form.modelo || 'Em preenchimento',
-            fotos: fotosArray,
-            documento_crlv_url: form.crlv || undefined,
-            status: 'RASCUNHO',
-          },
+          data: montarPayloadVeiculo('RASCUNHO'),
         });
       }
       localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
@@ -360,43 +382,8 @@ function CadastrarVeiculo() {
   const enviar = async () => {
     setEnviando(true);
     try {
-      const condicao = {
-        funcionamento: form.funcionamento, funcionamentoObs: form.funcionamentoObs,
-        motor: form.motor, motorObs: form.motorObs, cambio: form.cambioProblema,
-        lataria: form.lataria, latariaObs: form.latariaObs, interior: form.interior, pneus: form.pneus,
-        historico: { acidente: form.acidente, leilao: form.leilao, sinistro: form.sinistro, restricao: form.restricao, obs: form.historicoObs },
-        itens: { chaveReserva: form.chaveReserva, manual: form.manual, estepe: form.estepe, acessorios: form.acessoriosQuais },
-        proprietario: { emSeuNome: form.emSeuNome, relacao: form.relacaoProprietario, descricao: form.relacaoDescricao },
-        financiamento: { financiado: form.financiado, instituicao: form.instituicao, saldo: form.saldoQuitacao },
-        valorMinimoPrivado: form.temMinimo === 'Sim' ? valorNumero(form.valorMinimo) : null,
-        documento_crlv_url: form.crlv || undefined,
-        crlvEnviado: Boolean(form.crlv),
-      };
-      const fotosMap: Record<string, string> = {};
-      Object.entries(form.fotos).forEach(([k, v]) => {
-        if (v) fotosMap[k] = v;
-      });
-      const fotosArray = Object.values(fotosMap);
-
       const res: any = await salvarVeiculo({
-        data: {
-          id: idExistente,
-          perfilId: user?.id || '',
-          placa: form.placa.replace(/[^A-Z0-9]/g, ''),
-          marca: form.marca,
-          modelo: form.modelo,
-          anoFabricacao: form.anoFabricacao || undefined,
-          anoModelo: form.anoModelo || undefined,
-          km: form.km ? Number(soDigitos(form.km)) : undefined,
-          valorInteresse: valorNumero(form.valorDesejado) || undefined,
-          fotos: fotosArray,
-          cep: form.cep || undefined,
-          cidade: form.cidade || undefined,
-          uf: form.uf || undefined,
-          documento_crlv_url: form.crlv || undefined,
-          observacoes: JSON.stringify(condicao),
-          status: 'AGUARDANDO_APROVACAO',
-        },
+        data: montarPayloadVeiculo('AGUARDANDO_APROVACAO'),
       });
       if (res?.ok === false) throw new Error(res.message || 'Não foi possível enviar o veículo.');
       localStorage.removeItem(DRAFT_KEY);

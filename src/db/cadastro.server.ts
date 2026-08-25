@@ -442,15 +442,46 @@ export async function salvarVeiculo(input: VeiculoInput) {
   };
 
   if (input.id) {
+    const setClauses: any[] = [
+      sql`placa = ${base.placa}`,
+      sql`marca = ${base.marca}`,
+      sql`modelo = ${base.modelo}`,
+      sql`atualizado_em = now()`,
+    ];
+
+    if (input.versao !== undefined) setClauses.push(sql`versao = ${base.versao}`);
+    if (input.cor !== undefined) setClauses.push(sql`cor = ${base.cor}`);
+    if (input.km !== undefined) setClauses.push(sql`km = ${base.km}`);
+    if (input.anoFabricacao !== undefined) setClauses.push(sql`ano_fabricacao = ${base.anoFabricacao}`);
+    if (input.anoModelo !== undefined) setClauses.push(sql`ano_modelo = ${base.anoModelo}`);
+    if (input.combustivel !== undefined) setClauses.push(sql`combustivel = ${base.combustivel}`);
+    if (input.cambio !== undefined) setClauses.push(sql`cambio = ${base.cambio}`);
+    if (input.clienteId !== undefined) setClauses.push(sql`cliente_id = ${base.clienteId}`);
+    if (input.valorFipe !== undefined) setClauses.push(sql`valor_fipe = ${base.fipe}`);
+    if (input.valorInteresseCliente !== undefined) setClauses.push(sql`valor_interesse_cliente = ${base.interesse}`);
+    if (input.tipoExpectativa !== undefined) setClauses.push(sql`tipo_expectativa = ${base.tipoExpectativa}`);
+    if (input.valorFipe !== undefined || input.valorInteresseCliente !== undefined) {
+      setClauses.push(sql`percentual_sobre_fipe = ${base.percentual}`);
+      setClauses.push(sql`alerta_expectativa = ${base.alerta}`);
+    }
+    if (input.cienteExpectativa !== undefined) setClauses.push(sql`ciente_expectativa = ${base.ciente}`);
+    if (input.cep !== undefined) setClauses.push(sql`cep = ${base.cep}`);
+    if (input.endereco !== undefined) setClauses.push(sql`endereco = ${base.endereco}`);
+    if (input.cidade !== undefined) setClauses.push(sql`cidade = ${base.cidade}`);
+    if (input.uf !== undefined) setClauses.push(sql`uf = ${base.uf}`);
+    if (input.latitude !== undefined) setClauses.push(sql`latitude = ${base.latitude}`);
+    if (input.longitude !== undefined) setClauses.push(sql`longitude = ${base.longitude}`);
+    if (input.observacoes !== undefined) setClauses.push(sql`observacoes = ${base.observacoes}`);
+    if (input.perfilId !== undefined) {
+      setClauses.push(sql`perfil_id = ${base.perfilId}::uuid`);
+      setClauses.push(sql`vendedor_id = ${base.perfilId}::uuid`);
+    }
+    if (input.fotos !== undefined) setClauses.push(sql`fotos = ${base.fotos}::jsonb`);
+    if (input.status !== undefined) setClauses.push(sql`status = ${base.status}`);
+    if (input.documento_crlv_url !== undefined) setClauses.push(sql`documento_crlv_url = ${base.documento_crlv_url}`);
+
     await d.execute(sql`
-      UPDATE veiculos SET placa = ${base.placa}, marca = ${base.marca}, modelo = ${base.modelo},
-        versao = ${base.versao}, cor = ${base.cor}, km = ${base.km}, ano_fabricacao = ${base.anoFabricacao},
-        ano_modelo = ${base.anoModelo}, combustivel = ${base.combustivel}, cambio = ${base.cambio},
-        cliente_id = ${base.clienteId}, valor_fipe = ${base.fipe}, valor_interesse_cliente = ${base.interesse},
-        tipo_expectativa = ${base.tipoExpectativa}, percentual_sobre_fipe = ${base.percentual},
-        alerta_expectativa = ${base.alerta}, ciente_expectativa = ${base.ciente}, cep = ${base.cep},
-        endereco = ${base.endereco}, cidade = ${base.cidade}, uf = ${base.uf}, latitude = ${base.latitude},
-        longitude = ${base.longitude}, observacoes = ${base.observacoes}, atualizado_em = now()
+      UPDATE veiculos SET ${sql.join(setClauses, sql`, `)}
       WHERE id = ${input.id};
     `);
     await registrarLog({ entidade: "veiculo", entidadeId: input.id, acao: "ATUALIZADO", detalhe: `Placa ${placa}` });
