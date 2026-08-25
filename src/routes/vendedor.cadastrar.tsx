@@ -435,6 +435,10 @@ function CadastrarVeiculo() {
           etapas={ETAPAS}
           titulo="Cadastrar veículo"
           subtitulo="Preencha em etapas. Seu progresso é salvo automaticamente."
+          onStepClick={(nextStep) => {
+            setStep(nextStep);
+            window.scrollTo(0, 0);
+          }}
         />
       </div>
 

@@ -7,6 +7,7 @@ interface EtapaProps {
   etapas: string[];
   titulo?: string;
   subtitulo?: string;
+  onStepClick?: (step: number) => void;
 }
 
 export function EtapaProgresso({
@@ -15,6 +16,7 @@ export function EtapaProgresso({
   etapas,
   titulo = "Complete seu cadastro",
   subtitulo = "Precisamos dessas informações para validar sua identidade e dar segurança às negociações.",
+  onStepClick,
 }: EtapaProps) {
   const progress = (currentStep / totalSteps) * 100;
 
@@ -37,6 +39,36 @@ export function EtapaProgresso({
         />
       </div>
 
+      {/* Indicadores de etapa (Mobile) */}
+      <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden">
+        {etapas.map((label, idx) => {
+          const stepNum = idx + 1;
+          const isCompleted = stepNum < currentStep;
+          const isCurrent = stepNum === currentStep;
+          const isClickable = typeof onStepClick === "function";
+
+          return (
+            <button
+              key={`mobile-${label}`}
+              type="button"
+              onClick={() => onStepClick?.(stepNum)}
+              disabled={!isClickable}
+              className={cn(
+                "shrink-0 rounded-full border px-3 py-1.5 text-[10px] font-bold uppercase tracking-tight transition-colors",
+                isCurrent
+                  ? "border-teal-300 bg-teal-400 text-teal-950"
+                  : isCompleted
+                    ? "border-teal-700 bg-teal-900 text-teal-200"
+                    : "border-teal-900 bg-teal-950/40 text-teal-600",
+                isClickable && "cursor-pointer"
+              )}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Indicadores de etapa (Desktop) */}
       <div
         className="hidden lg:grid gap-2"
@@ -46,20 +78,31 @@ export function EtapaProgresso({
           const stepNum = idx + 1;
           const isCompleted = stepNum < currentStep;
           const isCurrent = stepNum === currentStep;
+          const isClickable = typeof onStepClick === "function";
 
           return (
-            <div key={label} className="flex flex-col gap-1.5">
+            <button
+              key={label}
+              type="button"
+              onClick={() => onStepClick?.(stepNum)}
+              disabled={!isClickable}
+              className={cn(
+                "flex flex-col gap-1.5 text-left",
+                isClickable && "cursor-pointer"
+              )}
+            >
               <div className={cn(
                 "h-1 rounded-full transition-colors",
                 isCompleted || isCurrent ? "bg-teal-400" : "bg-teal-900"
               )} />
               <span className={cn(
-                "text-[10px] font-bold uppercase tracking-tight",
-                isCurrent ? "text-white" : isCompleted ? "text-teal-400" : "text-teal-700"
+                "text-[10px] font-bold uppercase tracking-tight transition-colors",
+                isCurrent ? "text-white" : isCompleted ? "text-teal-400" : "text-teal-700",
+                isClickable && "hover:text-white"
               )}>
                 {label}
               </span>
-            </div>
+            </button>
           );
         })}
       </div>
