@@ -441,16 +441,42 @@ export async function salvarVeiculo(input: VeiculoInput) {
     documento_crlv_url: input.documento_crlv_url || null,
   };
 
+  const fotosAtualizadas =
+    input.fotos !== undefined
+      ? typeof input.fotos === "string"
+        ? input.fotos
+        : JSON.stringify(input.fotos ?? [])
+      : undefined;
+  const statusAtualizado = input.status ? input.status.toUpperCase() : undefined;
+
   if (input.id) {
     await d.execute(sql`
       UPDATE veiculos SET placa = ${base.placa}, marca = ${base.marca}, modelo = ${base.modelo},
-        versao = ${base.versao}, cor = ${base.cor}, km = ${base.km}, ano_fabricacao = ${base.anoFabricacao},
-        ano_modelo = ${base.anoModelo}, combustivel = ${base.combustivel}, cambio = ${base.cambio},
-        cliente_id = ${base.clienteId}, valor_fipe = ${base.fipe}, valor_interesse_cliente = ${base.interesse},
-        tipo_expectativa = ${base.tipoExpectativa}, percentual_sobre_fipe = ${base.percentual},
-        alerta_expectativa = ${base.alerta}, ciente_expectativa = ${base.ciente}, cep = ${base.cep},
-        endereco = ${base.endereco}, cidade = ${base.cidade}, uf = ${base.uf}, latitude = ${base.latitude},
-        longitude = ${base.longitude}, observacoes = ${base.observacoes}, atualizado_em = now()
+        versao = CASE WHEN ${input.versao !== undefined} THEN ${base.versao} ELSE versao END,
+        cor = CASE WHEN ${input.cor !== undefined} THEN ${base.cor} ELSE cor END,
+        km = CASE WHEN ${input.km !== undefined} THEN ${base.km} ELSE km END,
+        ano_fabricacao = CASE WHEN ${input.anoFabricacao !== undefined} THEN ${base.anoFabricacao} ELSE ano_fabricacao END,
+        ano_modelo = CASE WHEN ${input.anoModelo !== undefined} THEN ${base.anoModelo} ELSE ano_modelo END,
+        combustivel = CASE WHEN ${input.combustivel !== undefined} THEN ${base.combustivel} ELSE combustivel END,
+        cambio = CASE WHEN ${input.cambio !== undefined} THEN ${base.cambio} ELSE cambio END,
+        cliente_id = CASE WHEN ${input.clienteId !== undefined} THEN ${base.clienteId} ELSE cliente_id END,
+        valor_fipe = CASE WHEN ${input.valorFipe !== undefined} THEN ${base.fipe} ELSE valor_fipe END,
+        valor_interesse_cliente = CASE WHEN ${input.valorInteresseCliente !== undefined} THEN ${base.interesse} ELSE valor_interesse_cliente END,
+        tipo_expectativa = CASE WHEN ${input.tipoExpectativa !== undefined} THEN ${base.tipoExpectativa} ELSE tipo_expectativa END,
+        percentual_sobre_fipe = CASE WHEN ${input.valorFipe !== undefined || input.valorInteresseCliente !== undefined} THEN ${base.percentual} ELSE percentual_sobre_fipe END,
+        alerta_expectativa = CASE WHEN ${input.valorFipe !== undefined || input.valorInteresseCliente !== undefined} THEN ${base.alerta} ELSE alerta_expectativa END,
+        ciente_expectativa = CASE WHEN ${input.cienteExpectativa !== undefined} THEN ${base.ciente} ELSE ciente_expectativa END,
+        cep = CASE WHEN ${input.cep !== undefined} THEN ${base.cep} ELSE cep END,
+        endereco = CASE WHEN ${input.endereco !== undefined} THEN ${base.endereco} ELSE endereco END,
+        cidade = CASE WHEN ${input.cidade !== undefined} THEN ${base.cidade} ELSE cidade END,
+        uf = CASE WHEN ${input.uf !== undefined} THEN ${base.uf} ELSE uf END,
+        latitude = CASE WHEN ${input.latitude !== undefined} THEN ${base.latitude} ELSE latitude END,
+        longitude = CASE WHEN ${input.longitude !== undefined} THEN ${base.longitude} ELSE longitude END,
+        observacoes = CASE WHEN ${input.observacoes !== undefined} THEN ${base.observacoes} ELSE observacoes END,
+        fotos = CASE WHEN ${fotosAtualizadas !== undefined} THEN ${fotosAtualizadas}::jsonb ELSE fotos END,
+        status = CASE WHEN ${statusAtualizado !== undefined} THEN ${statusAtualizado} ELSE status END,
+        documento_crlv_url = CASE WHEN ${input.documento_crlv_url !== undefined} THEN ${base.documento_crlv_url} ELSE documento_crlv_url END,
+        atualizado_em = now()
       WHERE id = ${input.id};
     `);
     await registrarLog({ entidade: "veiculo", entidadeId: input.id, acao: "ATUALIZADO", detalhe: `Placa ${placa}` });
