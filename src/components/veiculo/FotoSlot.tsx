@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 import { Camera, Check, Trash2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { compressImage } from "@/components/vistoria/ImageCompressor";
+import { toast } from "sonner";
 
 interface FotoSlotProps {
   label: string;
@@ -20,8 +22,9 @@ export function FotoSlot({ label, dica, value, onChange }: FotoSlotProps) {
     setCarregando(true);
     
     try {
+      const comprimida = await compressImage(file, 1280, 0.65);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", comprimida, `${label.toLowerCase().replace(/\s+/g, "-")}.jpg`);
 
       const response = await fetch("/api/public/upload", {
         method: "POST",
@@ -34,7 +37,9 @@ export function FotoSlot({ label, dica, value, onChange }: FotoSlotProps) {
       onChange(data.url);
     } catch (error) {
       console.error("Erro ao subir foto:", error);
+      toast.error("Não foi possível enviar essa foto. Tente novamente.");
     } finally {
+      if (inputRef.current) inputRef.current.value = "";
       setCarregando(false);
     }
   };
