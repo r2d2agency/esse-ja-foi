@@ -22,6 +22,7 @@ import { FotoSlot } from '@/components/veiculo/FotoSlot';
 import { OpcaoBotoes } from '@/components/veiculo/OpcaoBotoes';
 import { useAuth } from '@/hooks/use-auth';
 import { cadastrarMeuVeiculoFn, listarMeusVeiculosFn } from '@/lib/vendedor.functions';
+import { getOnboardingStatusFn } from '@/lib/onboarding.functions';
 import { maskPlaca, formatCurrency, buscarCep, maskCep } from '@/lib/brasil';
 import { montarEtapas, percentual } from '@/components/vendedor/ProgressoCadastro';
 import { TODAS_MARCAS, MARCAS_POPULARES, MODELOS_POR_MARCA, CORES, COMBUSTIVEIS, CAMBIOS, PORTAS, UFS, RELACOES_PROPRIETARIO, BANCOS_COMUNS } from '@/lib/constants-veiculos';
@@ -170,6 +171,7 @@ function CadastrarVeiculo() {
   const search = useSearch({ from: '/vendedor/cadastrar' });
   const salvarVeiculo = useServerFn(cadastrarMeuVeiculoFn);
   const listar = useServerFn(listarMeusVeiculosFn);
+  const getOnboardingStatus = useServerFn(getOnboardingStatusFn);
 
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<Estado>(INICIAL);
@@ -190,8 +192,22 @@ function CadastrarVeiculo() {
     queryFn: () => listar({ data: { perfilId: user?.id || '' } }),
     enabled: !!user?.id,
   });
+  const { data: onboardingData } = useQuery({
+    queryKey: ['onboarding-status', user?.id],
+    queryFn: () => getOnboardingStatus({ data: { perfilId: user?.id || '' } }),
+    enabled: !!user?.id,
+  });
   const profile = (data as any)?.profile || {};
-  const cadastroLiberado = profile.cadastro_completo === true || percentual(montarEtapas(profile)) >= 80;
+  const onboardingEtapas = ((onboardingData as any)?.etapas || {}) as Record<string, string>;
+  const cadastroLiberado = Object.keys(onboardingEtapas).length > 0
+    ? Object.values(onboardingEtapas).every((status) => status === 'CONCLUIDO')
+    : profile.cadastro_completo === true || percentual(montarEtapas(profile)) >= 80;
+  const pendenciasCadastro = [
+    onboardingEtapas.dados_pessoais !== 'CONCLUIDO' ? 'Dados pessoais' : null,
+    onboardingEtapas.endereco !== 'CONCLUIDO' ? 'Endereço e comprovante' : null,
+    onboardingEtapas.documentos !== 'CONCLUIDO' ? 'Documentos (CNH e CRLV)' : null,
+    onboardingEtapas.validacao !== 'CONCLUIDO' ? 'Selfie de validação' : null,
+  ].filter(Boolean) as string[];
 
   const set = (patch: Partial<Estado>) => setForm((f) => ({ ...f, ...patch }));
   const montarPayloadVeiculo = (status: string) => ({
@@ -320,45 +336,30 @@ function CadastrarVeiculo() {
     }
     setBuscando(true);
     setVeiculoEncontrado(null);
-    // Estrutura pronta para integração futura com API de consulta veicular.
-    await new Promise((r) => setTimeout(r, 1200));
-    
-    // Simulação de preenchimento automático via placa desativada a pedido do usuário
-    /* 
-    set({
-      marca: 'Volkswagen',
-      modelo: 'T-Cross',
-      versao: 'Highline 250 TSI',
-      anoFabricacao: '2023',
-      anoModelo: '2024',
-      combustivel: 'Flex',
-      cambio: 'Automático',
-      portas: '4',
-      cor: 'Branco',
-    });
-    */
 
     setBuscando(false);
     setBuscaFeita(true);
     toast.success("Dados do veículo localizados!");
-    avancar();
+    void avancar();
   };
 
 
   const avancar = async () => {
-    // Tenta salvar o progresso parcial no banco sempre que avançar de etapa
-    if (user?.id) {
-      try {
-        const res: any = await salvarVeiculo({
-          data: montarPayloadVeiculo('RASCUNHO'),
-        });
-        if (res?.id) setIdExistente(res.id);
-      } catch (e) {
-        console.error("Erro ao salvar rascunho parcial:", e);
-      }
-    }
     setStep((s) => Math.min(7, s + 1));
     window.scrollTo(0, 0);
+
+    // Mantemos o salvamento em background para a transição de etapa ficar imediata.
+    if (user?.id) {
+      void salvarVeiculo({
+        data: montarPayloadVeiculo('RASCUNHO'),
+      })
+        .then((res: any) => {
+          if (res?.id) setIdExistente(res.id);
+        })
+        .catch((e) => {
+          console.error("Erro ao salvar rascunho parcial:", e);
+        });
+    }
   };
   const voltar = () => { setStep((s) => Math.max(1, s - 1)); window.scrollTo(0, 0); };
 
@@ -833,7 +834,9 @@ function CadastrarVeiculo() {
                   Seu veículo está quase pronto, mas precisamos concluir a validação do seu cadastro antes de enviá-lo para análise.
                 </p>
                 <p className="mt-1 text-sm text-amber-700">
-                  Você precisa enviar todos os documentos obrigatórios no seu perfil (CNH, Selfie, Comprovante de Residência).
+                  {pendenciasCadastro.length > 0
+                    ? `Pendências encontradas: ${pendenciasCadastro.join(', ')}.`
+                    : 'Você precisa concluir as etapas obrigatórias do seu perfil antes de enviar o veículo.'}
                 </p>
                 <Button onClick={() => navigate({ to: '/vendedor/onboarding' })} className="mt-4 h-11 rounded-xl bg-amber-500 font-bold text-white hover:bg-amber-600">
                   Resolver pendências do cadastro

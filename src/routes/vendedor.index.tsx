@@ -66,6 +66,8 @@ function DashboardVendedor() {
   const pct = profile.progresso || 0;
   const completo = profile.cadastroCompleto || pct === 100;
   const primeiroNome = user?.nome?.split(' ')[0] || 'vendedor';
+  const complianceStatus = profile.complianceStatus;
+  const motivoPendencia = profile.motivoPendencia;
 
   return (
     <div className="space-y-4 lg:space-y-6">
@@ -100,7 +102,7 @@ function DashboardVendedor() {
       <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
         {/* Card cadastro */}
         <section className="rounded-2xl border border-slate-200 bg-white p-4 lg:p-6">
-          {profile.status_compliance === 'APROVADO' ? (
+          {complianceStatus === 'APROVADO' ? (
             <div className="flex items-center gap-3">
               <CheckCircle2 className="h-6 w-6 text-emerald-600" />
               <div>
@@ -108,14 +110,14 @@ function DashboardVendedor() {
                 <p className="text-sm text-slate-500">Sua conta está ativa e pronta para operar.</p>
               </div>
             </div>
-          ) : profile.status_compliance === 'PENDENCIA' ? (
+          ) : complianceStatus === 'PENDENCIA' ? (
             <>
               <div className="flex items-start justify-between gap-3">
                 <h2 className="text-lg font-bold text-slate-900">Precisamos de algumas informações</h2>
                 <StatusBadge status="aguardando" label="Pendência" />
               </div>
               <p className="mt-1.5 text-sm text-slate-500">
-                {profile.compliance_motivo_pendencia || "Existem itens no seu cadastro que precisam de correção."}
+                {motivoPendencia || "Existem itens no seu cadastro que precisam de correção."}
               </p>
               <Button
                 onClick={() => navigate({ to: '/vendedor/onboarding' })}
@@ -124,16 +126,16 @@ function DashboardVendedor() {
                 Resolver pendência
               </Button>
             </>
-          ) : (profile.status_compliance === 'AGUARDANDO_ANALISE' || profile.status_compliance === 'EM_ANALISE') ? (
+          ) : (complianceStatus === 'AGUARDANDO_ANALISE' || complianceStatus === 'EM_ANALISE') ? (
             <>
               <div className="flex items-start justify-between gap-3">
                 <h2 className="text-lg font-bold text-slate-900">
-                  {profile.status_compliance === 'EM_ANALISE' ? 'Cadastro em análise' : 'Cadastro enviado para análise'}
+                  {complianceStatus === 'EM_ANALISE' ? 'Cadastro em análise' : 'Cadastro enviado para análise'}
                 </h2>
                 <StatusBadge status="analise" />
               </div>
               <p className="mt-1.5 text-sm text-slate-500">
-                {profile.status_compliance === 'EM_ANALISE' 
+                {complianceStatus === 'EM_ANALISE'
                   ? 'Nossa equipe já iniciou a análise das suas informações.' 
                   : 'Solicitação de cadastro enviada com sucesso, aguardando aprovação.'}
               </p>
@@ -143,11 +145,11 @@ function DashboardVendedor() {
                     <span className="text-sm text-slate-600 font-medium">Cadastro 100% concluído</span>
                  </div>
                  <div className="flex items-center gap-3">
-                    <div className={`h-6 w-6 flex items-center justify-center rounded-full ${profile.status_compliance === 'EM_ANALISE' ? 'bg-teal-600 text-white' : 'bg-teal-100 text-teal-700'} text-[10px] ${profile.status_compliance === 'EM_ANALISE' ? '' : 'animate-pulse'}`}>
-                      {profile.status_compliance === 'EM_ANALISE' ? <CheckCircle2 className="w-3 h-3" /> : '●'}
+                    <div className={`h-6 w-6 flex items-center justify-center rounded-full ${complianceStatus === 'EM_ANALISE' ? 'bg-teal-600 text-white' : 'bg-teal-100 text-teal-700'} text-[10px] ${complianceStatus === 'EM_ANALISE' ? '' : 'animate-pulse'}`}>
+                      {complianceStatus === 'EM_ANALISE' ? <CheckCircle2 className="w-3 h-3" /> : '●'}
                     </div>
-                    <span className={`text-sm ${profile.status_compliance === 'EM_ANALISE' ? 'text-slate-600 font-medium' : 'text-slate-900 font-bold'}`}>
-                      {profile.status_compliance === 'EM_ANALISE' ? 'Em análise' : 'Aguardando aprovação'}
+                    <span className={`text-sm ${complianceStatus === 'EM_ANALISE' ? 'text-slate-600 font-medium' : 'text-slate-900 font-bold'}`}>
+                      {complianceStatus === 'EM_ANALISE' ? 'Em análise' : 'Aguardando aprovação'}
                     </span>
                  </div>
                  <div className="flex items-center gap-3">

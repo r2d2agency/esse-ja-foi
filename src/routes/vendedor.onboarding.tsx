@@ -161,16 +161,14 @@ function VendedorOnboardingPage() {
         }
       }
 
-      if (perfil.cadastro_completo) {
-        setStep(5);
-      } else if (progressoInfo.progresso === 100) setStep(5);
+      if (progressoInfo.progresso === 100) setStep(5);
       else if (progressoInfo.etapas.validacao === "CONCLUIDO") setStep(5);
       else if (progressoInfo.etapas.documentos === "CONCLUIDO") setStep(4);
       else if (progressoInfo.etapas.endereco === "CONCLUIDO") setStep(3);
       else if (progressoInfo.etapas.dados_pessoais === "CONCLUIDO") setStep(2);
       else setStep(1);
     }
-  }, [progressoInfo, perfil.cadastro_completo, perfil.status_compliance]);
+  }, [progressoInfo, perfil.status_compliance]);
 
   const DOCS_OBRIGATORIOS: { label: string; ok: boolean }[] = [
     { label: "CNH (frente)", ok: !!files.cnhFrente },
@@ -436,21 +434,7 @@ function VendedorOnboardingPage() {
               </ul>
             </div>
             
-            <div className="space-y-4 pt-6 text-left max-w-sm mx-auto">
-              <div className="flex items-center space-x-2">
-                <input type="checkbox" id="terms" checked={agreedTerms} onChange={e => setAgreedTerms(e.target.checked)} className="rounded text-teal-600 focus:ring-teal-500 h-4 w-4" />
-                <Label htmlFor="terms" className="text-xs text-slate-600 cursor-pointer">Li e aceito os Termos de Uso.</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input type="checkbox" id="privacy" checked={agreedPrivacy} onChange={e => setAgreedPrivacy(e.target.checked)} className="rounded text-teal-600 focus:ring-teal-500 h-4 w-4" />
-                <Label htmlFor="privacy" className="text-xs text-slate-600 cursor-pointer">Aceito a Política de Privacidade.</Label>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 mt-4">
-              <Button onClick={handleFinalizar} disabled={isSubmitting || !agreedTerms || !agreedPrivacy} className="bg-teal-600 hover:bg-teal-700">
-                {isSubmitting ? "Finalizando..." : "Finalizar Cadastro"}
-              </Button>
+            <div className="flex flex-col gap-3 mt-6">
               <Button onClick={() => setStep(1)} variant="outline">
                 <RotateCcw className="mr-2 h-4 w-4" /> Voltar e completar
               </Button>
