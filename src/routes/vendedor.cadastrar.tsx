@@ -287,9 +287,8 @@ function CadastrarVeiculo() {
     return () => clearTimeout(t);
   }, [form]);
 
-  // Efeito para salvar fotos no banco imediatamente ao mudar
+  // Sincroniza o rascunho inteiro com o banco para não perder dados entre etapas.
   useEffect(() => {
-    // Só sincroniza se já foi hidratado e temos um ID (ou se for rascunho inicial com perfil logado)
     if (!hidratado.current || !user?.id) return;
     
     const sincronizarComBanco = async () => {
@@ -306,13 +305,13 @@ function CadastrarVeiculo() {
           setIdExistente(res.id);
         }
       } catch (e) {
-        console.error("Erro ao sincronizar fotos/documentos:", e);
+        console.error("Erro ao sincronizar rascunho:", e);
       }
     };
 
     const t = setTimeout(sincronizarComBanco, 1000);
     return () => clearTimeout(t);
-  }, [form.fotos, form.crlv, idExistente, user?.id]);
+  }, [form, idExistente, user?.id]);
 
   const buscarPlaca = async () => {
     if (soDigitos(form.placa).length + form.placa.replace(/[^A-Z]/g, '').length < 7) {
