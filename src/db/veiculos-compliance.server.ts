@@ -48,38 +48,24 @@ export function calcularProgressoVeiculo(v: any) {
  */
 export function canReleaseForInspection(v: any) {
   const progresso = calcularProgressoVeiculo(v);
+  const details = {
+    compliance: v.compliance_status === 'APROVADO',
+    contrato: v.contrato_status === 'ASSINADO',
+    dados: progresso.dadosCadastrais.isCompleto,
+    crlv: v.documento_crlv_status === 'APROVADO',
+    fotos: progresso.fotos.isCompleto,
+    vendedor: !!v.vendedor_nome
+  };
   
   // Se não houver vendedor vinculado, não pode liberar
-  if (!v.vendedor_nome) {
-    return {
-      ready: false,
-      details: {
-        compliance: false,
-        contrato: false,
-        dados: progresso.dadosCadastrais.isCompleto,
-        crlv: v.documento_crlv_status === 'APROVADO',
-        fotos: progresso.fotos.isCompleto,
-        vendedor: false
-      }
-    };
+  if (!details.vendedor) {
+    return { ready: false, details };
   }
 
-  // Lógica de liberação flexível para o admin conseguir testar
-  const isReady = (
-    progresso.dadosCadastrais.isCompleto &&
-    progresso.fotos.isCompleto &&
-    (v.documento_crlv_status === 'APROVADO' || v.status_analise === 'EM_ANALISE' || v.status_analise === 'AGUARDANDO_ANALISE')
-  );
+  const isReady = Object.values(details).every(Boolean);
 
   return {
     ready: isReady,
-    details: {
-      compliance: v.compliance_status === 'APROVADO',
-      contrato: v.contrato_status === 'ASSINADO',
-      dados: progresso.dadosCadastrais.isCompleto,
-      crlv: v.documento_crlv_status === 'APROVADO',
-      fotos: progresso.fotos.isCompleto,
-      vendedor: true
-    }
+    details
   };
 }

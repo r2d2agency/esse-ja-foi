@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FileUpload } from "@/components/onboarding/FileUpload";
+import { FileUpload, type UploadStatus } from "@/components/onboarding/FileUpload";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ComboboxSearch } from "@/components/ui/combobox-search";
 import { maskCep, maskCpf } from "@/utils/masks";
@@ -39,6 +39,22 @@ const ETAPAS_LABELS = ["Dados Pessoais", "Endereço", "Documentos", "Validação
 const ESTADOS_CIVIS = ["Solteiro(a)", "Casado(a)", "Divorciado(a)", "Viúvo(a)", "União Estável"];
 const PROFISSOES = ["Empresário", "Autônomo", "CLT", "Funcionario Público", "Aposentado"];
 const UFS = ["AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"];
+
+function mapStatusToUploadStatus(status?: string | null): UploadStatus {
+  switch (status) {
+    case "APROVADO":
+      return "aprovado";
+    case "AGUARDANDO_ANALISE":
+    case "EM_ANALISE":
+      return "analise";
+    case "REPROVADO":
+    case "NOVO_ENVIO_SOLICITADO":
+    case "PENDENCIA":
+      return "recusado";
+    default:
+      return "vazio";
+  }
+}
 
 export const Route = createFileRoute("/vendedor/onboarding")({
   component: VendedorOnboardingPage,
@@ -178,6 +194,14 @@ function VendedorOnboardingPage() {
     { label: "Selfie de validação", ok: !!files.selfie },
   ];
   const documentosFaltantes = DOCS_OBRIGATORIOS.filter((d) => !d.ok).map((d) => d.label);
+  const pendenciasAbertas = progressoInfo?.pendencias || [];
+  const pendenciasPorDocumento = pendenciasAbertas.reduce((acc: Record<string, any[]>, item: any) => {
+    const key = String(item.documento_tipo || "").toLowerCase();
+    acc[key] = acc[key] || [];
+    acc[key].push(item);
+    return acc;
+  }, {});
+  const onboardingEmPendencia = perfil.status_compliance === 'PENDENCIA' || perfil.status_compliance === 'REPROVADO';
 
   const saveProgress = async (finalizar = false) => {
     setIsSubmitting(true);
@@ -205,6 +229,10 @@ function VendedorOnboardingPage() {
           finalizar
         }
       });
+      const refreshed = await getProfile({ data: { perfilId: user?.id || "" } });
+      if (refreshed.ok && refreshed.perfil) {
+        setPerfil(refreshed.perfil);
+      }
       return true;
     } catch (error: any) {
       toast.error(error.message || "Erro ao salvar progresso.");
@@ -265,6 +293,14 @@ function VendedorOnboardingPage() {
 
   const renderStep1 = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {onboardingEmPendencia && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm font-bold text-amber-900">Seu cadastro voltou para correção.</p>
+          <p className="mt-1 text-sm text-amber-800">
+            Revise os itens reprovados e reenvie os documentos solicitados para uma nova análise.
+          </p>
+        </div>
+      )}
       <div className="space-y-1">
         <h3 className="text-2xl font-black text-slate-900">Conte um pouco mais sobre você</h3>
         <p className="text-slate-500 text-sm">Dados marcados com * são obrigatórios.</p>
@@ -353,8 +389,15 @@ function VendedorOnboardingPage() {
            label="Comprovante de residência *" 
            description="Obrigatório. Conta de luz, água ou telefone de até 3 meses."
            value={files.comprovanteEndereco} 
+           status={mapStatusToUploadStatus(perfil.documento_comprovante_endereco_status)}
            onChange={url => setFiles({...files, comprovanteEndereco: url})} 
          />
+         {pendenciasPorDocumento.comprovante_endereco?.map((pendencia: any) => (
+           <div key={pendencia.id} className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm">
+             <p className="font-semibold text-rose-700">Documento reprovado: {pendencia.motivo}</p>
+             {pendencia.mensagem && <p className="mt-1 text-rose-600">{pendencia.mensagem}</p>}
+           </div>
+         ))}
       </div>
     </div>
   );
@@ -366,16 +409,49 @@ function VendedorOnboardingPage() {
         <p className="text-slate-500 text-sm">Tire fotos nítidas da sua CNH original.</p>
       </div>
       <div className="grid gap-6 md:grid-cols-2">
-         <FileUpload label="CNH — Frente *" value={files.cnhFrente} onChange={url => setFiles({...files, cnhFrente: url})} />
-         <FileUpload label="CNH — Verso *" value={files.cnhVerso} onChange={url => setFiles({...files, cnhVerso: url})} />
+         <div className="space-y-3">
+           <FileUpload
+             label="CNH — Frente *"
+             value={files.cnhFrente}
+             status={mapStatusToUploadStatus(perfil.documento_cnh_status)}
+             onChange={url => setFiles({...files, cnhFrente: url})}
+           />
+           {pendenciasPorDocumento.cnh_frente?.map((pendencia: any) => (
+             <div key={pendencia.id} className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm">
+               <p className="font-semibold text-rose-700">CNH frente reprovada: {pendencia.motivo}</p>
+               {pendencia.mensagem && <p className="mt-1 text-rose-600">{pendencia.mensagem}</p>}
+             </div>
+           ))}
+         </div>
+         <div className="space-y-3">
+           <FileUpload
+             label="CNH — Verso *"
+             value={files.cnhVerso}
+             status={mapStatusToUploadStatus(perfil.documento_cnh_verso_status)}
+             onChange={url => setFiles({...files, cnhVerso: url})}
+           />
+           {pendenciasPorDocumento.cnh_verso?.map((pendencia: any) => (
+             <div key={pendencia.id} className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm">
+               <p className="font-semibold text-rose-700">CNH verso reprovada: {pendencia.motivo}</p>
+               {pendencia.mensagem && <p className="mt-1 text-rose-600">{pendencia.mensagem}</p>}
+             </div>
+           ))}
+         </div>
       </div>
       <div className="pt-4 border-t border-slate-100">
          <FileUpload 
            label="Documento do Veículo (CRLV-e) *" 
            description="Obrigatório para concluir o cadastro."
            value={files.crlv} 
+           status={mapStatusToUploadStatus(perfil.documento_crlv_status)}
            onChange={url => setFiles({...files, crlv: url})} 
          />
+         {pendenciasPorDocumento.crlv?.map((pendencia: any) => (
+           <div key={pendencia.id} className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm">
+             <p className="font-semibold text-rose-700">CRLV reprovado: {pendencia.motivo}</p>
+             {pendencia.mensagem && <p className="mt-1 text-rose-600">{pendencia.mensagem}</p>}
+           </div>
+         ))}
       </div>
     </div>
   );
@@ -406,7 +482,18 @@ function VendedorOnboardingPage() {
             <li>• Sem filtros</li>
          </ul>
       </div>
-      <FileUpload label="Selfie de Validação *" value={files.selfie} onChange={url => setFiles({...files, selfie: url})} />
+      <FileUpload
+        label="Selfie de Validação *"
+        value={files.selfie}
+        status={mapStatusToUploadStatus(perfil.documento_selfie_status)}
+        onChange={url => setFiles({...files, selfie: url})}
+      />
+      {pendenciasPorDocumento.selfie?.map((pendencia: any) => (
+        <div key={pendencia.id} className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm">
+          <p className="font-semibold text-rose-700">Selfie reprovada: {pendencia.motivo}</p>
+          {pendencia.mensagem && <p className="mt-1 text-rose-600">{pendencia.mensagem}</p>}
+        </div>
+      ))}
     </div>
   );
 
@@ -415,7 +502,37 @@ function VendedorOnboardingPage() {
     
     return (
       <div className="space-y-6 text-center py-8">
-        {isPendente ? (
+        {onboardingEmPendencia ? (
+          <>
+            <div className="h-20 w-20 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="h-10 w-10 text-rose-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900">Seu cadastro precisa de ajustes</h2>
+            <p className="text-slate-600">O admin reprovou um ou mais documentos. Corrija os itens abaixo e reenvie.</p>
+            <div className="bg-rose-50 border border-rose-200 p-4 rounded-lg text-left max-w-xl mx-auto">
+              <h4 className="text-sm font-semibold text-rose-800 flex items-center gap-2 mb-2">
+                <AlertTriangle className="h-4 w-4" /> Itens reprovados:
+              </h4>
+              <ul className="text-sm text-rose-700 space-y-2">
+                {pendenciasAbertas.length > 0 ? (
+                  pendenciasAbertas.map((pendencia: any) => (
+                    <li key={pendencia.id}>
+                      <strong>{String(pendencia.documento_tipo).replaceAll("_", " ")}</strong>: {pendencia.motivo}
+                      {pendencia.mensagem ? ` - ${pendencia.mensagem}` : ""}
+                    </li>
+                  ))
+                ) : (
+                  <li>{progressoInfo?.motivoPendencia || "Seu cadastro possui pendências e precisa de correção."}</li>
+                )}
+              </ul>
+            </div>
+            <div className="flex flex-col gap-3 mt-6">
+              <Button onClick={() => setStep(1)} variant="outline">
+                <RotateCcw className="mr-2 h-4 w-4" /> Voltar e corrigir cadastro
+              </Button>
+            </div>
+          </>
+        ) : isPendente ? (
           <>
             <div className="h-20 w-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Clock className="h-10 w-10 text-amber-600" />

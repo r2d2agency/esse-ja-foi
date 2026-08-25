@@ -199,12 +199,21 @@ export const atualizarPerfilVendedorFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { db } = await import("@/db/index");
     if (!db) throw new Error("Banco de dados indisponível");
+    const { ensureVendedoresSchema } = await import("@/db/vendedores-compliance.server");
+    await ensureVendedoresSchema();
 
     if (data.finalizar) {
       const rows = (await db.execute(sql`
         SELECT * FROM profiles WHERE id = ${data.perfilId}::uuid
       `)) as any;
       const p = rows.rows?.[0] || rows[0] || {};
+      const pendenciasRows = (await db.execute(sql`
+        SELECT documento_tipo, motivo
+        FROM compliance_pendencias
+        WHERE vendedor_id = ${data.perfilId}::uuid
+          AND status IN ('PENDENTE', 'REPROVADO')
+      `)) as any;
+      const pendenciasAbertas = pendenciasRows.rows || pendenciasRows || [];
       
       const { calcularProgressoVendedor } = await import("@/db/vendedores-compliance.server");
       // Mesclar dados atuais com os novos dados recebidos para calcular o progresso real
@@ -244,9 +253,14 @@ export const atualizarPerfilVendedorFn = createServerFn({ method: "POST" })
         throw new Error(`Cadastro incompleto (${status.progresso}%). Itens pendentes: ${faltando.join(", ")}`);
       }
 
+      if (pendenciasAbertas.length > 0) {
+        throw new Error(`Existem documentos reprovados para corrigir: ${pendenciasAbertas.map((p: any) => p.documento_tipo).join(", ")}`);
+      }
+
     }
 
     const setClauses: any[] = [];
+    const documentosReenviados: string[] = [];
     
     if (data.cpf !== undefined) setClauses.push(sql`cpf = ${data.cpf}`);
     if (data.dataNascimento !== undefined) setClauses.push(sql`data_nascimento = ${data.dataNascimento}`);
@@ -260,16 +274,47 @@ export const atualizarPerfilVendedorFn = createServerFn({ method: "POST" })
     if (data.complemento !== undefined) setClauses.push(sql`complemento = ${data.complemento}`);
     if (data.cidade !== undefined) setClauses.push(sql`cidade = ${data.cidade}`);
     if (data.uf !== undefined) setClauses.push(sql`uf = ${data.uf}`);
-    if (data.cnhUrl !== undefined) setClauses.push(sql`documento_cnh_url = ${data.cnhUrl}`);
-    if (data.cnhVersoUrl !== undefined) setClauses.push(sql`documento_cnh_verso_url = ${data.cnhVersoUrl}`);
-    if (data.crlvUrl !== undefined) setClauses.push(sql`documento_crlv_url = ${data.crlvUrl}`);
-    if (data.selfieUrl !== undefined) setClauses.push(sql`documento_selfie_url = ${data.selfieUrl}`);
-    if (data.comprovanteEnderecoUrl !== undefined) setClauses.push(sql`documento_comprovante_endereco_url = ${data.comprovanteEnderecoUrl}`);
+    if (data.cnhUrl !== undefined) {
+      setClauses.push(sql`documento_cnh_url = ${data.cnhUrl}`);
+      if (data.cnhUrl) {
+        setClauses.push(sql`documento_cnh_status = 'AGUARDANDO_ANALISE'`);
+        documentosReenviados.push('cnh_frente');
+      }
+    }
+    if (data.cnhVersoUrl !== undefined) {
+      setClauses.push(sql`documento_cnh_verso_url = ${data.cnhVersoUrl}`);
+      if (data.cnhVersoUrl) {
+        setClauses.push(sql`documento_cnh_verso_status = 'AGUARDANDO_ANALISE'`);
+        documentosReenviados.push('cnh_verso');
+      }
+    }
+    if (data.crlvUrl !== undefined) {
+      setClauses.push(sql`documento_crlv_url = ${data.crlvUrl}`);
+      if (data.crlvUrl) {
+        setClauses.push(sql`documento_crlv_status = 'AGUARDANDO_ANALISE'`);
+        documentosReenviados.push('crlv');
+      }
+    }
+    if (data.selfieUrl !== undefined) {
+      setClauses.push(sql`documento_selfie_url = ${data.selfieUrl}`);
+      if (data.selfieUrl) {
+        setClauses.push(sql`documento_selfie_status = 'AGUARDANDO_ANALISE'`);
+        documentosReenviados.push('selfie');
+      }
+    }
+    if (data.comprovanteEnderecoUrl !== undefined) {
+      setClauses.push(sql`documento_comprovante_endereco_url = ${data.comprovanteEnderecoUrl}`);
+      if (data.comprovanteEnderecoUrl) {
+        setClauses.push(sql`documento_comprovante_endereco_status = 'AGUARDANDO_ANALISE'`);
+        documentosReenviados.push('comprovante_endereco');
+      }
+    }
     
     if (data.finalizar !== undefined) {
       setClauses.push(sql`cadastro_completo = ${data.finalizar}`);
       if (data.finalizar === true) {
         setClauses.push(sql`status_compliance = 'AGUARDANDO_ANALISE'`);
+        setClauses.push(sql`compliance_motivo_pendencia = null`);
       }
     }
 
@@ -279,6 +324,16 @@ export const atualizarPerfilVendedorFn = createServerFn({ method: "POST" })
       const setClause = sql.join(setClauses, sql`, `);
       await db.execute(sql`
         UPDATE profiles SET ${setClause} WHERE id = ${data.perfilId}::uuid
+      `);
+    }
+
+    if (documentosReenviados.length > 0) {
+      await db.execute(sql`
+        UPDATE compliance_pendencias
+        SET status = 'RESOLVIDA'
+        WHERE vendedor_id = ${data.perfilId}::uuid
+          AND documento_tipo IN (${sql.join(documentosReenviados.map((tipo) => sql`${tipo}`), sql`, `)})
+          AND status IN ('PENDENTE', 'REPROVADO')
       `);
     }
     
@@ -317,11 +372,13 @@ export const obterMeuPerfilFn = createServerFn({ method: "GET" })
     const { ensurePerfilSchema } = await import("@/db/perfil.server");
     await ensurePerfilSchema();
     const rows = await db.execute(sql`
-      SELECT id, nome, email, whatsapp, telefone, cpf, cep, endereco, cidade, uf, role,
+      SELECT id, nome, email, whatsapp, telefone, cpf, cep, endereco, numero, bairro, complemento, cidade, uf, role,
              documento_cnh_url, documento_cnh_verso_url, documento_crlv_url, documento_selfie_url,
              documento_comprovante_endereco_url, cadastro_completo, criado_em,
              data_nascimento, estado_civil, profissao, nome_mae
-
+             , status_compliance, compliance_motivo_pendencia,
+             documento_cnh_status, documento_cnh_verso_status, documento_crlv_status,
+             documento_comprovante_endereco_status, documento_selfie_status
       FROM profiles WHERE id = ${data.perfilId}::uuid LIMIT 1;
     `);
     const perfil = (rows as any).rows?.[0] || (rows as any)[0] || null;

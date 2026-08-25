@@ -22,6 +22,7 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
         p.nome as vendedor_nome, p.email as vendedor_email, p.whatsapp as vendedor_whatsapp,
         p.cpf as vendedor_cpf, 
         p.cadastro_completo as vendedor_cadastro_completo,
+        p.verificado,
         p.status_compliance as compliance_status,
         p.documento_crlv_status,
         p.documento_crlv_url,
@@ -110,10 +111,11 @@ export const atualizarStatusAnaliseFn = createServerFn({ method: "POST" })
     if (data.status === 'PRONTO_PARA_VISTORIA') {
       const vQuery = await db.execute(sql`
         SELECT v.*, p.status_compliance as compliance_status,
-               (SELECT status FROM contratos WHERE veiculo_id = v.id ORDER BY criado_em DESC LIMIT 1) as contrato_status,
+               (SELECT status FROM contratos WHERE vendedor_id = v.perfil_id OR vendedor_id = v.vendedor_id ORDER BY criado_em DESC LIMIT 1) as contrato_status,
+               p.verificado,
                p.documento_crlv_status
         FROM veiculos v 
-        JOIN profiles p ON p.id = v.perfil_id 
+        JOIN profiles p ON p.id = v.perfil_id OR p.id = v.vendedor_id
         WHERE v.id = ${data.veiculoId}::uuid
       `);
       const v = (vQuery as any).rows?.[0] || (vQuery as any)[0];

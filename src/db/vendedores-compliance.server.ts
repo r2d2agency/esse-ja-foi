@@ -16,7 +16,9 @@ export async function ensureVendedoresSchema() {
     ADD COLUMN IF NOT EXISTS cnpj text,
     ADD COLUMN IF NOT EXISTS tipo_pessoa text DEFAULT 'PF',
     ADD COLUMN IF NOT EXISTS documento_cnh_status text DEFAULT 'PENDENTE',
+    ADD COLUMN IF NOT EXISTS documento_cnh_verso_status text DEFAULT 'PENDENTE',
     ADD COLUMN IF NOT EXISTS documento_crlv_status text DEFAULT 'PENDENTE',
+    ADD COLUMN IF NOT EXISTS documento_comprovante_endereco_status text DEFAULT 'PENDENTE',
     ADD COLUMN IF NOT EXISTS documento_selfie_status text DEFAULT 'PENDENTE',
     ADD COLUMN IF NOT EXISTS compliance_motivo_pendencia text,
     ADD COLUMN IF NOT EXISTS compliance_data_analise timestamptz,
@@ -170,8 +172,16 @@ export async function obterDetalheVendedor(id: string) {
   `)) as any;
 
   const veiculos = (await d.execute(sql`
-    SELECT id, placa, marca, modelo, status, criado_em
+    SELECT id, placa, marca, modelo, COALESCE(status_analise, status) as status, criado_em
     FROM veiculos WHERE perfil_id = ${id}::uuid
+  `)) as any;
+
+  const pendencias = (await d.execute(sql`
+    SELECT id, documento_tipo, motivo, mensagem, status, criado_em
+    FROM compliance_pendencias
+    WHERE vendedor_id = ${id}::uuid
+      AND status IN ('PENDENTE', 'REPROVADO')
+    ORDER BY criado_em DESC
   `)) as any;
 
   const progresso = calcularProgressoVendedor(p);
@@ -182,10 +192,20 @@ export async function obterDetalheVendedor(id: string) {
       compliance_status_label: COMPLIANCE_STATUS_LABELS[p.status_compliance] || p.status_compliance
     },
     progresso,
+    pendencias: pendencias.rows || pendencias,
     historico: historico.rows || historico,
     veiculos: veiculos.rows || veiculos
   };
 }
+
+const DOCUMENT_STATUS_COLUMNS: Record<string, string[]> = {
+  cnh: ['documento_cnh_status', 'documento_cnh_verso_status'],
+  cnh_frente: ['documento_cnh_status'],
+  cnh_verso: ['documento_cnh_verso_status'],
+  crlv: ['documento_crlv_status'],
+  comprovante_endereco: ['documento_comprovante_endereco_status'],
+  selfie: ['documento_selfie_status'],
+};
 
 export async function registrarAcaoCompliance(vendedorId: string, autorId: string, acao: string, detalhe?: string) {
   const d = requireDb();
@@ -211,20 +231,85 @@ export async function assumirAnalise(vendedorId: string, responsavelId: string) 
   return { ok: true };
 }
 
-export async function atualizarStatusDocumento(vendedorId: string, documentoTipo: string, status: string, autorId: string) {
+export async function atualizarStatusDocumento(
+  vendedorId: string,
+  documentoTipo: string,
+  status: string,
+  autorId: string,
+  motivo?: string,
+  observacao?: string,
+) {
   const d = requireDb();
-  const col = `documento_${documentoTipo.toLowerCase()}_status`;
+  const tipo = documentoTipo.toLowerCase();
+  const columns = DOCUMENT_STATUS_COLUMNS[tipo];
+  if (!columns?.length) {
+    throw new RegraNegocioError("Tipo de documento inválido.", 400);
+  }
+
+  const setClauses = columns.map((coluna) => sql`${sql.raw(coluna)} = ${status}`);
+  setClauses.push(sql`atualizado_em = now()`);
+  if (status === 'REPROVADO' || status === 'PENDENCIA' || status === 'NOVO_ENVIO_SOLICITADO') {
+    setClauses.push(sql`status_compliance = 'PENDENCIA'`);
+    setClauses.push(sql`cadastro_completo = false`);
+    setClauses.push(sql`compliance_motivo_pendencia = ${motivo || observacao || `Pendência no documento ${documentoTipo.toUpperCase()}`}`);
+  }
+  await d.execute(sql`
+    UPDATE profiles
+    SET ${sql.join(setClauses, sql`, `)}
+    WHERE id = ${vendedorId}::uuid
+  `);
+
+  if (status === 'REPROVADO' || status === 'PENDENCIA' || status === 'NOVO_ENVIO_SOLICITADO') {
+    await d.execute(sql`
+      INSERT INTO compliance_pendencias (vendedor_id, documento_tipo, motivo, mensagem, status)
+      VALUES (
+        ${vendedorId}::uuid,
+        ${tipo},
+        ${motivo || 'Motivo não informado'},
+        ${observacao || null},
+        'PENDENTE'
+      );
+    `);
+  } else if (status === 'APROVADO' || status === 'AGUARDANDO_ANALISE') {
+    await d.execute(sql`
+      UPDATE compliance_pendencias
+      SET status = 'RESOLVIDA'
+      WHERE vendedor_id = ${vendedorId}::uuid
+        AND documento_tipo = ${tipo}
+        AND status IN ('PENDENTE', 'REPROVADO');
+    `);
+  }
   
-  // Usar query parametrizada segura via postgres client ou sql.raw com placeholders
-  // Para TanStack Start, podemos usar db.execute(sql.raw(...)) mas passando os parâmetros corretamente
-  await d.execute(sql.raw(`UPDATE profiles SET ${col} = '${status}', atualizado_em = now() WHERE id = '${vendedorId}'`));
-  
-  await registrarAcaoCompliance(vendedorId, autorId, `DOC_${status}`, `Status do documento ${documentoTipo.toUpperCase()} alterado para ${status}.`);
+  const detalhe = [
+    `Status do documento ${documentoTipo.toUpperCase()} alterado para ${status}.`,
+    motivo ? `Motivo: ${motivo}.` : null,
+    observacao ? `Observação: ${observacao}.` : null,
+  ].filter(Boolean).join(' ');
+  await registrarAcaoCompliance(vendedorId, autorId, `DOC_${status}`, detalhe);
   return { ok: true };
 }
 
 export async function aprovarVendedorCompliance(vendedorId: string, autorId: string) {
   const d = requireDb();
+  const rows = (await d.execute(sql`
+    SELECT * FROM profiles WHERE id = ${vendedorId}::uuid LIMIT 1
+  `)) as any;
+  const perfil = rows.rows?.[0] || rows[0];
+  if (!perfil) throw new RegraNegocioError("Vendedor não encontrado.", 404);
+
+  const progresso = calcularProgressoVendedor(perfil);
+  const documentosAprovados = [
+    perfil.documento_cnh_status,
+    perfil.documento_cnh_verso_status,
+    perfil.documento_crlv_status,
+    perfil.documento_comprovante_endereco_status,
+    perfil.documento_selfie_status,
+  ].every((status) => status === 'APROVADO');
+
+  if (!progresso.isCompleto || !documentosAprovados) {
+    throw new RegraNegocioError("Só é possível aprovar o vendedor com onboarding completo e todos os documentos aprovados.", 400);
+  }
+
   await d.execute(sql`
     UPDATE profiles SET 
       status_compliance = 'APROVADO',

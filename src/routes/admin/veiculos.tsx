@@ -28,6 +28,10 @@ function AdminVeiculosPage() {
   });
 
   const veiculos = res?.data || [];
+  const complianceLabel = (status?: string) => {
+    if (!status) return "Sem compliance";
+    return status.replaceAll("_", " ");
+  };
 
   return (
     <div className="flex flex-col h-full bg-slate-50">
@@ -119,7 +123,12 @@ function AdminVeiculosPage() {
                         </div>
                         <div className="flex flex-col">
                           <span className="text-xs font-bold text-slate-700">{v.vendedor_nome}</span>
-                          <span className="text-[9px] font-black text-green-600 uppercase">Compliance OK</span>
+                          <span className={cn(
+                            "text-[9px] font-black uppercase",
+                            v.compliance_status === 'APROVADO' ? "text-green-600" : "text-amber-600"
+                          )}>
+                            {complianceLabel(v.compliance_status)}
+                          </span>
                         </div>
                       </div>
                     </td>

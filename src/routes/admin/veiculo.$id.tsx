@@ -87,6 +87,15 @@ function DetalheVeiculoAdminPage() {
   const v = res.data;
   console.log("[DetalheVeiculoAdminPage] Veículo:", v);
   const historico = res.historico || [];
+  const complianceAprovado = v.compliance_status === 'APROVADO';
+  const contratoAssinado = v.contrato_status === 'ASSINADO';
+  const vendedorVerificado = v.verificado === true || complianceAprovado;
+  const complianceLabel = v.compliance_status
+    ? String(v.compliance_status).replaceAll('_', ' ')
+    : 'PENDENTE';
+  const contratoLabel = v.contrato_status
+    ? String(v.contrato_status).replaceAll('_', ' ')
+    : 'PENDENTE';
 
   const handleAssumir = async () => {
     if (!user?.id) return;
@@ -324,14 +333,22 @@ function DetalheVeiculoAdminPage() {
                         <div>
                           <p className="text-sm font-black text-slate-950">{v.vendedor_nome}</p>
                           <div className="flex items-center gap-1 mt-0.5">
-                            <ShieldCheck className="h-3 w-3 text-green-600" />
-                            <span className="text-[10px] font-bold text-green-600 uppercase">Verificado</span>
+                            <ShieldCheck className={cn("h-3 w-3", vendedorVerificado ? "text-green-600" : "text-amber-600")} />
+                            <span className={cn("text-[10px] font-bold uppercase", vendedorVerificado ? "text-green-600" : "text-amber-600")}>
+                              {vendedorVerificado ? "Verificado" : "Pendente"}
+                            </span>
                           </div>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-y-3 text-sm">
-                        <div><p className="text-slate-400 font-medium">Compliance</p><p className="font-bold text-teal-600">✓ Aprovado</p></div>
-                        <div><p className="text-slate-400 font-medium">Contrato</p><p className="font-bold text-teal-600">✓ Assinado</p></div>
+                        <div>
+                          <p className="text-slate-400 font-medium">Compliance</p>
+                          <p className={cn("font-bold uppercase", complianceAprovado ? "text-teal-600" : "text-amber-600")}>{complianceLabel}</p>
+                        </div>
+                        <div>
+                          <p className="text-slate-400 font-medium">Contrato</p>
+                          <p className={cn("font-bold uppercase", contratoAssinado ? "text-teal-600" : "text-amber-600")}>{contratoLabel}</p>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -521,11 +538,15 @@ function DetalheVeiculoAdminPage() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                           <span className="text-sm font-bold text-slate-700">Compliance</span>
-                          <span className="text-xs font-black text-green-600 uppercase">✓ Aprovado</span>
+                          <span className={cn("text-xs font-black uppercase", res.validacao?.details?.compliance ? "text-green-600" : "text-amber-600")}>
+                            {res.validacao?.details?.compliance ? 'Aprovado' : complianceLabel}
+                          </span>
                         </div>
                         <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                           <span className="text-sm font-bold text-slate-700">Contrato</span>
-                          <span className="text-xs font-black text-green-600 uppercase">✓ Assinado</span>
+                          <span className={cn("text-xs font-black uppercase", res.validacao?.details?.contrato ? "text-green-600" : "text-amber-600")}>
+                            {res.validacao?.details?.contrato ? 'Assinado' : contratoLabel}
+                          </span>
                         </div>
                       </div>
                     </div>

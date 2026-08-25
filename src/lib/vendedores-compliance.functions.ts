@@ -48,12 +48,21 @@ export const atualizarStatusDocumentoFn = createServerFn({ method: "POST" })
     vendedorId: z.string(),
     documentoTipo: z.string(),
     status: z.string(),
-    autorId: z.string()
+    autorId: z.string(),
+    motivo: z.string().optional(),
+    observacao: z.string().optional(),
   }).parse(d))
   .handler(async ({ data }) => {
     const { atualizarStatusDocumento } = await import("@/db/vendedores-compliance.server");
     try {
-      await atualizarStatusDocumento(data.vendedorId, data.documentoTipo, data.status, data.autorId);
+      await atualizarStatusDocumento(
+        data.vendedorId,
+        data.documentoTipo,
+        data.status,
+        data.autorId,
+        data.motivo,
+        data.observacao,
+      );
       return { ok: true as const };
     } catch (e: any) {
       return { ok: false as const, message: e.message };

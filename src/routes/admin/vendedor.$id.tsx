@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 const BackofficeLayout = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -14,6 +14,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   User, 
   FileText, 
@@ -37,6 +54,17 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+const MOTIVOS_REPROVACAO_DOCUMENTO = [
+  "Documento ilegível",
+  "Foto ruim",
+  "Qualidade ruim",
+  "Documento cortado",
+  "Documento divergente",
+  "Documento vencido",
+  "Selfie não confere",
+  "Comprovante inválido",
+];
+
 export const Route = createFileRoute("/admin/vendedor/$id")({
   component: DetalheVendedorPage,
   loader: async ({ context, params }) => {
@@ -52,6 +80,9 @@ function DetalheVendedorPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("resumo");
   const [selectedDoc, setSelectedDoc] = useState<{ url: string; tipo: string } | null>(null);
+  const [docReprovacao, setDocReprovacao] = useState<{ tipo: string; label: string } | null>(null);
+  const [motivoReprovacao, setMotivoReprovacao] = useState("");
+  const [observacaoReprovacao, setObservacaoReprovacao] = useState("");
 
   const loadVendedor = useServerFn(obterDetalheVendedorFn);
   const assumir = useServerFn(assumirAnaliseFn);
@@ -65,7 +96,19 @@ function DetalheVendedorPage() {
   });
 
   if (!res.ok) return <div className="p-8 text-destructive">Erro: {res.message}</div>;
-  const { perfil, historico, veiculos } = res.data;
+  const { perfil, historico, veiculos, pendencias } = res.data;
+  const complianceBadgeClass = perfil.status_compliance === 'APROVADO'
+    ? "bg-teal-600"
+    : perfil.status_compliance === 'PENDENCIA' || perfil.status_compliance === 'REPROVADO' || perfil.status_compliance === 'BLOQUEADO'
+      ? "bg-red-600"
+      : "bg-amber-500";
+  const documentosPendentes = [
+    perfil.documento_cnh_status !== 'APROVADO' ? 'CNH frente' : null,
+    perfil.documento_cnh_verso_status !== 'APROVADO' ? 'CNH verso' : null,
+    perfil.documento_crlv_status !== 'APROVADO' ? 'CRLV' : null,
+    perfil.documento_comprovante_endereco_status !== 'APROVADO' ? 'Comprovante de residência' : null,
+    perfil.documento_selfie_status !== 'APROVADO' ? 'Selfie com documento' : null,
+  ].filter(Boolean) as string[];
 
   const handleAssumir = async () => {
     if (!user) return;
@@ -85,11 +128,44 @@ function DetalheVendedorPage() {
     if (!user) return;
     const loading = toast.loading("Atualizando status...");
     try {
-      await updateDoc({ data: { vendedorId: id, documentoTipo: tipo, status, autorId: user.id } });
+      const resp = await updateDoc({ data: { vendedorId: id, documentoTipo: tipo, status, autorId: user.id } });
+      if (!resp.ok) throw new Error(resp.message || "Erro ao atualizar documento.");
       toast.success(`Documento ${tipo.toUpperCase()} ${status === 'APROVADO' ? 'aprovado' : 'reprovado'}.`);
       refetch();
-    } catch (e) {
-      toast.error("Erro ao atualizar documento.");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao atualizar documento.");
+    } finally {
+      toast.dismiss(loading);
+    }
+  };
+
+  const handleConfirmarReprovacaoDocumento = async () => {
+    if (!user || !docReprovacao) return;
+    if (!motivoReprovacao) {
+      toast.error("Selecione um motivo para a reprovação.");
+      return;
+    }
+
+    const loading = toast.loading("Registrando reprovação...");
+    try {
+      const resp = await updateDoc({
+        data: {
+          vendedorId: id,
+          documentoTipo: docReprovacao.tipo,
+          status: "REPROVADO",
+          autorId: user.id,
+          motivo: motivoReprovacao,
+          observacao: observacaoReprovacao,
+        }
+      });
+      if (!resp.ok) throw new Error(resp.message || "Erro ao reprovar documento.");
+      toast.success(`${docReprovacao.label} reprovado com sucesso.`);
+      setDocReprovacao(null);
+      setMotivoReprovacao("");
+      setObservacaoReprovacao("");
+      refetch();
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao registrar reprovação.");
     } finally {
       toast.dismiss(loading);
     }
@@ -188,9 +264,9 @@ function DetalheVendedorPage() {
                 <div className="col-span-2">
                   <p className="text-slate-400">Endereço</p>
                   <p className="font-medium">
-                    {perfil.logradouro}, {perfil.numero} {perfil.complemento && `- ${perfil.complemento}`}
+                    {perfil.endereco || "Não informado"}, {perfil.numero || "S/N"} {perfil.complemento && `- ${perfil.complemento}`}
                     <br />
-                    {perfil.bairro} - {perfil.cidade}/{perfil.estado}
+                    {perfil.bairro || "Bairro não informado"} - {perfil.cidade || "Cidade não informada"}/{perfil.uf || "--"}
                     <br />
                     CEP: {perfil.cep}
                   </p>
@@ -205,28 +281,59 @@ function DetalheVendedorPage() {
               <CardContent className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-500">Compliance</span>
-                  <Badge className={
-                    perfil.status_compliance === 'APROVADO' ? "bg-teal-600" : "bg-amber-500"
-                  }>{perfil.compliance_status_label || "AGUARDANDO"}</Badge>
+                  <Badge className={complianceBadgeClass}>{perfil.compliance_status_label || "AGUARDANDO"}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-500">CNH</span>
+                  <span className="text-sm text-slate-500">CNH frente</span>
                   <Badge variant="outline">{perfil.documento_cnh_status || "PENDENTE"}</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-500">CNH verso</span>
+                  <Badge variant="outline">{perfil.documento_cnh_verso_status || "PENDENTE"}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-500">CRLV</span>
                   <Badge variant="outline">{perfil.documento_crlv_status || "PENDENTE"}</Badge>
                 </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-500">Comprovante</span>
+                  <Badge variant="outline">{perfil.documento_comprovante_endereco_status || "PENDENTE"}</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-500">Selfie</span>
+                  <Badge variant="outline">{perfil.documento_selfie_status || "PENDENTE"}</Badge>
+                </div>
               </CardContent>
             </Card>
           </div>
+          {pendencias?.length > 0 && (
+            <Card className="mt-6 border-amber-200 bg-amber-50">
+              <CardHeader>
+                <CardTitle className="text-lg text-amber-900">Pendências abertas para o vendedor</CardTitle>
+                <CardDescription className="text-amber-800">
+                  Esses motivos ficam visíveis para o vendedor ajustar o cadastro e reenviar os documentos.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {pendencias.map((pendencia: any) => (
+                  <div key={pendencia.id} className="rounded-lg border border-amber-200 bg-white p-3">
+                    <p className="text-sm font-semibold text-slate-900">{String(pendencia.documento_tipo).replaceAll("_", " ")}</p>
+                    <p className="text-sm text-amber-800">Motivo: {pendencia.motivo}</p>
+                    {pendencia.mensagem && <p className="text-xs text-slate-600 mt-1">{pendencia.mensagem}</p>}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="documentos" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { label: "CNH", tipo: "cnh", url: perfil.documento_cnh_url, status: perfil.documento_cnh_status },
+              { label: "CNH - Frente", tipo: "cnh_frente", url: perfil.documento_cnh_url, status: perfil.documento_cnh_status },
+              { label: "CNH - Verso", tipo: "cnh_verso", url: perfil.documento_cnh_verso_url, status: perfil.documento_cnh_verso_status },
               { label: "CRLV", tipo: "crlv", url: perfil.documento_crlv_url, status: perfil.documento_crlv_status },
+              { label: "Comprovante de residência", tipo: "comprovante_endereco", url: perfil.documento_comprovante_endereco_url, status: perfil.documento_comprovante_endereco_status },
               { label: "Selfie c/ Doc", tipo: "selfie", url: perfil.documento_selfie_url, status: perfil.documento_selfie_status }
             ].map((doc) => (
               <Card key={doc.tipo} className="overflow-hidden">
@@ -254,11 +361,15 @@ function DetalheVendedorPage() {
                   </div>
                   {doc.url && (
                     <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="flex-1 text-red-600 hover:bg-red-50"
-                        onClick={() => handleDocAction(doc.tipo, "REPROVADO")}
+                        onClick={() => {
+                          setDocReprovacao({ tipo: doc.tipo, label: doc.label });
+                          setMotivoReprovacao("");
+                          setObservacaoReprovacao("");
+                        }}
                       >
                         <XCircle className="mr-1 h-3 w-3" /> Reprovar
                       </Button>
@@ -321,10 +432,15 @@ function DetalheVendedorPage() {
                     <Button 
                       className="justify-start bg-green-600 hover:bg-green-700"
                       onClick={handleAprovar}
-                      disabled={perfil.status_compliance === 'APROVADO'}
+                      disabled={perfil.status_compliance === 'APROVADO' || documentosPendentes.length > 0}
                     >
                       <ShieldCheck className="mr-2 h-4 w-4" /> Finalizar Análise e Aprovar Vendedor
                     </Button>
+                    {documentosPendentes.length > 0 && (
+                      <p className="text-xs text-amber-700">
+                        Pendências documentais: {documentosPendentes.join(', ')}.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -360,8 +476,10 @@ function DetalheVendedorPage() {
                         </td>
                         <td className="px-6 py-4">{format(new Date(v.criado_em), "dd/MM/yy")}</td>
                         <td className="px-6 py-4 text-right">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <ChevronRight className="h-4 w-4" />
+                          <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <Link to="/admin/veiculo/$id" params={{ id: v.id }}>
+                              <ChevronRight className="h-4 w-4" />
+                            </Link>
                           </Button>
                         </td>
                       </tr>
@@ -430,6 +548,52 @@ function DetalheVendedorPage() {
           </div>
         </div>
       )}
+
+      <Dialog open={!!docReprovacao} onOpenChange={(open) => !open && setDocReprovacao(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reprovar documento</DialogTitle>
+            <DialogDescription>
+              Informe o motivo da reprovação para que o vendedor veja exatamente o que precisa corrigir.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Documento</Label>
+              <div className="rounded-md border bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
+                {docReprovacao?.label}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Motivo da reprovação</Label>
+              <Select value={motivoReprovacao} onValueChange={setMotivoReprovacao}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um motivo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MOTIVOS_REPROVACAO_DOCUMENTO.map((motivo) => (
+                    <SelectItem key={motivo} value={motivo}>
+                      {motivo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Observação complementar</Label>
+              <Textarea
+                placeholder="Explique para o vendedor o que precisa ser ajustado."
+                value={observacaoReprovacao}
+                onChange={(e) => setObservacaoReprovacao(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDocReprovacao(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleConfirmarReprovacaoDocumento}>Reprovar documento</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
