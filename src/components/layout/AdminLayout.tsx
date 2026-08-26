@@ -4,7 +4,6 @@ import {
   LayoutDashboard, 
   Users, 
   Car, 
-  ShieldCheck, 
   FileText, 
   Camera, 
   Megaphone, 
@@ -13,10 +12,10 @@ import {
   ShoppingBag, 
   DollarSign, 
   Truck, 
-  MessageSquare, 
   BarChart3, 
   UserCog, 
   Settings,
+  ClipboardCheck,
   Search,
   Bell,
   LogOut,
@@ -28,7 +27,7 @@ import {
 import { ReactNode, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -40,24 +39,154 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const MENU_ITEMS = [
-  { label: "Dashboard", icon: LayoutDashboard, to: "/admin" },
-  { label: "Vendedores", icon: Users, to: "/admin/vendedores" },
-  { label: "Veículos", icon: Car, to: "/admin/veiculos" },
-  { label: "Compliance", icon: ShieldCheck, to: "/admin/vendedores" },
-  { label: "Contratos", icon: FileText, to: "/admin/contratos" },
-  { label: "Vistorias", icon: Camera, to: "/admin/vistorias" },
-  { label: "Anúncios", icon: Megaphone, to: "/admin/anuncios" },
-  { label: "Leilões", icon: Gavel, to: "/admin/leiloes" },
-  { label: "Negociações", icon: Handshake, to: "/admin/negociacoes" },
-  { label: "Compradores", icon: ShoppingBag, to: "/admin/compradores" },
-  { label: "Pagamentos", icon: DollarSign, to: "/admin/pagamentos" },
-  { label: "Entregas", icon: Truck, to: "/admin/entregas" },
-  { label: "Conversas", icon: MessageSquare, to: "/admin/conversas" },
-  { label: "Comunicações", icon: Megaphone, to: "/admin/comunicacoes" },
-  { label: "Relatórios", icon: BarChart3, to: "/admin/relatorios" },
-  { label: "Usuários", icon: UserCog, to: "/admin/usuarios" },
-  { label: "Configurações", icon: Settings, to: "/admin/configuracoes" },
+type MenuItem = {
+  label: string;
+  icon: any;
+  to: string;
+  activePrefixes?: string[];
+  activeIncludes?: string[];
+  exact?: boolean;
+  description?: string;
+};
+
+type MenuSection = {
+  label: string;
+  items: MenuItem[];
+};
+
+const MENU_SECTIONS: MenuSection[] = [
+  {
+    label: "Visão Geral",
+    items: [
+      {
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        to: "/admin",
+        activePrefixes: ["/admin"],
+        exact: true,
+        description: "Resumo da operação",
+      },
+    ],
+  },
+  {
+    label: "1. Compliance",
+    items: [
+      {
+        label: "Vendedores",
+        icon: Users,
+        to: "/admin/vendedores",
+        activePrefixes: ["/admin/vendedores", "/admin/vendedor"],
+        description: "Cadastro e documentos",
+      },
+      {
+        label: "Veículos",
+        icon: Car,
+        to: "/admin/veiculos",
+        activePrefixes: ["/admin/veiculos", "/admin/veiculo"],
+        description: "Análise documental",
+      },
+      {
+        label: "Compradores",
+        icon: ShoppingBag,
+        to: "/admin/compradores",
+        activePrefixes: ["/admin/compradores", "/admin/comprador"],
+        description: "Pré-aprovação de compra",
+      },
+      {
+        label: "Contratos",
+        icon: FileText,
+        to: "/admin/contratos",
+        activePrefixes: ["/admin/contratos", "/admin/contrato"],
+        description: "Assinaturas pendentes",
+      },
+    ],
+  },
+  {
+    label: "2. Vistoria",
+    items: [
+      {
+        label: "Agenda e Laudos",
+        icon: Camera,
+        to: "/admin/vistorias",
+        activePrefixes: ["/admin/vistorias", "/admin/analise-vistoria"],
+        activeIncludes: ["/pos-vistoria"],
+        description: "Agendamento e pós-vistoria",
+      },
+    ],
+  },
+  {
+    label: "3. Comercial",
+    items: [
+      {
+        label: "Vitrine",
+        icon: ClipboardCheck,
+        to: "/admin/anuncios",
+        activePrefixes: ["/admin/anuncios"],
+        description: "Veículos aptos para venda",
+      },
+      {
+        label: "Campanhas",
+        icon: Megaphone,
+        to: "/admin/comunicacoes",
+        activePrefixes: ["/admin/comunicacoes"],
+        description: "Disparo para grupos e listas",
+      },
+      {
+        label: "Leilões",
+        icon: Gavel,
+        to: "/admin/leiloes",
+        activePrefixes: ["/admin/leiloes"],
+        description: "Lances e acompanhamento",
+      },
+      {
+        label: "Negociações",
+        icon: Handshake,
+        to: "/admin/negociacoes",
+        activePrefixes: ["/admin/negociacoes", "/admin/negociacao"],
+        description: "Fechamento e acompanhamento",
+      },
+      {
+        label: "Pagamentos",
+        icon: DollarSign,
+        to: "/admin/pagamentos",
+        activePrefixes: ["/admin/pagamentos", "/admin/pagamento"],
+        description: "Liquidação do processo",
+      },
+      {
+        label: "Entregas",
+        icon: Truck,
+        to: "/admin/entregas",
+        activePrefixes: ["/admin/entregas"],
+        description: "Retirada e entrega",
+      },
+    ],
+  },
+  {
+    label: "Administração",
+    items: [
+      {
+        label: "Usuários Internos",
+        icon: UserCog,
+        to: "/admin/usuarios",
+        activePrefixes: ["/admin/usuarios"],
+        description: "Equipe e acessos",
+      },
+      {
+        label: "Relatórios",
+        icon: BarChart3,
+        to: "/admin/relatorios",
+        activePrefixes: ["/admin/relatorios"],
+        description: "Indicadores e consultas",
+      },
+      {
+        label: "Configurações",
+        icon: Settings,
+        to: "/admin/configuracoes",
+        activePrefixes: ["/admin/configuracoes", "/admin/logs"],
+        description: "Parâmetros do sistema",
+      },
+    ],
+  },
 ];
 
 interface AdminLayoutProps {
@@ -77,7 +206,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   if (!initialized) return null;
 
-  const isActive = (to: string) => pathname === to;
+  const isActive = (item: MenuItem) => {
+    const prefixes = item.activePrefixes || [item.to];
+    const prefixMatch = prefixes.some((prefix) => {
+      if (item.exact) return pathname === prefix || pathname === `${prefix}/`;
+      return pathname === prefix || pathname.startsWith(`${prefix}/`) || pathname.startsWith(`${prefix}.`);
+    });
+    const includesMatch = (item.activeIncludes || []).some((fragment) => pathname.includes(fragment));
+    return prefixMatch || includesMatch;
+  };
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-900">
@@ -94,21 +231,43 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </div>
 
         <ScrollArea className="flex-1">
-          <nav className="p-3 space-y-1">
-            {MENU_ITEMS.map((item) => (
-              <Link
-                key={item.label}
-                to={item.to}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all group",
-                  isActive(item.to) 
-                    ? "bg-teal-500 text-slate-950 font-bold" 
-                    : "text-slate-400 hover:text-white hover:bg-slate-900"
+          <nav className="p-3 space-y-5">
+            {MENU_SECTIONS.map((section) => (
+              <div key={section.label} className="space-y-1.5">
+                {sidebarOpen && (
+                  <p className="px-3 pb-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                    {section.label}
+                  </p>
                 )}
-              >
-                <item.icon className={cn("h-5 w-5 shrink-0", isActive(item.to) ? "text-slate-950" : "group-hover:text-teal-400")} />
-                {sidebarOpen && <span>{item.label}</span>}
-              </Link>
+                {section.items.map((item) => (
+                  <Link
+                    key={item.label}
+                    to={item.to}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all group",
+                      isActive(item)
+                        ? "bg-teal-500 text-slate-950 font-bold"
+                        : "text-slate-400 hover:text-white hover:bg-slate-900"
+                    )}
+                    title={!sidebarOpen ? `${item.label} - ${item.description || section.label}` : undefined}
+                  >
+                    <item.icon className={cn("h-5 w-5 shrink-0", isActive(item) ? "text-slate-950" : "group-hover:text-teal-400")} />
+                    {sidebarOpen && (
+                      <div className="min-w-0">
+                        <span className="block truncate">{item.label}</span>
+                        {item.description && (
+                          <span className={cn(
+                            "block truncate text-[10px] font-semibold",
+                            isActive(item) ? "text-slate-900/70" : "text-slate-500 group-hover:text-slate-300"
+                          )}>
+                            {item.description}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </Link>
+                ))}
+              </div>
             ))}
           </nav>
         </ScrollArea>
@@ -130,7 +289,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           <div className="flex-1 max-w-xl relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input 
-              placeholder="Buscar vendedor, CPF, placa ou veículo" 
+              placeholder="Buscar vendedor, comprador, placa, veículo ou leilão"
               className="pl-10 bg-slate-50 border-none focus-visible:ring-1 focus-visible:ring-teal-500 h-10"
             />
           </div>
