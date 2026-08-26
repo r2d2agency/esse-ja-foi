@@ -37,22 +37,22 @@ function AdminDashboard() {
   const dashboard = res?.data;
 
   const stats = [
-    { label: "Veículos totais", value: dashboard?.stats?.veiculos ?? 0, icon: Car, color: "text-blue-600", bg: "bg-blue-50", to: "/admin/veiculos" },
+    { label: "Em compliance", value: dashboard?.stats?.compliance_analise ?? 0, icon: Users, color: "text-violet-600", bg: "bg-violet-50", to: "/admin/vendedores", search: { status: "AGUARDANDO_ANALISE" } },
+    { label: "Triagem de veículos", value: dashboard?.stats?.veiculos_analise ?? 0, icon: Car, color: "text-blue-600", bg: "bg-blue-50", to: "/admin/veiculos", search: { status: "AGUARDANDO_ANALISE" } },
     { label: "Prontos para vistoria", value: dashboard?.stats?.prontos_vistoria ?? 0, icon: Camera, color: "text-amber-600", bg: "bg-amber-50", to: "/admin/veiculos", search: { status: "PRONTO_PARA_VISTORIA" } },
     { label: "Vistorias de hoje", value: dashboard?.stats?.vistorias_hoje ?? 0, icon: Calendar, color: "text-teal-600", bg: "bg-teal-50", to: "/admin/vistorias" },
     { label: "Aguardando confirmação", value: dashboard?.stats?.aguardando_confirmacao ?? 0, icon: Clock, color: "text-orange-600", bg: "bg-orange-50", to: "/admin/vistorias" },
-    { label: "Vendidos", value: dashboard?.stats?.vendidos ?? 0, icon: ShieldCheck, color: "text-green-600", bg: "bg-green-50", to: "/admin/negociacoes" },
-    { label: "Compradores", value: dashboard?.stats?.clientes ?? 0, icon: Users, color: "text-purple-600", bg: "bg-purple-50", to: "/admin/compradores" },
+    { label: "Compradores ativos", value: dashboard?.stats?.clientes ?? 0, icon: ShieldCheck, color: "text-green-600", bg: "bg-green-50", to: "/admin/compradores" },
   ];
 
   const funnel = [
-    { label: "Cadastro", value: dashboard?.funnel?.cadastro ?? 0 },
+    { label: "Entrada", value: dashboard?.funnel?.cadastro ?? 0 },
     { label: "Compliance", value: dashboard?.funnel?.compliance ?? 0 },
     { label: "Contrato", value: dashboard?.funnel?.contrato ?? 0 },
-    { label: "Análise Veículo", value: dashboard?.funnel?.analise_veiculo ?? 0 },
+    { label: "Triagem", value: dashboard?.funnel?.analise_veiculo ?? 0 },
     { label: "Vistoria", value: dashboard?.funnel?.vistoria ?? 0 },
-    { label: "Anúncio", value: dashboard?.funnel?.anuncio ?? 0 },
-    { label: "Venda", value: dashboard?.funnel?.venda ?? 0 },
+    { label: "Vitrine", value: dashboard?.funnel?.anuncio ?? 0 },
+    { label: "Fechamento", value: dashboard?.funnel?.venda ?? 0 },
   ];
 
   return (
@@ -60,7 +60,7 @@ function AdminDashboard() {
 
       <div>
         <h1 className="text-2xl font-black text-slate-950 uppercase tracking-tight">Visão geral</h1>
-        <p className="text-slate-500 font-medium">Acompanhe o que está acontecendo na operação do Esse Já Foi.</p>
+        <p className="text-slate-500 font-medium">Acompanhe o fluxo operacional do cadastro até a comercialização do veículo.</p>
       </div>
 
       {/* Indicadores Compactos */}
@@ -83,11 +83,66 @@ function AdminDashboard() {
 
       <IndicadoresNegociacao />
 
+      <section className="space-y-4">
+        <h2 className="text-sm font-black text-slate-950 uppercase tracking-wider">Etapas da operação</h2>
+        <div className="grid gap-4 md:grid-cols-3">
+          {[
+            {
+              title: "Compliance",
+              description: "Validação de vendedor, comprador, documentos e triagem inicial do veículo.",
+              links: [
+                { label: "Vendedores", to: "/admin/vendedores", search: { status: "AGUARDANDO_ANALISE" } },
+                { label: "Veículos", to: "/admin/veiculos", search: { status: "AGUARDANDO_ANALISE" } },
+                { label: "Compradores", to: "/admin/compradores" },
+              ],
+            },
+            {
+              title: "Vistoria",
+              description: "Agendamento, execução física e análise dos laudos de avaliação.",
+              links: [
+                { label: "Agenda e laudos", to: "/admin/vistorias" },
+                { label: "Prontos para vistoria", to: "/admin/veiculos", search: { status: "PRONTO_PARA_VISTORIA" } },
+              ],
+            },
+            {
+              title: "Comercial",
+              description: "Campanhas, leilões, negociações, pagamentos e entrega do veículo.",
+              links: [
+                { label: "Campanhas", to: "/admin/comunicacoes" },
+                { label: "Leilões", to: "/admin/leiloes" },
+                { label: "Negociações", to: "/admin/negociacoes" },
+              ],
+            },
+          ].map((section) => (
+            <Card key={section.title} className="border-slate-200 shadow-none">
+              <CardContent className="p-5 space-y-4">
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-wider text-slate-950">{section.title}</h3>
+                  <p className="mt-2 text-sm text-slate-500">{section.description}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {section.links.map((link) => (
+                    <Link
+                      key={link.label}
+                      to={link.to as any}
+                      search={link.search as any}
+                      className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:border-teal-200 hover:bg-teal-50 hover:text-teal-700"
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
       {/* Funil Operacional */}
 
       <section className="space-y-4">
         <h2 className="text-sm font-black text-slate-950 uppercase tracking-wider flex items-center gap-2">
-          Fluxo da operação
+          Funil da operação
         </h2>
         <div className="bg-white border border-slate-200 rounded-xl p-6 overflow-x-auto">
           <div className="flex items-center min-w-[800px]">
@@ -114,9 +169,9 @@ function AdminDashboard() {
             <Card className="border-slate-200 shadow-none overflow-hidden">
               <CardContent className="p-0 divide-y divide-slate-100">
                 {[
-                  { label: "Documentos aguardando análise", count: dashboard?.stats?.compliance_analise ?? 0, to: "/admin/vendedores", search: { status: "AGUARDANDO_ANALISE" } },
+                  { label: "Cadastros de vendedor em compliance", count: dashboard?.stats?.compliance_analise ?? 0, to: "/admin/vendedores", search: { status: "AGUARDANDO_ANALISE" } },
+                  { label: "Veículos aguardando triagem documental", count: dashboard?.stats?.veiculos_analise ?? 0, to: "/admin/veiculos", search: { status: "AGUARDANDO_ANALISE" } },
                   { label: "Contratos pendentes de assinatura", count: dashboard?.stats?.contratos_pendentes ?? 0, to: "/admin/contratos", search: { status: "PENDENTES" } },
-                  { label: "Veículos aguardando análise", count: dashboard?.stats?.veiculos_analise ?? 0, to: "/admin/veiculos", search: { status: "AGUARDANDO_ANALISE" } },
                 ].map((item, idx) => (
                   <Link
                     key={idx}
@@ -144,15 +199,15 @@ function AdminDashboard() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Compliance</p>
-                    <p className="text-xl font-black text-slate-950 mt-1">{dashboard?.stats?.compliance_analise ?? 0} processos</p>
+                    <p className="text-xl font-black text-slate-950 mt-1">{dashboard?.stats?.compliance_analise ?? 0} cadastros</p>
                   </div>
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Veículos</p>
-                    <p className="text-xl font-black text-slate-950 mt-1">{dashboard?.stats?.veiculos_analise ?? 0} processos</p>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Triagem</p>
+                    <p className="text-xl font-black text-slate-950 mt-1">{dashboard?.stats?.veiculos_analise ?? 0} veículos</p>
                   </div>
                 </div>
                 <Button asChild className="w-full bg-slate-950 hover:bg-slate-900 text-white font-bold py-6">
-                  <Link to="/admin/vendedores" search={{ status: "AGUARDANDO_ANALISE" }}>Abrir fila de compliance</Link>
+                  <Link to="/admin/vendedores" search={{ status: "AGUARDANDO_ANALISE" }}>Abrir etapa de compliance</Link>
                 </Button>
               </CardContent>
             </Card>
