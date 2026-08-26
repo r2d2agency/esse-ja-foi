@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "./index";
 
 export type Row = Record<string, any>;
-export type HorarioDia = {
+export type HorarioPeriodo = {
   inicio: string;
   fim: string;
 };
@@ -23,14 +23,26 @@ function minutesToTime(value: number) {
   return `${String(hora).padStart(2, "0")}:${String(minuto).padStart(2, "0")}`;
 }
 
-function normalizarHorarioAtendimento(value: any): Record<string, HorarioDia> {
+function normalizarHorarioAtendimento(value: any): Record<string, HorarioPeriodo[]> {
   if (!value || typeof value !== "object") return {};
-  return Object.entries(value).reduce<Record<string, HorarioDia>>((acc, [dia, faixa]) => {
+  return Object.entries(value).reduce<Record<string, HorarioPeriodo[]>>((acc, [dia, faixa]) => {
+    if (Array.isArray(faixa)) {
+      const periodos = faixa
+        .filter((item) => item && typeof item === "object")
+        .map((item: any) => ({
+          inicio: typeof item.inicio === "string" ? item.inicio : "",
+          fim: typeof item.fim === "string" ? item.fim : "",
+        }))
+        .filter((item) => item.inicio && item.fim);
+      if (periodos.length > 0) acc[dia] = periodos;
+      return acc;
+    }
+
     if (!faixa || typeof faixa !== "object") return acc;
     const inicio = typeof (faixa as any).inicio === "string" ? (faixa as any).inicio : "";
     const fim = typeof (faixa as any).fim === "string" ? (faixa as any).fim : "";
     if (!inicio || !fim) return acc;
-    acc[dia] = { inicio, fim };
+    acc[dia] = [{ inicio, fim }];
     return acc;
   }, {});
 }
@@ -329,7 +341,7 @@ export async function salvarUnidadeVistoria(data: {
   estado: string;
   latitude?: number | null;
   longitude?: number | null;
-  horario_atendimento?: Record<string, HorarioDia> | null;
+  horario_atendimento?: Record<string, HorarioPeriodo[]> | null;
   duracao_padrao_minutos?: number | null;
   intervalo_entre_vistorias_minutos?: number | null;
   telefone?: string | null;
@@ -422,20 +434,14 @@ export async function listarSlotsDisponiveisUnidade(unidadeId: string, data: str
   }
 
   const diaSemana = String(dataBase.getDay());
-  const faixaDia = horarioAtendimento[diaSemana];
-  if (!faixaDia) {
+  const periodosDia = horarioAtendimento[diaSemana] || [];
+  if (periodosDia.length === 0) {
     return { ok: true as const, message: "A unidade não atende nesse dia.", slots: [] as any[], configuracao: unidade };
   }
 
   const duracao = Math.max(Number(unidade.duracao_padrao_minutos || 60), 1);
   const intervalo = Math.max(Number(unidade.intervalo_entre_vistorias_minutos || 0), 0);
   const passo = Math.max(duracao + intervalo, 1);
-  const inicioDia = toMinutes(faixaDia.inicio);
-  const fimDia = toMinutes(faixaDia.fim);
-
-  if (fimDia <= inicioDia || fimDia - inicioDia < duracao) {
-    return { ok: true as const, message: "A faixa de atendimento desse dia não comporta slots válidos.", slots: [] as any[], configuracao: unidade };
-  }
 
   const agendamentosRes = await d.execute(sql`
     SELECT horario_vistoria, vistoriador_id
@@ -459,27 +465,46 @@ export async function listarSlotsDisponiveisUnidade(unidadeId: string, data: str
   }
 
   const slots = [] as Array<{ value: string; fim: string; label: string }>;
-  for (let inicio = inicioDia; inicio + duracao <= fimDia; inicio += passo) {
-    const fim = inicio + duracao;
-    const conflitoUnidade = agendamentos.some((agendamento: any) => {
-      const inicioAgendado = toMinutes(String(agendamento.horario_vistoria).slice(0, 5));
-      const fimAgendado = inicioAgendado + duracao;
-      return inicio < fimAgendado && fim > inicioAgendado;
-    });
-    const conflitoVistoriador = agendamentosVistoriador.some((agendamento: any) => {
-      const inicioAgendado = toMinutes(String(agendamento.horario_vistoria).slice(0, 5));
-      const fimAgendado = inicioAgendado + duracao;
-      return inicio < fimAgendado && fim > inicioAgendado;
-    });
-    if (conflitoUnidade || conflitoVistoriador) continue;
+  for (const periodo of periodosDia) {
+    const inicioDia = toMinutes(periodo.inicio);
+    const fimDia = toMinutes(periodo.fim);
+    if (fimDia <= inicioDia || fimDia - inicioDia < duracao) continue;
 
-    const inicioLabel = minutesToTime(inicio);
-    const fimLabel = minutesToTime(fim);
-    slots.push({
-      value: inicioLabel,
-      fim: fimLabel,
-      label: `${inicioLabel} - ${fimLabel}`,
-    });
+    for (let inicio = inicioDia; inicio + duracao <= fimDia; inicio += passo) {
+      const fim = inicio + duracao;
+      const conflitoUnidade = agendamentos.some((agendamento: any) => {
+        const inicioAgendado = toMinutes(String(agendamento.horario_vistoria).slice(0, 5));
+        const fimAgendado = inicioAgendado + duracao;
+        return inicio < fimAgendado && fim > inicioAgendado;
+      });
+      const conflitoVistoriador = agendamentosVistoriador.some((agendamento: any) => {
+        const inicioAgendado = toMinutes(String(agendamento.horario_vistoria).slice(0, 5));
+        const fimAgendado = inicioAgendado + duracao;
+        return inicio < fimAgendado && fim > inicioAgendado;
+      });
+      if (conflitoUnidade || conflitoVistoriador) continue;
+
+      const inicioLabel = minutesToTime(inicio);
+      const fimLabel = minutesToTime(fim);
+      slots.push({
+        value: inicioLabel,
+        fim: fimLabel,
+        label: `${inicioLabel} - ${fimLabel}`,
+      });
+    }
+  }
+
+  if (slots.length === 0) {
+    return {
+      ok: true as const,
+      message: "Os períodos configurados desse dia não geraram slots livres.",
+      slots,
+      configuracao: {
+        duracao_padrao_minutos: duracao,
+        intervalo_entre_vistorias_minutos: intervalo,
+        periodos: periodosDia,
+      },
+    };
   }
 
   return {
@@ -488,7 +513,7 @@ export async function listarSlotsDisponiveisUnidade(unidadeId: string, data: str
     configuracao: {
       duracao_padrao_minutos: duracao,
       intervalo_entre_vistorias_minutos: intervalo,
-      faixa: faixaDia,
+      periodos: periodosDia,
     },
   };
 }

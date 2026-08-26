@@ -27,6 +27,8 @@ import {
   UserCog,
   UserPlus,
   Loader2,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,7 +55,6 @@ import {
 import { cn } from "@/lib/utils";
 import { buscarCep, geocodificar, maskCep } from "@/lib/brasil";
 import MapaLocalizacao from "@/components/shared/MapaLocalizacao";
-import { Checkbox } from "@/components/ui/checkbox";
 
 const DIAS_ATENDIMENTO = [
   { key: "1", label: "Segunda" },
@@ -65,9 +66,13 @@ const DIAS_ATENDIMENTO = [
   { key: "0", label: "Domingo" },
 ] as const;
 
+function criarPeriodoPadrao() {
+  return { inicio: "08:00", fim: "18:00" };
+}
+
 function criarHorarioAtendimentoForm() {
-  return DIAS_ATENDIMENTO.reduce<Record<string, { ativo: boolean; inicio: string; fim: string }>>((acc, dia) => {
-    acc[dia.key] = { ativo: false, inicio: "08:00", fim: "18:00" };
+  return DIAS_ATENDIMENTO.reduce<Record<string, Array<{ inicio: string; fim: string }>>>((acc, dia) => {
+    acc[dia.key] = [];
     return acc;
   }, {});
 }
@@ -77,22 +82,28 @@ function normalizarHorarioAtendimentoForm(value: any) {
   if (!value || typeof value !== "object") return base;
   for (const dia of DIAS_ATENDIMENTO) {
     const faixa = value[dia.key];
+    if (Array.isArray(faixa)) {
+      base[dia.key] = faixa
+        .filter((item) => item && typeof item === "object")
+        .map((item: any) => ({
+          inicio: typeof item.inicio === "string" ? item.inicio : "08:00",
+          fim: typeof item.fim === "string" ? item.fim : "18:00",
+        }));
+      continue;
+    }
     if (!faixa || typeof faixa !== "object") continue;
     if (typeof faixa.inicio === "string" && typeof faixa.fim === "string") {
-      base[dia.key] = {
-        ativo: true,
-        inicio: faixa.inicio,
-        fim: faixa.fim,
-      };
+      base[dia.key] = [{ inicio: faixa.inicio, fim: faixa.fim }];
     }
   }
   return base;
 }
 
-function extrairHorarioAtendimentoPayload(value: Record<string, { ativo: boolean; inicio: string; fim: string }>) {
-  return Object.entries(value).reduce<Record<string, { inicio: string; fim: string }>>((acc, [dia, faixa]) => {
-    if (!faixa.ativo || !faixa.inicio || !faixa.fim) return acc;
-    acc[dia] = { inicio: faixa.inicio, fim: faixa.fim };
+function extrairHorarioAtendimentoPayload(value: Record<string, Array<{ inicio: string; fim: string }>>) {
+  return Object.entries(value).reduce<Record<string, Array<{ inicio: string; fim: string }>>>((acc, [dia, faixas]) => {
+    const periodos = faixas.filter((faixa) => faixa.inicio && faixa.fim);
+    if (periodos.length === 0) return acc;
+    acc[dia] = periodos;
     return acc;
   }, {});
 }
@@ -104,10 +115,10 @@ function horarioParaMinutos(value: string) {
 
 function resumirHorarioAtendimento(value: any) {
   const horario = normalizarHorarioAtendimentoForm(value);
-  const ativos = DIAS_ATENDIMENTO.filter((dia) => horario[dia.key]?.ativo);
+  const ativos = DIAS_ATENDIMENTO.filter((dia) => (horario[dia.key] || []).length > 0);
   if (ativos.length === 0) return "Sem horários configurados";
   return ativos
-    .map((dia) => `${dia.label.slice(0, 3)} ${horario[dia.key].inicio}-${horario[dia.key].fim}`)
+    .map((dia) => `${dia.label.slice(0, 3)} ${(horario[dia.key] || []).map((faixa) => `${faixa.inicio}-${faixa.fim}`).join(", ")}`)
     .join(" | ");
 }
 
@@ -395,6 +406,38 @@ function VistoriasAdminPage() {
     setUnidadeModalOpen(true);
   };
 
+  const adicionarPeriodoDia = (dia: string) => {
+    setUnidadeForm((current) => ({
+      ...current,
+      horario_atendimento: {
+        ...current.horario_atendimento,
+        [dia]: [...(current.horario_atendimento[dia] || []), criarPeriodoPadrao()],
+      },
+    }));
+  };
+
+  const removerPeriodoDia = (dia: string, index: number) => {
+    setUnidadeForm((current) => ({
+      ...current,
+      horario_atendimento: {
+        ...current.horario_atendimento,
+        [dia]: (current.horario_atendimento[dia] || []).filter((_, itemIndex) => itemIndex !== index),
+      },
+    }));
+  };
+
+  const atualizarPeriodoDia = (dia: string, index: number, campo: "inicio" | "fim", valor: string) => {
+    setUnidadeForm((current) => ({
+      ...current,
+      horario_atendimento: {
+        ...current.horario_atendimento,
+        [dia]: (current.horario_atendimento[dia] || []).map((periodo, itemIndex) =>
+          itemIndex === index ? { ...periodo, [campo]: valor } : periodo
+        ),
+      },
+    }));
+  };
+
   const preencherCoordenadasUnidade = async (form = unidadeForm) => {
     const partes = [
       form.endereco,
@@ -558,11 +601,21 @@ function VistoriasAdminPage() {
       toast.error("Selecione pelo menos um dia e horário de atendimento da unidade.");
       return;
     }
-    const faixaInvalida = Object.entries(unidadeForm.horario_atendimento).find(([, faixa]) => (
-      faixa.ativo && horarioParaMinutos(faixa.fim) <= horarioParaMinutos(faixa.inicio)
-    ));
+    const faixaInvalida = Object.entries(unidadeForm.horario_atendimento).find(([, faixas]) =>
+      faixas.some((faixa) => horarioParaMinutos(faixa.fim) <= horarioParaMinutos(faixa.inicio))
+    );
     if (faixaInvalida) {
       toast.error("Revise os horários da unidade. O horário final precisa ser maior que o inicial.");
+      return;
+    }
+    const faixaSobreposta = Object.entries(unidadeForm.horario_atendimento).find(([, faixas]) => {
+      const ordenadas = [...faixas]
+        .map((faixa) => ({ ...faixa, inicioMin: horarioParaMinutos(faixa.inicio), fimMin: horarioParaMinutos(faixa.fim) }))
+        .sort((a, b) => a.inicioMin - b.inicioMin);
+      return ordenadas.some((faixa, index) => index > 0 && faixa.inicioMin < ordenadas[index - 1].fimMin);
+    });
+    if (faixaSobreposta) {
+      toast.error("Existem períodos sobrepostos no mesmo dia. Revise a disponibilidade da unidade.");
       return;
     }
     if (!Number.isFinite(unidadeForm.duracao_padrao_minutos) || unidadeForm.duracao_padrao_minutos < 15) {
@@ -1201,7 +1254,7 @@ function VistoriasAdminPage() {
                     </div>
                     {slotsRes?.configuracao && (
                       <p className="text-[11px] text-slate-500 text-right">
-                        Atendimento {slotsRes.configuracao.faixa?.inicio} às {slotsRes.configuracao.faixa?.fim}
+                        {(slotsRes.configuracao.periodos || []).map((periodo: any) => `${periodo.inicio} às ${periodo.fim}`).join(" | ") || "Sem períodos configurados"}
                         <br />
                         Vistoria {slotsRes.configuracao.duracao_padrao_minutos} min + janela de {slotsRes.configuracao.intervalo_entre_vistorias_minutos} min
                       </p>
@@ -1269,7 +1322,7 @@ function VistoriasAdminPage() {
           if (!open) resetUnidadeForm();
         }}
       >
-        <DialogContent className="sm:max-w-3xl">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>{unidadeForm.id ? "Editar unidade credenciada" : "Nova unidade credenciada"}</DialogTitle>
             <DialogDescription>
@@ -1277,202 +1330,194 @@ function VistoriasAdminPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2 md:col-span-2">
-              <Label>Nome da unidade</Label>
-              <Input value={unidadeForm.nome} onChange={(e) => setUnidadeForm((current) => ({ ...current, nome: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>CNPJ</Label>
-              <Input value={unidadeForm.cnpj} onChange={(e) => setUnidadeForm((current) => ({ ...current, cnpj: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>CEP</Label>
-              <div className="relative">
-                <Input value={unidadeForm.cep} onChange={(e) => void handleCepUnidadeChange(e.target.value)} placeholder="00000-000" />
-                {(buscandoCepUnidade || geocodificandoUnidade) && (
-                  <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" />
-                )}
+          <div className="max-h-[calc(90vh-11rem)] overflow-y-auto pr-1">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2 md:col-span-2">
+                <Label>Nome da unidade</Label>
+                <Input value={unidadeForm.nome} onChange={(e) => setUnidadeForm((current) => ({ ...current, nome: e.target.value }))} />
               </div>
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>Endereço</Label>
-              <Input value={unidadeForm.endereco} onChange={(e) => setUnidadeForm((current) => ({ ...current, endereco: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Cidade</Label>
-              <Input value={unidadeForm.cidade} onChange={(e) => setUnidadeForm((current) => ({ ...current, cidade: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>UF</Label>
-              <Input maxLength={2} value={unidadeForm.estado} onChange={(e) => setUnidadeForm((current) => ({ ...current, estado: e.target.value.toUpperCase() }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Telefone</Label>
-              <Input value={unidadeForm.telefone} onChange={(e) => setUnidadeForm((current) => ({ ...current, telefone: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>WhatsApp</Label>
-              <Input value={unidadeForm.whatsapp} onChange={(e) => setUnidadeForm((current) => ({ ...current, whatsapp: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>E-mail</Label>
-              <Input type="email" value={unidadeForm.email} onChange={(e) => setUnidadeForm((current) => ({ ...current, email: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Responsável</Label>
-              <Input value={unidadeForm.responsavel} onChange={(e) => setUnidadeForm((current) => ({ ...current, responsavel: e.target.value }))} />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label>Status</Label>
-              <Select
-                value={unidadeForm.ativo ? "ATIVA" : "INATIVA"}
-                onValueChange={(value) => setUnidadeForm((current) => ({ ...current, ativo: value === "ATIVA" }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ATIVA">Ativa</SelectItem>
-                  <SelectItem value="INATIVA">Inativa</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-4 md:col-span-2 rounded-xl border border-slate-200 p-4">
-              <div className="space-y-1">
-                <Label>Disponibilidade da unidade</Label>
-                <p className="text-xs text-slate-500">
-                  Defina em quais dias a unidade atende e qual faixa de horário ficará disponível para gerar os slots de agendamento.
-                </p>
+              <div className="space-y-2">
+                <Label>CNPJ</Label>
+                <Input value={unidadeForm.cnpj} onChange={(e) => setUnidadeForm((current) => ({ ...current, cnpj: e.target.value }))} />
               </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Duração padrão da vistoria (min)</Label>
-                  <Input
-                    type="number"
-                    min={15}
-                    step={5}
-                    value={unidadeForm.duracao_padrao_minutos}
-                    onChange={(e) => setUnidadeForm((current) => ({ ...current, duracao_padrao_minutos: Number(e.target.value || 0) }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Janela entre vistorias (min)</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    step={5}
-                    value={unidadeForm.intervalo_entre_vistorias_minutos}
-                    onChange={(e) => setUnidadeForm((current) => ({ ...current, intervalo_entre_vistorias_minutos: Number(e.target.value || 0) }))}
-                  />
+              <div className="space-y-2">
+                <Label>CEP</Label>
+                <div className="relative">
+                  <Input value={unidadeForm.cep} onChange={(e) => void handleCepUnidadeChange(e.target.value)} placeholder="00000-000" />
+                  {(buscandoCepUnidade || geocodificandoUnidade) && (
+                    <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" />
+                  )}
                 </div>
               </div>
-
-              <div className="space-y-3">
-                {DIAS_ATENDIMENTO.map((dia) => {
-                  const faixa = unidadeForm.horario_atendimento[dia.key];
-                  return (
-                    <div key={dia.key} className="grid gap-3 rounded-lg border border-slate-200 p-3 md:grid-cols-[180px_1fr_1fr] md:items-center">
-                      <label className="flex items-center gap-3">
-                        <Checkbox
-                          checked={faixa.ativo}
-                          onCheckedChange={(checked) =>
-                            setUnidadeForm((current) => ({
-                              ...current,
-                              horario_atendimento: {
-                                ...current.horario_atendimento,
-                                [dia.key]: {
-                                  ...current.horario_atendimento[dia.key],
-                                  ativo: checked === true,
-                                },
-                              },
-                            }))
-                          }
-                        />
-                        <span className="text-sm font-bold text-slate-800">{dia.label}</span>
-                      </label>
-
-                      <div className="space-y-1">
-                        <Label className="text-xs text-slate-500">Início</Label>
-                        <Input
-                          type="time"
-                          disabled={!faixa.ativo}
-                          value={faixa.inicio}
-                          onChange={(e) =>
-                            setUnidadeForm((current) => ({
-                              ...current,
-                              horario_atendimento: {
-                                ...current.horario_atendimento,
-                                [dia.key]: {
-                                  ...current.horario_atendimento[dia.key],
-                                  inicio: e.target.value,
-                                },
-                              },
-                            }))
-                          }
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label className="text-xs text-slate-500">Fim</Label>
-                        <Input
-                          type="time"
-                          disabled={!faixa.ativo}
-                          value={faixa.fim}
-                          onChange={(e) =>
-                            setUnidadeForm((current) => ({
-                              ...current,
-                              horario_atendimento: {
-                                ...current.horario_atendimento,
-                                [dia.key]: {
-                                  ...current.horario_atendimento[dia.key],
-                                  fim: e.target.value,
-                                },
-                              },
-                            }))
-                          }
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="space-y-2 md:col-span-2">
+                <Label>Endereço</Label>
+                <Input value={unidadeForm.endereco} onChange={(e) => setUnidadeForm((current) => ({ ...current, endereco: e.target.value }))} />
               </div>
-            </div>
-            <div className="space-y-3 md:col-span-2">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <Label>Localização confirmada</Label>
+              <div className="space-y-2">
+                <Label>Cidade</Label>
+                <Input value={unidadeForm.cidade} onChange={(e) => setUnidadeForm((current) => ({ ...current, cidade: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>UF</Label>
+                <Input maxLength={2} value={unidadeForm.estado} onChange={(e) => setUnidadeForm((current) => ({ ...current, estado: e.target.value.toUpperCase() }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Telefone</Label>
+                <Input value={unidadeForm.telefone} onChange={(e) => setUnidadeForm((current) => ({ ...current, telefone: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>WhatsApp</Label>
+                <Input value={unidadeForm.whatsapp} onChange={(e) => setUnidadeForm((current) => ({ ...current, whatsapp: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>E-mail</Label>
+                <Input type="email" value={unidadeForm.email} onChange={(e) => setUnidadeForm((current) => ({ ...current, email: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>Responsável</Label>
+                <Input value={unidadeForm.responsavel} onChange={(e) => setUnidadeForm((current) => ({ ...current, responsavel: e.target.value }))} />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Status</Label>
+                <Select
+                  value={unidadeForm.ativo ? "ATIVA" : "INATIVA"}
+                  onValueChange={(value) => setUnidadeForm((current) => ({ ...current, ativo: value === "ATIVA" }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ATIVA">Ativa</SelectItem>
+                    <SelectItem value="INATIVA">Inativa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-4 md:col-span-2 rounded-xl border border-slate-200 p-4">
+                <div className="space-y-1">
+                  <Label>Disponibilidade da unidade</Label>
                   <p className="text-xs text-slate-500">
-                    O CEP tenta posicionar automaticamente. Se necessário, arraste o pino ou clique no mapa para ajustar.
+                    Defina os períodos de atendimento de cada dia. Você pode cadastrar mais de uma janela no mesmo dia.
                   </p>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="font-bold"
-                  onClick={() => void preencherCoordenadasUnidade()}
-                  disabled={geocodificandoUnidade}
-                >
-                  {geocodificandoUnidade ? "Localizando..." : "Atualizar no mapa"}
-                </Button>
-              </div>
-              <MapaLocalizacao
-                lat={unidadeForm.latitude}
-                lng={unidadeForm.longitude}
-                onChange={({ lat, lng }) =>
-                  setUnidadeForm((current) => ({ ...current, latitude: lat, longitude: lng }))
-                }
-                height={300}
-              />
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Latitude</Label>
-                  <Input value={unidadeForm.latitude ?? ""} readOnly />
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Duração padrão da vistoria (min)</Label>
+                    <Input
+                      type="number"
+                      min={15}
+                      step={5}
+                      value={unidadeForm.duracao_padrao_minutos}
+                      onChange={(e) => setUnidadeForm((current) => ({ ...current, duracao_padrao_minutos: Number(e.target.value || 0) }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Janela entre vistorias (min)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={5}
+                      value={unidadeForm.intervalo_entre_vistorias_minutos}
+                      onChange={(e) => setUnidadeForm((current) => ({ ...current, intervalo_entre_vistorias_minutos: Number(e.target.value || 0) }))}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Longitude</Label>
-                  <Input value={unidadeForm.longitude ?? ""} readOnly />
+
+                <div className="space-y-3">
+                  {DIAS_ATENDIMENTO.map((dia) => {
+                    const periodos = unidadeForm.horario_atendimento[dia.key] || [];
+                    return (
+                      <div key={dia.key} className="rounded-lg border border-slate-200 p-3 space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-bold text-slate-800">{dia.label}</p>
+                            <p className="text-xs text-slate-500">
+                              {periodos.length > 0 ? `${periodos.length} período(s) configurado(s)` : "Sem períodos configurados"}
+                            </p>
+                          </div>
+                          <Button type="button" variant="outline" size="sm" className="font-bold" onClick={() => adicionarPeriodoDia(dia.key)}>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Adicionar período
+                          </Button>
+                        </div>
+
+                        {periodos.length > 0 ? (
+                          <div className="space-y-2">
+                            {periodos.map((periodo, index) => (
+                              <div key={`${dia.key}-${index}`} className="grid gap-3 rounded-lg bg-slate-50 p-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-slate-500">Início</Label>
+                                  <Input
+                                    type="time"
+                                    value={periodo.inicio}
+                                    onChange={(e) => atualizarPeriodoDia(dia.key, index, "inicio", e.target.value)}
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-slate-500">Fim</Label>
+                                  <Input
+                                    type="time"
+                                    value={periodo.fim}
+                                    onChange={(e) => atualizarPeriodoDia(dia.key, index, "fim", e.target.value)}
+                                  />
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-slate-500 hover:text-red-600"
+                                  onClick={() => removerPeriodoDia(dia.key, index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="rounded-lg border border-dashed border-slate-200 px-4 py-4 text-sm text-slate-500">
+                            Nenhum período configurado para {dia.label.toLowerCase()}.
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="space-y-3 md:col-span-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <Label>Localização confirmada</Label>
+                    <p className="text-xs text-slate-500">
+                      O CEP tenta posicionar automaticamente. Se necessário, arraste o pino ou clique no mapa para ajustar.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="font-bold"
+                    onClick={() => void preencherCoordenadasUnidade()}
+                    disabled={geocodificandoUnidade}
+                  >
+                    {geocodificandoUnidade ? "Localizando..." : "Atualizar no mapa"}
+                  </Button>
+                </div>
+                <MapaLocalizacao
+                  lat={unidadeForm.latitude}
+                  lng={unidadeForm.longitude}
+                  onChange={({ lat, lng }) =>
+                    setUnidadeForm((current) => ({ ...current, latitude: lat, longitude: lng }))
+                  }
+                  height={300}
+                />
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Latitude</Label>
+                    <Input value={unidadeForm.latitude ?? ""} readOnly />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Longitude</Label>
+                    <Input value={unidadeForm.longitude ?? ""} readOnly />
+                  </div>
                 </div>
               </div>
             </div>
