@@ -999,7 +999,7 @@ function VistoriasAdminPage() {
                     </p>
                   </div>
                   <Button asChild variant="outline" className="font-bold">
-                    <Link to="/admin/usuarios">
+                    <Link to="/admin/usuarios" search={{ role: "vistoriador", open: "novo" }}>
                       <UserPlus className="mr-2 h-4 w-4" />
                       Criar login de vistoriador
                     </Link>

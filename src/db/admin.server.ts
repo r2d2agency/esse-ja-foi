@@ -186,6 +186,35 @@ export async function listarCompradores() {
   return (rows as any).rows || rows;
 }
 
+export async function listarUsuariosInternos(role?: string | null) {
+  const d = requireDb();
+  const rows = await d.execute(sql`
+    SELECT
+      id,
+      nome,
+      email,
+      whatsapp,
+      role,
+      ativo,
+      criado_em,
+      atualizado_em,
+      cidade,
+      uf
+    FROM profiles
+    WHERE role IN ('admin'::app_role, 'operacao'::app_role, 'vistoriador'::app_role)
+      AND (${role || null} IS NULL OR role = ${role || null}::app_role)
+    ORDER BY
+      CASE role
+        WHEN 'vistoriador'::app_role THEN 1
+        WHEN 'operacao'::app_role THEN 2
+        WHEN 'admin'::app_role THEN 3
+        ELSE 9
+      END,
+      nome ASC
+  `);
+  return (rows as any).rows || rows;
+}
+
 export async function alterarStatusUsuario(userId: string, ativo: boolean) {
   const d = requireDb();
   await d.execute(sql`

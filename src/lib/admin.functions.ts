@@ -34,6 +34,20 @@ export const listarCompradoresFn = createServerFn({ method: "GET" })
     }
   });
 
+export const listarUsuariosInternosFn = createServerFn({ method: "GET" })
+  .validator((d: unknown) => z.object({
+    role: z.enum(["admin", "operacao", "vistoriador"]).optional(),
+  }).optional().parse(d))
+  .handler(async ({ data }) => {
+    const m = await import("@/db/admin.server");
+    await m.ensureAdminTables();
+    try {
+      return { ok: true as const, data: await m.listarUsuariosInternos(data?.role) };
+    } catch (e: any) {
+      return { ok: false as const, message: e.message };
+    }
+  });
+
 export const checkSystemHealthFn = createServerFn({ method: "GET" })
   .handler(async () => {
     const m = await import("@/db/admin.server");
