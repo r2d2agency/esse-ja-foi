@@ -4,10 +4,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   criarAgendamentoVistoriaFn,
+  getUnidadesCadastroFn,
   getUnidadesDisponiveisFn,
   getVeiculosAguardandoVistoriaFn,
+  getVistoriadoresCadastroFn,
   getVistoriadoresUnidadeFn,
   getVistoriasAdminFn,
+  salvarUnidadeCadastroFn,
+  salvarVistoriadorCadastroFn,
 } from "@/lib/vistorias.functions";
 import { getFilaAnalisePosVistoriaFn } from "@/lib/analise-pos-vistoria.functions";
 import { useAuth } from "@/hooks/use-auth";
@@ -18,6 +22,9 @@ import {
   Clock,
   MapPin,
   User,
+  Building2,
+  UserCog,
+  UserPlus,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -71,6 +78,27 @@ function VistoriasAdminPage() {
   const [vistoriadorId, setVistoriadorId] = useState("");
   const [dataVistoria, setDataVistoria] = useState("");
   const [horarioVistoria, setHorarioVistoria] = useState("");
+  const [unidadeModalOpen, setUnidadeModalOpen] = useState(false);
+  const [vistoriadorModalOpen, setVistoriadorModalOpen] = useState(false);
+  const [unidadeForm, setUnidadeForm] = useState({
+    id: "",
+    nome: "",
+    cnpj: "",
+    cep: "",
+    endereco: "",
+    cidade: "",
+    estado: "",
+    telefone: "",
+    whatsapp: "",
+    email: "",
+    responsavel: "",
+    ativo: true,
+  });
+  const [vistoriadorForm, setVistoriadorForm] = useState({
+    usuario_id: "",
+    unidade_id: "",
+    status: "ATIVO",
+  });
   
   const getVistorias = useServerFn(getVistoriasAdminFn);
   const getAguardando = useServerFn(getVeiculosAguardandoVistoriaFn);
@@ -78,6 +106,10 @@ function VistoriasAdminPage() {
   const getUnidades = useServerFn(getUnidadesDisponiveisFn);
   const getVistoriadores = useServerFn(getVistoriadoresUnidadeFn);
   const criarAgendamento = useServerFn(criarAgendamentoVistoriaFn);
+  const getUnidadesCadastro = useServerFn(getUnidadesCadastroFn);
+  const getVistoriadoresCadastro = useServerFn(getVistoriadoresCadastroFn);
+  const salvarUnidadeCadastro = useServerFn(salvarUnidadeCadastroFn);
+  const salvarVistoriadorCadastro = useServerFn(salvarVistoriadorCadastroFn);
 
   useEffect(() => {
     setActiveTab(search.tab || (search.status ? "agendamentos" : "aguardando_analise"));
@@ -128,11 +160,25 @@ function VistoriasAdminPage() {
     enabled: agendaOpen && !!unidadeId,
   });
 
+  const { data: unidadesCadastroRes, isLoading: loadingUnidadesCadastro } = useQuery({
+    queryKey: ["cadastro-unidades-vistoria"],
+    queryFn: () => getUnidadesCadastro(),
+    enabled: activeTab === "cadastros",
+  });
+
+  const { data: vistoriadoresCadastroRes, isLoading: loadingVistoriadoresCadastro } = useQuery({
+    queryKey: ["cadastro-vistoriadores"],
+    queryFn: () => getVistoriadoresCadastro(),
+    enabled: activeTab === "cadastros",
+  });
+
   const agendamentos = agendamentosRes?.data || [];
   const aguardando = aguardandoRes?.data || [];
   const filaPosVistoria = posVistoriaRes?.data || [];
   const unidades = unidadesRes?.data || [];
   const vistoriadores = vistoriadoresRes?.data || [];
+  const unidadesCadastro = unidadesCadastroRes?.data || [];
+  const vistoriadoresCadastro = vistoriadoresCadastroRes?.data || [];
   const termoFila = buscaFila.trim().toLowerCase();
   const termoAgendamento = buscaAgendamento.trim().toLowerCase();
   const termoAgendaCriada = buscaAgendaCriada.trim().toLowerCase();
@@ -195,6 +241,31 @@ function VistoriasAdminPage() {
     setHorarioVistoria("");
   };
 
+  const resetUnidadeForm = () => {
+    setUnidadeForm({
+      id: "",
+      nome: "",
+      cnpj: "",
+      cep: "",
+      endereco: "",
+      cidade: "",
+      estado: "",
+      telefone: "",
+      whatsapp: "",
+      email: "",
+      responsavel: "",
+      ativo: true,
+    });
+  };
+
+  const resetVistoriadorForm = () => {
+    setVistoriadorForm({
+      usuario_id: "",
+      unidade_id: "",
+      status: "ATIVO",
+    });
+  };
+
   const abrirAgenda = (veiculo: any) => {
     setVeiculoSelecionado(veiculo);
     resetAgendaForm();
@@ -208,6 +279,41 @@ function VistoriasAdminPage() {
     if (search.veiculoId) {
       updateSearch({ tab: activeTab, status: search.status, veiculoId: undefined });
     }
+  };
+
+  const abrirCadastroUnidade = (unidade?: any) => {
+    if (unidade) {
+      setUnidadeForm({
+        id: unidade.id || "",
+        nome: unidade.nome || "",
+        cnpj: unidade.cnpj || "",
+        cep: unidade.cep || "",
+        endereco: unidade.endereco || "",
+        cidade: unidade.cidade || "",
+        estado: unidade.estado || "",
+        telefone: unidade.telefone || "",
+        whatsapp: unidade.whatsapp || "",
+        email: unidade.email || "",
+        responsavel: unidade.responsavel || "",
+        ativo: unidade.ativo ?? true,
+      });
+    } else {
+      resetUnidadeForm();
+    }
+    setUnidadeModalOpen(true);
+  };
+
+  const abrirCadastroVistoriador = (vistoriador?: any) => {
+    if (vistoriador) {
+      setVistoriadorForm({
+        usuario_id: vistoriador.usuario_id || "",
+        unidade_id: vistoriador.unidade_id || "",
+        status: vistoriador.status || "ATIVO",
+      });
+    } else {
+      resetVistoriadorForm();
+    }
+    setVistoriadorModalOpen(true);
   };
 
   useEffect(() => {
@@ -270,6 +376,62 @@ function VistoriasAdminPage() {
     }
   };
 
+  const handleSalvarUnidade = async () => {
+    if (!unidadeForm.nome || !unidadeForm.endereco || !unidadeForm.cidade || !unidadeForm.estado) {
+      toast.error("Preencha nome, endereço, cidade e UF da unidade.");
+      return;
+    }
+
+    const toastId = toast.loading(unidadeForm.id ? "Atualizando unidade..." : "Criando unidade...");
+    try {
+      const response = await salvarUnidadeCadastro({
+        data: {
+          ...unidadeForm,
+          estado: unidadeForm.estado.toUpperCase(),
+          email: unidadeForm.email || null,
+        },
+      });
+
+      if (!response?.ok) {
+        toast.error(response?.message || "Não foi possível salvar a unidade.", { id: toastId });
+        return;
+      }
+
+      toast.success(unidadeForm.id ? "Unidade atualizada." : "Unidade cadastrada.", { id: toastId });
+      setUnidadeModalOpen(false);
+      resetUnidadeForm();
+      await queryClient.invalidateQueries({ queryKey: ["cadastro-unidades-vistoria"] });
+      await queryClient.invalidateQueries({ queryKey: ["unidades-vistoria"] });
+    } catch {
+      toast.error("Erro técnico ao salvar a unidade.", { id: toastId });
+    }
+  };
+
+  const handleSalvarVistoriador = async () => {
+    if (!vistoriadorForm.usuario_id || !vistoriadorForm.unidade_id) {
+      toast.error("Selecione o vistoriador e a unidade.");
+      return;
+    }
+
+    const toastId = toast.loading("Salvando vínculo do vistoriador...");
+    try {
+      const response = await salvarVistoriadorCadastro({ data: vistoriadorForm as any });
+
+      if (!response?.ok) {
+        toast.error(response?.message || "Não foi possível salvar o vistoriador.", { id: toastId });
+        return;
+      }
+
+      toast.success("Vistoriador vinculado com sucesso.", { id: toastId });
+      setVistoriadorModalOpen(false);
+      resetVistoriadorForm();
+      await queryClient.invalidateQueries({ queryKey: ["cadastro-vistoriadores"] });
+      await queryClient.invalidateQueries({ queryKey: ["vistoriadores-unidade"] });
+    } catch {
+      toast.error("Erro técnico ao salvar o vistoriador.", { id: toastId });
+    }
+  };
+
   return (
     <div className="p-6 space-y-8 max-w-7xl mx-auto">
 
@@ -297,6 +459,7 @@ function VistoriasAdminPage() {
             { id: "agendamentos", label: "Agenda" },
             { id: "aguardando_analise", label: "Aguardando análise" },
             { id: "aguardando", label: "Aguardando agendamento" },
+            { id: "cadastros", label: "Cadastros" },
           ].map((tab) => (
             <TabsTrigger
               key={tab.id}
@@ -576,6 +739,186 @@ function VistoriasAdminPage() {
           </div>
         </TabsContent>
 
+        <TabsContent value="cadastros" className="mt-0">
+          <div className="space-y-6">
+            <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
+              <Card className="border-slate-200 shadow-none">
+                <CardContent className="p-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-sm font-black uppercase tracking-wider text-slate-900">Rede credenciada e equipe</p>
+                    <p className="text-sm text-slate-500">
+                      Cadastre as unidades de vistoria e vincule os vistoriadores para que eles apareçam na agenda de agendamento.
+                    </p>
+                  </div>
+                  <Button asChild variant="outline" className="font-bold">
+                    <Link to="/admin/usuarios">
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Criar login de vistoriador
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="border-slate-200 shadow-none">
+                <CardContent className="p-5 space-y-2">
+                  <p className="text-sm font-black uppercase tracking-wider text-slate-900">Como liberar na agenda</p>
+                  <ol className="space-y-1 text-sm text-slate-600 list-decimal pl-5">
+                    <li>crie o usuário com perfil `vistoriador`</li>
+                    <li>cadastre a unidade/credenciado</li>
+                    <li>vincule o vistoriador a uma unidade ativa</li>
+                  </ol>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid gap-6 xl:grid-cols-2">
+              <Card className="border-slate-200 shadow-none overflow-hidden">
+                <CardContent className="p-0">
+                  <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                    <div>
+                      <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">Unidades / Credenciados</h2>
+                      <p className="text-xs text-slate-500">Locais disponíveis para receber agendamentos.</p>
+                    </div>
+                    <Button className="bg-slate-900 hover:bg-slate-800 text-white font-bold" onClick={() => abrirCadastroUnidade()}>
+                      <Building2 className="mr-2 h-4 w-4" />
+                      Nova unidade
+                    </Button>
+                  </div>
+
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200">
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Unidade</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Cidade</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Contato</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {unidadesCadastro.map((unidade: any) => (
+                        <tr key={unidade.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-slate-900">{unidade.nome}</span>
+                              <span className="text-[10px] text-slate-500 uppercase">
+                                {unidade.total_vistoriadores || 0} vistoriador(es) ativo(s)
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-600">
+                            {unidade.cidade}/{unidade.estado}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col text-sm text-slate-600">
+                              <span>{unidade.responsavel || "Sem responsável"}</span>
+                              <span className="text-xs text-slate-400">{unidade.whatsapp || unidade.telefone || unidade.email || "Sem contato"}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <Badge className={cn(
+                              "text-[10px] font-black uppercase",
+                              unidade.ativo ? "bg-green-50 text-green-700 hover:bg-green-50" : "bg-slate-100 text-slate-600 hover:bg-slate-100"
+                            )}>
+                              {unidade.ativo ? "Ativa" : "Inativa"}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <Button variant="outline" size="sm" className="font-bold" onClick={() => abrirCadastroUnidade(unidade)}>
+                              Editar
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+
+                      {unidadesCadastro.length === 0 && !loadingUnidadesCadastro && (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic text-sm">
+                            Nenhuma unidade credenciada cadastrada ainda.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+
+              <Card className="border-slate-200 shadow-none overflow-hidden">
+                <CardContent className="p-0">
+                  <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                    <div>
+                      <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">Vistoriadores</h2>
+                      <p className="text-xs text-slate-500">Equipe disponível para ser puxada na agenda.</p>
+                    </div>
+                    <Button className="bg-teal-600 hover:bg-teal-700 text-white font-bold" onClick={() => abrirCadastroVistoriador()}>
+                      <UserCog className="mr-2 h-4 w-4" />
+                      Vincular vistoriador
+                    </Button>
+                  </div>
+
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200">
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Nome</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Contato</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Unidade</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
+                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {vistoriadoresCadastro.map((vistoriador: any) => (
+                        <tr key={vistoriador.usuario_id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-slate-900">{vistoriador.nome}</span>
+                              <span className="text-[10px] text-slate-500">{vistoriador.email}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-600">
+                            {vistoriador.whatsapp || "Sem WhatsApp"}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-600">
+                            {vistoriador.unidade_nome || "Sem unidade"}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col gap-1">
+                              <Badge className={cn(
+                                "w-fit text-[10px] font-black uppercase",
+                                vistoriador.status
+                                  ? "bg-blue-50 text-blue-700 hover:bg-blue-50"
+                                  : "bg-amber-50 text-amber-700 hover:bg-amber-50"
+                              )}>
+                                {vistoriador.status || "Não vinculado"}
+                              </Badge>
+                              {!vistoriador.usuario_ativo && (
+                                <span className="text-[10px] text-red-600 font-bold uppercase">Usuário inativo</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <Button variant="outline" size="sm" className="font-bold" onClick={() => abrirCadastroVistoriador(vistoriador)}>
+                              {vistoriador.status ? "Editar" : "Vincular"}
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+
+                      {vistoriadoresCadastro.length === 0 && !loadingVistoriadoresCadastro && (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic text-sm">
+                            Nenhum usuário com perfil de vistoriador foi criado ainda.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
       </Tabs>
 
       <Dialog open={agendaOpen} onOpenChange={(open) => (open ? setAgendaOpen(true) : fecharAgenda())}>
@@ -670,6 +1013,162 @@ function VistoriasAdminPage() {
               disabled={!veiculoSelecionado || !unidadeId || !dataVistoria || !horarioVistoria}
             >
               Confirmar agendamento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={unidadeModalOpen}
+        onOpenChange={(open) => {
+          setUnidadeModalOpen(open);
+          if (!open) resetUnidadeForm();
+        }}
+      >
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{unidadeForm.id ? "Editar unidade credenciada" : "Nova unidade credenciada"}</DialogTitle>
+            <DialogDescription>
+              Cadastre o local que ficará disponível para receber agendamentos de vistoria.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2 md:col-span-2">
+              <Label>Nome da unidade</Label>
+              <Input value={unidadeForm.nome} onChange={(e) => setUnidadeForm((current) => ({ ...current, nome: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>CNPJ</Label>
+              <Input value={unidadeForm.cnpj} onChange={(e) => setUnidadeForm((current) => ({ ...current, cnpj: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>CEP</Label>
+              <Input value={unidadeForm.cep} onChange={(e) => setUnidadeForm((current) => ({ ...current, cep: e.target.value }))} />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Endereço</Label>
+              <Input value={unidadeForm.endereco} onChange={(e) => setUnidadeForm((current) => ({ ...current, endereco: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Cidade</Label>
+              <Input value={unidadeForm.cidade} onChange={(e) => setUnidadeForm((current) => ({ ...current, cidade: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>UF</Label>
+              <Input maxLength={2} value={unidadeForm.estado} onChange={(e) => setUnidadeForm((current) => ({ ...current, estado: e.target.value.toUpperCase() }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Telefone</Label>
+              <Input value={unidadeForm.telefone} onChange={(e) => setUnidadeForm((current) => ({ ...current, telefone: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>WhatsApp</Label>
+              <Input value={unidadeForm.whatsapp} onChange={(e) => setUnidadeForm((current) => ({ ...current, whatsapp: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>E-mail</Label>
+              <Input type="email" value={unidadeForm.email} onChange={(e) => setUnidadeForm((current) => ({ ...current, email: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Responsável</Label>
+              <Input value={unidadeForm.responsavel} onChange={(e) => setUnidadeForm((current) => ({ ...current, responsavel: e.target.value }))} />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Status</Label>
+              <Select
+                value={unidadeForm.ativo ? "ATIVA" : "INATIVA"}
+                onValueChange={(value) => setUnidadeForm((current) => ({ ...current, ativo: value === "ATIVA" }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ATIVA">Ativa</SelectItem>
+                  <SelectItem value="INATIVA">Inativa</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUnidadeModalOpen(false)}>Cancelar</Button>
+            <Button className="bg-slate-900 hover:bg-slate-800 text-white" onClick={() => void handleSalvarUnidade()}>
+              Salvar unidade
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={vistoriadorModalOpen}
+        onOpenChange={(open) => {
+          setVistoriadorModalOpen(open);
+          if (!open) resetVistoriadorForm();
+        }}
+      >
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Vincular vistoriador</DialogTitle>
+            <DialogDescription>
+              Escolha o usuário vistoriador e defina em qual unidade ele ficará disponível para a agenda.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Usuário vistoriador</Label>
+              <Select value={vistoriadorForm.usuario_id} onValueChange={(value) => setVistoriadorForm((current) => ({ ...current, usuario_id: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o vistoriador" />
+                </SelectTrigger>
+                <SelectContent>
+                  {vistoriadoresCadastro.map((vistoriador: any) => (
+                    <SelectItem key={vistoriador.usuario_id} value={vistoriador.usuario_id}>
+                      {vistoriador.nome}{vistoriador.unidade_nome ? ` - ${vistoriador.unidade_nome}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Unidade credenciada</Label>
+              <Select value={vistoriadorForm.unidade_id} onValueChange={(value) => setVistoriadorForm((current) => ({ ...current, unidade_id: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a unidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {unidadesCadastro
+                    .filter((unidade: any) => unidade.ativo)
+                    .map((unidade: any) => (
+                      <SelectItem key={unidade.id} value={unidade.id}>
+                        {unidade.nome} - {unidade.cidade}/{unidade.estado}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Status do vínculo</Label>
+              <Select value={vistoriadorForm.status} onValueChange={(value) => setVistoriadorForm((current) => ({ ...current, status: value }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ATIVO">Ativo</SelectItem>
+                  <SelectItem value="INATIVO">Inativo</SelectItem>
+                  <SelectItem value="BLOQUEADO">Bloqueado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVistoriadorModalOpen(false)}>Cancelar</Button>
+            <Button className="bg-teal-600 hover:bg-teal-700 text-white" onClick={() => void handleSalvarVistoriador()}>
+              Salvar vistoriador
             </Button>
           </DialogFooter>
         </DialogContent>

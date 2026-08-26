@@ -48,6 +48,69 @@ export const getVistoriadoresUnidadeFn = createServerFn({ method: "GET" })
     }
   });
 
+export const getUnidadesCadastroFn = createServerFn({ method: "GET" })
+  .handler(async () => {
+    const { listarUnidadesVistoriaCadastro } = await import("@/db/vistorias.server");
+    try {
+      const unidades = await listarUnidadesVistoriaCadastro();
+      return { ok: true, data: unidades };
+    } catch (err: any) {
+      return { ok: false, message: err.message };
+    }
+  });
+
+export const salvarUnidadeCadastroFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({
+    id: z.string().optional(),
+    nome: z.string().min(2),
+    cnpj: z.string().optional().nullable(),
+    cep: z.string().optional().nullable(),
+    endereco: z.string().min(5),
+    cidade: z.string().min(2),
+    estado: z.string().min(2).max(2),
+    telefone: z.string().optional().nullable(),
+    whatsapp: z.string().optional().nullable(),
+    email: z.string().email().optional().or(z.literal("")).nullable(),
+    responsavel: z.string().optional().nullable(),
+    ativo: z.boolean().optional(),
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const { salvarUnidadeVistoria } = await import("@/db/vistorias.server");
+    try {
+      const unidade = await salvarUnidadeVistoria(data);
+      return { ok: true, data: unidade };
+    } catch (err: any) {
+      return { ok: false, message: err.message };
+    }
+  });
+
+export const getVistoriadoresCadastroFn = createServerFn({ method: "GET" })
+  .handler(async () => {
+    const { listarVistoriadoresCadastro } = await import("@/db/vistorias.server");
+    try {
+      const vistoriadores = await listarVistoriadoresCadastro();
+      return { ok: true, data: vistoriadores };
+    } catch (err: any) {
+      return { ok: false, message: err.message };
+    }
+  });
+
+export const salvarVistoriadorCadastroFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({
+    usuario_id: z.string(),
+    unidade_id: z.string(),
+    status: z.enum(["ATIVO", "INATIVO", "BLOQUEADO"]).optional(),
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const { salvarVistoriadorCadastro } = await import("@/db/vistorias.server");
+    try {
+      const vistoriador = await salvarVistoriadorCadastro(data);
+      return { ok: true, data: vistoriador };
+    } catch (err: any) {
+      return { ok: false, message: err.message };
+    }
+  });
+
 export const criarAgendamentoVistoriaFn = createServerFn({ method: "POST" })
   .validator((d) => z.object({
     veiculo_id: z.string(),

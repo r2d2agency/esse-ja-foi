@@ -251,6 +251,136 @@ export async function listarVistoriadoresUnidade(unidadeId: string) {
   return (res as any).rows || res;
 }
 
+export async function listarUnidadesVistoriaCadastro() {
+  const d = requireDb();
+  await ensureVistoriaSchema();
+
+  const res = await d.execute(sql`
+    SELECT
+      uv.*,
+      COUNT(v.id)::int as total_vistoriadores
+    FROM unidades_vistoria uv
+    LEFT JOIN vistoriadores v ON v.unidade_id = uv.id AND v.status = 'ATIVO'
+    GROUP BY uv.id
+    ORDER BY uv.ativo DESC, uv.nome ASC
+  `);
+
+  return (res as any).rows || res;
+}
+
+export async function salvarUnidadeVistoria(data: {
+  id?: string;
+  nome: string;
+  cnpj?: string | null;
+  cep?: string | null;
+  endereco: string;
+  cidade: string;
+  estado: string;
+  telefone?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
+  responsavel?: string | null;
+  ativo?: boolean;
+}) {
+  const d = requireDb();
+  await ensureVistoriaSchema();
+
+  if (data.id) {
+    const res = await d.execute(sql`
+      UPDATE unidades_vistoria
+      SET
+        nome = ${data.nome},
+        cnpj = ${data.cnpj || null},
+        cep = ${data.cep || null},
+        endereco = ${data.endereco},
+        cidade = ${data.cidade},
+        estado = ${data.estado},
+        telefone = ${data.telefone || null},
+        whatsapp = ${data.whatsapp || null},
+        email = ${data.email || null},
+        responsavel = ${data.responsavel || null},
+        ativo = ${data.ativo ?? true},
+        atualizado_em = now()
+      WHERE id = ${data.id}::uuid
+      RETURNING id
+    `);
+
+    return (res as any).rows?.[0] || null;
+  }
+
+  const res = await d.execute(sql`
+    INSERT INTO unidades_vistoria (
+      nome, cnpj, cep, endereco, cidade, estado,
+      telefone, whatsapp, email, responsavel, ativo
+    ) VALUES (
+      ${data.nome},
+      ${data.cnpj || null},
+      ${data.cep || null},
+      ${data.endereco},
+      ${data.cidade},
+      ${data.estado},
+      ${data.telefone || null},
+      ${data.whatsapp || null},
+      ${data.email || null},
+      ${data.responsavel || null},
+      ${data.ativo ?? true}
+    )
+    RETURNING id
+  `);
+
+  return (res as any).rows?.[0] || null;
+}
+
+export async function listarVistoriadoresCadastro() {
+  const d = requireDb();
+  await ensureVistoriaSchema();
+
+  const res = await d.execute(sql`
+    SELECT
+      p.id as usuario_id,
+      p.nome,
+      p.email,
+      p.whatsapp,
+      p.ativo as usuario_ativo,
+      v.id,
+      v.unidade_id,
+      v.status,
+      uv.nome as unidade_nome
+    FROM profiles p
+    LEFT JOIN vistoriadores v ON v.usuario_id = p.id
+    LEFT JOIN unidades_vistoria uv ON uv.id = v.unidade_id
+    WHERE p.role = 'vistoriador'::app_role
+    ORDER BY p.nome ASC
+  `);
+
+  return (res as any).rows || res;
+}
+
+export async function salvarVistoriadorCadastro(data: {
+  usuario_id: string;
+  unidade_id: string;
+  status?: string;
+}) {
+  const d = requireDb();
+  await ensureVistoriaSchema();
+
+  const res = await d.execute(sql`
+    INSERT INTO vistoriadores (usuario_id, unidade_id, status)
+    VALUES (
+      ${data.usuario_id}::uuid,
+      ${data.unidade_id}::uuid,
+      ${data.status || "ATIVO"}
+    )
+    ON CONFLICT (usuario_id) DO UPDATE SET
+      unidade_id = EXCLUDED.unidade_id,
+      status = EXCLUDED.status,
+      atualizado_em = now()
+    RETURNING id
+  `);
+
+  return (res as any).rows?.[0] || null;
+}
+
 export async function getVistoriaVendedor(vendedorId: string) {
   const d = requireDb();
   await ensureVistoriaSchema();
