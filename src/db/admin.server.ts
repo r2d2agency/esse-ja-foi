@@ -151,6 +151,7 @@ export async function checkSystemHealth() {
 
 export async function listarVendedoresPendentes(status?: string | null) {
   const d = requireDb();
+  const statusFilter = status ? sql` AND status_compliance = ${status}` : sql``;
   const rows = await d.execute(sql`
     SELECT
       id,
@@ -167,9 +168,9 @@ export async function listarVendedoresPendentes(status?: string | null) {
       documento_cnh_url,
       documento_crlv_url,
       documento_selfie_url
-    FROM profiles 
+    FROM profiles
     WHERE role = 'vendedor'::app_role
-      AND (${status || null} IS NULL OR status_compliance = ${status || null})
+    ${statusFilter}
     ORDER BY criado_em DESC;
   `);
   return (rows as any).rows || rows;
@@ -188,6 +189,7 @@ export async function listarCompradores() {
 
 export async function listarUsuariosInternos(role?: string | null) {
   const d = requireDb();
+  const roleFilter = role ? sql` AND role = ${role}::app_role` : sql``;
   const rows = await d.execute(sql`
     SELECT
       id,
@@ -202,7 +204,7 @@ export async function listarUsuariosInternos(role?: string | null) {
       uf
     FROM profiles
     WHERE role IN ('admin'::app_role, 'operacao'::app_role, 'vistoriador'::app_role)
-      AND (${role || null} IS NULL OR role = ${role || null}::app_role)
+    ${roleFilter}
     ORDER BY
       CASE role
         WHEN 'vistoriador'::app_role THEN 1
