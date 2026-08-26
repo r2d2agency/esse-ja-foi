@@ -92,6 +92,7 @@ export const solicitarPendenciaCompradorFn = createServerFn({ method: "POST" })
     await d.execute(sql`
       UPDATE profiles 
       SET status_compliance = 'PENDENCIA',
+          compliance_motivo_pendencia = ${data.mensagem},
           atualizado_em = now()
       WHERE id = ${data.id}::uuid
     `);

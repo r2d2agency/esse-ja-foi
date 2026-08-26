@@ -50,27 +50,5 @@ export async function listarVeiculosAdmin(filtros: {
   
   const veiculos = (rows as any).rows || rows;
 
-  // AUTO-SEED PARA TESTE (Caso não existam veículos)
-  if (veiculos.length === 0 && !termo && !status) {
-    console.log("[listarVeiculosAdmin] Nenhum veículo encontrado. Criando Chevrolet Onix para teste...");
-    const id = 'ddd988ae-47e1-4699-ba71-d77a427062e1';
-    try {
-      await d.execute(sql`
-        INSERT INTO veiculos (id, placa, marca, modelo, ano_fabricacao, ano_modelo, km, cor, combustivel, cambio, status, status_analise, criado_em, atualizado_em)
-        VALUES (${id}, 'ABS1245', 'CHEVROLET', 'ONIX', '2023', '2024', 5000, 'PRETO', 'FLEX', 'AUTOMATICO', 'AGUARDANDO_ANALISE', 'AGUARDANDO_ANALISE', now(), now())
-        ON CONFLICT (id) DO UPDATE SET status_analise = 'AGUARDANDO_ANALISE';
-      `);
-      // Recarregar
-      const reload = await d.execute(sql`
-        SELECT v.*, p.nome as vendedor_nome FROM veiculos v
-        LEFT JOIN profiles p ON (p.id = v.perfil_id OR p.id = v.vendedor_id)
-        WHERE v.id = ${id}::uuid
-      `);
-      return (reload as any).rows || reload;
-    } catch (e) {
-      console.error("[listarVeiculosAdmin] Erro ao criar veículo de teste:", e);
-    }
-  }
-
   return veiculos;
 }

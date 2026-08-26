@@ -2,11 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listarVendedoresFn } from "@/lib/vendedores-compliance.functions";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { 
   Search, 
   ChevronRight, 
-  User as UserIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,6 +21,9 @@ import {
 import { cn, formatDate } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/vendedores")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    status: typeof search.status === "string" ? search.status : undefined,
+  }),
   component: VendedoresPage,
 });
 
@@ -36,8 +38,13 @@ const STATUS_CONFIG: Record<string, { label: string, color: string, bg: string }
 };
 
 function VendedoresPage() {
+  const search = Route.useSearch();
   const [busca, setBusca] = useState("");
-  const [filtroStatus, setFiltroStatus] = useState<string | undefined>(undefined);
+  const [filtroStatus, setFiltroStatus] = useState<string | undefined>(search.status);
+
+  useEffect(() => {
+    setFiltroStatus(search.status);
+  }, [search.status]);
   
   const loadVendedores = useServerFn(listarVendedoresFn);
   const { data: res, isLoading } = useQuery({

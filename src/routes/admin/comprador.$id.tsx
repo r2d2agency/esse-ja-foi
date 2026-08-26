@@ -1,15 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { obterDetalheCompradorFn, aprovarCompradorFn } from "@/lib/admin-compradores.functions";
+import { obterDetalheCompradorFn, aprovarCompradorFn, solicitarPendenciaCompradorFn } from "@/lib/admin-compradores.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, User, Building2, CheckCircle2, AlertTriangle, Eye, FileText } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDate } from "@/lib/utils";
 import { useState } from "react";
 import { toast } from "sonner";
-import { format } from "date-fns";
 
 export const Route = createFileRoute("/admin/comprador/$id")({
   component: DetalheCompradorPage,
@@ -24,9 +27,13 @@ export const Route = createFileRoute("/admin/comprador/$id")({
 function DetalheCompradorPage() {
   const { id } = Route.useParams();
   const [selectedDoc, setSelectedDoc] = useState<{ url: string; tipo: string } | null>(null);
+  const [showPendenciaDialog, setShowPendenciaDialog] = useState(false);
+  const [campoPendencia, setCampoPendencia] = useState("documentacao");
+  const [mensagemPendencia, setMensagemPendencia] = useState("");
 
   const loadComprador = useServerFn(obterDetalheCompradorFn);
   const aprovar = useServerFn(aprovarCompradorFn);
+  const solicitarPendencia = useServerFn(solicitarPendenciaCompradorFn);
 
   const { data: res, refetch } = useSuspenseQuery({
     queryKey: ["admin-comprador", id],
@@ -44,6 +51,34 @@ function DetalheCompradorPage() {
       refetch();
     } catch (e) {
       toast.error("Erro ao aprovar.");
+    } finally {
+      toast.dismiss(loading);
+    }
+  };
+
+  const handleSolicitarCorrecao = async () => {
+    if (!mensagemPendencia.trim()) {
+      toast.error("Descreva o que o comprador precisa corrigir.");
+      return;
+    }
+
+    const loading = toast.loading("Solicitando correção...");
+    try {
+      const resp = await solicitarPendencia({
+        data: {
+          id,
+          campo: campoPendencia,
+          mensagem: mensagemPendencia.trim(),
+        }
+      });
+      if (!resp.ok) throw new Error(resp.message || "Erro ao solicitar correção.");
+      toast.success("Correção solicitada com sucesso.");
+      setShowPendenciaDialog(false);
+      setCampoPendencia("documentacao");
+      setMensagemPendencia("");
+      refetch();
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao solicitar correção.");
     } finally {
       toast.dismiss(loading);
     }
@@ -88,7 +123,7 @@ function DetalheCompradorPage() {
             <Button 
               variant="outline" 
               className="w-full border-red-200 text-red-600 hover:bg-red-50 font-bold"
-              onClick={() => toast.error("Funcionalidade de pendência em desenvolvimento.")}
+              onClick={() => setShowPendenciaDialog(true)}
             >
               <AlertTriangle className="mr-2 h-4 w-4" /> Solicitar Correção
             </Button>
@@ -144,6 +179,45 @@ function DetalheCompradorPage() {
           <img src={selectedDoc.url} className="max-h-[90vh] rounded shadow-2xl" />
         </div>
       )}
+
+      <Dialog open={showPendenciaDialog} onOpenChange={setShowPendenciaDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Solicitar correção do comprador</DialogTitle>
+            <DialogDescription>
+              Explique o que precisa ser ajustado para o cadastro voltar ao comprador com clareza.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Área com pendência</Label>
+              <Select value={campoPendencia} onValueChange={setCampoPendencia}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a área" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="documentacao">Documentação</SelectItem>
+                  <SelectItem value="cadastro">Dados cadastrais</SelectItem>
+                  <SelectItem value="endereco">Endereço</SelectItem>
+                  <SelectItem value="comprovantes">Comprovantes</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Mensagem para o comprador</Label>
+              <Textarea
+                placeholder="Ex.: o comprovante enviado está ilegível e precisa ser reenviado com foto nítida."
+                value={mensagemPendencia}
+                onChange={(e) => setMensagemPendencia(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPendenciaDialog(false)}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleSolicitarCorrecao}>Solicitar correção</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

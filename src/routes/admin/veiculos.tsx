@@ -1,25 +1,32 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getVeiculosAdminFn } from "@/lib/admin-veiculos.functions";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, Car, User, Clock, Filter, AlertCircle } from "lucide-react";
+import { Search, ChevronRight, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/veiculos")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    status: typeof search.status === "string" ? search.status : undefined,
+  }),
   component: AdminVeiculosPage,
 });
 
 function AdminVeiculosPage() {
+  const search = Route.useSearch();
   const [busca, setBusca] = useState("");
-  const [status, setStatus] = useState("TODOS");
-  const navigate = useNavigate();
+  const [status, setStatus] = useState(search.status || "TODOS");
+
+  useEffect(() => {
+    setStatus(search.status || "TODOS");
+  }, [search.status]);
   
   const getVeiculos = useServerFn(getVeiculosAdminFn);
   const { data: res, isLoading } = useQuery({

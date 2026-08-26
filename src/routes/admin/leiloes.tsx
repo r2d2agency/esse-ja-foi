@@ -120,7 +120,7 @@ function AdminLeiloesPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <Button asChild size="sm" variant="ghost" className="gap-2">
-                        <Link to="/admin/leiloes">
+                        <Link to="/admin/leiloes/$id" params={{ id: leilao.id }}>
                           <Eye className="h-4 w-4" /> Acompanhar
                         </Link>
                       </Button>

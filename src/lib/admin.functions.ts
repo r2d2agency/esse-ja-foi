@@ -10,11 +10,14 @@ function requireDb() {
 }
 
 export const listarVendedoresFn = createServerFn({ method: "GET" })
-  .handler(async () => {
+  .validator((d: unknown) => z.object({
+    status: z.string().optional(),
+  }).optional().parse(d))
+  .handler(async ({ data }) => {
     const m = await import("@/db/admin.server");
     await m.ensureAdminTables();
     try {
-      return { ok: true as const, data: await m.listarVendedoresPendentes() };
+      return { ok: true as const, data: await m.listarVendedoresPendentes(data?.status) };
     } catch (e: any) {
       return { ok: false as const, message: e.message };
     }

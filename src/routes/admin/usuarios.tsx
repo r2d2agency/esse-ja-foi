@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Eye, Mail, UserCheck, Users, FileCheck, RefreshCw, UserPlus, ShieldAlert } from "lucide-react";
+import { CheckCircle, XCircle, Eye, Mail, UserCheck, Users, FileCheck, RefreshCw, UserPlus } from "lucide-react";
 import { listarVendedoresFn, listarCompradoresFn, gerenciarUsuarioFn } from "@/lib/admin.functions";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
@@ -14,10 +14,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { formatDate } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/usuarios")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    status: typeof search.status === "string" ? search.status : undefined,
+  }),
   component: UsuariosAdminPage,
 });
 
 function UsuariosAdminPage() {
+  const search = Route.useSearch();
   const [vendedores, setVendedores] = useState<any[]>([]);
   const [compradores, setCompradores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,11 +36,13 @@ function UsuariosAdminPage() {
     password: ""
   });
 
+  const complianceStatus = search.status === "EM_COMPLIANCE" ? "AGUARDANDO_ANALISE" : search.status;
+
   const carregar = useCallback(async () => {
     setLoading(true);
     try {
       const [resVendedores, resCompradores] = await Promise.all([
-        listarVendedoresFn(),
+        listarVendedoresFn({ data: { status: complianceStatus } }),
         listarCompradoresFn()
       ]);
       
@@ -51,7 +57,7 @@ function UsuariosAdminPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [complianceStatus]);
 
   useEffect(() => {
     void carregar();
@@ -102,6 +108,11 @@ function UsuariosAdminPage() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Gestão de Usuários</h1>
             <p className="text-sm text-slate-500">Aprove ou reprove o acesso de vendedores e compradores à plataforma.</p>
+            {complianceStatus && (
+              <p className="mt-2 text-xs font-semibold text-teal-700">
+                Filtro ativo para vendedores: {complianceStatus.replaceAll("_", " ")}
+              </p>
+            )}
           </div>
           <Button onClick={() => setModalNovo(true)} className="bg-teal-700 hover:bg-teal-800 gap-2">
             <UserPlus className="h-4 w-4" /> Novo Usuário

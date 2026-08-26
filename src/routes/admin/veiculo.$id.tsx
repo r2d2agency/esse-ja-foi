@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getVeiculoDetalheAdminFn, assumirAnaliseVeiculoFn, atualizarStatusAnaliseFn, atualizarStatusDocumentoVeiculoFn } from "@/lib/admin-veiculo-detalhe.functions";
@@ -44,7 +44,6 @@ import {
   AlertTriangle,
   Clock,
   Eye,
-  RotateCcw,
   Maximize2,
   Calendar,
   Gavel,
@@ -67,6 +66,7 @@ function DetalheVeiculoAdminPage() {
   const [activeTab, setActiveTab] = useState("resumo");
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [selectedPreview, setSelectedPreview] = useState<{ url: string; label: string } | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectObservation, setRejectObservation] = useState("");
   const queryClient = useQueryClient();
@@ -195,7 +195,18 @@ function DetalheVeiculoAdminPage() {
     }
   };
 
-  const fotos = typeof v.fotos === 'string' ? JSON.parse(v.fotos) : (v.fotos || []);
+  const fotos = (() => {
+    if (Array.isArray(v.fotos)) return v.fotos;
+    if (typeof v.fotos === 'string') {
+      try {
+        const parsed = JSON.parse(v.fotos);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  })();
 
   return (
     <div className="flex flex-col h-full bg-slate-50">
@@ -437,7 +448,12 @@ function DetalheVeiculoAdminPage() {
                           <div className="w-full h-full relative group">
                             <img src={v.documento_crlv_url} alt="CRLV" className="w-full h-full object-contain" />
                             <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <Button variant="secondary" size="sm" className="font-bold">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                className="font-bold"
+                                onClick={() => setSelectedPreview({ url: v.documento_crlv_url, label: "CRLV-e" })}
+                              >
                                 <Eye className="mr-2 h-4 w-4" /> Visualizar
                               </Button>
                             </div>
@@ -509,13 +525,14 @@ function DetalheVeiculoAdminPage() {
                     <div key={idx} className="aspect-square bg-white border border-slate-200 rounded-xl overflow-hidden group relative">
                       <img src={foto} alt={`Foto ${idx+1}`} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-4 gap-2">
-                        <Button size="icon" variant="secondary" className="h-8 w-8 rounded-full">
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          className="h-8 w-8 rounded-full"
+                          onClick={() => setSelectedPreview({ url: foto, label: `Foto ${idx + 1}` })}
+                        >
                           <Maximize2 className="h-4 w-4" />
                         </Button>
-                        <div className="flex gap-1">
-                          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white p-1 h-6 w-6"><ShieldCheck className="h-3 w-3" /></Button>
-                          <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white p-1 h-6 w-6"><RotateCcw className="h-3 w-3" /></Button>
-                        </div>
                       </div>
                       <div className="absolute bottom-0 inset-x-0 p-2 bg-white/90 backdrop-blur-sm">
                         <p className="text-[9px] font-black uppercase text-slate-500 text-center truncate">Categoria foto</p>
@@ -704,6 +721,39 @@ function DetalheVeiculoAdminPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowRejectDialog(false)}>Cancelar</Button>
             <Button variant="destructive" onClick={handleSolicitarNovoEnvio}>Solicitar novo envio</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedPreview} onOpenChange={(open) => !open && setSelectedPreview(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{selectedPreview?.label || "Visualização"}</DialogTitle>
+          </DialogHeader>
+          {selectedPreview && (
+            <div className="max-h-[75vh] overflow-auto rounded-lg border border-slate-200 bg-slate-50 p-4">
+              {selectedPreview.url.includes(".pdf") || selectedPreview.url.startsWith("data:application/pdf") ? (
+                <iframe
+                  src={selectedPreview.url}
+                  title={selectedPreview.label}
+                  className="h-[68vh] w-full rounded bg-white"
+                />
+              ) : (
+                <img
+                  src={selectedPreview.url}
+                  alt={selectedPreview.label}
+                  className="mx-auto max-h-[68vh] rounded object-contain"
+                />
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedPreview(null)}>Fechar</Button>
+            {selectedPreview && (
+              <Button onClick={() => window.open(selectedPreview.url, "_blank", "noopener,noreferrer")}>
+                Abrir em nova guia
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

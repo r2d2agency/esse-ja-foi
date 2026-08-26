@@ -149,12 +149,27 @@ export async function checkSystemHealth() {
   return health;
 }
 
-export async function listarVendedoresPendentes() {
+export async function listarVendedoresPendentes(status?: string | null) {
   const d = requireDb();
   const rows = await d.execute(sql`
-    SELECT id, nome, email, whatsapp, cpf, cidade, uf, ativo, cadastro_completo, criado_em, documento_cnh_url, documento_crlv_url, documento_selfie_url
+    SELECT
+      id,
+      nome,
+      email,
+      whatsapp,
+      cpf,
+      cidade,
+      uf,
+      ativo,
+      cadastro_completo,
+      criado_em,
+      status_compliance,
+      documento_cnh_url,
+      documento_crlv_url,
+      documento_selfie_url
     FROM profiles 
     WHERE role = 'vendedor'::app_role
+      AND (${status || null} IS NULL OR status_compliance = ${status || null})
     ORDER BY criado_em DESC;
   `);
   return (rows as any).rows || rows;

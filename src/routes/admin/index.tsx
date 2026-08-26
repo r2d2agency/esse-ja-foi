@@ -5,10 +5,8 @@ import { getAdminDashboardDataFn } from "@/lib/admin-dashboard.functions";
 import { 
   Users, 
   ShieldCheck, 
-  AlertCircle, 
   Car, 
   Camera, 
-  FileText,
   ChevronRight,
   Clock,
   ArrowRight,
@@ -39,12 +37,12 @@ function AdminDashboard() {
   const dashboard = res?.data;
 
   const stats = [
-    { label: "Veículos totais", value: dashboard?.stats?.veiculos ?? 0, icon: Car, color: "text-blue-600", bg: "bg-blue-50" },
-    { label: "Prontos para vistoria", value: dashboard?.stats?.prontos_vistoria ?? 0, icon: Camera, color: "text-amber-600", bg: "bg-amber-50" },
-    { label: "Vistorias de hoje", value: dashboard?.stats?.vistorias_hoje ?? 0, icon: Calendar, color: "text-teal-600", bg: "bg-teal-50" },
-    { label: "Aguardando confirmação", value: dashboard?.stats?.aguardando_confirmacao ?? 0, icon: Clock, color: "text-orange-600", bg: "bg-orange-50" },
-    { label: "Vendidos", value: dashboard?.stats?.vendidos ?? 0, icon: ShieldCheck, color: "text-green-600", bg: "bg-green-50" },
-    { label: "Compradores", value: dashboard?.stats?.clientes ?? 0, icon: Users, color: "text-purple-600", bg: "bg-purple-50" },
+    { label: "Veículos totais", value: dashboard?.stats?.veiculos ?? 0, icon: Car, color: "text-blue-600", bg: "bg-blue-50", to: "/admin/veiculos" },
+    { label: "Prontos para vistoria", value: dashboard?.stats?.prontos_vistoria ?? 0, icon: Camera, color: "text-amber-600", bg: "bg-amber-50", to: "/admin/veiculos", search: { status: "PRONTO_PARA_VISTORIA" } },
+    { label: "Vistorias de hoje", value: dashboard?.stats?.vistorias_hoje ?? 0, icon: Calendar, color: "text-teal-600", bg: "bg-teal-50", to: "/admin/vistorias" },
+    { label: "Aguardando confirmação", value: dashboard?.stats?.aguardando_confirmacao ?? 0, icon: Clock, color: "text-orange-600", bg: "bg-orange-50", to: "/admin/vistorias" },
+    { label: "Vendidos", value: dashboard?.stats?.vendidos ?? 0, icon: ShieldCheck, color: "text-green-600", bg: "bg-green-50", to: "/admin/negociacoes" },
+    { label: "Compradores", value: dashboard?.stats?.clientes ?? 0, icon: Users, color: "text-purple-600", bg: "bg-purple-50", to: "/admin/compradores" },
   ];
 
   const funnel = [
@@ -71,6 +69,7 @@ function AdminDashboard() {
           <Link
             key={stat.label}
             to={(stat as any).to ?? "/admin"}
+            search={(stat as any).search}
             className="flex flex-col p-4 bg-white border border-slate-200 rounded-xl hover:border-teal-500 transition-all text-left group"
           >
             <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center mb-3 transition-colors", stat.bg)}>
@@ -115,11 +114,16 @@ function AdminDashboard() {
             <Card className="border-slate-200 shadow-none overflow-hidden">
               <CardContent className="p-0 divide-y divide-slate-100">
                 {[
-                  { label: "Documentos aguardando análise", count: dashboard?.stats?.compliance_analise ?? 0, to: "/admin/usuarios?status=EM_COMPLIANCE" },
-                  { label: "Contratos pendentes de assinatura", count: dashboard?.stats?.contratos_pendentes ?? 0, to: "/admin/contratos?status=PENDENTES" },
-                  { label: "Veículos aguardando análise", count: dashboard?.stats?.veiculos_analise ?? 0, to: "/admin/veiculos" },
+                  { label: "Documentos aguardando análise", count: dashboard?.stats?.compliance_analise ?? 0, to: "/admin/vendedores", search: { status: "AGUARDANDO_ANALISE" } },
+                  { label: "Contratos pendentes de assinatura", count: dashboard?.stats?.contratos_pendentes ?? 0, to: "/admin/contratos", search: { status: "PENDENTES" } },
+                  { label: "Veículos aguardando análise", count: dashboard?.stats?.veiculos_analise ?? 0, to: "/admin/veiculos", search: { status: "AGUARDANDO_ANALISE" } },
                 ].map((item, idx) => (
-                  <Link key={idx} to={(item as any).to || "/admin"} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors group">
+                  <Link
+                    key={idx}
+                    to={(item as any).to || "/admin"}
+                    search={(item as any).search}
+                    className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors group"
+                  >
                     <div>
                       <p className="text-sm font-bold text-slate-700">{item.label}</p>
                       <p className="text-xs text-slate-400 font-medium">{item.count} pendências</p>
@@ -134,21 +138,21 @@ function AdminDashboard() {
           </section>
 
           <section className="space-y-4">
-            <h3 className="text-sm font-black text-slate-950 uppercase tracking-wider">Minha fila</h3>
+            <h3 className="text-sm font-black text-slate-950 uppercase tracking-wider">Filas rápidas</h3>
             <Card className="border-slate-200 shadow-none">
               <CardContent className="p-6 space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Compliance</p>
-                    <p className="text-xl font-black text-slate-950 mt-1">0 processos</p>
+                    <p className="text-xl font-black text-slate-950 mt-1">{dashboard?.stats?.compliance_analise ?? 0} processos</p>
                   </div>
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Veículos</p>
-                    <p className="text-xl font-black text-slate-950 mt-1">0 processos</p>
+                    <p className="text-xl font-black text-slate-950 mt-1">{dashboard?.stats?.veiculos_analise ?? 0} processos</p>
                   </div>
                 </div>
-                <Button className="w-full bg-slate-950 hover:bg-slate-900 text-white font-bold py-6">
-                  Ver minha fila
+                <Button asChild className="w-full bg-slate-950 hover:bg-slate-900 text-white font-bold py-6">
+                  <Link to="/admin/vendedores" search={{ status: "AGUARDANDO_ANALISE" }}>Abrir fila de compliance</Link>
                 </Button>
               </CardContent>
             </Card>

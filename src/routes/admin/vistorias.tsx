@@ -2,31 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getVistoriasAdminFn, getVeiculosAguardandoVistoriaFn } from "@/lib/vistorias.functions";
+import { getVeiculosAguardandoVistoriaFn } from "@/lib/vistorias.functions";
 import { getFilaAnalisePosVistoriaFn } from "@/lib/analise-pos-vistoria.functions";
 import { 
-  Calendar, 
-  Clock, 
   Search, 
-  Plus, 
-  MapPin, 
-  User, 
-  Car,
-  ChevronRight,
-  Filter,
-  CheckCircle2,
-  XCircle,
-  AlertCircle
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/vistorias")({
   head: () => ({
@@ -37,16 +22,11 @@ export const Route = createFileRoute("/admin/vistorias")({
 
 function VistoriasAdminPage() {
   const [activeTab, setActiveTab] = useState("aguardando_analise");
+  const [buscaFila, setBuscaFila] = useState("");
+  const [buscaAgendamento, setBuscaAgendamento] = useState("");
   
-  const getVistorias = useServerFn(getVistoriasAdminFn);
   const getAguardando = useServerFn(getVeiculosAguardandoVistoriaFn);
   const getFilaPosVistoria = useServerFn(getFilaAnalisePosVistoriaFn);
-
-  const { data: vistoriasRes, isLoading: loadingVistorias } = useQuery({
-    queryKey: ["admin-vistorias", activeTab],
-    queryFn: () => getVistorias({ data: { status: activeTab.toUpperCase() } }),
-    enabled: !['aguardando', 'aguardando_analise', 'agenda', 'hoje'].includes(activeTab)
-  });
 
   const { data: aguardandoRes, isLoading: loadingAguardando } = useQuery({
     queryKey: ["admin-veiculos-aguardando-vistoria"],
@@ -60,9 +40,22 @@ function VistoriasAdminPage() {
     enabled: activeTab === 'aguardando_analise'
   });
 
-  const vistorias = vistoriasRes?.data || [];
   const aguardando = aguardandoRes?.data || [];
   const filaPosVistoria = posVistoriaRes?.data || [];
+  const termoFila = buscaFila.trim().toLowerCase();
+  const termoAgendamento = buscaAgendamento.trim().toLowerCase();
+  const filaPosVistoriaFiltrada = filaPosVistoria.filter((v: any) =>
+    !termoFila ||
+    `${v.marca || ""} ${v.modelo || ""} ${v.placa || ""} ${v.vendedor_nome || ""} ${v.vistoriador_nome || ""} ${v.unidade_nome || ""}`
+      .toLowerCase()
+      .includes(termoFila)
+  );
+  const aguardandoFiltrado = aguardando.filter((v: any) =>
+    !termoAgendamento ||
+    `${v.marca || ""} ${v.modelo || ""} ${v.placa || ""} ${v.vendedor_nome || ""} ${v.vendedor_cidade || ""} ${v.vendedor_uf || ""}`
+      .toLowerCase()
+      .includes(termoAgendamento)
+  );
 
   return (
     <div className="p-6 space-y-8 max-w-7xl mx-auto">
@@ -70,28 +63,15 @@ function VistoriasAdminPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-slate-950 uppercase tracking-tight">Vistorias</h1>
-          <p className="text-slate-500 font-medium">Gestão de agendamentos e unidades autorizadas.</p>
-        </div>
-        <div className="flex gap-3">
-          <Button variant="outline" className="font-bold">
-            Unidades
-          </Button>
-          <Button variant="outline" className="font-bold">
-            Vistoriadores
-          </Button>
+          <p className="text-slate-500 font-medium">Gestão das filas operacionais de agendamento e análise pós-vistoria.</p>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="bg-transparent border-b border-slate-200 w-full justify-start rounded-none h-auto p-0 gap-8">
           {[
-            { id: "agenda", label: "Agenda" },
             { id: "aguardando_analise", label: "Aguardando análise" },
             { id: "aguardando", label: "Aguardando agendamento" },
-            { id: "confirmadas", label: "Agendadas" },
-            { id: "hoje", label: "Hoje" },
-            { id: "concluidas", label: "Concluídas" },
-            { id: "canceladas", label: "Canceladas" },
           ].map((tab) => (
             <TabsTrigger
               key={tab.id}
@@ -109,7 +89,12 @@ function VistoriasAdminPage() {
               <h2 className="text-sm font-black uppercase text-slate-900 tracking-wider">Fila de análise pós-vistoria</h2>
               <div className="relative w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input placeholder="Buscar na fila..." className="pl-10 h-10 border-slate-200 bg-white" />
+                <Input
+                  placeholder="Buscar na fila..."
+                  className="pl-10 h-10 border-slate-200 bg-white"
+                  value={buscaFila}
+                  onChange={(e) => setBuscaFila(e.target.value)}
+                />
               </div>
             </div>
 
@@ -127,7 +112,7 @@ function VistoriasAdminPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 bg-white">
-                    {filaPosVistoria.map((v: any) => (
+                    {filaPosVistoriaFiltrada.map((v: any) => (
                       <tr key={v.vistoria_id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
@@ -147,7 +132,9 @@ function VistoriasAdminPage() {
                             <span className="text-sm font-bold text-slate-700">
                               {v.concluido_em ? format(new Date(v.concluido_em), 'dd/MM HH:mm') : '-'}
                             </span>
-                            <span className="text-[10px] text-slate-400 uppercase font-medium">há {format(new Date(v.concluido_em), 'm', { locale: ptBR })} min</span>
+                            <span className="text-[10px] text-slate-400 uppercase font-medium">
+                              {v.concluido_em ? "Concluída" : "Sem horário"}
+                            </span>
                           </div>
                         </td>
                         <td className="px-6 py-4">
@@ -166,7 +153,7 @@ function VistoriasAdminPage() {
                         </td>
                       </tr>
                     ))}
-                    {filaPosVistoria.length === 0 && !loadingPosVistoria && (
+                    {filaPosVistoriaFiltrada.length === 0 && !loadingPosVistoria && (
                       <tr>
                         <td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic text-sm">
                           Nenhuma vistoria aguardando análise.
@@ -186,7 +173,12 @@ function VistoriasAdminPage() {
               <h2 className="text-sm font-black uppercase text-slate-900 tracking-wider">Fila de espera</h2>
               <div className="relative w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input placeholder="Buscar por placa ou vendedor..." className="pl-10 h-10 border-slate-200 bg-white" />
+                <Input
+                  placeholder="Buscar por placa ou vendedor..."
+                  className="pl-10 h-10 border-slate-200 bg-white"
+                  value={buscaAgendamento}
+                  onChange={(e) => setBuscaAgendamento(e.target.value)}
+                />
               </div>
             </div>
 
@@ -204,7 +196,7 @@ function VistoriasAdminPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 bg-white">
-                    {aguardando.map((v: any) => (
+                    {aguardandoFiltrado.map((v: any) => (
                       <tr key={v.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="px-6 py-4">
                           <span className="text-sm font-bold text-slate-900">{v.marca} {v.modelo}</span>
@@ -224,7 +216,7 @@ function VistoriasAdminPage() {
                         </td>
                       </tr>
                     ))}
-                    {aguardando.length === 0 && !loadingAguardando && (
+                    {aguardandoFiltrado.length === 0 && !loadingAguardando && (
                       <tr>
                         <td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic text-sm">
                           Nenhum veículo aguardando agendamento no momento.
@@ -238,15 +230,6 @@ function VistoriasAdminPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="agenda" className="mt-0">
-           <Card className="border-slate-200 shadow-none bg-white p-12 text-center">
-             <Calendar className="h-12 w-12 text-slate-200 mx-auto mb-4" />
-             <h3 className="text-lg font-bold text-slate-900">Visualização de Agenda</h3>
-             <p className="text-slate-500 max-w-sm mx-auto mt-2">
-               O calendário semanal está sendo processado para exibir a disponibilidade das unidades e vistoriadores.
-             </p>
-           </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );
