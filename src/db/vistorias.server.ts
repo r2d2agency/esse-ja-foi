@@ -23,6 +23,13 @@ function minutesToTime(value: number) {
   return `${String(hora).padStart(2, "0")}:${String(minuto).padStart(2, "0")}`;
 }
 
+function normalizarUuid(value: unknown) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  const match = raw.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+  return match?.[0]?.toLowerCase() || null;
+}
+
 function normalizarHorarioAtendimento(value: any): Record<string, HorarioPeriodo[]> {
   if (!value || typeof value !== "object") return {};
   return Object.entries(value).reduce<Record<string, HorarioPeriodo[]>>((acc, [dia, faixa]) => {
@@ -253,8 +260,28 @@ export async function getVeiculosAguardandoVistoria() {
 export async function criarAgendamento(data: any) {
   const d = requireDb();
   await ensureVistoriaSchema();
+  const unidadeId = normalizarUuid(data.unidade_id);
+  const vistoriadorId = normalizarUuid(data.vistoriador_id);
 
-  const slots = await listarSlotsDisponiveisUnidade(data.unidade_id, data.data_vistoria, data.vistoriador_id || null);
+  if (!unidadeId) {
+    throw new Error("Selecione uma unidade de vistoria válida.");
+  }
+
+  const unidadeRes = await d.execute(sql`
+    SELECT id::text as id, ativo
+    FROM unidades_vistoria
+    WHERE lower(id::text) = ${unidadeId}
+    LIMIT 1
+  `);
+  const unidade = (unidadeRes as any).rows?.[0];
+  if (!unidade) {
+    throw new Error("Unidade de vistoria não encontrada.");
+  }
+  if (!unidade.ativo) {
+    throw new Error("A unidade selecionada está inativa. Escolha outra unidade para agendar.");
+  }
+
+  const slots = await listarSlotsDisponiveisUnidade(unidadeId, data.data_vistoria, vistoriadorId || null);
   const slotDisponivel = slots.slots.some((slot) => slot.value === data.horario_vistoria);
   if (!slotDisponivel) {
     throw new Error("Esse slot não está mais disponível para agendamento.");
@@ -266,7 +293,7 @@ export async function criarAgendamento(data: any) {
       data_vistoria, horario_vistoria, status, criado_por
     ) VALUES (
       ${data.veiculo_id}::uuid, ${data.vendedor_id}::uuid, 
-      ${data.unidade_id}::uuid, ${data.vistoriador_id}::uuid,
+      ${unidadeId}::uuid, ${vistoriadorId}::uuid,
       ${data.data_vistoria}, ${data.horario_vistoria},
       'AGUARDANDO_CONFIRMACAO', ${data.usuario_id}::uuid
     ) RETURNING id
@@ -304,12 +331,17 @@ export async function listarUnidadesDisponiveis(cidade?: string) {
 export async function listarVistoriadoresUnidade(unidadeId: string) {
   const d = requireDb();
   await ensureVistoriaSchema();
+  const unidadeIdNormalizado = normalizarUuid(unidadeId);
+
+  if (!unidadeIdNormalizado) {
+    return [];
+  }
   
   const res = await d.execute(sql`
     SELECT v.*, p.nome, p.email, p.whatsapp
     FROM vistoriadores v
     JOIN profiles p ON v.usuario_id = p.id
-    WHERE v.unidade_id = ${unidadeId}::uuid AND v.status = 'ATIVO'
+    WHERE v.unidade_id = ${unidadeIdNormalizado}::uuid AND v.status = 'ATIVO'
   `);
   return (res as any).rows || res;
 }
@@ -413,7 +445,8 @@ export async function salvarUnidadeVistoria(data: {
 export async function listarSlotsDisponiveisUnidade(unidadeId: string, data: string, vistoriadorId?: string | null) {
   const d = requireDb();
   await ensureVistoriaSchema();
-  const unidadeIdNormalizado = String(unidadeId || "").trim();
+  const unidadeIdNormalizado = normalizarUuid(unidadeId);
+  const vistoriadorIdNormalizado = normalizarUuid(vistoriadorId);
 
   if (!unidadeIdNormalizado) {
     return { ok: false as const, message: "Selecione uma unidade de vistoria válida.", slots: [] as any[] };
@@ -422,7 +455,7 @@ export async function listarSlotsDisponiveisUnidade(unidadeId: string, data: str
   const unidadeRes = await d.execute(sql`
     SELECT horario_atendimento, duracao_padrao_minutos, intervalo_entre_vistorias_minutos
     FROM unidades_vistoria
-    WHERE id = ${unidadeIdNormalizado}::uuid
+    WHERE lower(id::text) = ${unidadeIdNormalizado}
       AND ativo = true
     LIMIT 1
   `);
@@ -458,11 +491,11 @@ export async function listarSlotsDisponiveisUnidade(unidadeId: string, data: str
   const agendamentos = (agendamentosRes as any).rows || [];
 
   let agendamentosVistoriador: any[] = [];
-  if (vistoriadorId) {
+  if (vistoriadorIdNormalizado) {
     const agendamentosVistoriadorRes = await d.execute(sql`
       SELECT horario_vistoria
       FROM vistorias
-      WHERE vistoriador_id = ${vistoriadorId}::uuid
+      WHERE vistoriador_id = ${vistoriadorIdNormalizado}::uuid
         AND data_vistoria = ${data}
         AND status NOT IN ('CANCELADA')
     `);
