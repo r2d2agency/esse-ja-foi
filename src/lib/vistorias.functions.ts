@@ -48,6 +48,21 @@ export const getVistoriadoresUnidadeFn = createServerFn({ method: "GET" })
     }
   });
 
+export const getSlotsUnidadeDisponiveisFn = createServerFn({ method: "GET" })
+  .validator((d) => z.object({
+    unidadeId: z.string(),
+    data: z.string(),
+    vistoriadorId: z.string().optional().nullable(),
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const { listarSlotsDisponiveisUnidade } = await import("@/db/vistorias.server");
+    try {
+      return await listarSlotsDisponiveisUnidade(data.unidadeId, data.data, data.vistoriadorId || null);
+    } catch (err: any) {
+      return { ok: false, message: err.message, slots: [] };
+    }
+  });
+
 export const getUnidadesCadastroFn = createServerFn({ method: "GET" })
   .handler(async () => {
     const { listarUnidadesVistoriaCadastro } = await import("@/db/vistorias.server");
@@ -68,6 +83,14 @@ export const salvarUnidadeCadastroFn = createServerFn({ method: "POST" })
     endereco: z.string().min(5),
     cidade: z.string().min(2),
     estado: z.string().min(2).max(2),
+    latitude: z.number().optional().nullable(),
+    longitude: z.number().optional().nullable(),
+    horario_atendimento: z.record(z.object({
+      inicio: z.string(),
+      fim: z.string(),
+    })).optional().nullable(),
+    duracao_padrao_minutos: z.number().int().positive().optional().nullable(),
+    intervalo_entre_vistorias_minutos: z.number().int().min(0).optional().nullable(),
     telefone: z.string().optional().nullable(),
     whatsapp: z.string().optional().nullable(),
     email: z.string().email().optional().or(z.literal("")).nullable(),

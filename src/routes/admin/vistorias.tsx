@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   criarAgendamentoVistoriaFn,
+  getSlotsUnidadeDisponiveisFn,
   getUnidadesCadastroFn,
   getUnidadesDisponiveisFn,
   getVeiculosAguardandoVistoriaFn,
@@ -25,6 +26,7 @@ import {
   Building2,
   UserCog,
   UserPlus,
+  Loader2,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -49,6 +51,65 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { buscarCep, geocodificar, maskCep } from "@/lib/brasil";
+import MapaLocalizacao from "@/components/shared/MapaLocalizacao";
+import { Checkbox } from "@/components/ui/checkbox";
+
+const DIAS_ATENDIMENTO = [
+  { key: "1", label: "Segunda" },
+  { key: "2", label: "Terça" },
+  { key: "3", label: "Quarta" },
+  { key: "4", label: "Quinta" },
+  { key: "5", label: "Sexta" },
+  { key: "6", label: "Sábado" },
+  { key: "0", label: "Domingo" },
+] as const;
+
+function criarHorarioAtendimentoForm() {
+  return DIAS_ATENDIMENTO.reduce<Record<string, { ativo: boolean; inicio: string; fim: string }>>((acc, dia) => {
+    acc[dia.key] = { ativo: false, inicio: "08:00", fim: "18:00" };
+    return acc;
+  }, {});
+}
+
+function normalizarHorarioAtendimentoForm(value: any) {
+  const base = criarHorarioAtendimentoForm();
+  if (!value || typeof value !== "object") return base;
+  for (const dia of DIAS_ATENDIMENTO) {
+    const faixa = value[dia.key];
+    if (!faixa || typeof faixa !== "object") continue;
+    if (typeof faixa.inicio === "string" && typeof faixa.fim === "string") {
+      base[dia.key] = {
+        ativo: true,
+        inicio: faixa.inicio,
+        fim: faixa.fim,
+      };
+    }
+  }
+  return base;
+}
+
+function extrairHorarioAtendimentoPayload(value: Record<string, { ativo: boolean; inicio: string; fim: string }>) {
+  return Object.entries(value).reduce<Record<string, { inicio: string; fim: string }>>((acc, [dia, faixa]) => {
+    if (!faixa.ativo || !faixa.inicio || !faixa.fim) return acc;
+    acc[dia] = { inicio: faixa.inicio, fim: faixa.fim };
+    return acc;
+  }, {});
+}
+
+function horarioParaMinutos(value: string) {
+  const [hora, minuto] = String(value || "00:00").split(":").map(Number);
+  return (hora || 0) * 60 + (minuto || 0);
+}
+
+function resumirHorarioAtendimento(value: any) {
+  const horario = normalizarHorarioAtendimentoForm(value);
+  const ativos = DIAS_ATENDIMENTO.filter((dia) => horario[dia.key]?.ativo);
+  if (ativos.length === 0) return "Sem horários configurados";
+  return ativos
+    .map((dia) => `${dia.label.slice(0, 3)} ${horario[dia.key].inicio}-${horario[dia.key].fim}`)
+    .join(" | ");
+}
 
 export const Route = createFileRoute("/admin/vistorias")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -88,12 +149,19 @@ function VistoriasAdminPage() {
     endereco: "",
     cidade: "",
     estado: "",
+    latitude: null as number | null,
+    longitude: null as number | null,
     telefone: "",
     whatsapp: "",
     email: "",
     responsavel: "",
+    horario_atendimento: criarHorarioAtendimentoForm(),
+    duracao_padrao_minutos: 60,
+    intervalo_entre_vistorias_minutos: 30,
     ativo: true,
   });
+  const [buscandoCepUnidade, setBuscandoCepUnidade] = useState(false);
+  const [geocodificandoUnidade, setGeocodificandoUnidade] = useState(false);
   const [vistoriadorForm, setVistoriadorForm] = useState({
     usuario_id: "",
     unidade_id: "",
@@ -103,6 +171,7 @@ function VistoriasAdminPage() {
   const getVistorias = useServerFn(getVistoriasAdminFn);
   const getAguardando = useServerFn(getVeiculosAguardandoVistoriaFn);
   const getFilaPosVistoria = useServerFn(getFilaAnalisePosVistoriaFn);
+  const getSlotsUnidade = useServerFn(getSlotsUnidadeDisponiveisFn);
   const getUnidades = useServerFn(getUnidadesDisponiveisFn);
   const getVistoriadores = useServerFn(getVistoriadoresUnidadeFn);
   const criarAgendamento = useServerFn(criarAgendamentoVistoriaFn);
@@ -160,6 +229,18 @@ function VistoriasAdminPage() {
     enabled: agendaOpen && !!unidadeId,
   });
 
+  const { data: slotsRes, isLoading: loadingSlots } = useQuery({
+    queryKey: ["slots-unidade-vistoria", unidadeId, dataVistoria, vistoriadorId || "todos"],
+    queryFn: () => getSlotsUnidade({
+      data: {
+        unidadeId,
+        data: dataVistoria,
+        vistoriadorId: vistoriadorId && vistoriadorId !== "__sem_vistoriador__" ? vistoriadorId : null,
+      },
+    }),
+    enabled: agendaOpen && !!unidadeId && !!dataVistoria,
+  });
+
   const { data: unidadesCadastroRes, isLoading: loadingUnidadesCadastro } = useQuery({
     queryKey: ["cadastro-unidades-vistoria"],
     queryFn: () => getUnidadesCadastro(),
@@ -179,6 +260,7 @@ function VistoriasAdminPage() {
   const vistoriadores = vistoriadoresRes?.data || [];
   const unidadesCadastro = unidadesCadastroRes?.data || [];
   const vistoriadoresCadastro = vistoriadoresCadastroRes?.data || [];
+  const slotsDisponiveis = slotsRes?.slots || [];
   const termoFila = buscaFila.trim().toLowerCase();
   const termoAgendamento = buscaAgendamento.trim().toLowerCase();
   const termoAgendaCriada = buscaAgendaCriada.trim().toLowerCase();
@@ -250,10 +332,15 @@ function VistoriasAdminPage() {
       endereco: "",
       cidade: "",
       estado: "",
+      latitude: null,
+      longitude: null,
       telefone: "",
       whatsapp: "",
       email: "",
       responsavel: "",
+      horario_atendimento: criarHorarioAtendimentoForm(),
+      duracao_padrao_minutos: 60,
+      intervalo_entre_vistorias_minutos: 30,
       ativo: true,
     });
   };
@@ -291,16 +378,85 @@ function VistoriasAdminPage() {
         endereco: unidade.endereco || "",
         cidade: unidade.cidade || "",
         estado: unidade.estado || "",
+        latitude: unidade.latitude != null ? Number(unidade.latitude) : null,
+        longitude: unidade.longitude != null ? Number(unidade.longitude) : null,
         telefone: unidade.telefone || "",
         whatsapp: unidade.whatsapp || "",
         email: unidade.email || "",
         responsavel: unidade.responsavel || "",
+        horario_atendimento: normalizarHorarioAtendimentoForm(unidade.horario_atendimento),
+        duracao_padrao_minutos: Number(unidade.duracao_padrao_minutos || 60),
+        intervalo_entre_vistorias_minutos: Number(unidade.intervalo_entre_vistorias_minutos || 30),
         ativo: unidade.ativo ?? true,
       });
     } else {
       resetUnidadeForm();
     }
     setUnidadeModalOpen(true);
+  };
+
+  const preencherCoordenadasUnidade = async (form = unidadeForm) => {
+    const partes = [
+      form.endereco,
+      form.cidade,
+      form.estado,
+      form.cep,
+      "Brasil",
+    ].filter(Boolean);
+    if (partes.length < 3) return;
+
+    setGeocodificandoUnidade(true);
+    try {
+      const coords = await geocodificar(partes.join(", "));
+      if (coords) {
+        setUnidadeForm((current) => ({
+          ...current,
+          latitude: coords.lat,
+          longitude: coords.lng,
+        }));
+      } else {
+        toast.error("Não consegui localizar esse endereço no mapa.");
+      }
+    } finally {
+      setGeocodificandoUnidade(false);
+    }
+  };
+
+  const handleCepUnidadeChange = async (value: string) => {
+    const cep = maskCep(value);
+    setUnidadeForm((current) => ({ ...current, cep }));
+
+    if (cep.replace(/\D/g, "").length !== 8) return;
+
+    setBuscandoCepUnidade(true);
+    try {
+      const endereco = await buscarCep(cep);
+      if (!endereco) {
+        toast.error("CEP não encontrado.");
+        return;
+      }
+
+      const enderecoFormatado = [endereco.logradouro].filter(Boolean).join(", ");
+      const proximoForm = {
+        ...unidadeForm,
+        cep: endereco.cep,
+        endereco: enderecoFormatado || unidadeForm.endereco,
+        cidade: endereco.cidade,
+        estado: endereco.uf,
+      };
+
+      setUnidadeForm((current) => ({
+        ...current,
+        cep: endereco.cep,
+        endereco: enderecoFormatado || current.endereco,
+        cidade: endereco.cidade,
+        estado: endereco.uf,
+      }));
+
+      await preencherCoordenadasUnidade(proximoForm);
+    } finally {
+      setBuscandoCepUnidade(false);
+    }
   };
 
   const abrirCadastroVistoriador = (vistoriador?: any) => {
@@ -329,6 +485,18 @@ function VistoriasAdminPage() {
   }, [vistoriadores, vistoriadorId]);
 
   useEffect(() => {
+    setHorarioVistoria("");
+  }, [unidadeId, dataVistoria, vistoriadorId]);
+
+  useEffect(() => {
+    if (!slotsDisponiveis.length) return;
+    if (slotsDisponiveis.some((slot: any) => slot.value === horarioVistoria)) return;
+    if (slotsDisponiveis.length === 1) {
+      setHorarioVistoria(slotsDisponiveis[0].value);
+    }
+  }, [slotsDisponiveis, horarioVistoria]);
+
+  useEffect(() => {
     if (activeTab !== "aguardando" || !search.veiculoId || aguardando.length === 0) return;
     if (agendaOpen && veiculoSelecionado?.id === search.veiculoId) return;
 
@@ -342,7 +510,7 @@ function VistoriasAdminPage() {
       return;
     }
     if (!unidadeId || !dataVistoria || !horarioVistoria) {
-      toast.error("Preencha unidade, data e horário.");
+      toast.error("Selecione unidade, data e um slot disponível.");
       return;
     }
 
@@ -381,12 +549,39 @@ function VistoriasAdminPage() {
       toast.error("Preencha nome, endereço, cidade e UF da unidade.");
       return;
     }
+    if (unidadeForm.latitude == null || unidadeForm.longitude == null) {
+      toast.error("Confirme a localização da unidade no mapa.");
+      return;
+    }
+    const horarioAtendimento = extrairHorarioAtendimentoPayload(unidadeForm.horario_atendimento);
+    if (Object.keys(horarioAtendimento).length === 0) {
+      toast.error("Selecione pelo menos um dia e horário de atendimento da unidade.");
+      return;
+    }
+    const faixaInvalida = Object.entries(unidadeForm.horario_atendimento).find(([, faixa]) => (
+      faixa.ativo && horarioParaMinutos(faixa.fim) <= horarioParaMinutos(faixa.inicio)
+    ));
+    if (faixaInvalida) {
+      toast.error("Revise os horários da unidade. O horário final precisa ser maior que o inicial.");
+      return;
+    }
+    if (!Number.isFinite(unidadeForm.duracao_padrao_minutos) || unidadeForm.duracao_padrao_minutos < 15) {
+      toast.error("A duração mínima da vistoria deve ser de 15 minutos.");
+      return;
+    }
+    if (!Number.isFinite(unidadeForm.intervalo_entre_vistorias_minutos) || unidadeForm.intervalo_entre_vistorias_minutos < 0) {
+      toast.error("O intervalo entre vistorias não pode ser negativo.");
+      return;
+    }
 
     const toastId = toast.loading(unidadeForm.id ? "Atualizando unidade..." : "Criando unidade...");
     try {
       const response = await salvarUnidadeCadastro({
         data: {
           ...unidadeForm,
+          horario_atendimento: horarioAtendimento,
+          duracao_padrao_minutos: Number(unidadeForm.duracao_padrao_minutos),
+          intervalo_entre_vistorias_minutos: Number(unidadeForm.intervalo_entre_vistorias_minutos),
           estado: unidadeForm.estado.toUpperCase(),
           email: unidadeForm.email || null,
         },
@@ -804,6 +999,9 @@ function VistoriasAdminPage() {
                               <span className="text-[10px] text-slate-500 uppercase">
                                 {unidade.total_vistoriadores || 0} vistoriador(es) ativo(s)
                               </span>
+                              <span className="text-[10px] text-slate-400">
+                                {resumirHorarioAtendimento(unidade.horario_atendimento)}
+                              </span>
                             </div>
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-600">
@@ -926,7 +1124,7 @@ function VistoriasAdminPage() {
           <DialogHeader>
             <DialogTitle>Agendar vistoria</DialogTitle>
             <DialogDescription>
-              Defina unidade, vistoriador, data e horário para o veículo seguir da triagem para a inspeção física.
+              Defina unidade, vistoriador, data e slot disponível para o veículo seguir da triagem para a inspeção física.
             </DialogDescription>
           </DialogHeader>
 
@@ -993,13 +1191,59 @@ function VistoriasAdminPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Horário</Label>
-                  <Input
-                    type="time"
-                    value={horarioVistoria}
-                    onChange={(e) => setHorarioVistoria(e.target.value)}
-                  />
+                <div className="space-y-2 md:col-span-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <Label>Slots disponíveis</Label>
+                      <p className="text-xs text-slate-500">
+                        Escolha um horário dentro da janela configurada da unidade.
+                      </p>
+                    </div>
+                    {slotsRes?.configuracao && (
+                      <p className="text-[11px] text-slate-500 text-right">
+                        Atendimento {slotsRes.configuracao.faixa?.inicio} às {slotsRes.configuracao.faixa?.fim}
+                        <br />
+                        Vistoria {slotsRes.configuracao.duracao_padrao_minutos} min + janela de {slotsRes.configuracao.intervalo_entre_vistorias_minutos} min
+                      </p>
+                    )}
+                  </div>
+
+                  {!dataVistoria ? (
+                    <div className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
+                      Escolha uma data para ver os slots disponíveis.
+                    </div>
+                  ) : loadingSlots ? (
+                    <div className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500 flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Carregando slots dessa unidade...
+                    </div>
+                  ) : slotsDisponiveis.length > 0 ? (
+                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      {slotsDisponiveis.map((slot: any) => {
+                        const ativo = horarioVistoria === slot.value;
+                        return (
+                          <button
+                            key={slot.value}
+                            type="button"
+                            className={cn(
+                              "rounded-lg border px-3 py-3 text-left transition-colors",
+                              ativo
+                                ? "border-teal-500 bg-teal-50 text-teal-700"
+                                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                            )}
+                            onClick={() => setHorarioVistoria(slot.value)}
+                          >
+                            <p className="text-sm font-bold">{slot.value}</p>
+                            <p className="text-[11px] text-slate-500">vai at&eacute; {slot.fim}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-amber-200 bg-amber-50 px-4 py-6 text-sm text-amber-700">
+                      {slotsRes?.message || "Nenhum slot disponível para essa data."}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1025,7 +1269,7 @@ function VistoriasAdminPage() {
           if (!open) resetUnidadeForm();
         }}
       >
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>{unidadeForm.id ? "Editar unidade credenciada" : "Nova unidade credenciada"}</DialogTitle>
             <DialogDescription>
@@ -1044,7 +1288,12 @@ function VistoriasAdminPage() {
             </div>
             <div className="space-y-2">
               <Label>CEP</Label>
-              <Input value={unidadeForm.cep} onChange={(e) => setUnidadeForm((current) => ({ ...current, cep: e.target.value }))} />
+              <div className="relative">
+                <Input value={unidadeForm.cep} onChange={(e) => void handleCepUnidadeChange(e.target.value)} placeholder="00000-000" />
+                {(buscandoCepUnidade || geocodificandoUnidade) && (
+                  <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" />
+                )}
+              </div>
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Endereço</Label>
@@ -1088,6 +1337,144 @@ function VistoriasAdminPage() {
                   <SelectItem value="INATIVA">Inativa</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-4 md:col-span-2 rounded-xl border border-slate-200 p-4">
+              <div className="space-y-1">
+                <Label>Disponibilidade da unidade</Label>
+                <p className="text-xs text-slate-500">
+                  Defina em quais dias a unidade atende e qual faixa de horário ficará disponível para gerar os slots de agendamento.
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Duração padrão da vistoria (min)</Label>
+                  <Input
+                    type="number"
+                    min={15}
+                    step={5}
+                    value={unidadeForm.duracao_padrao_minutos}
+                    onChange={(e) => setUnidadeForm((current) => ({ ...current, duracao_padrao_minutos: Number(e.target.value || 0) }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Janela entre vistorias (min)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={5}
+                    value={unidadeForm.intervalo_entre_vistorias_minutos}
+                    onChange={(e) => setUnidadeForm((current) => ({ ...current, intervalo_entre_vistorias_minutos: Number(e.target.value || 0) }))}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {DIAS_ATENDIMENTO.map((dia) => {
+                  const faixa = unidadeForm.horario_atendimento[dia.key];
+                  return (
+                    <div key={dia.key} className="grid gap-3 rounded-lg border border-slate-200 p-3 md:grid-cols-[180px_1fr_1fr] md:items-center">
+                      <label className="flex items-center gap-3">
+                        <Checkbox
+                          checked={faixa.ativo}
+                          onCheckedChange={(checked) =>
+                            setUnidadeForm((current) => ({
+                              ...current,
+                              horario_atendimento: {
+                                ...current.horario_atendimento,
+                                [dia.key]: {
+                                  ...current.horario_atendimento[dia.key],
+                                  ativo: checked === true,
+                                },
+                              },
+                            }))
+                          }
+                        />
+                        <span className="text-sm font-bold text-slate-800">{dia.label}</span>
+                      </label>
+
+                      <div className="space-y-1">
+                        <Label className="text-xs text-slate-500">Início</Label>
+                        <Input
+                          type="time"
+                          disabled={!faixa.ativo}
+                          value={faixa.inicio}
+                          onChange={(e) =>
+                            setUnidadeForm((current) => ({
+                              ...current,
+                              horario_atendimento: {
+                                ...current.horario_atendimento,
+                                [dia.key]: {
+                                  ...current.horario_atendimento[dia.key],
+                                  inicio: e.target.value,
+                                },
+                              },
+                            }))
+                          }
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-xs text-slate-500">Fim</Label>
+                        <Input
+                          type="time"
+                          disabled={!faixa.ativo}
+                          value={faixa.fim}
+                          onChange={(e) =>
+                            setUnidadeForm((current) => ({
+                              ...current,
+                              horario_atendimento: {
+                                ...current.horario_atendimento,
+                                [dia.key]: {
+                                  ...current.horario_atendimento[dia.key],
+                                  fim: e.target.value,
+                                },
+                              },
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="space-y-3 md:col-span-2">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <Label>Localização confirmada</Label>
+                  <p className="text-xs text-slate-500">
+                    O CEP tenta posicionar automaticamente. Se necessário, arraste o pino ou clique no mapa para ajustar.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="font-bold"
+                  onClick={() => void preencherCoordenadasUnidade()}
+                  disabled={geocodificandoUnidade}
+                >
+                  {geocodificandoUnidade ? "Localizando..." : "Atualizar no mapa"}
+                </Button>
+              </div>
+              <MapaLocalizacao
+                lat={unidadeForm.latitude}
+                lng={unidadeForm.longitude}
+                onChange={({ lat, lng }) =>
+                  setUnidadeForm((current) => ({ ...current, latitude: lat, longitude: lng }))
+                }
+                height={300}
+              />
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Latitude</Label>
+                  <Input value={unidadeForm.latitude ?? ""} readOnly />
+                </div>
+                <div className="space-y-2">
+                  <Label>Longitude</Label>
+                  <Input value={unidadeForm.longitude ?? ""} readOnly />
+                </div>
+              </div>
             </div>
           </div>
 

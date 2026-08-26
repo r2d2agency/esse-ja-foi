@@ -2,10 +2,37 @@ import { sql } from "drizzle-orm";
 import { db } from "./index";
 
 export type Row = Record<string, any>;
+export type HorarioDia = {
+  inicio: string;
+  fim: string;
+};
 
 function requireDb() {
   if (!db) throw new Error("Banco de dados indisponível.");
   return db;
+}
+
+function toMinutes(value: string) {
+  const [hora, minuto] = String(value || "00:00").split(":").map(Number);
+  return (hora || 0) * 60 + (minuto || 0);
+}
+
+function minutesToTime(value: number) {
+  const hora = Math.floor(value / 60);
+  const minuto = value % 60;
+  return `${String(hora).padStart(2, "0")}:${String(minuto).padStart(2, "0")}`;
+}
+
+function normalizarHorarioAtendimento(value: any): Record<string, HorarioDia> {
+  if (!value || typeof value !== "object") return {};
+  return Object.entries(value).reduce<Record<string, HorarioDia>>((acc, [dia, faixa]) => {
+    if (!faixa || typeof faixa !== "object") return acc;
+    const inicio = typeof (faixa as any).inicio === "string" ? (faixa as any).inicio : "";
+    const fim = typeof (faixa as any).fim === "string" ? (faixa as any).fim : "";
+    if (!inicio || !fim) return acc;
+    acc[dia] = { inicio, fim };
+    return acc;
+  }, {});
 }
 
 export async function ensureVistoriaSchema() {
@@ -21,18 +48,36 @@ export async function ensureVistoriaSchema() {
       endereco text NOT NULL,
       cidade text NOT NULL,
       estado text NOT NULL,
+      latitude numeric(10,7),
+      longitude numeric(10,7),
       telefone text,
       whatsapp text,
       email text,
       responsavel text,
       horario_atendimento jsonb, -- { seg_sex: "08:00-18:00", sab: "08:00-12:00" }
       duracao_padrao_minutos integer DEFAULT 60,
+      intervalo_entre_vistorias_minutos integer DEFAULT 30,
       raio_atendimento_km integer,
       cidades_atendidas text[],
       ativo boolean DEFAULT true,
       criado_em timestamptz DEFAULT now(),
       atualizado_em timestamptz DEFAULT now()
     );
+  `);
+
+  await d.execute(sql`
+    ALTER TABLE unidades_vistoria
+    ADD COLUMN IF NOT EXISTS latitude numeric(10,7)
+  `);
+
+  await d.execute(sql`
+    ALTER TABLE unidades_vistoria
+    ADD COLUMN IF NOT EXISTS longitude numeric(10,7)
+  `);
+
+  await d.execute(sql`
+    ALTER TABLE unidades_vistoria
+    ADD COLUMN IF NOT EXISTS intervalo_entre_vistorias_minutos integer DEFAULT 30
   `);
 
   // 2. Vistoriadores (vinculados a perfis/usuários com role vistoriador)
@@ -196,6 +241,12 @@ export async function getVeiculosAguardandoVistoria() {
 export async function criarAgendamento(data: any) {
   const d = requireDb();
   await ensureVistoriaSchema();
+
+  const slots = await listarSlotsDisponiveisUnidade(data.unidade_id, data.data_vistoria, data.vistoriador_id || null);
+  const slotDisponivel = slots.slots.some((slot) => slot.value === data.horario_vistoria);
+  if (!slotDisponivel) {
+    throw new Error("Esse slot não está mais disponível para agendamento.");
+  }
   
   const res = await d.execute(sql`
     INSERT INTO vistorias (
@@ -276,6 +327,11 @@ export async function salvarUnidadeVistoria(data: {
   endereco: string;
   cidade: string;
   estado: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  horario_atendimento?: Record<string, HorarioDia> | null;
+  duracao_padrao_minutos?: number | null;
+  intervalo_entre_vistorias_minutos?: number | null;
   telefone?: string | null;
   whatsapp?: string | null;
   email?: string | null;
@@ -295,6 +351,11 @@ export async function salvarUnidadeVistoria(data: {
         endereco = ${data.endereco},
         cidade = ${data.cidade},
         estado = ${data.estado},
+        latitude = ${data.latitude ?? null},
+        longitude = ${data.longitude ?? null},
+        horario_atendimento = ${JSON.stringify(data.horario_atendimento || {})}::jsonb,
+        duracao_padrao_minutos = ${data.duracao_padrao_minutos ?? 60},
+        intervalo_entre_vistorias_minutos = ${data.intervalo_entre_vistorias_minutos ?? 30},
         telefone = ${data.telefone || null},
         whatsapp = ${data.whatsapp || null},
         email = ${data.email || null},
@@ -310,7 +371,8 @@ export async function salvarUnidadeVistoria(data: {
 
   const res = await d.execute(sql`
     INSERT INTO unidades_vistoria (
-      nome, cnpj, cep, endereco, cidade, estado,
+      nome, cnpj, cep, endereco, cidade, estado, latitude, longitude,
+      horario_atendimento, duracao_padrao_minutos, intervalo_entre_vistorias_minutos,
       telefone, whatsapp, email, responsavel, ativo
     ) VALUES (
       ${data.nome},
@@ -319,6 +381,11 @@ export async function salvarUnidadeVistoria(data: {
       ${data.endereco},
       ${data.cidade},
       ${data.estado},
+      ${data.latitude ?? null},
+      ${data.longitude ?? null},
+      ${JSON.stringify(data.horario_atendimento || {})}::jsonb,
+      ${data.duracao_padrao_minutos ?? 60},
+      ${data.intervalo_entre_vistorias_minutos ?? 30},
       ${data.telefone || null},
       ${data.whatsapp || null},
       ${data.email || null},
@@ -329,6 +396,101 @@ export async function salvarUnidadeVistoria(data: {
   `);
 
   return (res as any).rows?.[0] || null;
+}
+
+export async function listarSlotsDisponiveisUnidade(unidadeId: string, data: string, vistoriadorId?: string | null) {
+  const d = requireDb();
+  await ensureVistoriaSchema();
+
+  const unidadeRes = await d.execute(sql`
+    SELECT horario_atendimento, duracao_padrao_minutos, intervalo_entre_vistorias_minutos
+    FROM unidades_vistoria
+    WHERE id = ${unidadeId}::uuid
+      AND ativo = true
+    LIMIT 1
+  `);
+
+  const unidade = (unidadeRes as any).rows?.[0];
+  if (!unidade) {
+    return { ok: false as const, message: "Unidade de vistoria não encontrada.", slots: [] as any[] };
+  }
+
+  const horarioAtendimento = normalizarHorarioAtendimento(unidade.horario_atendimento);
+  const dataBase = new Date(`${data}T12:00:00`);
+  if (Number.isNaN(dataBase.getTime())) {
+    return { ok: false as const, message: "Data inválida para geração dos slots.", slots: [] as any[] };
+  }
+
+  const diaSemana = String(dataBase.getDay());
+  const faixaDia = horarioAtendimento[diaSemana];
+  if (!faixaDia) {
+    return { ok: true as const, message: "A unidade não atende nesse dia.", slots: [] as any[], configuracao: unidade };
+  }
+
+  const duracao = Math.max(Number(unidade.duracao_padrao_minutos || 60), 1);
+  const intervalo = Math.max(Number(unidade.intervalo_entre_vistorias_minutos || 0), 0);
+  const passo = Math.max(duracao + intervalo, 1);
+  const inicioDia = toMinutes(faixaDia.inicio);
+  const fimDia = toMinutes(faixaDia.fim);
+
+  if (fimDia <= inicioDia || fimDia - inicioDia < duracao) {
+    return { ok: true as const, message: "A faixa de atendimento desse dia não comporta slots válidos.", slots: [] as any[], configuracao: unidade };
+  }
+
+  const agendamentosRes = await d.execute(sql`
+    SELECT horario_vistoria, vistoriador_id
+    FROM vistorias
+    WHERE unidade_id = ${unidadeId}::uuid
+      AND data_vistoria = ${data}
+      AND status NOT IN ('CANCELADA')
+  `);
+  const agendamentos = (agendamentosRes as any).rows || [];
+
+  let agendamentosVistoriador: any[] = [];
+  if (vistoriadorId) {
+    const agendamentosVistoriadorRes = await d.execute(sql`
+      SELECT horario_vistoria
+      FROM vistorias
+      WHERE vistoriador_id = ${vistoriadorId}::uuid
+        AND data_vistoria = ${data}
+        AND status NOT IN ('CANCELADA')
+    `);
+    agendamentosVistoriador = (agendamentosVistoriadorRes as any).rows || [];
+  }
+
+  const slots = [] as Array<{ value: string; fim: string; label: string }>;
+  for (let inicio = inicioDia; inicio + duracao <= fimDia; inicio += passo) {
+    const fim = inicio + duracao;
+    const conflitoUnidade = agendamentos.some((agendamento: any) => {
+      const inicioAgendado = toMinutes(String(agendamento.horario_vistoria).slice(0, 5));
+      const fimAgendado = inicioAgendado + duracao;
+      return inicio < fimAgendado && fim > inicioAgendado;
+    });
+    const conflitoVistoriador = agendamentosVistoriador.some((agendamento: any) => {
+      const inicioAgendado = toMinutes(String(agendamento.horario_vistoria).slice(0, 5));
+      const fimAgendado = inicioAgendado + duracao;
+      return inicio < fimAgendado && fim > inicioAgendado;
+    });
+    if (conflitoUnidade || conflitoVistoriador) continue;
+
+    const inicioLabel = minutesToTime(inicio);
+    const fimLabel = minutesToTime(fim);
+    slots.push({
+      value: inicioLabel,
+      fim: fimLabel,
+      label: `${inicioLabel} - ${fimLabel}`,
+    });
+  }
+
+  return {
+    ok: true as const,
+    slots,
+    configuracao: {
+      duracao_padrao_minutos: duracao,
+      intervalo_entre_vistorias_minutos: intervalo,
+      faixa: faixaDia,
+    },
+  };
 }
 
 export async function listarVistoriadoresCadastro() {
