@@ -237,7 +237,7 @@ function VistoriasAdminPage() {
   const { data: vistoriadoresRes, isLoading: loadingVistoriadores } = useQuery({
     queryKey: ["vistoriadores-unidade", unidadeId],
     queryFn: () => getVistoriadores({ data: { unidadeId } }),
-    enabled: agendaOpen && !!unidadeId,
+    enabled: agendaOpen && !!unidadeId && !!(unidadesRes?.data || []).some((unidade: any) => unidade.id === unidadeId),
   });
 
   const { data: slotsRes, isLoading: loadingSlots } = useQuery({
@@ -249,7 +249,7 @@ function VistoriasAdminPage() {
         vistoriadorId: vistoriadorId && vistoriadorId !== "__sem_vistoriador__" ? vistoriadorId : null,
       },
     }),
-    enabled: agendaOpen && !!unidadeId && !!dataVistoria,
+    enabled: agendaOpen && !!unidadeId && !!dataVistoria && !!(unidadesRes?.data || []).some((unidade: any) => unidade.id === unidadeId),
   });
 
   const { data: unidadesCadastroRes, isLoading: loadingUnidadesCadastro } = useQuery({
@@ -271,6 +271,7 @@ function VistoriasAdminPage() {
   const vistoriadores = vistoriadoresRes?.data || [];
   const unidadesCadastro = unidadesCadastroRes?.data || [];
   const vistoriadoresCadastro = vistoriadoresCadastroRes?.data || [];
+  const unidadeSelecionada = unidades.find((unidade: any) => unidade.id === unidadeId) || null;
   const slotsDisponiveis = slotsRes?.slots || [];
   const termoFila = buscaFila.trim().toLowerCase();
   const termoAgendamento = buscaAgendamento.trim().toLowerCase();
@@ -516,10 +517,17 @@ function VistoriasAdminPage() {
   };
 
   useEffect(() => {
-    if (unidades.length === 1 && !unidadeId) {
+    if (!agendaOpen) return;
+    if (unidades.length === 0) {
+      if (unidadeId) setUnidadeId("");
+      return;
+    }
+
+    const unidadeAindaExiste = unidades.some((unidade: any) => unidade.id === unidadeId);
+    if (!unidadeAindaExiste) {
       setUnidadeId(unidades[0].id);
     }
-  }, [unidades, unidadeId]);
+  }, [agendaOpen, unidades, unidadeId]);
 
   useEffect(() => {
     if (vistoriadores.length === 1 && !vistoriadorId) {
@@ -552,7 +560,7 @@ function VistoriasAdminPage() {
       toast.error("Usuário ou veículo inválido para o agendamento.");
       return;
     }
-    if (!unidadeId || !dataVistoria || !horarioVistoria) {
+    if (!unidadeSelecionada || !dataVistoria || !horarioVistoria) {
       toast.error("Selecione unidade, data e um slot disponível.");
       return;
     }
@@ -564,7 +572,7 @@ function VistoriasAdminPage() {
         data: {
           veiculo_id: veiculoSelecionado.id,
           vendedor_id: veiculoSelecionado.vendedor_id,
-          unidade_id: unidadeId,
+          unidade_id: unidadeSelecionada.id,
           vistoriador_id: vistoriadorIdNormalizado,
           data_vistoria: dataVistoria,
           horario_vistoria: horarioVistoria,
@@ -1307,7 +1315,7 @@ function VistoriasAdminPage() {
             <Button
               className="bg-teal-600 hover:bg-teal-700 text-white"
               onClick={() => void handleCriarAgendamento()}
-              disabled={!veiculoSelecionado || !unidadeId || !dataVistoria || !horarioVistoria}
+              disabled={!veiculoSelecionado || !unidadeSelecionada || !dataVistoria || !horarioVistoria}
             >
               Confirmar agendamento
             </Button>

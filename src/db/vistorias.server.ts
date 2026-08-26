@@ -413,11 +413,16 @@ export async function salvarUnidadeVistoria(data: {
 export async function listarSlotsDisponiveisUnidade(unidadeId: string, data: string, vistoriadorId?: string | null) {
   const d = requireDb();
   await ensureVistoriaSchema();
+  const unidadeIdNormalizado = String(unidadeId || "").trim();
+
+  if (!unidadeIdNormalizado) {
+    return { ok: false as const, message: "Selecione uma unidade de vistoria válida.", slots: [] as any[] };
+  }
 
   const unidadeRes = await d.execute(sql`
     SELECT horario_atendimento, duracao_padrao_minutos, intervalo_entre_vistorias_minutos
     FROM unidades_vistoria
-    WHERE id = ${unidadeId}::uuid
+    WHERE id = ${unidadeIdNormalizado}::uuid
       AND ativo = true
     LIMIT 1
   `);
@@ -446,7 +451,7 @@ export async function listarSlotsDisponiveisUnidade(unidadeId: string, data: str
   const agendamentosRes = await d.execute(sql`
     SELECT horario_vistoria, vistoriador_id
     FROM vistorias
-    WHERE unidade_id = ${unidadeId}::uuid
+    WHERE unidade_id = ${unidadeIdNormalizado}::uuid
       AND data_vistoria = ${data}
       AND status NOT IN ('CANCELADA')
   `);
