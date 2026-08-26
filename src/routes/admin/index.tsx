@@ -40,8 +40,8 @@ function AdminDashboard() {
     { label: "Em compliance", value: dashboard?.stats?.compliance_analise ?? 0, icon: Users, color: "text-violet-600", bg: "bg-violet-50", to: "/admin/vendedores", search: { status: "AGUARDANDO_ANALISE" } },
     { label: "Triagem de veículos", value: dashboard?.stats?.veiculos_analise ?? 0, icon: Car, color: "text-blue-600", bg: "bg-blue-50", to: "/admin/veiculos", search: { status: "AGUARDANDO_ANALISE" } },
     { label: "Prontos para vistoria", value: dashboard?.stats?.prontos_vistoria ?? 0, icon: Camera, color: "text-amber-600", bg: "bg-amber-50", to: "/admin/veiculos", search: { status: "PRONTO_PARA_VISTORIA" } },
-    { label: "Vistorias de hoje", value: dashboard?.stats?.vistorias_hoje ?? 0, icon: Calendar, color: "text-teal-600", bg: "bg-teal-50", to: "/admin/vistorias" },
-    { label: "Aguardando confirmação", value: dashboard?.stats?.aguardando_confirmacao ?? 0, icon: Clock, color: "text-orange-600", bg: "bg-orange-50", to: "/admin/vistorias" },
+    { label: "Vistorias de hoje", value: dashboard?.stats?.vistorias_hoje ?? 0, icon: Calendar, color: "text-teal-600", bg: "bg-teal-50", to: "/admin/vistorias", search: { tab: "agendamentos" } },
+    { label: "Aguardando confirmação", value: dashboard?.stats?.aguardando_confirmacao ?? 0, icon: Clock, color: "text-orange-600", bg: "bg-orange-50", to: "/admin/vistorias", search: { tab: "agendamentos", status: "AGUARDANDO_CONFIRMACAO" } },
     { label: "Compradores ativos", value: dashboard?.stats?.clientes ?? 0, icon: ShieldCheck, color: "text-green-600", bg: "bg-green-50", to: "/admin/compradores" },
   ];
 
@@ -100,7 +100,7 @@ function AdminDashboard() {
               title: "Vistoria",
               description: "Agendamento, execução física e análise dos laudos de avaliação.",
               links: [
-                { label: "Agenda e laudos", to: "/admin/vistorias" },
+                { label: "Agenda e laudos", to: "/admin/vistorias", search: { tab: "agendamentos" } },
                 { label: "Prontos para vistoria", to: "/admin/veiculos", search: { status: "PRONTO_PARA_VISTORIA" } },
               ],
             },
