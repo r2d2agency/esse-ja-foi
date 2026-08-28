@@ -361,7 +361,16 @@ export async function listarVistoriasAdmin(filtros: any = {}) {
   await ensureVistoriaSchema();
   
   let query = sql`
-    SELECT v.*, 
+    SELECT v.id::text as id,
+           v.data_vistoria,
+           v.horario_vistoria,
+           v.status,
+           v.veiculo_id::text as veiculo_id,
+           v.vendedor_id::text as vendedor_id,
+           v.unidade_id::text as unidade_id,
+           v.vistoriador_id::text as vistoriador_id,
+           v.criado_em,
+           v.atualizado_em,
            vei.placa, vei.marca, vei.modelo,
            prof.nome as vendedor_nome, prof.whatsapp as vendedor_whatsapp,
            uv.nome as unidade_nome,
@@ -1075,7 +1084,15 @@ export async function getVistoriaVendedor(vendedorId: string) {
   await ensureVistoriaSchema();
   
   const res = await d.execute(sql`
-    SELECT v.*, 
+    SELECT v.id::text as id,
+           v.data_vistoria,
+           v.horario_vistoria,
+           v.status,
+           v.veiculo_id::text as veiculo_id,
+           v.vendedor_id::text as vendedor_id,
+           v.unidade_id::text as unidade_id,
+           v.criado_em,
+           v.atualizado_em,
            vei.placa, vei.marca, vei.modelo,
            uv.nome as unidade_nome, uv.endereco as unidade_endereco, uv.cidade as unidade_cidade, uv.estado as unidade_estado,
            uv.whatsapp as unidade_whatsapp
@@ -1122,8 +1139,8 @@ export async function remarcarAgendamentoVistoria(args: {
   const d = requireDb();
   await ensureVistoriaSchema();
 
+  const vistoriaIdRaw = String(args.vistoriaId ?? "").trim();
   const vistoriaIdTxt = normalizarUuid(args.vistoriaId);
-  if (!vistoriaIdTxt) throw new Error("Agendamento inválido para remarcar.");
   const usuarioIdNormalizado = normalizarUuid(args.usuarioId);
   const vendedorIdNormalizado = normalizarUuid(args.vendedorId);
 
@@ -1131,22 +1148,44 @@ export async function remarcarAgendamentoVistoria(args: {
     throw new Error("Você não tem permissão para remarcar esse agendamento.");
   }
 
-  const vistoriaRes = await d.execute(sql`
-    SELECT
-      id::text as id,
-      data_vistoria,
-      horario_vistoria,
-      status,
-      veiculo_id::text as veiculo_id,
-      vendedor_id::text as vendedor_id,
-      unidade_id::text as unidade_id
-    FROM vistorias
-    WHERE id = ${vistoriaIdTxt}::uuid
-    LIMIT 1
-  `);
-  const linhas = (vistoriaRes as any).rows || [];
-  const vistoria = linhas[0];
+  let vistoria: any = undefined;
+  if (vistoriaIdTxt) {
+    const res = await d.execute(sql`
+      SELECT
+        id::text as id,
+        data_vistoria,
+        horario_vistoria,
+        status,
+        veiculo_id::text as veiculo_id,
+        vendedor_id::text as vendedor_id,
+        unidade_id::text as unidade_id
+      FROM vistorias
+      WHERE id = ${vistoriaIdTxt}::uuid
+      LIMIT 1
+    `);
+    vistoria = (res as any).rows?.[0];
+  }
+  if (!vistoria && vistoriaIdRaw) {
+    const buscaLike = `%${vistoriaIdRaw.toLowerCase()}`.replace(/[^0-9a-f%_-]/g, "");
+    const fallback = await d.execute(sql`
+      SELECT
+        id::text as id,
+        data_vistoria,
+        horario_vistoria,
+        status,
+        veiculo_id::text as veiculo_id,
+        vendedor_id::text as vendedor_id,
+        unidade_id::text as unidade_id
+      FROM vistorias
+      WHERE id::text ILIKE ${buscaLike}
+      ORDER BY criado_em DESC
+      LIMIT 1
+    `);
+    vistoria = (fallback as any).rows?.[0];
+  }
   if (!vistoria) throw new Error("Agendamento de vistoria não encontrado.");
+  const vistoriaIdFinalTxt = normalizarUuid(vistoria.id);
+  if (!vistoriaIdFinalTxt) throw new Error("Id da vistoria inválido na remarcação.");
 
   if (!args.permissaoAdmin && String(vistoria.vendedor_id || "").toLowerCase() !== String(vendedorIdNormalizado || "").toLowerCase()) {
     throw new Error("Você só pode remarcar suas próprias vistorias.");
@@ -1206,7 +1245,7 @@ export async function remarcarAgendamentoVistoria(args: {
       horario_vistoria = ${args.novoHorario},
       atualizado_em = now(),
       status = CASE WHEN status = 'CONFIRMADA' THEN 'AGUARDANDO_CONFIRMACAO' ELSE status END
-    WHERE id = ${vistoriaIdTxt}::uuid
+    WHERE id = ${vistoriaIdFinalTxt}::uuid
   `);
 
   const detalhe = `Agendamento remarcado: ${dataAtualStr} às ${horarioAtualStr} → ${args.novaData} às ${args.novoHorario}` +
@@ -1216,7 +1255,7 @@ export async function remarcarAgendamentoVistoria(args: {
     await d.execute(sql`
       INSERT INTO vistorias_historico (vistoria_id, acao, detalhe, usuario_id)
       VALUES (
-        ${vistoriaIdTxt}::uuid,
+        ${vistoriaIdFinalTxt}::uuid,
         'Agendamento remarcado',
         ${detalhe},
         ${
@@ -1228,7 +1267,7 @@ export async function remarcarAgendamentoVistoria(args: {
     `);
   } catch { /* ignore histórico */ }
 
-  return { ok: true as const, id: vistoriaIdTxt, novo_status: "AGUARDANDO_CONFIRMACAO" };
+  return { ok: true as const, id: vistoriaIdFinalTxt, novo_status: "AGUARDANDO_CONFIRMACAO" };
 }
 
 // App Vistoriador
