@@ -14,11 +14,13 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
     const { db } = await import("@/db/index");
     const { sql } = await import("drizzle-orm");
     const { ensureVeiculosAdminSchema } = await import("@/db/admin-veiculos.server");
+    const { ensurePerfilSchema } = await import("@/db/perfil.server");
     
     if (!db) throw new Error("Banco de dados indisponível");
 
     // Garantir que a tabela tenha todas as colunas necessárias (perfil_id, status_analise, etc)
     await ensureVeiculosAdminSchema();
+    await ensurePerfilSchema();
 
     const veiculoId = normalizarUuid(data.id);
     // #region debug-point A:route-id

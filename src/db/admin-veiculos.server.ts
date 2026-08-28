@@ -1,8 +1,10 @@
 import { sql } from "drizzle-orm";
 import { db } from "./index";
 
+let pronto = false;
+
 export async function ensureVeiculosAdminSchema() {
-  if (!db) return;
+  if (pronto || !db) return;
   const d = db;
 
   // Garantir status 'AGUARDANDO_ANALISE' caso não exista
@@ -19,6 +21,8 @@ export async function ensureVeiculosAdminSchema() {
     ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS fotos text;
     ALTER TABLE veiculos ADD COLUMN IF NOT EXISTS documento_crlv_url text;
   `);
+
+  pronto = true;
 }
 
 export async function listarVeiculosAdmin(filtros: {
