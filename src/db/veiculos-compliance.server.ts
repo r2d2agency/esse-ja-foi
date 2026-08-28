@@ -56,16 +56,42 @@ export function canReleaseForInspection(v: any) {
     fotos: progresso.fotos.isCompleto,
     vendedor: !!v.vendedor_nome
   };
+  const blockers: string[] = [];
+
+  if (!details.vendedor) {
+    blockers.push("Vincular o vendedor responsável ao veículo.");
+  }
+
+  if (!details.compliance) {
+    blockers.push("Aprovar o cadastro do vendedor no compliance.");
+  }
+
+  if (!details.contrato) {
+    blockers.push("Garantir que o contrato do vendedor esteja assinado.");
+  }
+
+  if (!details.crlv) {
+    blockers.push("Aprovar o CRLV-e do veículo.");
+  }
+
+  if (!details.dados) {
+    blockers.push(...progresso.dadosCadastrais.pendencias);
+  }
+
+  if (!details.fotos) {
+    blockers.push(`Enviar pelo menos ${progresso.fotos.minimo} fotos obrigatórias (${progresso.fotos.total} enviadas).`);
+  }
   
   // Se não houver vendedor vinculado, não pode liberar
   if (!details.vendedor) {
-    return { ready: false, details };
+    return { ready: false, details, blockers };
   }
 
   const isReady = Object.values(details).every(Boolean);
 
   return {
     ready: isReady,
-    details
+    details,
+    blockers
   };
 }

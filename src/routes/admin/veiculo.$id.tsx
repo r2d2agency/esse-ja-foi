@@ -177,6 +177,16 @@ function DetalheVeiculoAdminPage() {
     typeof v.percentual_sobre_fipe === "number" || typeof v.percentual_sobre_fipe === "string"
       ? `${Number(v.percentual_sobre_fipe).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`
       : "Não informado";
+  const podeLiberarVistoria = !!res.validacao?.ready;
+  const pendenciasLiberacao = Array.isArray(res.validacao?.blockers) ? res.validacao.blockers : [];
+  const etapaFluxo = [
+    "1. Em análise documental",
+    "2. Liberação para vistoria",
+    "3. Agendamento da vistoria",
+    "4. Execução da vistoria e laudo",
+    "5. Análise pós-vistoria",
+    "6. Pronto para anúncio",
+  ];
 
   const handleAssumir = async () => {
     if (!user?.id) return;
@@ -357,11 +367,13 @@ function DetalheVeiculoAdminPage() {
           ) : (
             <Button 
               className="bg-slate-950 hover:bg-slate-900 text-white font-bold"
-              disabled={v.status_analise === 'PRONTO_PARA_VISTORIA' || !res.validacao?.ready}
+              disabled={v.status_analise === 'PRONTO_PARA_VISTORIA' || !podeLiberarVistoria}
               onClick={() => handleMudarStatus('PRONTO_PARA_VISTORIA')}
             >
               {v.status_analise === 'PRONTO_PARA_VISTORIA' ? (
                 <><CheckCircle2 className="mr-2 h-4 w-4" /> Liberado</>
+              ) : !podeLiberarVistoria ? (
+                <><AlertTriangle className="mr-2 h-4 w-4" /> Faltam requisitos</>
               ) : (
                 <><CheckCircle2 className="mr-2 h-4 w-4" /> Liberar para vistoria</>
               )}
@@ -739,6 +751,71 @@ function DetalheVeiculoAdminPage() {
               <TabsContent value="analise" className="mt-0 space-y-6">
                 <Card className="border-slate-200 shadow-none">
                   <CardHeader>
+                    <CardTitle className="text-sm font-black uppercase text-slate-950">Fluxo da próxima etapa</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className={cn(
+                      "rounded-xl border p-4",
+                      podeLiberarVistoria ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"
+                    )}>
+                      <p className={cn(
+                        "text-sm font-black",
+                        podeLiberarVistoria ? "text-green-700" : "text-amber-700"
+                      )}>
+                        {podeLiberarVistoria
+                          ? "O veículo já pode ser liberado para vistoria."
+                          : "O veículo ainda está em análise e não pode seguir para vistoria."}
+                      </p>
+                      <p className={cn(
+                        "mt-1 text-sm",
+                        podeLiberarVistoria ? "text-green-700" : "text-amber-700"
+                      )}>
+                        {podeLiberarVistoria
+                          ? "Ao clicar em 'Liberar para vistoria', o status muda para 'Pronto para vistoria' e o próximo passo passa a ser o agendamento em Admin > Vistorias."
+                          : "Para ativar o botão de liberação, todos os requisitos abaixo precisam estar concluídos na ficha de análise."}
+                      </p>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {etapaFluxo.map((etapa) => (
+                        <div key={etapa} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700">
+                          {etapa}
+                        </div>
+                      ))}
+                    </div>
+
+                    {!podeLiberarVistoria && pendenciasLiberacao.length > 0 && (
+                      <div className="rounded-xl border border-amber-200 bg-white p-4">
+                        <p className="text-[10px] font-black uppercase text-amber-700 mb-2">O que falta para liberar a vistoria</p>
+                        <ul className="space-y-1">
+                          {pendenciasLiberacao.map((pendencia: string, idx: number) => (
+                            <li key={`${pendencia}-${idx}`} className="text-sm text-amber-700 font-medium">• {pendencia}</li>
+                          ))}
+                        </ul>
+                        <div className="flex flex-wrap gap-2 mt-4">
+                          {!res.validacao?.details?.dados && (
+                            <Button variant="outline" size="sm" className="font-bold" onClick={() => setActiveTab("dados")}>
+                              Revisar dados
+                            </Button>
+                          )}
+                          {!res.validacao?.details?.crlv && (
+                            <Button variant="outline" size="sm" className="font-bold" onClick={() => setActiveTab("documentacao")}>
+                              Revisar documentação
+                            </Button>
+                          )}
+                          {!res.validacao?.details?.fotos && (
+                            <Button variant="outline" size="sm" className="font-bold" onClick={() => setActiveTab("fotos")}>
+                              Revisar fotos
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="border-slate-200 shadow-none">
+                  <CardHeader>
                     <CardTitle className="text-sm font-black uppercase text-slate-950">Checklist de conclusão</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
@@ -822,10 +899,10 @@ function DetalheVeiculoAdminPage() {
                     <div className="pt-6">
                       <Button 
                         className="w-full bg-slate-950 hover:bg-slate-900 text-white font-black h-12 uppercase tracking-tight" 
-                        disabled={v.status_analise === 'PRONTO_PARA_VISTORIA' || !res.validacao?.ready} 
+                        disabled={v.status_analise === 'PRONTO_PARA_VISTORIA' || !podeLiberarVistoria}
                         onClick={() => handleMudarStatus('PRONTO_PARA_VISTORIA')}
                       >
-                        {res.validacao?.ready ? "Liberar para vistoria" : "Requisitos pendentes"}
+                        {podeLiberarVistoria ? "Liberar para vistoria" : `Faltam ${pendenciasLiberacao.length || 1} requisito(s)`}
                       </Button>
                     </div>
                   </CardContent>
