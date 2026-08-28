@@ -23,6 +23,40 @@ function minutesToTime(value: number) {
   return `${String(hora).padStart(2, "0")}:${String(minuto).padStart(2, "0")}`;
 }
 
+const TIMEZONE_SP = "America/Sao_Paulo";
+
+function dataFormatadaSP(offsetDias: number = 0): string {
+  const agora = new Date();
+  const sp = new Date(agora.toLocaleString("en-US", { timeZone: TIMEZONE_SP }));
+  if (offsetDias !== 0) sp.setDate(sp.getDate() + offsetDias);
+  const ano = sp.getFullYear();
+  const mes = String(sp.getMonth() + 1).padStart(2, "0");
+  const dia = String(sp.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+function minutosAgoraSP(): number {
+  const agora = new Date();
+  const partes = agora.toLocaleString("en-US", {
+    timeZone: TIMEZONE_SP,
+    hour12: false,
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const match = partes.match(/(\d{1,2}):(\d{2})/);
+  if (!match) {
+    const fallback = new Date();
+    return fallback.getHours() * 60 + fallback.getMinutes();
+  }
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+function ehHojeSP(dataIso: string): boolean {
+  return dataIso === dataFormatadaSP(0);
+}
+function dataEstaNoPassado(dataIso: string): boolean {
+  const hojeSP = dataFormatadaSP(0);
+  return dataIso < hojeSP;
+}
+
 function normalizarUuid(value: unknown) {
   const raw = String(value ?? "").trim();
   if (!raw) return null;
@@ -404,6 +438,16 @@ export async function criarAgendamento(data: any) {
   const unidadeIdTxt = normalizarUuid(unidade.id);
   if (!unidadeIdTxt) throw new Error("O id da unidade encontrada não é um UUID válido.");
 
+  if (dataEstaNoPassado(data.data_vistoria)) {
+    throw new Error("Não é possível agendar em datas passadas. Escolha uma data futura.");
+  }
+  if (ehHojeSP(data.data_vistoria)) {
+    const mins = toMinutes(data.horario_vistoria);
+    if (mins <= minutosAgoraSP()) {
+      throw new Error("O horário selecionado já passou. Escolha outro horário ou data futura.");
+    }
+  }
+
   const slots = await listarSlotsDisponiveisUnidade(unidadeIdTxt, data.data_vistoria, vistoriadorId || null);
   const slotDisponivel = slots.slots.some((slot) => slot.value === data.horario_vistoria);
   if (!slotDisponivel) {
@@ -422,7 +466,12 @@ export async function criarAgendamento(data: any) {
       FROM vistoriadores v
       WHERE v.unidade_id::text = ${unidadeIdTxt} AND v.status = 'ATIVO'
     `);
-    const ids = ((vistoriadoresAtivos as any).rows || []).map((v: any) => v.id);
+    const idsRaw = (vistoriadoresAtivos as any).rows || [];
+    const ids: string[] = [];
+    for (const v of idsRaw) {
+      const vid = normalizarUuid(v?.id);
+      if (vid) ids.push(vid);
+    }
     for (const vid of ids) {
       const conflitosRes = await d.execute(sql`
         SELECT 1 as existe
@@ -438,8 +487,9 @@ export async function criarAgendamento(data: any) {
           )
         LIMIT 1
       `);
-      if (!((conflitosRes as any).rows?.length)) {
-        vistoriadorAlocado = normalizarUuid(vid);
+      const linhas = (conflitosRes as any)?.rows ?? (Array.isArray(conflitosRes) ? conflitosRes : []);
+      if (!linhas?.length) {
+        vistoriadorAlocado = vid;
         break;
       }
     }
@@ -461,20 +511,36 @@ export async function criarAgendamento(data: any) {
     ) RETURNING id
   `);
 
-  const vistoriaId = (res as any).rows[0].id;
+  const linhasRes = (res as any)?.rows ?? (Array.isArray(res) ? res : []);
+  if (!linhasRes || linhasRes.length === 0) {
+    throw new Error("O banco não retornou o id da vistoria criada. Tente novamente.");
+  }
+  const primeiraLinha = linhasRes[0];
+  if (!primeiraLinha) {
+    throw new Error("O banco retornou um registro de vistoria inválido. Tente novamente.");
+  }
+  const vistoriaIdRaw = primeiraLinha.id;
+  if (!vistoriaIdRaw) {
+    throw new Error("O banco não retornou o id da vistoria criada. Tente novamente.");
+  }
+  const vistoriaId = normalizarUuid(vistoriaIdRaw) || String(vistoriaIdRaw);
 
-  await d.execute(sql`
-    UPDATE veiculos
-    SET status = 'VISTORIA_AGENDADA', atualizado_em = now()
-    WHERE id = ${veiculoId}::uuid
-  `);
+  try {
+    await d.execute(sql`
+      UPDATE veiculos
+      SET status = 'VISTORIA_AGENDADA', atualizado_em = now()
+      WHERE id = ${veiculoId}::uuid
+    `);
+  } catch (e) { /* ignore: já temos a vistoria criada */ }
 
   const detalhe = `Vistoria agendada para ${data.data_vistoria} às ${data.horario_vistoria}` +
     (vistoriadorAlocado ? ` (vistoriador alocado automaticamente)` : " (aguardando alocação de vistoriador)");
-  await d.execute(sql`
-    INSERT INTO vistorias_historico (vistoria_id, acao, detalhe, usuario_id)
-    VALUES (${vistoriaId}, 'Agendamento criado', ${detalhe}, ${usuarioId}::uuid)
-  `);
+  try {
+    await d.execute(sql`
+      INSERT INTO vistorias_historico (vistoria_id, acao, detalhe, usuario_id)
+      VALUES (${vistoriaId}::uuid, 'Agendamento criado', ${detalhe}, ${usuarioId}::uuid)
+    `);
+  } catch (e) { /* ignore: a vistoria já existe */ }
 
   return { ok: true, id: vistoriaId };
 }
@@ -851,6 +917,13 @@ export async function listarSlotsDisponiveisUnidade(
   }
 
   const horarioAtendimento = normalizarHorarioAtendimento(unidade.horario_atendimento);
+  if (dataEstaNoPassado(data)) {
+    return {
+      ok: false as const,
+      message: "Não é possível agendar em datas passadas. Escolha uma data futura.",
+      slots: [] as any[],
+    };
+  }
   const dataBase = new Date(`${data}T12:00:00`);
   if (Number.isNaN(dataBase.getTime())) {
     return { ok: false as const, message: "Data inválida para geração dos slots.", slots: [] as any[] };
@@ -883,28 +956,31 @@ export async function listarSlotsDisponiveisUnidade(
     const agendamentosVistoriadorRes = await d.execute(sql`
       SELECT horario_vistoria
       FROM vistorias
-      WHERE vistoriador_id = ${vistoriadorIdNormalizado}::uuid
+      WHERE vistoriador_id::text = ${vistoriadorIdNormalizado}
         AND data_vistoria = ${data}
         AND status NOT IN ('CANCELADA')
     `);
     agendamentosVistoriador = (agendamentosVistoriadorRes as any).rows || [];
   }
 
+  const agoraMinutosSP = ehHojeSP(data) ? minutosAgoraSP() : -1;
   const slots = [] as Array<{ value: string; fim: string; label: string }>;
   for (const periodo of periodosDia) {
+    if (!periodo || typeof periodo !== "object") continue;
     const inicioDia = toMinutes(periodo.inicio);
     const fimDia = toMinutes(periodo.fim);
     if (fimDia <= inicioDia || fimDia - inicioDia < duracao) continue;
 
     for (let inicio = inicioDia; inicio + duracao <= fimDia; inicio += passo) {
+      if (agoraMinutosSP >= 0 && inicio <= agoraMinutosSP) continue;
       const fim = inicio + duracao;
       const conflitoUnidade = agendamentos.some((agendamento: any) => {
-        const inicioAgendado = toMinutes(String(agendamento.horario_vistoria).slice(0, 5));
+        const inicioAgendado = toMinutes(String(agendamento?.horario_vistoria || "").slice(0, 5));
         const fimAgendado = inicioAgendado + duracao;
         return inicio < fimAgendado && fim > inicioAgendado;
       });
       const conflitoVistoriador = agendamentosVistoriador.some((agendamento: any) => {
-        const inicioAgendado = toMinutes(String(agendamento.horario_vistoria).slice(0, 5));
+        const inicioAgendado = toMinutes(String(agendamento?.horario_vistoria || "").slice(0, 5));
         const fimAgendado = inicioAgendado + duracao;
         return inicio < fimAgendado && fim > inicioAgendado;
       });

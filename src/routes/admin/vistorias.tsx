@@ -735,6 +735,22 @@ function VistoriasAdminPage() {
       return;
     }
 
+    const hojeSP = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const hojeSP_iso = hojeSP.toISOString().slice(0, 10);
+    if (dataVistoria < hojeSP_iso) {
+      toast.error("Não é possível agendar em datas passadas.");
+      return;
+    }
+    if (dataVistoria === hojeSP_iso) {
+      const [hh, mm] = String(horarioVistoria || ":").split(":").map(Number);
+      const agoraSP_min = hojeSP.getHours() * 60 + hojeSP.getMinutes();
+      const horarioSel = (hh || 0) * 60 + (mm || 0);
+      if (horarioSel <= agoraSP_min) {
+        toast.error("O horário selecionado já passou. Escolha outro horário ou data.");
+        return;
+      }
+    }
+
     const toastId = toast.loading("Criando agendamento...");
     try {
       const response = await criarAgendamento({
@@ -742,6 +758,8 @@ function VistoriasAdminPage() {
           veiculo_id: normalizarIdStr(veiculoSelecionado.id),
           vendedor_id: normalizarIdStr(veiculoSelecionado.vendedor_id),
           unidade_id: normalizarIdStr(unidadeSelecionada.id),
+          unidade_nome: String(unidadeSelecionada.nome || "").trim() || null,
+          unidade_cidade: String(unidadeSelecionada.cidade || "").trim() || null,
           vistoriador_id: null,
           data_vistoria: dataVistoria,
           horario_vistoria: horarioVistoria,
@@ -759,8 +777,8 @@ function VistoriasAdminPage() {
       await queryClient.invalidateQueries({ queryKey: ["admin-vistorias"] });
       fecharAgenda();
       updateSearch({ tab: "agendamentos", status: "AGUARDANDO_CONFIRMACAO", veiculoId: undefined });
-    } catch {
-      toast.error("Erro técnico ao criar agendamento.", { id: toastId });
+    } catch (e: any) {
+      toast.error(e?.message || "Erro técnico ao criar agendamento.", { id: toastId });
     }
   };
 
