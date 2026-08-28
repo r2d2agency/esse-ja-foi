@@ -35,6 +35,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
@@ -235,6 +248,7 @@ function VistoriasAdminPage() {
   const [agendaOpen, setAgendaOpen] = useState(false);
   const [veiculoSelecionado, setVeiculoSelecionado] = useState<any | null>(null);
   const [unidadeId, setUnidadeId] = useState("");
+  const [buscaUnidadeModal, setBuscaUnidadeModal] = useState("");
   const [semanaOffset, setSemanaOffset] = useState(0);
   const [dataVistoria, setDataVistoria] = useState("");
   const [horarioVistoria, setHorarioVistoria] = useState("");
@@ -414,6 +428,7 @@ function VistoriasAdminPage() {
 
   const resetAgendaForm = () => {
     setUnidadeId("");
+    setBuscaUnidadeModal("");
     setSemanaOffset(0);
     setDataVistoria("");
     setHorarioVistoria("");
@@ -1300,41 +1315,112 @@ function VistoriasAdminPage() {
               <div className="space-y-5">
                 <div className="space-y-2">
                   <Label>Unidade de vistoria credenciada</Label>
-                  <Select value={normalizarIdStr(unidadeId)} onValueChange={(value) => setUnidadeId(normalizarIdStr(value))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={loadingUnidades ? "Carregando unidades..." : "Selecione a unidade credenciada"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {unidades.map((unidade: any) => {
-                        const mesmaCidade = !!veiculoSelecionado?.vendedor_cidade &&
-                          String(unidade.cidade || "").toLowerCase() === String(veiculoSelecionado.vendedor_cidade).toLowerCase();
-                        const atendeCidade = !!veiculoSelecionado?.vendedor_cidade &&
-                          !mesmaCidade &&
-                          Array.isArray(unidade.cidades_atendidas) &&
-                          unidade.cidades_atendidas.some((c: string) => String(c).toLowerCase() === String(veiculoSelecionado.vendedor_cidade).toLowerCase());
-                        return (
-                          <SelectItem key={unidade.id} value={unidade.id}>
-                            <span className="flex items-center gap-2 min-w-0">
-                              <span className="truncate">
-                                <span className="font-semibold text-slate-900">{unidade.nome}</span>
-                                <span className="text-slate-500"> — {unidade.cidade}/{unidade.estado}</span>
-                              </span>
-                              {mesmaCidade && (
-                                <span className="ml-auto shrink-0 inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                                  mesma cidade
-                                </span>
-                              )}
-                              {atendeCidade && (
-                                <span className="ml-auto shrink-0 inline-flex items-center gap-0.5 rounded-full bg-sky-50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-sky-700 ring-1 ring-inset ring-sky-200">
-                                  atende região
-                                </span>
-                              )}
+                  <p className="text-xs text-slate-500 -mt-0.5">
+                    Escolha qualquer unidade cadastrada. Você pode buscar por nome, cidade ou estado.
+                  </p>
+                  <Popover open={!!buscaUnidadeModal && buscaUnidadeModal === "__aberto__"} onOpenChange={(open) => setBuscaUnidadeModal(open ? "__aberto__" : "")}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={buscaUnidadeModal === "__aberto__"}
+                        className={cn(
+                          "w-full justify-between font-normal",
+                          !unidadeSelecionada && "text-slate-500",
+                          loadingUnidades && "opacity-60 cursor-wait"
+                        )}
+                      >
+                        {loadingUnidades ? (
+                          <span className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Carregando unidades...
+                          </span>
+                        ) : unidadeSelecionada ? (
+                          <span className="flex items-center gap-2 truncate text-left">
+                            <MapPin className="h-4 w-4 shrink-0 text-slate-500" />
+                            <span className="truncate">
+                              <span className="font-semibold text-slate-900">{unidadeSelecionada.nome}</span>
+                              <span className="text-slate-500"> — {unidadeSelecionada.cidade}/{unidadeSelecionada.estado}</span>
                             </span>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-2">
+                            <Search className="h-4 w-4 shrink-0" />
+                            {unidades.length === 0 ? "Nenhuma unidade ativa" : "Selecione ou busque uma unidade..."}
+                          </span>
+                        )}
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 shrink-0 ml-2">
+                          {unidades.length} disp.
+                        </span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="start" className="w-[min(calc(100vw-2rem),640px)] p-0">
+                      <Command>
+                        <CommandInput placeholder="Buscar por nome, cidade, estado, responsável..." />
+                        <CommandList>
+                          <CommandEmpty>Nenhuma unidade encontrada para essa busca.</CommandEmpty>
+                          <CommandGroup heading="Unidades credenciadas ativas">
+                            {(unidades || []).map((unidade: any) => {
+                              const mesmaCidade = !!veiculoSelecionado?.vendedor_cidade &&
+                                String(unidade.cidade || "").toLowerCase() === String(veiculoSelecionado.vendedor_cidade).toLowerCase();
+                              const atendeCidade = !!veiculoSelecionado?.vendedor_cidade &&
+                                !mesmaCidade &&
+                                Array.isArray(unidade.cidades_atendidas) &&
+                                unidade.cidades_atendidas.some((c: string) => String(c).toLowerCase() === String(veiculoSelecionado.vendedor_cidade).toLowerCase());
+                              return (
+                                <CommandItem
+                                  key={unidade.id}
+                                  value={`${unidade.nome} ${unidade.cidade} ${unidade.estado} ${unidade.responsavel || ""} ${unidade.endereco || ""} ${unidade.cep || ""}`}
+                                  onSelect={() => {
+                                    setUnidadeId(normalizarIdStr(unidade.id));
+                                    setBuscaUnidadeModal("");
+                                  }}
+                                  className={cn(
+                                    "flex items-start gap-3 py-3",
+                                    idsIguais(unidade.id, unidadeId) && "bg-teal-50/70 aria-selected:bg-teal-50"
+                                  )}
+                                >
+                                  <div className="mt-0.5 h-2 w-2 shrink-0 rounded-full border border-slate-300">
+                                    {idsIguais(unidade.id, unidadeId) && (
+                                      <div className="h-full w-full rounded-full bg-teal-500 ring-2 ring-teal-200" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold text-slate-900 truncate">{unidade.nome}</p>
+                                    <p className="text-xs text-slate-600 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                                      <MapPin className="h-3 w-3 shrink-0 text-slate-400" />
+                                      <span className="truncate">
+                                        {unidade.endereco || "Endereço não cadastrado"} · <strong>{unidade.cidade}/{unidade.estado}</strong>
+                                      </span>
+                                    </p>
+                                    {unidade.responsavel && (
+                                      <p className="text-[11px] text-slate-500 mt-1">
+                                        Responsável: <strong>{unidade.responsavel}</strong>
+                                        {unidade.telefone && <> · {unidade.telefone}</>}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col items-end gap-1 shrink-0">
+                                    {mesmaCidade && (
+                                      <Badge className="bg-emerald-500/10 text-emerald-700 border-0 ring-1 ring-inset ring-emerald-200 text-[10px]">
+                                        mesma cidade
+                                      </Badge>
+                                    )}
+                                    {atendeCidade && (
+                                      <Badge className="bg-sky-500/10 text-sky-700 border-0 ring-1 ring-inset ring-sky-200 text-[10px]">
+                                        atende região
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </CommandItem>
+                              );
+                            })}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   {!loadingUnidades && unidades.length === 0 && (
                     <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50 px-4 py-3">
                       <p className="text-xs font-bold uppercase tracking-wider text-amber-800">Nenhuma unidade ativa encontrada</p>
