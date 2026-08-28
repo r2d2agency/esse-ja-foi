@@ -30,6 +30,11 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  Filter,
+  X,
+  Building,
+  Users,
+  Phone,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -69,6 +74,7 @@ import {
 import { cn } from "@/lib/utils";
 import { buscarCep, geocodificar, maskCep } from "@/lib/brasil";
 import MapaLocalizacao from "@/components/shared/MapaLocalizacao";
+import MapaRedeCredenciada from "@/components/shared/MapaRedeCredenciada";
 
 const DIAS_ATENDIMENTO = [
   { key: "1", label: "Segunda" },
@@ -254,6 +260,12 @@ function VistoriasAdminPage() {
   const [horarioVistoria, setHorarioVistoria] = useState("");
   const [unidadeModalOpen, setUnidadeModalOpen] = useState(false);
   const [vistoriadorModalOpen, setVistoriadorModalOpen] = useState(false);
+
+  // Filtros da aba "Unidades e Equipe"
+  const [buscaCadastroUnidade, setBuscaCadastroUnidade] = useState("");
+  const [filtroStatusUnidade, setFiltroStatusUnidade] = useState<"todas" | "ativas" | "inativas">("ativas");
+  const [filtroUFUnidade, setFiltroUFUnidade] = useState<string>("todas");
+  const [unidadeFocoMapaId, setUnidadeFocoMapaId] = useState<string | null>(null);
   const [unidadeForm, setUnidadeForm] = useState({
     id: "",
     nome: "",
@@ -365,6 +377,47 @@ function VistoriasAdminPage() {
   const unidades = unidadesRes?.data || [];
   const unidadesCadastro = unidadesCadastroRes?.data || [];
   const vistoriadoresCadastro = vistoriadoresCadastroRes?.data || [];
+
+  // Filtros das unidades da aba "Cadastros"
+  const ufsDisponiveisUnidades = useMemo(() => {
+    const set = new Set<string>();
+    for (const u of unidadesCadastro) {
+      if (u.estado) set.add(String(u.estado).toUpperCase());
+    }
+    return Array.from(set).sort();
+  }, [unidadesCadastro]);
+
+  const unidadesFiltradas = useMemo(() => {
+    const termo = buscaCadastroUnidade.trim().toLowerCase();
+    return unidadesCadastro.filter((u: any) => {
+      if (filtroStatusUnidade === "ativas" && !u.ativo) return false;
+      if (filtroStatusUnidade === "inativas" && u.ativo) return false;
+      if (filtroUFUnidade !== "todas" && String(u.estado || "").toUpperCase() !== filtroUFUnidade.toUpperCase()) return false;
+      if (!termo) return true;
+      const haystack = [
+        u.nome,
+        u.cidade,
+        u.estado,
+        u.responsavel,
+        u.telefone,
+        u.whatsapp,
+        u.email,
+        u.endereco,
+        u.cep,
+        u.cnpj,
+        (u.cidades_atendidas || []).join(" "),
+      ].join(" ").toLowerCase();
+      return haystack.includes(termo);
+    });
+  }, [unidadesCadastro, buscaCadastroUnidade, filtroStatusUnidade, filtroUFUnidade]);
+
+  const temAlgumFiltro = !!buscaCadastroUnidade || filtroStatusUnidade !== "ativas" || filtroUFUnidade !== "todas";
+  const limparFiltrosUnidades = () => {
+    setBuscaCadastroUnidade("");
+    setFiltroStatusUnidade("ativas");
+    setFiltroUFUnidade("todas");
+    setUnidadeFocoMapaId(null);
+  };
   const unidadeSelecionada = unidades.find((unidade: any) => idsIguais(unidade.id, unidadeId)) || null;
   const slotsDisponiveis = slotsRes?.slots || [];
   const termoFila = buscaFila.trim().toLowerCase();
@@ -1137,81 +1190,298 @@ function VistoriasAdminPage() {
               </Card>
             </div>
 
-            <div className="grid gap-6 xl:grid-cols-2">
-              <Card className="border-slate-200 shadow-none overflow-hidden">
-                <CardContent className="p-0">
-                  <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-                    <div>
-                      <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">Unidades / Credenciados</h2>
-                      <p className="text-xs text-slate-500">Locais disponíveis para receber agendamentos.</p>
+            <div className="space-y-5">
+              {/* BARRA DE BUSCA E FILTROS */}
+              <Card className="border-slate-200 shadow-sm overflow-hidden">
+                <CardContent className="p-4 md:p-5 space-y-4">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-sm font-black uppercase tracking-wider text-slate-900">Unidades credenciadas</h2>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Busque por nome, cidade, UF, responsável, contato, CEP ou CNPJ. Use os filtros para refinar.
+                      </p>
                     </div>
-                    <Button className="bg-slate-900 hover:bg-slate-800 text-white font-bold" onClick={() => abrirCadastroUnidade()}>
-                      <Building2 className="mr-2 h-4 w-4" />
-                      Nova unidade
+                    <div className="flex gap-2 md:justify-end">
+                      <Button className="bg-slate-900 hover:bg-slate-800 text-white font-bold" onClick={() => abrirCadastroUnidade()}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Nova unidade
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 lg:grid-cols-[1.6fr_1fr_1fr_auto]">
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <Input
+                        value={buscaCadastroUnidade}
+                        onChange={(e) => setBuscaCadastroUnidade(e.target.value)}
+                        placeholder="Buscar unidade por nome, cidade, responsável, telefone, CEP, CNPJ..."
+                        className="pl-9 font-medium"
+                      />
+                      {buscaCadastroUnidade && (
+                        <button
+                          type="button"
+                          onClick={() => setBuscaCadastroUnidade("")}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 grid h-6 w-6 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                          aria-label="Limpar busca"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-slate-200 bg-slate-50 text-slate-500">
+                        <Filter className="h-4 w-4" />
+                      </div>
+                      <Select value={filtroStatusUnidade} onValueChange={(v: any) => setFiltroStatusUnidade(v)}>
+                        <SelectTrigger className="font-medium">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ativas">Somente ativas</SelectItem>
+                          <SelectItem value="inativas">Somente inativas</SelectItem>
+                          <SelectItem value="todas">Todas as unidades</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-md border border-slate-200 bg-slate-50 text-slate-500">
+                        <MapPin className="h-4 w-4" />
+                      </div>
+                      <Select value={filtroUFUnidade} onValueChange={setFiltroUFUnidade}>
+                        <SelectTrigger className="font-medium">
+                          <SelectValue placeholder="UF" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todas">Todas as UFs</SelectItem>
+                          {ufsDisponiveisUnidades.map((uf) => (
+                            <SelectItem key={uf} value={uf}>{uf}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={limparFiltrosUnidades}
+                      disabled={!temAlgumFiltro}
+                      className="font-bold disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <X className="mr-1.5 h-3.5 w-3.5" />
+                      Limpar
                     </Button>
                   </div>
 
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200">
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Unidade</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Cidade</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Contato</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
-                        <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Ação</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 bg-white">
-                      {unidadesCadastro.map((unidade: any) => (
-                        <tr key={unidade.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="flex flex-col">
-                              <span className="text-sm font-bold text-slate-900">{unidade.nome}</span>
-                              <span className="text-[10px] text-slate-500 uppercase">
-                                {unidade.total_vistoriadores || 0} vistoriador(es) ativo(s)
-                              </span>
-                              <span className="text-[10px] text-slate-400">
-                                {resumirHorarioAtendimento(unidade.horario_atendimento)}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-slate-600">
-                            {unidade.cidade}/{unidade.estado}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex flex-col text-sm text-slate-600">
-                              <span>{unidade.responsavel || "Sem responsável"}</span>
-                              <span className="text-xs text-slate-400">{unidade.whatsapp || unidade.telefone || unidade.email || "Sem contato"}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <Badge className={cn(
-                              "text-[10px] font-black uppercase",
-                              unidade.ativo ? "bg-green-50 text-green-700 hover:bg-green-50" : "bg-slate-100 text-slate-600 hover:bg-slate-100"
-                            )}>
-                              {unidade.ativo ? "Ativa" : "Inativa"}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <Button variant="outline" size="sm" className="font-bold" onClick={() => abrirCadastroUnidade(unidade)}>
-                              Editar
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-
-                      {unidadesCadastro.length === 0 && !loadingUnidadesCadastro && (
-                        <tr>
-                          <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic text-sm">
-                            Nenhuma unidade credenciada cadastrada ainda.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                    <p className="text-xs text-slate-600">
+                      Exibindo <strong className="text-slate-900">{unidadesFiltradas.length}</strong> de <strong className="text-slate-900">{unidadesCadastro.length}</strong> unidade(s)
+                      {filtroStatusUnidade !== "todas" && <> · Status: <strong>{filtroStatusUnidade === "ativas" ? "Ativas" : "Inativas"}</strong></>}
+                      {filtroUFUnidade !== "todas" && <> · UF: <strong>{filtroUFUnidade}</strong></>}
+                      {buscaCadastroUnidade && <> · Busca: <strong>“{buscaCadastroUnidade}”</strong></>}
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
 
+              {/* COLUNAS: CARDS À ESQUERDA / MAPA À DIREITA */}
+              <div className="grid gap-5 2xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                {/* COLUNA 1: CARDS */}
+                <div className="space-y-3 max-h-[820px] overflow-y-auto pr-1.5 -mr-1.5 [scrollbar-width:thin]">
+                  {loadingUnidadesCadastro && (
+                    <div className="grid gap-3">
+                      {[0, 1, 2].map((i) => (
+                        <Card key={i} className="border-slate-200 shadow-none">
+                          <CardContent className="p-5 space-y-3">
+                            <div className="h-5 w-2/3 animate-pulse rounded bg-slate-200" />
+                            <div className="h-4 w-1/2 animate-pulse rounded bg-slate-200" />
+                            <div className="h-3 w-5/6 animate-pulse rounded bg-slate-100" />
+                            <div className="h-3 w-1/3 animate-pulse rounded bg-slate-100" />
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+
+                  {!loadingUnidadesCadastro && unidadesFiltradas.length === 0 && (
+                    <Card className="border-dashed border-amber-300 shadow-none bg-amber-50/40">
+                      <CardContent className="p-10 text-center space-y-2">
+                        <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-amber-100 text-amber-600 ring-1 ring-inset ring-amber-200">
+                          <Building className="h-6 w-6" />
+                        </div>
+                        <h3 className="text-sm font-black uppercase tracking-wider text-amber-900">Nenhuma unidade encontrada</h3>
+                        <p className="text-sm text-amber-800 max-w-md mx-auto">
+                          {unidadesCadastro.length === 0
+                            ? "Cadastre sua primeira unidade credenciada clicando em “Nova unidade” para começar."
+                            : "Tente ajustar os filtros de status, UF ou limpar a busca para encontrar o que procura."}
+                        </p>
+                        {temAlgumFiltro && unidadesCadastro.length > 0 && (
+                          <Button
+                            variant="outline"
+                            onClick={limparFiltrosUnidades}
+                            className="mt-2 border-amber-300 bg-white text-amber-900 hover:bg-amber-100 font-bold"
+                          >
+                            <X className="mr-1.5 h-3.5 w-3.5" />
+                            Limpar filtros
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {!loadingUnidadesCadastro && unidadesFiltradas.map((unidade: any) => {
+                    const focado = idsIguais(unidade.id, unidadeFocoMapaId);
+                    const horario = resumirHorarioAtendimento(unidade.horario_atendimento);
+                    const contato = unidade.whatsapp || unidade.telefone || unidade.email;
+                    const semGps = unidade.latitude == null || unidade.longitude == null;
+                    return (
+                      <Card
+                        key={unidade.id}
+                        id={`unidade-card-${unidade.id}`}
+                        className={cn(
+                          "border-slate-200 shadow-sm overflow-hidden transition-all duration-200 cursor-pointer",
+                          focado && "ring-2 ring-teal-500/60 border-teal-300 shadow-lg"
+                        )}
+                        onClick={() => {
+                          setUnidadeFocoMapaId((prev) => (idsIguais(prev, unidade.id) ? null : unidade.id));
+                        }}
+                      >
+                        <CardContent className="p-5 space-y-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="text-sm font-extrabold text-slate-950 tracking-tight">{unidade.nome}</h3>
+                                <Badge className={cn(
+                                  "text-[10px] font-black uppercase border-0",
+                                  unidade.ativo
+                                    ? "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200"
+                                    : "bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-200"
+                                )}>
+                                  {unidade.ativo ? "Ativa" : "Inativa"}
+                                </Badge>
+                                {focado && (
+                                  <Badge className="bg-teal-500/10 text-teal-700 ring-1 ring-inset ring-teal-200 text-[10px] font-black uppercase border-0">
+                                    selecionada no mapa
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                                <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                <span className="truncate">
+                                  {unidade.endereco || "Endereço não informado"} · <strong>{unidade.cidade}/{unidade.estado}</strong>
+                                </span>
+                              </div>
+                            </div>
+                            <div className="grid shrink-0 h-10 w-10 place-items-center rounded-xl bg-slate-50 text-slate-500 ring-1 ring-inset ring-slate-200">
+                              <Building className="h-5 w-5" />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2 rounded-xl border border-slate-100 bg-slate-50/60 p-2.5">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-sky-50 text-sky-600 ring-1 ring-inset ring-sky-200">
+                                <Users className="h-4 w-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 leading-none">Equipe</p>
+                                <p className="text-sm font-extrabold text-slate-900 leading-tight">{unidade.total_vistoriadores || 0}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-violet-50 text-violet-600 ring-1 ring-inset ring-violet-200">
+                                <Phone className="h-4 w-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 leading-none">Contato</p>
+                                <p className="text-xs font-semibold text-slate-800 leading-tight truncate" title={contato}>
+                                  {unidade.responsavel || contato || "—"}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className={cn(
+                                "grid h-8 w-8 shrink-0 place-items-center rounded-lg ring-1 ring-inset",
+                                semGps
+                                  ? "bg-amber-50 text-amber-600 ring-amber-200"
+                                  : "bg-emerald-50 text-emerald-600 ring-emerald-200"
+                              )}>
+                                <MapPin className="h-4 w-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 leading-none">GPS</p>
+                                <p className={cn(
+                                  "text-xs font-bold leading-tight truncate",
+                                  semGps ? "text-amber-700" : "text-emerald-700"
+                                )}>
+                                  {semGps ? "Não cadastrado" : "Cadastrado"}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Horário de atendimento</p>
+                              <p className="text-xs text-slate-700 leading-relaxed">{horario}</p>
+                              {Array.isArray(unidade.cidades_atendidas) && unidade.cidades_atendidas.length > 0 && (
+                                <p className="mt-1 text-[11px] text-slate-500">
+                                  Atende região: <span className="font-semibold text-slate-700">{unidade.cidades_atendidas.join(", ")}</span>
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex shrink-0 gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  abrirCadastroUnidade(unidade);
+                                }}
+                                className="font-bold"
+                              >
+                                Editar
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                {/* COLUNA 2: MAPA */}
+                <div className="min-h-[680px]">
+                  <MapaRedeCredenciada
+                    unidades={unidadesFiltradas.map((u: any) => ({
+                      id: u.id,
+                      nome: u.nome,
+                      cidade: u.cidade,
+                      estado: u.estado,
+                      endereco: u.endereco,
+                      latitude: u.latitude,
+                      longitude: u.longitude,
+                      ativo: !!u.ativo,
+                      responsavel: u.responsavel,
+                      telefone: u.telefone,
+                      whatsapp: u.whatsapp,
+                      total_vistoriadores: u.total_vistoriadores,
+                    }))}
+                    unidadeSelecionadaId={unidadeFocoMapaId}
+                    onSelecionarUnidade={(id) => {
+                      setUnidadeFocoMapaId(id);
+                      const el = document.getElementById(`unidade-card-${id}`);
+                      if (el) {
+                        el.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+                      }
+                    }}
+                    height={680}
+                  />
+                </div>
+              </div>
+
+              {/* TABELA DE VISTORIADORES */}
               <Card className="border-slate-200 shadow-none overflow-hidden">
                 <CardContent className="p-0">
                   <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
