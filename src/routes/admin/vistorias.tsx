@@ -9,7 +9,6 @@ import {
   getUnidadesDisponiveisFn,
   getVeiculosAguardandoVistoriaFn,
   getVistoriadoresCadastroFn,
-  getVistoriadoresUnidadeFn,
   getVistoriasAdminFn,
   salvarUnidadeCadastroFn,
   salvarVistoriadorCadastroFn,
@@ -196,7 +195,6 @@ function VistoriasAdminPage() {
   const getFilaPosVistoria = useServerFn(getFilaAnalisePosVistoriaFn);
   const getSlotsUnidade = useServerFn(getSlotsUnidadeDisponiveisFn);
   const getUnidades = useServerFn(getUnidadesDisponiveisFn);
-  const getVistoriadores = useServerFn(getVistoriadoresUnidadeFn);
   const criarAgendamento = useServerFn(criarAgendamentoVistoriaFn);
   const getUnidadesCadastro = useServerFn(getUnidadesCadastroFn);
   const getVistoriadoresCadastro = useServerFn(getVistoriadoresCadastroFn);
@@ -534,14 +532,8 @@ function VistoriasAdminPage() {
   }, [agendaOpen, unidades, unidadeId]);
 
   useEffect(() => {
-    if (vistoriadores.length === 1 && !vistoriadorId) {
-      setVistoriadorId(vistoriadores[0].id);
-    }
-  }, [vistoriadores, vistoriadorId]);
-
-  useEffect(() => {
     setHorarioVistoria("");
-  }, [unidadeId, dataVistoria, vistoriadorId]);
+  }, [unidadeId, dataVistoria]);
 
   useEffect(() => {
     if (!slotsDisponiveis.length) return;
@@ -685,7 +677,6 @@ function VistoriasAdminPage() {
       setVistoriadorModalOpen(false);
       resetVistoriadorForm();
       await queryClient.invalidateQueries({ queryKey: ["cadastro-vistoriadores"] });
-      await queryClient.invalidateQueries({ queryKey: ["vistoriadores-unidade"] });
     } catch {
       toast.error("Erro técnico ao salvar o vistoriador.", { id: toastId });
     }
