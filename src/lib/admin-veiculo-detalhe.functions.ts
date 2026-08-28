@@ -44,7 +44,7 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
           p.status_compliance as compliance_status,
           p.documento_crlv_status,
           p.documento_crlv_url,
-          (SELECT status FROM contratos WHERE vendedor_id = v.perfil_id OR vendedor_id = v.vendedor_id ORDER BY criado_em DESC LIMIT 1) as contrato_status,
+          (SELECT status FROM contratos WHERE vendedor_id = v.perfil_id OR vendedor_id = v.vendedor_id ORDER BY atualizado_em DESC NULLS LAST, gerado_em DESC NULLS LAST LIMIT 1) as contrato_status,
           resp.nome as responsavel_nome
         FROM veiculos v
         LEFT JOIN profiles p ON p.id = v.perfil_id OR p.id = v.vendedor_id
@@ -134,7 +134,7 @@ export const atualizarStatusAnaliseFn = createServerFn({ method: "POST" })
     if (data.status === 'PRONTO_PARA_VISTORIA') {
       const vQuery = await db.execute(sql`
         SELECT v.*, p.status_compliance as compliance_status,
-               (SELECT status FROM contratos WHERE vendedor_id = v.perfil_id OR vendedor_id = v.vendedor_id ORDER BY criado_em DESC LIMIT 1) as contrato_status,
+               (SELECT status FROM contratos WHERE vendedor_id = v.perfil_id OR vendedor_id = v.vendedor_id ORDER BY atualizado_em DESC NULLS LAST, gerado_em DESC NULLS LAST LIMIT 1) as contrato_status,
                p.verificado,
                p.documento_crlv_status
         FROM veiculos v 
