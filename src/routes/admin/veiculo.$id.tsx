@@ -59,6 +59,52 @@ export const Route = createFileRoute("/admin/veiculo/$id")({
   component: DetalheVeiculoAdminPage,
 });
 
+function formatCurrencyBR(value: unknown, fallback = "Não informado") {
+  const n = Number(value ?? NaN);
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  return `R$ ${n.toLocaleString("pt-BR")}`;
+}
+
+function desserializarObservacoesVeiculo(obsRaw?: string | null) {
+  if (!obsRaw) return {};
+
+  try {
+    const parsed = JSON.parse(obsRaw);
+    if (!parsed || typeof parsed !== "object") return {};
+
+    const snapshot =
+      typeof parsed.snapshot === "object" && parsed.snapshot
+        ? parsed.snapshot as Record<string, any>
+        : parsed as Record<string, any>;
+
+    const historico = (parsed.historico || {}) as Record<string, any>;
+    const itens = (parsed.itens || {}) as Record<string, any>;
+    const proprietario = (parsed.proprietario || {}) as Record<string, any>;
+    const financiamento = (parsed.financiamento || {}) as Record<string, any>;
+
+    return {
+      ...snapshot,
+      emSeuNome: snapshot.emSeuNome ?? proprietario.emSeuNome ?? "",
+      relacaoProprietario: snapshot.relacaoProprietario ?? proprietario.relacao ?? "",
+      relacaoDescricao: snapshot.relacaoDescricao ?? proprietario.descricao ?? "",
+      financiado: snapshot.financiado ?? financiamento.financiado ?? "",
+      instituicao: snapshot.instituicao ?? financiamento.instituicao ?? "",
+      saldoQuitacao: snapshot.saldoQuitacao ?? financiamento.saldo ?? "",
+      acidente: snapshot.acidente ?? historico.acidente ?? "",
+      leilao: snapshot.leilao ?? historico.leilao ?? "",
+      sinistro: snapshot.sinistro ?? historico.sinistro ?? "",
+      restricao: snapshot.restricao ?? historico.restricao ?? "",
+      historicoObs: snapshot.historicoObs ?? historico.obs ?? "",
+      chaveReserva: snapshot.chaveReserva ?? itens.chaveReserva ?? "",
+      manual: snapshot.manual ?? itens.manual ?? "",
+      estepe: snapshot.estepe ?? itens.estepe ?? "",
+      acessoriosQuais: snapshot.acessoriosQuais ?? itens.acessorios ?? "",
+    };
+  } catch {
+    return {};
+  }
+}
+
 function DetalheVeiculoAdminPage() {
   const { id } = Route.useParams();
   const { user } = useAuth();
@@ -112,6 +158,7 @@ function DetalheVeiculoAdminPage() {
   }
 
   const v = res.data;
+  const observacoes = desserializarObservacoesVeiculo(v.observacoes);
   console.log("[DetalheVeiculoAdminPage] Veículo:", v);
   const historico = res.historico || [];
   const complianceAprovado = v.compliance_status === 'APROVADO';
@@ -123,6 +170,13 @@ function DetalheVeiculoAdminPage() {
   const contratoLabel = v.contrato_status
     ? String(v.contrato_status).replaceAll('_', ' ')
     : 'PENDENTE';
+  const valorDesejado = formatCurrencyBR(v.valor_interesse_cliente);
+  const valorFipe = formatCurrencyBR(v.valor_fipe);
+  const valorMinimo = observacoes.valorMinimo || "Não informado";
+  const percentualSobreFipe =
+    typeof v.percentual_sobre_fipe === "number" || typeof v.percentual_sobre_fipe === "string"
+      ? `${Number(v.percentual_sobre_fipe).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`
+      : "Não informado";
 
   const handleAssumir = async () => {
     if (!user?.id) return;
@@ -546,6 +600,55 @@ function DetalheVeiculoAdminPage() {
                 </Card>
               </TabsContent>
 
+              <TabsContent value="condicao" className="mt-0 space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Card className="border-slate-200 shadow-none">
+                    <CardHeader className="pb-3 border-b border-slate-100">
+                      <CardTitle className="text-xs font-black uppercase text-slate-400">Mecânica e estrutura</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-3 text-sm">
+                      <div className="flex justify-between gap-4"><span className="text-slate-400 font-medium">Funcionamento</span><span className="font-bold text-right">{observacoes.funcionamento || "Não informado"}</span></div>
+                      <div className="flex justify-between gap-4"><span className="text-slate-400 font-medium">Motor</span><span className="font-bold text-right">{observacoes.motor || "Não informado"}</span></div>
+                      <div className="flex justify-between gap-4"><span className="text-slate-400 font-medium">Câmbio</span><span className="font-bold text-right">{observacoes.cambioProblema || v.cambio || "Não informado"}</span></div>
+                      <div className="flex justify-between gap-4"><span className="text-slate-400 font-medium">Lataria</span><span className="font-bold text-right">{observacoes.lataria || "Não informado"}</span></div>
+                      <div className="flex justify-between gap-4"><span className="text-slate-400 font-medium">Interior</span><span className="font-bold text-right">{observacoes.interior || "Não informado"}</span></div>
+                      <div className="flex justify-between gap-4"><span className="text-slate-400 font-medium">Pneus</span><span className="font-bold text-right">{observacoes.pneus || "Não informado"}</span></div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-slate-200 shadow-none">
+                    <CardHeader className="pb-3 border-b border-slate-100">
+                      <CardTitle className="text-xs font-black uppercase text-slate-400">Histórico e itens</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-3 text-sm">
+                      <div className="flex justify-between gap-4"><span className="text-slate-400 font-medium">Acidente</span><span className="font-bold text-right">{observacoes.acidente || "Não informado"}</span></div>
+                      <div className="flex justify-between gap-4"><span className="text-slate-400 font-medium">Leilão</span><span className="font-bold text-right">{observacoes.leilao || "Não informado"}</span></div>
+                      <div className="flex justify-between gap-4"><span className="text-slate-400 font-medium">Sinistro</span><span className="font-bold text-right">{observacoes.sinistro || "Não informado"}</span></div>
+                      <div className="flex justify-between gap-4"><span className="text-slate-400 font-medium">Restrição</span><span className="font-bold text-right">{observacoes.restricao || "Não informado"}</span></div>
+                      <div className="flex justify-between gap-4"><span className="text-slate-400 font-medium">Chave reserva</span><span className="font-bold text-right">{observacoes.chaveReserva || "Não informado"}</span></div>
+                      <div className="flex justify-between gap-4"><span className="text-slate-400 font-medium">Manual</span><span className="font-bold text-right">{observacoes.manual || "Não informado"}</span></div>
+                      <div className="flex justify-between gap-4"><span className="text-slate-400 font-medium">Estepe</span><span className="font-bold text-right">{observacoes.estepe || "Não informado"}</span></div>
+                      <div className="flex justify-between gap-4"><span className="text-slate-400 font-medium">Acessórios</span><span className="font-bold text-right">{observacoes.acessorios || "Não informado"}</span></div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {(observacoes.funcionamentoObs || observacoes.motorObs || observacoes.latariaObs || observacoes.historicoObs || observacoes.acessoriosQuais) && (
+                  <Card className="border-slate-200 shadow-none">
+                    <CardHeader className="pb-3 border-b border-slate-100">
+                      <CardTitle className="text-xs font-black uppercase text-slate-400">Observações declaradas</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-4 text-sm">
+                      {observacoes.funcionamentoObs && <div><p className="text-[10px] font-black uppercase text-slate-400 mb-1">Funcionamento</p><p className="text-slate-700">{observacoes.funcionamentoObs}</p></div>}
+                      {observacoes.motorObs && <div><p className="text-[10px] font-black uppercase text-slate-400 mb-1">Motor</p><p className="text-slate-700">{observacoes.motorObs}</p></div>}
+                      {observacoes.latariaObs && <div><p className="text-[10px] font-black uppercase text-slate-400 mb-1">Lataria</p><p className="text-slate-700">{observacoes.latariaObs}</p></div>}
+                      {observacoes.historicoObs && <div><p className="text-[10px] font-black uppercase text-slate-400 mb-1">Histórico</p><p className="text-slate-700">{observacoes.historicoObs}</p></div>}
+                      {observacoes.acessoriosQuais && <div><p className="text-[10px] font-black uppercase text-slate-400 mb-1">Acessórios adicionais</p><p className="text-slate-700">{observacoes.acessoriosQuais}</p></div>}
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+
               <TabsContent value="fotos" className="mt-0 space-y-6">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {fotos.length > 0 ? fotos.map((foto: string, idx: number) => (
@@ -568,6 +671,68 @@ function DetalheVeiculoAdminPage() {
                   )) : (
                     <div className="col-span-full py-12 text-center text-slate-400">Nenhuma foto cadastrada.</div>
                   )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="valores" className="mt-0 space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Card className="border-slate-200 shadow-none">
+                    <CardHeader className="pb-3 border-b border-slate-100">
+                      <CardTitle className="text-xs font-black uppercase text-slate-400">Referências financeiras</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-sm text-slate-400 font-medium">Valor FIPE</span>
+                        <span className="text-sm font-black text-slate-950">{valorFipe}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-sm text-slate-400 font-medium">Valor desejado</span>
+                        <span className="text-sm font-black text-slate-950">{valorDesejado}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-sm text-slate-400 font-medium">Tipo de expectativa</span>
+                        <span className="text-sm font-black text-slate-950">{v.tipo_expectativa || "Não informado"}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-sm text-slate-400 font-medium">% sobre FIPE</span>
+                        <span className="text-sm font-black text-slate-950">{percentualSobreFipe}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-slate-200 shadow-none">
+                    <CardHeader className="pb-3 border-b border-slate-100">
+                      <CardTitle className="text-xs font-black uppercase text-slate-400">Condições comerciais</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4 space-y-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-sm text-slate-400 font-medium">Valor mínimo privado</span>
+                        <span className="text-sm font-black text-slate-950">{valorMinimo}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-sm text-slate-400 font-medium">Alerta de expectativa</span>
+                        <Badge className={v.alerta_expectativa ? "bg-amber-100 text-amber-700 hover:bg-amber-100" : "bg-green-100 text-green-700 hover:bg-green-100"}>
+                          {v.alerta_expectativa ? "Acima da referência" : "Dentro da referência"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-sm text-slate-400 font-medium">Cliente ciente</span>
+                        <span className="text-sm font-black text-slate-950">{v.ciente_expectativa ? "Sim" : "Não"}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-sm text-slate-400 font-medium">Financiado</span>
+                        <span className="text-sm font-black text-slate-950">{observacoes.financiado || "Não informado"}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-sm text-slate-400 font-medium">Instituição</span>
+                        <span className="text-sm font-black text-slate-950">{observacoes.instituicao || "Não informado"}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-sm text-slate-400 font-medium">Saldo para quitação</span>
+                        <span className="text-sm font-black text-slate-950">{observacoes.saldoQuitacao || "Não informado"}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </TabsContent>
 
