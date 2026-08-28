@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getVeiculoDetalheAdminFn, assumirAnaliseVeiculoFn, atualizarStatusAnaliseFn, atualizarStatusDocumentoVeiculoFn } from "@/lib/admin-veiculo-detalhe.functions";
 import { salvarConfiguracaoLeilao } from "@/lib/leilao.functions";
 import { useAuth } from "@/hooks/use-auth";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -76,10 +76,30 @@ function DetalheVeiculoAdminPage() {
   const atualizarStatus = useServerFn(atualizarStatusAnaliseFn);
   const atualizarStatusDoc = useServerFn(atualizarStatusDocumentoVeiculoFn);
 
-  const { data: res, isLoading, refetch } = useQuery({
+  const { data: res, error, isLoading, refetch } = useQuery({
     queryKey: ["admin-veiculo-detalhe", id],
     queryFn: () => getDetalhe({ data: { id } })
   });
+
+  useEffect(() => {
+    // #region debug-point A:route-param
+    fetch("http://127.0.0.1:7777/event", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId: "admin-vehicle-detail", runId: "pre-fix", hypothesisId: "A", location: "src/routes/admin/veiculo.$id.tsx:useEffect:param", msg: "[DEBUG] admin vehicle detail page mounted", data: { id }, ts: Date.now() }) }).catch(() => {});
+    // #endregion
+  }, [id]);
+
+  useEffect(() => {
+    if (!error) return;
+    // #region debug-point D:query-error
+    fetch("http://127.0.0.1:7777/event", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId: "admin-vehicle-detail", runId: "pre-fix", hypothesisId: "D", location: "src/routes/admin/veiculo.$id.tsx:useEffect:error", msg: "[DEBUG] admin vehicle detail query failed in route", data: { id, errorMessage: (error as any)?.message ?? null, errorName: (error as any)?.name ?? null }, ts: Date.now() }) }).catch(() => {});
+    // #endregion
+  }, [error, id]);
+
+  useEffect(() => {
+    if (!res || res.ok || res.data) return;
+    // #region debug-point C:failed-response
+    fetch("http://127.0.0.1:7777/event", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId: "admin-vehicle-detail", runId: "pre-fix", hypothesisId: "C", location: "src/routes/admin/veiculo.$id.tsx:useEffect:failed-response", msg: "[DEBUG] admin vehicle detail returned failed payload", data: { id, message: res.message ?? null }, ts: Date.now() }) }).catch(() => {});
+    // #endregion
+  }, [res, id]);
 
   if (isLoading) return <div className="p-8">Carregando detalhes...</div>;
   if (!res?.ok || !res.data) {
