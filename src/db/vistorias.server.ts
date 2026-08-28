@@ -319,7 +319,32 @@ export async function listarUnidadesDisponiveis(cidade?: string) {
   const d = requireDb();
   await ensureVistoriaSchema();
   
-  let query = sql`SELECT * FROM unidades_vistoria WHERE ativo = true`;
+  let query = sql`
+    SELECT
+      id::text as id,
+      nome,
+      cnpj,
+      cep,
+      endereco,
+      cidade,
+      estado,
+      latitude,
+      longitude,
+      telefone,
+      whatsapp,
+      email,
+      responsavel,
+      horario_atendimento,
+      duracao_padrao_minutos,
+      intervalo_entre_vistorias_minutos,
+      raio_atendimento_km,
+      cidades_atendidas,
+      ativo,
+      criado_em,
+      atualizado_em
+    FROM unidades_vistoria
+    WHERE ativo = true
+  `;
   if (cidade) {
     query = sql`${query} AND (cidade = ${cidade} OR ${cidade} = ANY(cidades_atendidas))`;
   }
@@ -338,7 +363,18 @@ export async function listarVistoriadoresUnidade(unidadeId: string) {
   }
   
   const res = await d.execute(sql`
-    SELECT v.*, p.nome, p.email, p.whatsapp
+    SELECT
+      v.id::text as id,
+      v.usuario_id::text as usuario_id,
+      v.unidade_id::text as unidade_id,
+      v.dias_trabalho,
+      v.horarios_disponiveis,
+      v.status,
+      v.criado_em,
+      v.atualizado_em,
+      p.nome,
+      p.email,
+      p.whatsapp
     FROM vistoriadores v
     JOIN profiles p ON v.usuario_id = p.id
     WHERE v.unidade_id = ${unidadeIdNormalizado}::uuid AND v.status = 'ATIVO'
@@ -352,7 +388,27 @@ export async function listarUnidadesVistoriaCadastro() {
 
   const res = await d.execute(sql`
     SELECT
-      uv.*,
+      uv.id::text as id,
+      uv.nome,
+      uv.cnpj,
+      uv.cep,
+      uv.endereco,
+      uv.cidade,
+      uv.estado,
+      uv.latitude,
+      uv.longitude,
+      uv.telefone,
+      uv.whatsapp,
+      uv.email,
+      uv.responsavel,
+      uv.horario_atendimento,
+      uv.duracao_padrao_minutos,
+      uv.intervalo_entre_vistorias_minutos,
+      uv.raio_atendimento_km,
+      uv.cidades_atendidas,
+      uv.ativo,
+      uv.criado_em,
+      uv.atualizado_em,
       COUNT(v.id)::int as total_vistoriadores
     FROM unidades_vistoria uv
     LEFT JOIN vistoriadores v ON v.unidade_id = uv.id AND v.status = 'ATIVO'
@@ -452,7 +508,7 @@ export async function listarSlotsDisponiveisUnidade(unidadeId: string, data: str
     return { ok: false as const, message: "Selecione uma unidade de vistoria válida.", slots: [] as any[] };
   }
 
-  const unidadeRes = await d.execute(sql`
+  let unidadeRes = await d.execute(sql`
     SELECT horario_atendimento, duracao_padrao_minutos, intervalo_entre_vistorias_minutos
     FROM unidades_vistoria
     WHERE lower(id::text) = ${unidadeIdNormalizado}
@@ -460,7 +516,17 @@ export async function listarSlotsDisponiveisUnidade(unidadeId: string, data: str
     LIMIT 1
   `);
 
-  const unidade = (unidadeRes as any).rows?.[0];
+  let unidade = (unidadeRes as any).rows?.[0];
+  if (!unidade) {
+    const fallbackRes = await d.execute(sql`
+      SELECT horario_atendimento, duracao_padrao_minutos, intervalo_entre_vistorias_minutos
+      FROM unidades_vistoria
+      WHERE id = ${unidadeIdNormalizado}::uuid
+        AND ativo = true
+      LIMIT 1
+    `);
+    unidade = (fallbackRes as any).rows?.[0];
+  }
   if (!unidade) {
     return { ok: false as const, message: "Unidade de vistoria não encontrada.", slots: [] as any[] };
   }
@@ -562,13 +628,13 @@ export async function listarVistoriadoresCadastro() {
 
   const res = await d.execute(sql`
     SELECT
-      p.id as usuario_id,
+      p.id::text as usuario_id,
       p.nome,
       p.email,
       p.whatsapp,
       p.ativo as usuario_ativo,
-      v.id,
-      v.unidade_id,
+      v.id::text as id,
+      v.unidade_id::text as unidade_id,
       v.status,
       uv.nome as unidade_nome
     FROM profiles p
