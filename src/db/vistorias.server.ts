@@ -581,46 +581,152 @@ export async function listarSlotsDisponiveisUnidade(
   const rawId = String(unidadeId ?? "").trim();
   const uuidMatch = rawId.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
   const unidadeIdLower = (uuidMatch?.[0] ?? rawId).toLowerCase();
-  const nomeUnidadeLower = String(contexto?.nomeUnidade ?? "").trim().toLowerCase();
-  const cidadeUnidadeLower = String(contexto?.cidadeUnidade ?? "").trim().toLowerCase();
+  const nomeUnidadeFiltro = String(contexto?.nomeUnidade ?? "").trim();
+  const cidadeUnidadeFiltro = String(contexto?.cidadeUnidade ?? "").trim();
   const vistoriadorIdNormalizado = normalizarUuid(vistoriadorId);
 
-  if (!rawId) {
+  if (!rawId && !nomeUnidadeFiltro) {
     return { ok: false as const, message: "Selecione uma unidade de vistoria válida.", slots: [] as any[] };
   }
 
-  const buscaUnidade = await d.execute(sql`
-    SELECT
-      id::text as id,
-      horario_atendimento,
-      duracao_padrao_minutos,
-      intervalo_entre_vistorias_minutos,
-      ativo
-    FROM unidades_vistoria
-    WHERE (
-      (lower(id::text) = ${unidadeIdLower}) OR
-      (CASE WHEN length(${unidadeIdLower}) >= 4 THEN lower(id::text) LIKE (${unidadeIdLower} || '%') ELSE FALSE END) OR
-      (CASE WHEN length(${unidadeIdLower}) >= 32 THEN
-        EXISTS (SELECT 1 FROM unidades_vistoria WHERE id = ${unidadeIdLower}::uuid) AND id = ${unidadeIdLower}::uuid
-      ELSE FALSE END)
-      ${
-        nomeUnidadeLower
-          ? sql`OR (lower(nome) = ${nomeUnidadeLower} AND (${cidadeUnidadeLower ? sql`lower(cidade) = ${cidadeUnidadeLower}` : sql`TRUE`}))`
-          : sql``
-      }
-    )
-    ORDER BY CASE
-      WHEN lower(id::text) = ${unidadeIdLower} THEN 0
-      WHEN ${nomeUnidadeLower ? sql`lower(nome) = ${nomeUnidadeLower}` : sql`FALSE`} THEN 1
-      WHEN length(${unidadeIdLower}) >= 4 AND lower(id::text) LIKE (${unidadeIdLower} || '%') THEN 2
-      ELSE 5
-    END, ativo DESC, criado_em DESC
-    LIMIT 1
-  `);
+  let unidade: any = null;
 
-  let unidade = (buscaUnidade as any).rows?.[0];
+  const buscaCriterios: string[] = [];
+  if (unidadeIdLower) buscaCriterios.push(`id=«${unidadeIdLower.slice(0, 8)}…${unidadeIdLower.slice(-4)}»`);
+  if (nomeUnidadeFiltro) buscaCriterios.push(`nome=«${nomeUnidadeFiltro}»`);
+  if (cidadeUnidadeFiltro) buscaCriterios.push(`cidade=«${cidadeUnidadeFiltro}»`);
+
+  try {
+    // ESTRATÉGIA 1 — Query SQL com ILIKE (case insensitive) e múltiplas formas de match.
+    // Montamos fragmentos de SQL sem aninhar interpoladores de template quebrados no Drizzle.
+    // Para evitar conflito, faremos 2 buscas separadas e unimos: uma por UUID, outra por nome.
+    const todasCandidatas: any[] = [];
+
+    if (unidadeIdLower) {
+      const porUuid = await d.execute(sql`
+        SELECT
+          id::text as id,
+          horario_atendimento,
+          duracao_padrao_minutos,
+          intervalo_entre_vistorias_minutos,
+          ativo,
+          nome,
+          cidade,
+          0 as prioridade_busca
+        FROM unidades_vistoria
+        WHERE id::text ILIKE ${unidadeIdLower}
+           OR id::text ILIKE (${unidadeIdLower} || '%')
+        LIMIT 3
+      `);
+      for (const u of ((porUuid as any).rows || [])) todasCandidatas.push(u);
+
+      if (todasCandidatas.length === 0 && unidadeIdLower.replace(/-/g, "").length >= 32) {
+        try {
+          const porCast = await d.execute(sql`
+            SELECT
+              id::text as id,
+              horario_atendimento,
+              duracao_padrao_minutos,
+              intervalo_entre_vistorias_minutos,
+              ativo,
+              nome,
+              cidade,
+              0 as prioridade_busca
+            FROM unidades_vistoria
+            WHERE id = (${unidadeIdLower}::uuid)
+            LIMIT 3
+          `);
+          for (const u of ((porCast as any).rows || [])) {
+            if (!todasCandidatas.some((x) => String(x.id).toLowerCase() === String(u.id).toLowerCase())) {
+              todasCandidatas.push(u);
+            }
+          }
+        } catch { /* UUID inválido no cast: ignora */ }
+      }
+    }
+
+    if (nomeUnidadeFiltro) {
+      const porNome = await d.execute(sql`
+        SELECT
+          id::text as id,
+          horario_atendimento,
+          duracao_padrao_minutos,
+          intervalo_entre_vistorias_minutos,
+          ativo,
+          nome,
+          cidade,
+          1 as prioridade_busca
+        FROM unidades_vistoria
+        WHERE (
+          lower(nome) ILIKE lower(('%' || ${nomeUnidadeFiltro} || '%'))
+          OR lower(nome) = lower(${nomeUnidadeFiltro})
+        )
+        ${
+          cidadeUnidadeFiltro
+            ? sql`AND (lower(cidade) ILIKE lower(('%' || ${cidadeUnidadeFiltro} || '%')) OR lower(cidade) = lower(${cidadeUnidadeFiltro}))`
+            : sql``
+        }
+        ORDER BY ativo DESC, length(nome) ASC
+        LIMIT 5
+      `);
+      for (const u of ((porNome as any).rows || [])) {
+        if (!todasCandidatas.some((x) => String(x.id).toLowerCase() === String(u.id).toLowerCase())) {
+          todasCandidatas.push(u);
+        }
+      }
+    }
+
+    // ESTRATÉGIA 2 — Fallback definitivo: carrega TODAS as unidades ativas e faz
+    // match no JavaScript. Garante que qualquer inconsistência de tipo/texto
+    // no UUID do Postgres não impede de encontrar a unidade.
+    if (todasCandidatas.length === 0) {
+      const todas = await listarUnidadesDisponiveis();
+      const lista: any[] = Array.isArray(todas) ? (todas as any[]) : (((todas as any)?.rows) as any[]) || [];
+      for (const u of lista) {
+        const idStr = String((u as any).id || "").toLowerCase();
+        const nomeStr = String((u as any).nome || "").toLowerCase();
+        const cidStr = String((u as any).cidade || "").toLowerCase();
+        const bateId = unidadeIdLower && (
+          idStr === unidadeIdLower ||
+          idStr.replace(/-/g, "") === unidadeIdLower.replace(/-/g, "") ||
+          idStr.startsWith(unidadeIdLower)
+        );
+        const bateNome = nomeUnidadeFiltro && (
+          nomeStr === nomeUnidadeFiltro.toLowerCase() ||
+          (cidadeUnidadeFiltro && nomeStr.includes(nomeUnidadeFiltro.toLowerCase()) &&
+            cidStr.includes(cidadeUnidadeFiltro.toLowerCase())) ||
+          (!cidadeUnidadeFiltro && nomeStr.includes(nomeUnidadeFiltro.toLowerCase()))
+        );
+        if (bateId || bateNome) {
+          todasCandidatas.push({ ...u, prioridade_busca: bateId ? 0 : 1 });
+          if (todasCandidatas.length >= 3) break;
+        }
+      }
+    }
+
+    if (todasCandidatas.length === 0) {
+      return {
+        ok: false as const,
+        message: `Unidade de vistoria não encontrada. Critérios usados: ${buscaCriterios.join(" • ") || "(nenhum)"}. Tente reabrir o modal e selecionar a unidade novamente.`,
+        slots: [] as any[],
+      };
+    }
+
+    unidade = todasCandidatas.sort((a, b) => Number(a.prioridade_busca ?? 9) - Number(b.prioridade_busca ?? 9))[0];
+  } catch (err: any) {
+    return {
+      ok: false as const,
+      message: `Erro ao buscar unidade: ${err.message} (critérios: ${buscaCriterios.join(" • ") || "(nenhum)"})`,
+      slots: [] as any[],
+    };
+  }
+
   if (!unidade) {
-    return { ok: false as const, message: "Unidade de vistoria não encontrada.", slots: [] as any[] };
+    return {
+      ok: false as const,
+      message: `Unidade de vistoria não carregou (critérios: ${buscaCriterios.join(" • ") || "(nenhum)"}).`,
+      slots: [] as any[],
+    };
   }
   if (!unidade.ativo) {
     return {
@@ -646,10 +752,13 @@ export async function listarSlotsDisponiveisUnidade(
   const intervalo = Math.max(Number(unidade.intervalo_entre_vistorias_minutos || 0), 0);
   const passo = Math.max(duracao + intervalo, 1);
 
+  const unidadeIdTxt = String(unidade.id || "").toLowerCase();
+  const unidadeIdEncontrado = (unidadeIdTxt.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/) || [])[0] || unidadeIdTxt;
+
   const agendamentosRes = await d.execute(sql`
     SELECT horario_vistoria, vistoriador_id
     FROM vistorias
-    WHERE unidade_id = ${unidadeIdLower}::uuid
+    WHERE unidade_id::text = ${unidadeIdEncontrado}
       AND data_vistoria = ${data}
       AND status NOT IN ('CANCELADA')
   `);
