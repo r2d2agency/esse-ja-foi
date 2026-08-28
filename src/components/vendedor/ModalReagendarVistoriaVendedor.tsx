@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { getUnidadesDisponiveisFn, getSlotsUnidadeDisponiveisFn, remarcarAgendamentoVistoriaFn } from "@/lib/vistorias.functions";
 import { cn } from "@/lib/utils";
 
-export function normalizarIdStr(value: unknown): string {
+function normalizarIdStr(value: unknown): string {
   const raw = String(value ?? "").trim();
   if (!raw) return "";
   const apenasUuid = raw.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
@@ -19,7 +19,7 @@ export function normalizarIdStr(value: unknown): string {
   return raw.toLowerCase();
 }
 
-export function idsIguais(a: unknown, b: unknown): boolean {
+function idsIguais(a: unknown, b: unknown): boolean {
   const x = normalizarIdStr(a);
   const y = normalizarIdStr(b);
   return !!x && !!y && x === y;
@@ -31,8 +31,10 @@ function criarHorarioAtendimentoFormVazio(): Record<string, Array<{ inicio: stri
   };
 }
 
-export { criarHorarioAtendimentoFormVazio as criarHorarioAtendimentoForm };
-export { resumirHorario as resumirHorarioAtendimentoUnidade };
+function resumirHorario(dias: any, horariosAtendimento: any): string {
+  if (!dias || !dias.length) return "—";
+  return `${dias.join(", ")} • ${horariosAtendimento || "Horário padrão"}`;
+}
 
 const DIAS = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
 
@@ -485,5 +487,3 @@ export function ModalReagendarVistoriaVendedor(props: {
     </Dialog>
   );
 }
-
-export { criarHorarioAtendimentoForm };
