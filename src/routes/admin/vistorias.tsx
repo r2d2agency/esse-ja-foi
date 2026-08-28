@@ -134,6 +134,19 @@ export const Route = createFileRoute("/admin/vistorias")({
   component: VistoriasAdminPage,
 });
 
+function normalizarIdStr(value: unknown): string {
+  if (value == null) return "";
+  const raw = typeof value === "string" ? value : (value as any)?.toString?.() ?? String(value);
+  return raw.trim().toLowerCase();
+}
+
+function idsIguais(a: unknown, b: unknown): boolean {
+  const na = normalizarIdStr(a);
+  const nb = normalizarIdStr(b);
+  if (!na || !nb) return false;
+  return na === nb;
+}
+
 function VistoriasAdminPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/admin/vistorias" });
@@ -147,7 +160,6 @@ function VistoriasAdminPage() {
   const [agendaOpen, setAgendaOpen] = useState(false);
   const [veiculoSelecionado, setVeiculoSelecionado] = useState<any | null>(null);
   const [unidadeId, setUnidadeId] = useState("");
-  const [vistoriadorId, setVistoriadorId] = useState("");
   const [dataVistoria, setDataVistoria] = useState("");
   const [horarioVistoria, setHorarioVistoria] = useState("");
   const [unidadeModalOpen, setUnidadeModalOpen] = useState(false);
@@ -234,22 +246,16 @@ function VistoriasAdminPage() {
     enabled: agendaOpen && !!veiculoSelecionado,
   });
 
-  const { data: vistoriadoresRes, isLoading: loadingVistoriadores } = useQuery({
-    queryKey: ["vistoriadores-unidade", unidadeId],
-    queryFn: () => getVistoriadores({ data: { unidadeId } }),
-    enabled: agendaOpen && !!unidadeId && !!(unidadesRes?.data || []).some((unidade: any) => unidade.id === unidadeId),
-  });
-
   const { data: slotsRes, isLoading: loadingSlots } = useQuery({
-    queryKey: ["slots-unidade-vistoria", unidadeId, dataVistoria, vistoriadorId || "todos"],
+    queryKey: ["slots-unidade-vistoria", unidadeId, dataVistoria],
     queryFn: () => getSlotsUnidade({
       data: {
         unidadeId,
         data: dataVistoria,
-        vistoriadorId: vistoriadorId && vistoriadorId !== "__sem_vistoriador__" ? vistoriadorId : null,
+        vistoriadorId: null,
       },
     }),
-    enabled: agendaOpen && !!unidadeId && !!dataVistoria && !!(unidadesRes?.data || []).some((unidade: any) => unidade.id === unidadeId),
+    enabled: agendaOpen && !!unidadeId && !!dataVistoria && !!(unidadesRes?.data || []).some((unidade: any) => idsIguais(unidade.id, unidadeId)),
   });
 
   const { data: unidadesCadastroRes, isLoading: loadingUnidadesCadastro } = useQuery({
@@ -268,10 +274,9 @@ function VistoriasAdminPage() {
   const aguardando = aguardandoRes?.data || [];
   const filaPosVistoria = posVistoriaRes?.data || [];
   const unidades = unidadesRes?.data || [];
-  const vistoriadores = vistoriadoresRes?.data || [];
   const unidadesCadastro = unidadesCadastroRes?.data || [];
   const vistoriadoresCadastro = vistoriadoresCadastroRes?.data || [];
-  const unidadeSelecionada = unidades.find((unidade: any) => unidade.id === unidadeId) || null;
+  const unidadeSelecionada = unidades.find((unidade: any) => idsIguais(unidade.id, unidadeId)) || null;
   const slotsDisponiveis = slotsRes?.slots || [];
   const termoFila = buscaFila.trim().toLowerCase();
   const termoAgendamento = buscaAgendamento.trim().toLowerCase();
@@ -330,7 +335,6 @@ function VistoriasAdminPage() {
 
   const resetAgendaForm = () => {
     setUnidadeId("");
-    setVistoriadorId("");
     setDataVistoria("");
     setHorarioVistoria("");
   };
@@ -566,14 +570,13 @@ function VistoriasAdminPage() {
     }
 
     const toastId = toast.loading("Criando agendamento...");
-    const vistoriadorIdNormalizado = vistoriadorId === "__sem_vistoriador__" ? null : (vistoriadorId || null);
     try {
       const response = await criarAgendamento({
         data: {
           veiculo_id: veiculoSelecionado.id,
           vendedor_id: veiculoSelecionado.vendedor_id,
           unidade_id: unidadeSelecionada.id,
-          vistoriador_id: vistoriadorIdNormalizado,
+          vistoriador_id: null,
           data_vistoria: dataVistoria,
           horario_vistoria: horarioVistoria,
           usuario_id: user.id,
@@ -1185,7 +1188,7 @@ function VistoriasAdminPage() {
           <DialogHeader>
             <DialogTitle>Agendar vistoria</DialogTitle>
             <DialogDescription>
-              Defina unidade, vistoriador, data e slot disponível para o veículo seguir da triagem para a inspeção física.
+              Defina a unidade, a data e escolha um horário disponível. O vistoriador será alocado automaticamente a partir da equipe da unidade.
             </DialogDescription>
           </DialogHeader>
 
@@ -1205,9 +1208,9 @@ function VistoriasAdminPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Unidade de vistoria</Label>
-                  <Select value={unidadeId} onValueChange={setUnidadeId}>
+                  <Select value={normalizarIdStr(unidadeId)} onValueChange={(value) => setUnidadeId(normalizarIdStr(value))}>
                     <SelectTrigger>
-                      <SelectValue placeholder={loadingUnidades ? "Carregando unidades..." : "Selecione a unidade"} />
+                      <SelectValue placeholder={loadingUnidades ? "Carregando unidades..." : "Selecione a unidade credenciada"} />
                     </SelectTrigger>
                     <SelectContent>
                       {unidades.map((unidade: any) => (
@@ -1218,27 +1221,7 @@ function VistoriasAdminPage() {
                     </SelectContent>
                   </Select>
                   {!loadingUnidades && unidades.length === 0 && (
-                    <p className="text-xs text-amber-700">Nenhuma unidade ativa encontrada para essa cidade.</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Vistoriador</Label>
-                  <Select value={vistoriadorId} onValueChange={setVistoriadorId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={loadingVistoriadores ? "Carregando vistoriadores..." : "Selecione ou deixe em aberto"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__sem_vistoriador__">Definir depois</SelectItem>
-                      {vistoriadores.map((vistoriador: any) => (
-                        <SelectItem key={vistoriador.id} value={vistoriador.id}>
-                          {vistoriador.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {!!vistoriadorId && vistoriadorId === "__sem_vistoriador__" && (
-                    <p className="text-xs text-slate-500">O agendamento será criado sem vistoriador fixo.</p>
+                    <p className="text-xs text-amber-700">Nenhuma unidade ativa encontrada para essa cidade. Cadastre uma unidade na aba "Unidades e Equipe".</p>
                   )}
                 </div>
 
@@ -1250,6 +1233,11 @@ function VistoriasAdminPage() {
                     min={new Date().toISOString().slice(0, 10)}
                     onChange={(e) => setDataVistoria(e.target.value)}
                   />
+                  {unidadeSelecionada && (
+                    <p className="text-xs text-slate-500">
+                      Equipe: alocada automaticamente com base na agenda da unidade.
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2 md:col-span-2">

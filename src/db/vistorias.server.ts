@@ -267,13 +267,22 @@ export async function criarAgendamento(data: any) {
     throw new Error("Selecione uma unidade de vistoria válida.");
   }
 
-  const unidadeRes = await d.execute(sql`
-    SELECT id::text as id, ativo
+  let unidadeRes = await d.execute(sql`
+    SELECT id::text as id, ativo, duracao_padrao_minutos, intervalo_entre_vistorias_minutos
     FROM unidades_vistoria
     WHERE lower(id::text) = ${unidadeId}
     LIMIT 1
   `);
-  const unidade = (unidadeRes as any).rows?.[0];
+  let unidade = (unidadeRes as any).rows?.[0];
+  if (!unidade) {
+    const fallback = await d.execute(sql`
+      SELECT id::text as id, ativo, duracao_padrao_minutos, intervalo_entre_vistorias_minutos
+      FROM unidades_vistoria
+      WHERE id = ${unidadeId}::uuid
+      LIMIT 1
+    `);
+    unidade = (fallback as any).rows?.[0];
+  }
   if (!unidade) {
     throw new Error("Unidade de vistoria não encontrada.");
   }
@@ -286,32 +295,73 @@ export async function criarAgendamento(data: any) {
   if (!slotDisponivel) {
     throw new Error("Esse slot não está mais disponível para agendamento.");
   }
-  
+
+  let vistoriadorAlocado: string | null = vistoriadorId || null;
+  if (!vistoriadorAlocado) {
+    const duracaoPadrao = Number(unidade.duracao_padrao_minutos || 60);
+    const janela = Number(unidade.intervalo_entre_vistorias_minutos || 30);
+    const slotInicioMin = toMinutes(data.horario_vistoria);
+    const slotFimMin = slotInicioMin + duracaoPadrao;
+    const slotInicioComJanela = slotInicioMin + janela;
+    const vistoriadoresAtivos = await d.execute(sql`
+      SELECT v.id::text as id
+      FROM vistoriadores v
+      WHERE v.unidade_id = ${unidadeId}::uuid AND v.status = 'ATIVO'
+    `);
+    const ids = ((vistoriadoresAtivos as any).rows || []).map((v: any) => v.id);
+    for (const vid of ids) {
+      const conflitosRes = await d.execute(sql`
+        SELECT 1 as existe
+        FROM vistorias
+        WHERE vistoriador_id = ${vid}::uuid
+          AND data_vistoria = ${data.data_vistoria}
+          AND status NOT IN ('CANCELADA', 'REPROVADA', 'CONCLUIDA_COM_RESTRICOES', 'CONCLUIDA', 'REJEITADA')
+          AND (
+            (
+              (EXTRACT(EPOCH FROM horario_vistoria)::int / 60) + (${duracaoPadrao} - ${janela}) > ${slotInicioComJanela}
+              AND (EXTRACT(EPOCH FROM horario_vistoria)::int / 60) < ${slotFimMin}
+            )
+          )
+        LIMIT 1
+      `);
+      if (!((conflitosRes as any).rows?.length)) {
+        vistoriadorAlocado = vid;
+        break;
+      }
+    }
+  }
+
+  const vistoriadorUuidSql = vistoriadorAlocado
+    ? sql`${vistoriadorAlocado}::uuid`
+    : sql`NULL`;
+
   const res = await d.execute(sql`
     INSERT INTO vistorias (
-      veiculo_id, vendedor_id, unidade_id, vistoriador_id, 
+      veiculo_id, vendedor_id, unidade_id, vistoriador_id,
       data_vistoria, horario_vistoria, status, criado_por
     ) VALUES (
-      ${data.veiculo_id}::uuid, ${data.vendedor_id}::uuid, 
-      ${unidadeId}::uuid, ${vistoriadorId}::uuid,
+      ${data.veiculo_id}::uuid, ${data.vendedor_id}::uuid,
+      ${unidadeId}::uuid, ${vistoriadorUuidSql},
       ${data.data_vistoria}, ${data.horario_vistoria},
       'AGUARDANDO_CONFIRMACAO', ${data.usuario_id}::uuid
     ) RETURNING id
   `);
-  
+
   const vistoriaId = (res as any).rows[0].id;
-  
+
   await d.execute(sql`
-    UPDATE veiculos 
-    SET status = 'VISTORIA_AGENDADA', atualizado_em = now() 
+    UPDATE veiculos
+    SET status = 'VISTORIA_AGENDADA', atualizado_em = now()
     WHERE id = ${data.veiculo_id}::uuid
   `);
-  
+
+  const detalhe = `Vistoria agendada para ${data.data_vistoria} às ${data.horario_vistoria}` +
+    (vistoriadorAlocado ? ` (vistoriador alocado automaticamente)` : " (aguardando alocação de vistoriador)");
   await d.execute(sql`
     INSERT INTO vistorias_historico (vistoria_id, acao, detalhe, usuario_id)
-    VALUES (${vistoriaId}, 'Agendamento criado', 'Vistoria agendada para ' || ${data.data_vistoria} || ' às ' || ${data.horario_vistoria}, ${data.usuario_id}::uuid)
+    VALUES (${vistoriaId}, 'Agendamento criado', ${detalhe}, ${data.usuario_id}::uuid)
   `);
-  
+
   return { ok: true, id: vistoriaId };
 }
 
