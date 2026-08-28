@@ -50,7 +50,6 @@ export function canReleaseForInspection(v: any) {
   const progresso = calcularProgressoVeiculo(v);
   const details = {
     compliance: v.compliance_status === 'APROVADO',
-    contrato: v.contrato_status === 'ASSINADO',
     dados: progresso.dadosCadastrais.isCompleto,
     crlv: v.documento_crlv_status === 'APROVADO',
     fotos: progresso.fotos.isCompleto,
@@ -64,10 +63,6 @@ export function canReleaseForInspection(v: any) {
 
   if (!details.compliance) {
     blockers.push("Aprovar o cadastro do vendedor no compliance.");
-  }
-
-  if (!details.contrato) {
-    blockers.push("Garantir que o contrato do vendedor esteja assinado.");
   }
 
   if (!details.crlv) {
