@@ -551,7 +551,7 @@ function VistoriasAdminPage() {
     });
   };
 
-  const abrirAgenda = (veiculo: any, opts?: {
+  const abrirAgenda = async (veiculo: any, opts?: {
     modoRemarcacao?: {
       vistoriaId: string;
       unidadeId?: unknown;
@@ -559,6 +559,24 @@ function VistoriasAdminPage() {
       horario?: string;
     };
   }) => {
+    // Antecede qualquer coisa: se for REMARCAO, invalida o cache da listagem e re-busca
+    // para nao ter UUIDs stale (vistorias que ja foram deletadas/rollbackadas aparecendo)
+    if (opts?.modoRemarcacao) {
+      try {
+        await queryClient.invalidateQueries({ queryKey: ["admin-vistorias"] });
+        const refetchLista = await getVistorias({ data: { status: statusAgendamento } });
+        const linhasAtualizadas = (refetchLista as any)?.data || refetchLista || [];
+        const idAlvo = normalizarIdStr(opts.modoRemarcacao.vistoriaId);
+        const aindaExiste = Array.isArray(linhasAtualizadas) && linhasAtualizadas.some((l: any) => normalizarIdStr(l.id) === idAlvo);
+        if (!aindaExiste) {
+          toast.warning(
+            "Essa vistoria sumiu da lista (dados em cache antigos). Recarregando a tabela e removendo a linha. Tente novamente com a lista atualizada."
+          );
+          return;
+        }
+      } catch (_) { /* ignora, deixa abrir */ }
+    }
+
     setVeiculoSelecionado(veiculo);
     resetAgendaForm();
     if (opts?.modoRemarcacao) {
