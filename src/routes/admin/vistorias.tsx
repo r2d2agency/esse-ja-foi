@@ -28,6 +28,8 @@ import {
   Loader2,
   Plus,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -155,12 +157,15 @@ function formatarDataIso(value: Date) {
   return `${ano}-${mes}-${dia}`;
 }
 
-function gerarProximos7Dias() {
+function gerar7Dias(offsetSemanas: number) {
   const hoje = new Date();
   hoje.setHours(12, 0, 0, 0);
+  const inicioSemana = new Date(hoje);
+  inicioSemana.setDate(hoje.getDate() + offsetSemanas * 7);
+  const hojeIso = formatarDataIso(hoje);
   return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(hoje);
-    d.setDate(hoje.getDate() + i);
+    const d = new Date(inicioSemana);
+    d.setDate(inicioSemana.getDate() + i);
     const iso = formatarDataIso(d);
     return {
       iso,
@@ -169,9 +174,12 @@ function gerarProximos7Dias() {
       diaMes: String(d.getDate()).padStart(2, "0"),
       mes: String(d.getMonth() + 1).padStart(2, "0"),
       labelCurto: `${DIAS_SEMANA_LABEL[d.getDay()].slice(0, 3)} ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`,
+      passado: d.getTime() < new Date(`${hojeIso}T12:00:00`).getTime(),
     };
-  };
+  });
 }
+
+function gerarProximos7Dias() { return gerar7Dias(0); }
 
 function resumirHorarioAtendimentoUnidade(value: any): string {
   const horario = normalizarHorarioAtendimentoForm(value?.horario_atendimento);
@@ -227,6 +235,7 @@ function VistoriasAdminPage() {
   const [agendaOpen, setAgendaOpen] = useState(false);
   const [veiculoSelecionado, setVeiculoSelecionado] = useState<any | null>(null);
   const [unidadeId, setUnidadeId] = useState("");
+  const [semanaOffset, setSemanaOffset] = useState(0);
   const [dataVistoria, setDataVistoria] = useState("");
   const [horarioVistoria, setHorarioVistoria] = useState("");
   const [unidadeModalOpen, setUnidadeModalOpen] = useState(false);
@@ -399,12 +408,13 @@ function VistoriasAdminPage() {
       .includes(termoAgendamento)
   );
 
-  const proximos7Dias = useMemo(() => gerarProximos7Dias(), [agendaOpen]);
+  const diasSemanaAtual = useMemo(() => gerar7Dias(semanaOffset), [semanaOffset, agendaOpen]);
   const resumoHorarioUnidade = unidadeSelecionada ? resumirHorarioAtendimentoUnidade(unidadeSelecionada) : "";
   const horarioVazio = !!unidadeSelecionada && resumoHorarioUnidade === "Sem horários cadastrados.";
 
   const resetAgendaForm = () => {
     setUnidadeId("");
+    setSemanaOffset(0);
     setDataVistoria("");
     setHorarioVistoria("");
   };
@@ -414,17 +424,19 @@ function VistoriasAdminPage() {
       if (dataVistoria) setDataVistoria("");
       return;
     }
-    if (dataVistoria) {
+    const dentroRange = diasSemanaAtual.some((d) => d.iso === dataVistoria);
+    if (dentroRange) {
       const info = totalSlotsPorDia(unidadeSelecionada, dataVistoria);
       if (info.aberto) return;
     }
-    const primeiroAberto = proximos7Dias.find((d) => totalSlotsPorDia(unidadeSelecionada, d.iso).aberto);
+    const primeiroAberto = diasSemanaAtual.find((d) => !d.passado && totalSlotsPorDia(unidadeSelecionada, d.iso).aberto);
     if (primeiroAberto) {
       setDataVistoria(primeiroAberto.iso);
-    } else if (!dataVistoria) {
-      setDataVistoria(proximos7Dias[0].iso);
+    } else if (!dataVistoria || !dentroRange) {
+      const primeiroFuturo = diasSemanaAtual.find((d) => !d.passado);
+      if (primeiroFuturo) setDataVistoria(primeiroFuturo.iso);
     }
-  }, [unidadeId, unidadeSelecionada, proximos7Dias]);
+  }, [unidadeId, unidadeSelecionada, diasSemanaAtual]);
 
   const resetUnidadeForm = () => {
     setUnidadeForm({
@@ -1360,55 +1372,97 @@ function VistoriasAdminPage() {
 
                 {unidadeSelecionada && (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <Label>Escolha o dia nos próximos 7 dias</Label>
-                        <p className="text-xs text-slate-500">
-                          Toque em um dia para ver os horários livres da unidade.
-                        </p>
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSemanaOffset((s) => Math.max(0, s - 1))}
+                          disabled={semanaOffset === 0}
+                          className={cn(
+                            "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors",
+                            semanaOffset === 0
+                              ? "border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed"
+                              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                          )}
+                          title={semanaOffset === 0 ? "Semana atual" : "Voltar uma semana"}
+                        >
+                          <ChevronLeft className="h-5 w-5" />
+                        </button>
+                        <div>
+                          <Label>
+                            {semanaOffset === 0 ? "Semana atual" : `+${semanaOffset} semana${semanaOffset > 1 ? "s" : ""}`}
+                          </Label>
+                          <p className="text-[11px] text-slate-500 font-semibold leading-tight">
+                            {diasSemanaAtual[0].labelCurto} ·· {diasSemanaAtual[diasSemanaAtual.length - 1].labelCurto}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setSemanaOffset((s) => s + 1)}
+                          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-colors"
+                          title="Avançar uma semana"
+                        >
+                          <ChevronRight className="h-5 w-5" />
+                        </button>
                       </div>
                       <div className="flex items-center gap-2">
                         <Input
                           type="date"
                           value={dataVistoria}
-                          min={proximos7Dias[0].iso}
-                          max={proximos7Dias[proximos7Dias.length - 1].iso}
-                          onChange={(e) => setDataVistoria(e.target.value)}
+                          min={formatarDataIso(new Date())}
+                          onChange={(e) => {
+                            const novaData = e.target.value;
+                            if (!novaData) return;
+                            setDataVistoria(novaData);
+                            const hojeIso = formatarDataIso(new Date());
+                            const diffDias = Math.round((new Date(`${novaData}T12:00:00`).getTime() - new Date(`${hojeIso}T12:00:00`).getTime()) / 86400000);
+                            const novoOffset = Math.max(0, Math.floor(diffDias / 7));
+                            if (novoOffset !== semanaOffset) setSemanaOffset(novoOffset);
+                          }}
                           className="w-auto text-xs py-1.5"
                         />
                       </div>
                     </div>
                     <div className="grid grid-cols-7 gap-1.5">
-                      {proximos7Dias.map((dia) => {
+                      {diasSemanaAtual.map((dia) => {
                         const info = totalSlotsPorDia(unidadeSelecionada, dia.iso);
+                        const clicavel = !dia.passado && info.aberto;
                         const ativo = dataVistoria === dia.iso;
                         return (
                           <button
                             key={dia.iso}
                             type="button"
-                            disabled={!info.aberto}
+                            disabled={!clicavel}
                             onClick={() => setDataVistoria(dia.iso)}
                             className={cn(
                               "flex flex-col items-center gap-0.5 rounded-lg border px-1.5 py-2 text-center transition-colors",
-                              !info.aberto && "opacity-40 cursor-not-allowed border-slate-200 bg-slate-50",
-                              info.aberto && !ativo && "border-slate-200 bg-white hover:border-teal-300 hover:bg-teal-50/50",
+                              !clicavel && "opacity-40 cursor-not-allowed border-slate-200 bg-slate-50",
+                              clicavel && !ativo && "border-slate-200 bg-white hover:border-teal-300 hover:bg-teal-50/50",
                               ativo && "border-teal-500 bg-teal-50 ring-2 ring-teal-200"
                             )}
-                            title={info.aberto ? `${info.totalEstimado} slots estimados - ${info.periodosLabel}` : "Unidade não atende nesse dia"}
+                            title={
+                              dia.passado ? "Dia já passou" :
+                              info.aberto ? `${info.totalEstimado} slots estimados - ${info.periodosLabel}` :
+                              "Unidade não atende nesse dia"
+                            }
                           >
                             <span className={cn(
                               "text-[10px] font-black uppercase tracking-wider",
-                              ativo ? "text-teal-700" : info.aberto ? "text-slate-600" : "text-slate-400"
+                              ativo ? "text-teal-700" : clicavel ? "text-slate-600" : "text-slate-400"
                             )}>{dia.diaSemana}</span>
                             <span className={cn(
                               "text-base font-black",
-                              ativo ? "text-teal-800" : info.aberto ? "text-slate-900" : "text-slate-400"
+                              ativo ? "text-teal-800" : clicavel ? "text-slate-900" : "text-slate-400"
                             )}>{dia.diaMes}</span>
                             <span className={cn(
                               "text-[10px]",
-                              ativo ? "text-teal-700 font-bold" : info.aberto ? "text-slate-500 font-semibold" : "text-slate-400"
+                              ativo ? "text-teal-700 font-bold" : clicavel ? "text-slate-500 font-semibold" : "text-slate-400"
                             )}>/{dia.mes}</span>
-                            {info.aberto ? (
+                            {dia.passado ? (
+                              <span className="mt-0.5 text-[9px] font-black uppercase tracking-wider text-slate-400">
+                                PASS
+                              </span>
+                            ) : info.aberto ? (
                               <span className="mt-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700">
                                 {info.totalEstimado}
                               </span>
