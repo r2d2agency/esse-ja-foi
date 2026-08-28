@@ -1140,17 +1140,23 @@ export async function remarcarAgendamentoVistoria(args: {
   await ensureVistoriaSchema();
 
   const vistoriaIdRaw = String(args.vistoriaId ?? "").trim();
-  const vistoriaIdTxt = normalizarUuid(args.vistoriaId);
   const usuarioIdNormalizado = normalizarUuid(args.usuarioId);
   const vendedorIdNormalizado = normalizarUuid(args.vendedorId);
 
   if (!args.permissaoAdmin && !vendedorIdNormalizado) {
     throw new Error("Você não tem permissão para remarcar esse agendamento.");
   }
+  if (!vistoriaIdRaw) {
+    throw new Error("Agendamento inválido para remarcar (id vazio).");
+  }
 
   let vistoria: any = undefined;
-  if (vistoriaIdTxt) {
-    const res = await d.execute(sql`
+  const vistoriaIdLower = vistoriaIdRaw.toLowerCase();
+  const apenasUuid = vistoriaIdLower.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/);
+
+  // TENTATIVA 1: igualdade exata (id::text) — mais seguro, evita cast para UUID
+  try {
+    const resText = await d.execute(sql`
       SELECT
         id::text as id,
         data_vistoria,
@@ -1160,30 +1166,67 @@ export async function remarcarAgendamentoVistoria(args: {
         vendedor_id::text as vendedor_id,
         unidade_id::text as unidade_id
       FROM vistorias
-      WHERE id = ${vistoriaIdTxt}::uuid
+      WHERE LOWER(id::text) = ${vistoriaIdLower}
       LIMIT 1
     `);
-    vistoria = (res as any).rows?.[0];
+    vistoria = (resText as any).rows?.[0];
+  } catch { /* ignore */ }
+
+  // TENTATIVA 2: cast uuid (caso id recebido seja UUID puro sem problemas)
+  if (!vistoria && apenasUuid?.[0]) {
+    try {
+      const resCast = await d.execute(sql`
+        SELECT
+          id::text as id,
+          data_vistoria,
+          horario_vistoria,
+          status,
+          veiculo_id::text as veiculo_id,
+          vendedor_id::text as vendedor_id,
+          unidade_id::text as unidade_id
+        FROM vistorias
+        WHERE id = ${apenasUuid[0]}::uuid
+        LIMIT 1
+      `);
+      vistoria = (resCast as any).rows?.[0];
+    } catch { /* ignore */ }
   }
-  if (!vistoria && vistoriaIdRaw) {
-    const buscaLike = `%${vistoriaIdRaw.toLowerCase()}`.replace(/[^0-9a-f%_-]/g, "");
-    const fallback = await d.execute(sql`
-      SELECT
-        id::text as id,
-        data_vistoria,
-        horario_vistoria,
-        status,
-        veiculo_id::text as veiculo_id,
-        vendedor_id::text as vendedor_id,
-        unidade_id::text as unidade_id
-      FROM vistorias
-      WHERE id::text ILIKE ${buscaLike}
-      ORDER BY criado_em DESC
-      LIMIT 1
-    `);
-    vistoria = (fallback as any).rows?.[0];
+
+  // TENTATIVA 3: ILIKE substring do final (caso veio truncado ou com prefixo/sufixo)
+  if (!vistoria) {
+    try {
+      const parte = apenasUuid?.[0] || vistoriaIdLower.replace(/[^0-9a-f-]/gi, "").slice(0, 36);
+      if (parte && parte.length >= 10) {
+        const buscaLike = `%${parte}%`;
+        const resLike = await d.execute(sql`
+          SELECT
+            id::text as id,
+            data_vistoria,
+            horario_vistoria,
+            status,
+            veiculo_id::text as veiculo_id,
+            vendedor_id::text as vendedor_id,
+            unidade_id::text as unidade_id
+          FROM vistorias
+          WHERE id::text ILIKE ${buscaLike}
+          ORDER BY criado_em DESC
+          LIMIT 1
+        `);
+        vistoria = (resLike as any).rows?.[0];
+      }
+    } catch { /* ignore */ }
   }
-  if (!vistoria) throw new Error("Agendamento de vistoria não encontrado.");
+
+  if (!vistoria) {
+    const detalhe = [
+      `raw="${vistoriaIdRaw}"`,
+      `lower="${vistoriaIdLower}"`,
+      `apenasUuid_match=${apenasUuid ? "SIM (" + apenasUuid[0] + ")" : "NAO"}`,
+    ].join(" | ");
+    throw new Error(
+      `Agendamento de vistoria não encontrado (${detalhe}). Abra o console do browser, verifique o network e tente novamente.`
+    );
+  }
   const vistoriaIdFinalTxt = normalizarUuid(vistoria.id);
   if (!vistoriaIdFinalTxt) throw new Error("Id da vistoria inválido na remarcação.");
 
