@@ -200,6 +200,19 @@ export const remarcarAgendamentoVistoriaFn = createServerFn({ method: "POST" })
     try {
       return await remarcarAgendamentoVistoria(data as any);
     } catch (err: any) {
+      // Debug embutido: se a vistoria "não for encontrada", roda uma busca completa de diagnóstico
+      if (String(err.message || "").startsWith("Agendamento de vistoria não encontrado")) {
+        try {
+          const { listarVistoriasAdmin } = await import("@/db/vistorias.server");
+          const ultimas = await listarVistoriasAdmin({});
+          const ultimosIds = (ultimas as any)?.slice?.(0, 5)?.map((v: any) => String(v.id || "")) || [];
+          const match = (ultimas as any)?.find?.((v: any) => String(v.id || "").toLowerCase() === String((data as any).vistoriaId || "").toLowerCase());
+          return {
+            ok: false,
+            message: err.message + ` | DEBUG ultimos_5_ids_da_tabela=[${ultimosIds.join(", ")}] | match_no_listarVistoriasAdmin=${match ? "SIM (ela EXISTE na listagem mas nao no fallback remarcar) BUG!" : "NAO (realmente NAO existe na tabela, era cache stale)"}`,
+          };
+        } catch { /* fallback */ }
+      }
       return { ok: false, message: err.message };
     }
   });

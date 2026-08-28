@@ -1254,12 +1254,29 @@ export async function remarcarAgendamentoVistoria(args: {
     } catch { /* ignore */ }
   }
 
+  // TENTATIVA 5 (MASTER FALLBACK): usa listarVistoriasAdmin() que é a query
+  // que realmente funciona na prática (aparece na tabela do admin). Se ela retorna
+  // array, a gente filtra por ID em JS. Por construção: se a vistoria aparece na
+  // tabela admin, listarVistoriasAdmin retorna ela.
+  if (!vistoria) {
+    try {
+      const todasAdmin = await listarVistoriasAdmin({});
+      if (Array.isArray(todasAdmin)) {
+        vistoria = todasAdmin.find((v: any) => {
+          const idV = normalizarUuid(v.id) || String(v.id || "").toLowerCase();
+          return idV === (apenasUuid?.[0] || vistoriaIdLower);
+        }) || null;
+      }
+    } catch { /* ignore */ }
+  }
+
   if (!vistoria) {
     const detalhe = [
       `raw="${vistoriaIdRaw}"`,
       `lower="${vistoriaIdLower}"`,
       `apenasUuid_match=${apenasUuid ? "SIM (" + apenasUuid[0] + ")" : "NAO"}`,
       `total_vistorias_limit_500=verificou_em_memo`,
+      `tambem_usou_listarVistoriasAdmin_fallback=SIM`,
     ].join(" | ");
     throw new Error(
       `Agendamento de vistoria não encontrado (${detalhe}). Verifique se a vistoria existe na tabela do banco.`
