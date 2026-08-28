@@ -316,7 +316,7 @@ function VistoriasAdminPage() {
   });
 
   const { data: unidadesRes, isLoading: loadingUnidades } = useQuery({
-    queryKey: ["unidades-vistoria", veiculoSelecionado?.vendedor_cidade || ""],
+    queryKey: ["unidades-vistoria", agendaOpen ? "todas" : "off"],
     queryFn: () => getUnidades({ data: { cidade: veiculoSelecionado?.vendedor_cidade } }),
     enabled: agendaOpen && !!veiculoSelecionado,
   });
@@ -1305,11 +1305,34 @@ function VistoriasAdminPage() {
                       <SelectValue placeholder={loadingUnidades ? "Carregando unidades..." : "Selecione a unidade credenciada"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {unidades.map((unidade: any) => (
-                        <SelectItem key={unidade.id} value={unidade.id}>
-                          {unidade.nome} - {unidade.cidade}/{unidade.estado}
-                        </SelectItem>
-                      ))}
+                      {unidades.map((unidade: any) => {
+                        const mesmaCidade = !!veiculoSelecionado?.vendedor_cidade &&
+                          String(unidade.cidade || "").toLowerCase() === String(veiculoSelecionado.vendedor_cidade).toLowerCase();
+                        const atendeCidade = !!veiculoSelecionado?.vendedor_cidade &&
+                          !mesmaCidade &&
+                          Array.isArray(unidade.cidades_atendidas) &&
+                          unidade.cidades_atendidas.some((c: string) => String(c).toLowerCase() === String(veiculoSelecionado.vendedor_cidade).toLowerCase());
+                        return (
+                          <SelectItem key={unidade.id} value={unidade.id}>
+                            <span className="flex items-center gap-2 min-w-0">
+                              <span className="truncate">
+                                <span className="font-semibold text-slate-900">{unidade.nome}</span>
+                                <span className="text-slate-500"> — {unidade.cidade}/{unidade.estado}</span>
+                              </span>
+                              {mesmaCidade && (
+                                <span className="ml-auto shrink-0 inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                                  mesma cidade
+                                </span>
+                              )}
+                              {atendeCidade && (
+                                <span className="ml-auto shrink-0 inline-flex items-center gap-0.5 rounded-full bg-sky-50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-sky-700 ring-1 ring-inset ring-sky-200">
+                                  atende região
+                                </span>
+                              )}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                   {!loadingUnidades && unidades.length === 0 && (

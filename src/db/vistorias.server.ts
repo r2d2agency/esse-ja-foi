@@ -368,38 +368,59 @@ export async function criarAgendamento(data: any) {
 export async function listarUnidadesDisponiveis(cidade?: string) {
   const d = requireDb();
   await ensureVistoriaSchema();
-  
-  let query = sql`
-    SELECT
-      id::text as id,
-      nome,
-      cnpj,
-      cep,
-      endereco,
-      cidade,
-      estado,
-      latitude,
-      longitude,
-      telefone,
-      whatsapp,
-      email,
-      responsavel,
-      horario_atendimento,
-      duracao_padrao_minutos,
-      intervalo_entre_vistorias_minutos,
-      raio_atendimento_km,
-      cidades_atendidas,
-      ativo,
-      criado_em,
-      atualizado_em
-    FROM unidades_vistoria
-    WHERE ativo = true
+
+  const cidadeRefinada = (cidade || "").trim();
+  const priorizaCidade = !!cidadeRefinada;
+
+  const baseFields = sql`
+    id::text as id,
+    nome,
+    cnpj,
+    cep,
+    endereco,
+    cidade,
+    estado,
+    latitude,
+    longitude,
+    telefone,
+    whatsapp,
+    email,
+    responsavel,
+    horario_atendimento,
+    duracao_padrao_minutos,
+    intervalo_entre_vistorias_minutos,
+    raio_atendimento_km,
+    cidades_atendidas,
+    ativo,
+    criado_em,
+    atualizado_em
   `;
-  if (cidade) {
-    query = sql`${query} AND (cidade = ${cidade} OR ${cidade} = ANY(cidades_atendidas))`;
+
+  let finalQuery;
+  if (priorizaCidade) {
+    finalQuery = sql`
+      WITH base AS (
+        SELECT ${baseFields},
+          CASE
+            WHEN lower(cidade) = lower(${cidadeRefinada}) THEN 0
+            WHEN ${cidadeRefinada} = ANY(cidades_atendidas) THEN 1
+            ELSE 2
+          END as ordem_prioridade
+        FROM unidades_vistoria
+        WHERE ativo = true
+      )
+      SELECT * FROM base ORDER BY ordem_prioridade ASC, lower(nome) ASC
+    `;
+  } else {
+    finalQuery = sql`
+      SELECT ${baseFields}
+      FROM unidades_vistoria
+      WHERE ativo = true
+      ORDER BY lower(nome) ASC
+    `;
   }
-  
-  const res = await d.execute(query);
+
+  const res = await d.execute(finalQuery);
   return (res as any).rows || res;
 }
 
