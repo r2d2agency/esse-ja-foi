@@ -146,6 +146,74 @@ function idsIguais(a: unknown, b: unknown): boolean {
   return na === nb;
 }
 
+const DIAS_SEMANA_LABEL = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+
+function formatarDataIso(value: Date) {
+  const ano = value.getFullYear();
+  const mes = String(value.getMonth() + 1).padStart(2, "0");
+  const dia = String(value.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+
+function gerarProximos7Dias() {
+  const hoje = new Date();
+  hoje.setHours(12, 0, 0, 0);
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(hoje);
+    d.setDate(hoje.getDate() + i);
+    const iso = formatarDataIso(d);
+    return {
+      iso,
+      diaSemanaNum: d.getDay(),
+      diaSemana: DIAS_SEMANA_LABEL[d.getDay()].slice(0, 3),
+      diaMes: String(d.getDate()).padStart(2, "0"),
+      mes: String(d.getMonth() + 1).padStart(2, "0"),
+      labelCurto: `${DIAS_SEMANA_LABEL[d.getDay()].slice(0, 3)} ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`,
+    };
+  };
+}
+
+function resumirHorarioAtendimentoUnidade(value: any): string {
+  const horario = normalizarHorarioAtendimentoForm(value?.horario_atendimento);
+  const ativos = DIAS_ATENDIMENTO.filter((dia) => (horario[dia.key] || []).length > 0);
+  if (ativos.length === 0) return "Sem horários cadastrados.";
+  return ativos
+    .map((dia) => `${dia.label.slice(0, 3)} ${(horario[dia.key] || []).map((faixa: any) => `${faixa.inicio}-${faixa.fim}`).join(", ")}`)
+    .join(" | ");
+}
+
+function totalSlotsPorDia(unidadeHorario: any, dataIso: string) {
+  const horario = normalizarHorarioAtendimentoForm(unidadeHorario?.horario_atendimento);
+  const dataBase = new Date(`${dataIso}T12:00:00`);
+  const diaKey = String(dataBase.getDay());
+  const periodos = horario[diaKey] || [];
+  const duracao = Math.max(Number(unidadeHorario?.duracao_padrao_minutos || 60), 1);
+  const intervalo = Math.max(Number(unidadeHorario?.intervalo_entre_vistorias_minutos || 0), 0);
+  const passo = duracao + intervalo;
+  let total = 0;
+  for (const periodo of periodos) {
+    const inicio = toMinutesLocal(periodo.inicio);
+    const fim = toMinutesLocal(periodo.fim);
+    if (fim <= inicio) continue;
+    for (let t = inicio; t + duracao <= fim; t += passo) {
+      total++;
+    }
+  }
+  const periodosLabel = periodos.length
+    ? periodos.map((p: any) => `${p.inicio}-${p.fim}`).join(", ")
+    : "Sem horários cadastrados";
+  return {
+    aberto: periodos.length > 0,
+    totalEstimado: total,
+    periodosLabel,
+  };
+}
+
+function toMinutesLocal(value: string) {
+  const [hora, minuto] = String(value || "00:00").split(":").map(Number);
+  return (hora || 0) * 60 + (minuto || 0);
+}
+
 function VistoriasAdminPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/admin/vistorias" });
@@ -331,11 +399,32 @@ function VistoriasAdminPage() {
       .includes(termoAgendamento)
   );
 
+  const proximos7Dias = useMemo(() => gerarProximos7Dias(), [agendaOpen]);
+  const resumoHorarioUnidade = unidadeSelecionada ? resumirHorarioAtendimentoUnidade(unidadeSelecionada) : "";
+  const horarioVazio = !!unidadeSelecionada && resumoHorarioUnidade === "Sem horários cadastrados.";
+
   const resetAgendaForm = () => {
     setUnidadeId("");
     setDataVistoria("");
     setHorarioVistoria("");
   };
+
+  useEffect(() => {
+    if (!unidadeSelecionada) {
+      if (dataVistoria) setDataVistoria("");
+      return;
+    }
+    if (dataVistoria) {
+      const info = totalSlotsPorDia(unidadeSelecionada, dataVistoria);
+      if (info.aberto) return;
+    }
+    const primeiroAberto = proximos7Dias.find((d) => totalSlotsPorDia(unidadeSelecionada, d.iso).aberto);
+    if (primeiroAberto) {
+      setDataVistoria(primeiroAberto.iso);
+    } else if (!dataVistoria) {
+      setDataVistoria(proximos7Dias[0].iso);
+    }
+  }, [unidadeId, unidadeSelecionada, proximos7Dias]);
 
   const resetUnidadeForm = () => {
     setUnidadeForm({
@@ -1196,9 +1285,9 @@ function VistoriasAdminPage() {
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-5">
                 <div className="space-y-2">
-                  <Label>Unidade de vistoria</Label>
+                  <Label>Unidade de vistoria credenciada</Label>
                   <Select value={normalizarIdStr(unidadeId)} onValueChange={(value) => setUnidadeId(normalizarIdStr(value))}>
                     <SelectTrigger>
                       <SelectValue placeholder={loadingUnidades ? "Carregando unidades..." : "Selecione a unidade credenciada"} />
@@ -1212,79 +1301,184 @@ function VistoriasAdminPage() {
                     </SelectContent>
                   </Select>
                   {!loadingUnidades && unidades.length === 0 && (
-                    <p className="text-xs text-amber-700">Nenhuma unidade ativa encontrada para essa cidade. Cadastre uma unidade na aba "Unidades e Equipe".</p>
+                    <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50 px-4 py-3">
+                      <p className="text-xs font-bold uppercase tracking-wider text-amber-800">Nenhuma unidade ativa encontrada</p>
+                      <p className="text-xs text-amber-700 mt-1">Cadastre a unidade e vincule a equipe no menu lateral <strong>Unidades e Equipe</strong>.</p>
+                    </div>
                   )}
-                </div>
 
-                <div className="space-y-2">
-                  <Label>Data da vistoria</Label>
-                  <Input
-                    type="date"
-                    value={dataVistoria}
-                    min={new Date().toISOString().slice(0, 10)}
-                    onChange={(e) => setDataVistoria(e.target.value)}
-                  />
                   {unidadeSelecionada && (
-                    <p className="text-xs text-slate-500">
-                      Equipe: alocada automaticamente com base na agenda da unidade.
-                    </p>
+                    <div className={cn(
+                      "rounded-xl border p-4 mt-3 space-y-2",
+                      horarioVazio
+                        ? "border-amber-300 bg-amber-50"
+                        : "border-slate-200 bg-slate-50"
+                    )}>
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-black text-slate-950">{unidadeSelecionada.nome}</p>
+                          <p className="text-xs text-slate-600 mt-1">{unidadeSelecionada.endereco} — {unidadeSelecionada.cidade}/{unidadeSelecionada.estado}</p>
+                        </div>
+                        {horarioVazio ? (
+                          <Badge className="bg-amber-500 text-white text-[10px] font-black">SEM HORÁRIOS</Badge>
+                        ) : (
+                          <Badge className="bg-emerald-500 text-white text-[10px] font-black">CONFIGURADA</Badge>
+                        )}
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Duração</p>
+                          <p className="text-sm font-bold text-slate-800">{Number(unidadeSelecionada.duracao_padrao_minutos || 60)} min / vistoria</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Janela</p>
+                          <p className="text-sm font-bold text-slate-800">{Number(unidadeSelecionada.intervalo_entre_vistorias_minutos || 0)} min entre</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Responsável</p>
+                          <p className="text-sm font-bold text-slate-800 truncate">{unidadeSelecionada.responsavel || "Não cadastrado"}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">
+                          Horários de atendimento
+                        </p>
+                        {horarioVazio ? (
+                          <p className="text-sm text-amber-800 font-bold">
+                            Nenhum horário cadastrado. Edite a unidade em "Unidades e Equipe" para definir dias e faixas.
+                          </p>
+                        ) : (
+                          <p className="text-xs text-slate-700 font-semibold leading-relaxed">{resumoHorarioUnidade}</p>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-600 pt-2 border-t border-slate-200/60">
+                        Equipe alocada automaticamente no horário confirmado.
+                      </p>
+                    </div>
                   )}
                 </div>
 
-                <div className="space-y-2 md:col-span-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <Label>Slots disponíveis</Label>
-                      <p className="text-xs text-slate-500">
-                        Escolha um horário dentro da janela configurada da unidade.
-                      </p>
+                {unidadeSelecionada && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <Label>Escolha o dia nos próximos 7 dias</Label>
+                        <p className="text-xs text-slate-500">
+                          Toque em um dia para ver os horários livres da unidade.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="date"
+                          value={dataVistoria}
+                          min={proximos7Dias[0].iso}
+                          max={proximos7Dias[proximos7Dias.length - 1].iso}
+                          onChange={(e) => setDataVistoria(e.target.value)}
+                          className="w-auto text-xs py-1.5"
+                        />
+                      </div>
                     </div>
-                    {slotsRes?.configuracao && (
-                      <p className="text-[11px] text-slate-500 text-right">
-                        {(slotsRes.configuracao.periodos || []).map((periodo: any) => `${periodo.inicio} às ${periodo.fim}`).join(" | ") || "Sem períodos configurados"}
-                        <br />
-                        Vistoria {slotsRes.configuracao.duracao_padrao_minutos} min + janela de {slotsRes.configuracao.intervalo_entre_vistorias_minutos} min
-                      </p>
-                    )}
-                  </div>
-
-                  {!dataVistoria ? (
-                    <div className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
-                      Escolha uma data para ver os slots disponíveis.
-                    </div>
-                  ) : loadingSlots ? (
-                    <div className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500 flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Carregando slots dessa unidade...
-                    </div>
-                  ) : slotsDisponiveis.length > 0 ? (
-                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                      {slotsDisponiveis.map((slot: any) => {
-                        const ativo = horarioVistoria === slot.value;
+                    <div className="grid grid-cols-7 gap-1.5">
+                      {proximos7Dias.map((dia) => {
+                        const info = totalSlotsPorDia(unidadeSelecionada, dia.iso);
+                        const ativo = dataVistoria === dia.iso;
                         return (
                           <button
-                            key={slot.value}
+                            key={dia.iso}
                             type="button"
+                            disabled={!info.aberto}
+                            onClick={() => setDataVistoria(dia.iso)}
                             className={cn(
-                              "rounded-lg border px-3 py-3 text-left transition-colors",
-                              ativo
-                                ? "border-teal-500 bg-teal-50 text-teal-700"
-                                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                              "flex flex-col items-center gap-0.5 rounded-lg border px-1.5 py-2 text-center transition-colors",
+                              !info.aberto && "opacity-40 cursor-not-allowed border-slate-200 bg-slate-50",
+                              info.aberto && !ativo && "border-slate-200 bg-white hover:border-teal-300 hover:bg-teal-50/50",
+                              ativo && "border-teal-500 bg-teal-50 ring-2 ring-teal-200"
                             )}
-                            onClick={() => setHorarioVistoria(slot.value)}
+                            title={info.aberto ? `${info.totalEstimado} slots estimados - ${info.periodosLabel}` : "Unidade não atende nesse dia"}
                           >
-                            <p className="text-sm font-bold">{slot.value}</p>
-                            <p className="text-[11px] text-slate-500">vai at&eacute; {slot.fim}</p>
+                            <span className={cn(
+                              "text-[10px] font-black uppercase tracking-wider",
+                              ativo ? "text-teal-700" : info.aberto ? "text-slate-600" : "text-slate-400"
+                            )}>{dia.diaSemana}</span>
+                            <span className={cn(
+                              "text-base font-black",
+                              ativo ? "text-teal-800" : info.aberto ? "text-slate-900" : "text-slate-400"
+                            )}>{dia.diaMes}</span>
+                            <span className={cn(
+                              "text-[10px]",
+                              ativo ? "text-teal-700 font-bold" : info.aberto ? "text-slate-500 font-semibold" : "text-slate-400"
+                            )}>/{dia.mes}</span>
+                            {info.aberto ? (
+                              <span className="mt-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700">
+                                {info.totalEstimado}
+                              </span>
+                            ) : (
+                              <span className="mt-0.5 text-[9px] font-black uppercase tracking-wider text-slate-400">
+                                FECH
+                              </span>
+                            )}
                           </button>
                         );
                       })}
                     </div>
-                  ) : (
-                    <div className="rounded-lg border border-dashed border-amber-200 bg-amber-50 px-4 py-6 text-sm text-amber-700">
-                      {slotsRes?.message || "Nenhum slot disponível para essa data."}
+                  </div>
+                )}
+
+                {unidadeSelecionada && dataVistoria && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <Label>Slots disponíveis</Label>
+                        <p className="text-xs text-slate-500">
+                          Escolha um horário para agendar.
+                        </p>
+                      </div>
+                      {slotsRes?.configuracao && (
+                        <p className="text-[11px] text-slate-500 text-right max-w-[55%]">
+                          {(slotsRes.configuracao.periodos || []).map((periodo: any) => `${periodo.inicio}-${periodo.fim}`).join(" | ") || "Sem períodos"}
+                          <br />
+                          {slotsRes.configuracao.duracao_padrao_minutos}min + {slotsRes.configuracao.intervalo_entre_vistorias_minutos}min de janela
+                        </p>
+                      )}
                     </div>
-                  )}
-                </div>
+
+                    {loadingSlots ? (
+                      <div className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500 flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Carregando slots dessa data...
+                      </div>
+                    ) : slotsDisponiveis.length > 0 ? (
+                      <div className="grid gap-2 grid-cols-3 sm:grid-cols-4 lg:grid-cols-5">
+                        {slotsDisponiveis.map((slot: any) => {
+                          const ativo = horarioVistoria === slot.value;
+                          return (
+                            <button
+                              key={slot.value}
+                              type="button"
+                              className={cn(
+                                "rounded-lg border px-3 py-3 text-center transition-colors",
+                                ativo
+                                  ? "border-teal-500 bg-teal-50 text-teal-700"
+                                  : "border-slate-200 bg-white text-slate-700 hover:border-teal-300 hover:bg-teal-50/40"
+                              )}
+                              onClick={() => setHorarioVistoria(slot.value)}
+                            >
+                              <p className="text-sm font-black">{slot.value}</p>
+                              <p className="text-[10px] text-slate-500 font-semibold">até {slot.fim}</p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-dashed border-amber-200 bg-amber-50 px-4 py-6 text-sm">
+                        <p className="text-amber-800 font-bold">{slotsRes?.message || "Nenhum slot disponível para essa data."}</p>
+                        {horarioVazio && (
+                          <p className="text-xs text-amber-700 mt-2">Dica: a unidade está sem horários cadastrados. Edite em "Unidades e Equipe".</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
