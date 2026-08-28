@@ -22,7 +22,9 @@ import {
   User,
   ChevronDown,
   Menu,
-  X
+  X,
+  Building2,
+  MapPin
 } from "lucide-react";
 import { ReactNode, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -43,6 +45,7 @@ type MenuItem = {
   label: string;
   icon: any;
   to: string;
+  search?: Record<string, any>;
   activePrefixes?: string[];
   activeIncludes?: string[];
   exact?: boolean;
@@ -105,12 +108,20 @@ const MENU_SECTIONS: MenuSection[] = [
     label: "2. Vistoria",
     items: [
       {
-        label: "Agenda e Laudos",
+        label: "Fila e Agenda",
         icon: Camera,
         to: "/admin/vistorias",
         activePrefixes: ["/admin/vistorias", "/admin/analise-vistoria"],
         activeIncludes: ["/pos-vistoria"],
-        description: "Agendamento e pós-vistoria",
+        description: "Agendamentos, laudos e triagem",
+      },
+      {
+        label: "Unidades e Equipe",
+        icon: Building2,
+        to: "/admin/vistorias",
+        search: { tab: "cadastros" },
+        activeIncludes: ["/admin/vistorias"],
+        description: "Credenciados e vistoriadores",
       },
     ],
   },
@@ -243,6 +254,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                   <Link
                     key={item.label}
                     to={item.to}
+                    search={item.search}
                     className={cn(
                       "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all group",
                       isActive(item)
