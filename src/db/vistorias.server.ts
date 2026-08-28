@@ -1154,8 +1154,10 @@ export async function remarcarAgendamentoVistoria(args: {
   const vistoriaIdLower = vistoriaIdRaw.toLowerCase();
   const apenasUuid = vistoriaIdLower.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/);
 
-  // TENTATIVA 1: igualdade exata (id::text) — mais seguro, evita cast para UUID
+  // TENTATIVA 1: igualdade exata (id::text) cast direto no template sql
   try {
+    const buscaExata = vistoriaIdLower;
+    // Usar parâmetro simples sem função SQL em volta (evita bugs de parametrização)
     const resText = await d.execute(sql`
       SELECT
         id::text as id,
@@ -1166,13 +1168,13 @@ export async function remarcarAgendamentoVistoria(args: {
         vendedor_id::text as vendedor_id,
         unidade_id::text as unidade_id
       FROM vistorias
-      WHERE LOWER(id::text) = ${vistoriaIdLower}
+      WHERE id::text = ${buscaExata}
       LIMIT 1
     `);
     vistoria = (resText as any).rows?.[0];
   } catch { /* ignore */ }
 
-  // TENTATIVA 2: cast uuid (caso id recebido seja UUID puro sem problemas)
+  // TENTATIVA 2: cast uuid
   if (!vistoria && apenasUuid?.[0]) {
     try {
       const resCast = await d.execute(sql`
@@ -1192,7 +1194,7 @@ export async function remarcarAgendamentoVistoria(args: {
     } catch { /* ignore */ }
   }
 
-  // TENTATIVA 3: ILIKE substring do final (caso veio truncado ou com prefixo/sufixo)
+  // TENTATIVA 3: ILIKE substring
   if (!vistoria) {
     try {
       const parte = apenasUuid?.[0] || vistoriaIdLower.replace(/[^0-9a-f-]/gi, "").slice(0, 36);
@@ -1210,10 +1212,45 @@ export async function remarcarAgendamentoVistoria(args: {
           FROM vistorias
           WHERE id::text ILIKE ${buscaLike}
           ORDER BY criado_em DESC
-          LIMIT 1
+          LIMIT 50
         `);
-        vistoria = (resLike as any).rows?.[0];
+        const linhas = (resLike as any).rows || [];
+        if (linhas.length === 1) {
+          vistoria = linhas[0];
+        } else if (linhas.length > 1) {
+          vistoria = linhas.find((l: any) => String(l.id).toLowerCase() === vistoriaIdLower) || linhas[0];
+        }
       }
+    } catch { /* ignore */ }
+  }
+
+  // TENTATIVA 4 (DEFINITIVA): Listar as ultimas 500 vistorias e filtrar em MEMORIA JS
+  if (!vistoria) {
+    try {
+      const todas = await d.execute(sql`
+        SELECT
+          id::text as id,
+          data_vistoria,
+          horario_vistoria,
+          status,
+          veiculo_id::text as veiculo_id,
+          vendedor_id::text as vendedor_id,
+          unidade_id::text as unidade_id
+        FROM vistorias
+        ORDER BY criado_em DESC
+        LIMIT 500
+      `);
+      const arr = (todas as any).rows || [];
+      vistoria = arr.find((v: any) => {
+        const idV = String(v.id || "").toLowerCase();
+        if (idV === vistoriaIdLower) return true;
+        if (apenasUuid?.[0] && idV.endsWith(apenasUuid[0].slice(-12))) return idV.includes(apenasUuid[0].slice(0, 8));
+        return false;
+      }) || arr.find((v: any) => {
+        const idV = String(v.id || "").toLowerCase();
+        const target = apenasUuid?.[0] || vistoriaIdLower;
+        return idV.replace(/-/g, "") === target.replace(/-/g, "");
+      });
     } catch { /* ignore */ }
   }
 
@@ -1222,9 +1259,10 @@ export async function remarcarAgendamentoVistoria(args: {
       `raw="${vistoriaIdRaw}"`,
       `lower="${vistoriaIdLower}"`,
       `apenasUuid_match=${apenasUuid ? "SIM (" + apenasUuid[0] + ")" : "NAO"}`,
+      `total_vistorias_limit_500=verificou_em_memo`,
     ].join(" | ");
     throw new Error(
-      `Agendamento de vistoria não encontrado (${detalhe}). Abra o console do browser, verifique o network e tente novamente.`
+      `Agendamento de vistoria não encontrado (${detalhe}). Verifique se a vistoria existe na tabela do banco.`
     );
   }
   const vistoriaIdFinalTxt = normalizarUuid(vistoria.id);
