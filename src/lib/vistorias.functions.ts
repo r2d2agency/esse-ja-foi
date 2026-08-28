@@ -53,11 +53,18 @@ export const getSlotsUnidadeDisponiveisFn = createServerFn({ method: "GET" })
     unidadeId: z.string(),
     data: z.string(),
     vistoriadorId: z.string().optional().nullable(),
+    nomeUnidade: z.string().optional().nullable(),
+    cidadeUnidade: z.string().optional().nullable(),
   }).parse(d))
   .handler(async ({ data }) => {
     const { listarSlotsDisponiveisUnidade } = await import("@/db/vistorias.server");
     try {
-      return await listarSlotsDisponiveisUnidade(data.unidadeId, data.data, data.vistoriadorId || null);
+      return await listarSlotsDisponiveisUnidade(
+        data.unidadeId,
+        data.data,
+        data.vistoriadorId || null,
+        { nomeUnidade: data.nomeUnidade || null, cidadeUnidade: data.cidadeUnidade || null }
+      );
     } catch (err: any) {
       return { ok: false, message: err.message, slots: [] };
     }

@@ -349,13 +349,18 @@ function VistoriasAdminPage() {
     enabled: agendaOpen && !!veiculoSelecionado,
   });
 
+  const unidades = unidadesRes?.data || [];
+  const unidadeSelecionada = unidades.find((unidade: any) => idsIguais(unidade.id, unidadeId)) || null;
+
   const { data: slotsRes, isLoading: loadingSlots } = useQuery({
-    queryKey: ["slots-unidade-vistoria", normalizarIdStr(unidadeId), dataVistoria],
+    queryKey: ["slots-unidade-vistoria", normalizarIdStr(unidadeId), dataVistoria, unidadeSelecionada?.nome || "", unidadeSelecionada?.cidade || ""],
     queryFn: () => getSlotsUnidade({
       data: {
         unidadeId: normalizarIdStr(unidadeId),
         data: dataVistoria,
         vistoriadorId: null,
+        nomeUnidade: unidadeSelecionada?.nome ? String(unidadeSelecionada.nome).trim() : null,
+        cidadeUnidade: unidadeSelecionada?.cidade ? String(unidadeSelecionada.cidade).trim() : null,
       },
     }),
     enabled: agendaOpen && !!normalizarIdStr(unidadeId) && !!dataVistoria,
@@ -376,7 +381,6 @@ function VistoriasAdminPage() {
   const agendamentos = agendamentosRes?.data || [];
   const aguardando = aguardandoRes?.data || [];
   const filaPosVistoria = posVistoriaRes?.data || [];
-  const unidades = unidadesRes?.data || [];
   const unidadesCadastro = unidadesCadastroRes?.data || [];
   const vistoriadoresCadastro = vistoriadoresCadastroRes?.data || [];
 
@@ -420,7 +424,6 @@ function VistoriasAdminPage() {
     setFiltroUFUnidade("todas");
     setUnidadeFocoMapaId(null);
   };
-  const unidadeSelecionada = unidades.find((unidade: any) => idsIguais(unidade.id, unidadeId)) || null;
   const slotsDisponiveis = slotsRes?.slots || [];
   const termoFila = buscaFila.trim().toLowerCase();
   const termoAgendamento = buscaAgendamento.trim().toLowerCase();

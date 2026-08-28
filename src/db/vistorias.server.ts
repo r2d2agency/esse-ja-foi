@@ -569,48 +569,52 @@ export async function salvarUnidadeVistoria(data: {
   return (res as any).rows?.[0] || null;
 }
 
-export async function listarSlotsDisponiveisUnidade(unidadeId: string, data: string, vistoriadorId?: string | null) {
+export async function listarSlotsDisponiveisUnidade(
+  unidadeId: string,
+  data: string,
+  vistoriadorId?: string | null,
+  contexto?: { nomeUnidade?: string | null; cidadeUnidade?: string | null }
+) {
   const d = requireDb();
   await ensureVistoriaSchema();
 
-  // Garante que temos um UUID cru (em qualquer formato que vier) e também a versão
-  // lowercase. Usamos múltiplas estratégias sem depender do regex funcionar.
   const rawId = String(unidadeId ?? "").trim();
   const uuidMatch = rawId.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
   const unidadeIdLower = (uuidMatch?.[0] ?? rawId).toLowerCase();
+  const nomeUnidadeLower = String(contexto?.nomeUnidade ?? "").trim().toLowerCase();
+  const cidadeUnidadeLower = String(contexto?.cidadeUnidade ?? "").trim().toLowerCase();
   const vistoriadorIdNormalizado = normalizarUuid(vistoriadorId);
 
-  if (!rawId || !uuidMatch || !unidadeIdLower) {
+  if (!rawId) {
     return { ok: false as const, message: "Selecione uma unidade de vistoria válida.", slots: [] as any[] };
   }
 
-  // Busca a unidade com 3 estratégias diferentes, classificadas por prioridade.
-  // Estratégia 1: lower(id::text) = lower(string)
-  // Estratégia 2: id = (string::uuid (caso a string seja um uuid formatado direto)
-  // Estratégia 3: lower(id::text) LIKE lower(string)% (cobertura extra)
   const buscaUnidade = await d.execute(sql`
-    WITH candidatas AS (
-      SELECT 1 as ordem, id, horario_atendimento, duracao_padrao_minutos, intervalo_entre_vistorias_minutos, ativo
-      FROM unidades_vistoria
-      WHERE lower(id::text) = ${unidadeIdLower}
-      UNION ALL
-      SELECT 2 as ordem, id, horario_atendimento, duracao_padrao_minutos, intervalo_entre_vistorias_minutos, ativo
-      FROM unidades_vistoria
-      WHERE id = ${unidadeIdLower}::uuid
-      UNION ALL
-      SELECT 3 as ordem, id, horario_atendimento, duracao_padrao_minutos, intervalo_entre_vistorias_minutos, ativo
-      FROM unidades_vistoria
-      WHERE starts_with(lower(id::text), ${unidadeIdLower})
-      LIMIT 3
-    )
-    SELECT DISTINCT ON (id::text)
+    SELECT
       id::text as id,
       horario_atendimento,
       duracao_padrao_minutos,
       intervalo_entre_vistorias_minutos,
       ativo
-    FROM candidatas
-    ORDER BY id::text, (MIN(ordem) OVER (PARTITION BY id::text))
+    FROM unidades_vistoria
+    WHERE (
+      (lower(id::text) = ${unidadeIdLower}) OR
+      (CASE WHEN length(${unidadeIdLower}) >= 4 THEN lower(id::text) LIKE (${unidadeIdLower} || '%') ELSE FALSE END) OR
+      (CASE WHEN length(${unidadeIdLower}) >= 32 THEN
+        EXISTS (SELECT 1 FROM unidades_vistoria WHERE id = ${unidadeIdLower}::uuid) AND id = ${unidadeIdLower}::uuid
+      ELSE FALSE END)
+      ${
+        nomeUnidadeLower
+          ? sql`OR (lower(nome) = ${nomeUnidadeLower} AND (${cidadeUnidadeLower ? sql`lower(cidade) = ${cidadeUnidadeLower}` : sql`TRUE`}))`
+          : sql``
+      }
+    )
+    ORDER BY CASE
+      WHEN lower(id::text) = ${unidadeIdLower} THEN 0
+      WHEN ${nomeUnidadeLower ? sql`lower(nome) = ${nomeUnidadeLower}` : sql`FALSE`} THEN 1
+      WHEN length(${unidadeIdLower}) >= 4 AND lower(id::text) LIKE (${unidadeIdLower} || '%') THEN 2
+      ELSE 5
+    END, ativo DESC, criado_em DESC
     LIMIT 1
   `);
 
