@@ -30,6 +30,117 @@ function normalizarUuid(value: unknown) {
   return match?.[0]?.toLowerCase() || null;
 }
 
+async function encontrarUnidadeRobusta(args: {
+  unidadeId?: unknown;
+  nomeUnidade?: string | null;
+  cidadeUnidade?: string | null;
+  campos?: string;
+}): Promise<any> {
+  const d = requireDb();
+  const rawId = String(args.unidadeId ?? "").trim();
+  const uuidMatch = rawId.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
+  const unidadeIdLower = (uuidMatch?.[0] ?? rawId).toLowerCase();
+  const nomeFiltro = String(args.nomeUnidade ?? "").trim();
+  const cidadeFiltro = String(args.cidadeUnidade ?? "").trim();
+  const campos = args.campos || `
+    id::text as id,
+    ativo,
+    duracao_padrao_minutos,
+    intervalo_entre_vistorias_minutos,
+    horario_atendimento,
+    nome,
+    cidade
+  `;
+
+  if (!rawId && !nomeFiltro) return null;
+
+  const todasCandidatas: any[] = [];
+
+  if (unidadeIdLower) {
+    try {
+      const porUuid = await d.execute(sql`
+        SELECT ${sql.raw(campos)}, 0 as prioridade_busca
+        FROM unidades_vistoria
+        WHERE id::text ILIKE ${unidadeIdLower}
+           OR id::text ILIKE (${unidadeIdLower} || '%')
+        LIMIT 3
+      `);
+      for (const u of ((porUuid as any).rows || [])) todasCandidatas.push(u);
+    } catch { /* ignora */ }
+
+    if (todasCandidatas.length === 0 && unidadeIdLower.replace(/-/g, "").length >= 32) {
+      try {
+        const porCast = await d.execute(sql`
+          SELECT ${sql.raw(campos)}, 0 as prioridade_busca
+          FROM unidades_vistoria
+          WHERE id = (${unidadeIdLower}::uuid)
+          LIMIT 3
+        `);
+        for (const u of ((porCast as any).rows || [])) {
+          if (!todasCandidatas.some((x) => String(x.id).toLowerCase() === String(u.id).toLowerCase())) {
+            todasCandidatas.push(u);
+          }
+        }
+      } catch { /* ignora */ }
+    }
+  }
+
+  if (nomeFiltro) {
+    try {
+      const porNome = await d.execute(sql`
+        SELECT ${sql.raw(campos)}, 1 as prioridade_busca
+        FROM unidades_vistoria
+        WHERE (
+          lower(nome) ILIKE lower(('%' || ${nomeFiltro} || '%'))
+          OR lower(nome) = lower(${nomeFiltro})
+        )
+        ${
+          cidadeFiltro
+            ? sql`AND (lower(cidade) ILIKE lower(('%' || ${cidadeFiltro} || '%')) OR lower(cidade) = lower(${cidadeFiltro}))`
+            : sql``
+        }
+        ORDER BY ativo DESC, length(nome) ASC
+        LIMIT 5
+      `);
+      for (const u of ((porNome as any).rows || [])) {
+        if (!todasCandidatas.some((x) => String(x.id).toLowerCase() === String(u.id).toLowerCase())) {
+          todasCandidatas.push(u);
+        }
+      }
+    } catch { /* ignora */ }
+  }
+
+  if (todasCandidatas.length === 0) {
+    try {
+      const todas = await listarUnidadesDisponiveis();
+      const lista: any[] = Array.isArray(todas) ? (todas as any[]) : (((todas as any)?.rows) as any[]) || [];
+      for (const u of lista) {
+        const idStr = String((u as any).id || "").toLowerCase();
+        const nomeStr = String((u as any).nome || "").toLowerCase();
+        const cidStr = String((u as any).cidade || "").toLowerCase();
+        const bateId = unidadeIdLower && (
+          idStr === unidadeIdLower ||
+          idStr.replace(/-/g, "") === unidadeIdLower.replace(/-/g, "") ||
+          idStr.startsWith(unidadeIdLower)
+        );
+        const bateNome = nomeFiltro && (
+          nomeStr === nomeFiltro.toLowerCase() ||
+          (cidadeFiltro && nomeStr.includes(nomeFiltro.toLowerCase()) &&
+            cidStr.includes(cidadeFiltro.toLowerCase())) ||
+          (!cidadeFiltro && nomeStr.includes(nomeFiltro.toLowerCase()))
+        );
+        if (bateId || bateNome) {
+          todasCandidatas.push({ ...u, prioridade_busca: bateId ? 0 : 1 });
+          if (todasCandidatas.length >= 3) break;
+        }
+      }
+    } catch { /* ignora */ }
+  }
+
+  if (todasCandidatas.length === 0) return null;
+  return todasCandidatas.sort((a, b) => Number(a.prioridade_busca ?? 9) - Number(b.prioridade_busca ?? 9))[0];
+}
+
 function normalizarHorarioAtendimento(value: any): Record<string, HorarioPeriodo[]> {
   if (!value || typeof value !== "object") return {};
   return Object.entries(value).reduce<Record<string, HorarioPeriodo[]>>((acc, [dia, faixa]) => {
@@ -260,40 +371,43 @@ export async function getVeiculosAguardandoVistoria() {
 export async function criarAgendamento(data: any) {
   const d = requireDb();
   await ensureVistoriaSchema();
-  const unidadeId = normalizarUuid(data.unidade_id);
+
   const vistoriadorId = normalizarUuid(data.vistoriador_id);
+  const veiculoId = normalizarUuid(data.veiculo_id);
+  const vendedorId = normalizarUuid(data.vendedor_id);
+  const usuarioId = normalizarUuid(data.usuario_id);
 
-  if (!unidadeId) {
-    throw new Error("Selecione uma unidade de vistoria válida.");
-  }
+  if (!veiculoId) throw new Error("Veículo inválido para criar o agendamento.");
+  if (!vendedorId) throw new Error("Vendedor inválido para criar o agendamento.");
+  if (!usuarioId) throw new Error("Usuário inválido para criar o agendamento.");
 
-  let unidadeRes = await d.execute(sql`
-    SELECT id::text as id, ativo, duracao_padrao_minutos, intervalo_entre_vistorias_minutos
-    FROM unidades_vistoria
-    WHERE lower(id::text) = ${unidadeId}
-    LIMIT 1
-  `);
-  let unidade = (unidadeRes as any).rows?.[0];
+  const unidade = await encontrarUnidadeRobusta({
+    unidadeId: data.unidade_id,
+    nomeUnidade: data.unidade_nome || null,
+    cidadeUnidade: data.unidade_cidade || null,
+    campos: `
+      id::text as id,
+      ativo,
+      duracao_padrao_minutos,
+      intervalo_entre_vistorias_minutos
+    `,
+  });
   if (!unidade) {
-    const fallback = await d.execute(sql`
-      SELECT id::text as id, ativo, duracao_padrao_minutos, intervalo_entre_vistorias_minutos
-      FROM unidades_vistoria
-      WHERE id = ${unidadeId}::uuid
-      LIMIT 1
-    `);
-    unidade = (fallback as any).rows?.[0];
-  }
-  if (!unidade) {
-    throw new Error("Unidade de vistoria não encontrada.");
+    const snippet = String(data.unidade_id || "").slice(0, 10);
+    throw new Error(
+      `Unidade de vistoria não encontrada (${snippet || "sem id"}). Selecione a unidade novamente na lista.`
+    );
   }
   if (!unidade.ativo) {
     throw new Error("A unidade selecionada está inativa. Escolha outra unidade para agendar.");
   }
+  const unidadeIdTxt = normalizarUuid(unidade.id);
+  if (!unidadeIdTxt) throw new Error("O id da unidade encontrada não é um UUID válido.");
 
-  const slots = await listarSlotsDisponiveisUnidade(unidadeId, data.data_vistoria, vistoriadorId || null);
+  const slots = await listarSlotsDisponiveisUnidade(unidadeIdTxt, data.data_vistoria, vistoriadorId || null);
   const slotDisponivel = slots.slots.some((slot) => slot.value === data.horario_vistoria);
   if (!slotDisponivel) {
-    throw new Error("Esse slot não está mais disponível para agendamento.");
+    throw new Error("Esse slot não está mais disponível para agendamento. Recarregue e escolha outro horário.");
   }
 
   let vistoriadorAlocado: string | null = vistoriadorId || null;
@@ -306,14 +420,14 @@ export async function criarAgendamento(data: any) {
     const vistoriadoresAtivos = await d.execute(sql`
       SELECT v.id::text as id
       FROM vistoriadores v
-      WHERE v.unidade_id = ${unidadeId}::uuid AND v.status = 'ATIVO'
+      WHERE v.unidade_id::text = ${unidadeIdTxt} AND v.status = 'ATIVO'
     `);
     const ids = ((vistoriadoresAtivos as any).rows || []).map((v: any) => v.id);
     for (const vid of ids) {
       const conflitosRes = await d.execute(sql`
         SELECT 1 as existe
         FROM vistorias
-        WHERE vistoriador_id = ${vid}::uuid
+        WHERE vistoriador_id::text = ${vid}
           AND data_vistoria = ${data.data_vistoria}
           AND status NOT IN ('CANCELADA', 'REPROVADA', 'CONCLUIDA_COM_RESTRICOES', 'CONCLUIDA', 'REJEITADA')
           AND (
@@ -325,7 +439,7 @@ export async function criarAgendamento(data: any) {
         LIMIT 1
       `);
       if (!((conflitosRes as any).rows?.length)) {
-        vistoriadorAlocado = vid;
+        vistoriadorAlocado = normalizarUuid(vid);
         break;
       }
     }
@@ -340,10 +454,10 @@ export async function criarAgendamento(data: any) {
       veiculo_id, vendedor_id, unidade_id, vistoriador_id,
       data_vistoria, horario_vistoria, status, criado_por
     ) VALUES (
-      ${data.veiculo_id}::uuid, ${data.vendedor_id}::uuid,
-      ${unidadeId}::uuid, ${vistoriadorUuidSql},
+      ${veiculoId}::uuid, ${vendedorId}::uuid,
+      ${unidadeIdTxt}::uuid, ${vistoriadorUuidSql},
       ${data.data_vistoria}, ${data.horario_vistoria},
-      'AGUARDANDO_CONFIRMACAO', ${data.usuario_id}::uuid
+      'AGUARDANDO_CONFIRMACAO', ${usuarioId}::uuid
     ) RETURNING id
   `);
 
@@ -352,14 +466,14 @@ export async function criarAgendamento(data: any) {
   await d.execute(sql`
     UPDATE veiculos
     SET status = 'VISTORIA_AGENDADA', atualizado_em = now()
-    WHERE id = ${data.veiculo_id}::uuid
+    WHERE id = ${veiculoId}::uuid
   `);
 
   const detalhe = `Vistoria agendada para ${data.data_vistoria} às ${data.horario_vistoria}` +
     (vistoriadorAlocado ? ` (vistoriador alocado automaticamente)` : " (aguardando alocação de vistoriador)");
   await d.execute(sql`
     INSERT INTO vistorias_historico (vistoria_id, acao, detalhe, usuario_id)
-    VALUES (${vistoriaId}, 'Agendamento criado', ${detalhe}, ${data.usuario_id}::uuid)
+    VALUES (${vistoriaId}, 'Agendamento criado', ${detalhe}, ${usuarioId}::uuid)
   `);
 
   return { ok: true, id: vistoriaId };
