@@ -182,3 +182,24 @@ export const confirmarPresencaVistoriaFn = createServerFn({ method: "POST" })
       return { ok: false, message: err.message };
     }
   });
+
+export const remarcarAgendamentoVistoriaFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({
+    vistoriaId: z.string(),
+    novaUnidadeId: z.string(),
+    novaData: z.string(),
+    novoHorario: z.string(),
+    usuarioId: z.string().optional().nullable(),
+    vendedorId: z.string().optional().nullable(),
+    permissaoAdmin: z.boolean().optional(),
+    unidade_nome: z.string().optional().nullable(),
+    unidade_cidade: z.string().optional().nullable(),
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const { remarcarAgendamentoVistoria } = await import("@/db/vistorias.server");
+    try {
+      return await remarcarAgendamentoVistoria(data as any);
+    } catch (err: any) {
+      return { ok: false, message: err.message };
+    }
+  });

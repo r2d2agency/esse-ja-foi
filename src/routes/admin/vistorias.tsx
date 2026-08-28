@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   criarAgendamentoVistoriaFn,
+  remarcarAgendamentoVistoriaFn,
   getSlotsUnidadeDisponiveisFn,
   getUnidadesCadastroFn,
   getUnidadesDisponiveisFn,
@@ -35,6 +36,7 @@ import {
   Building,
   Users,
   Phone,
+  CalendarClock,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -262,6 +264,12 @@ function VistoriasAdminPage() {
   const [horarioVistoria, setHorarioVistoria] = useState("");
   const [unidadeModalOpen, setUnidadeModalOpen] = useState(false);
   const [vistoriadorModalOpen, setVistoriadorModalOpen] = useState(false);
+  const [remarcacao, setRemarcacao] = useState<{
+    vistoriaId: string;
+    dataOriginal?: string;
+    horarioOriginal?: string;
+    unidadeIdOriginal?: string;
+  } | null>(null);
 
   // Filtros da aba "Unidades e Equipe"
   const [buscaCadastroUnidade, setBuscaCadastroUnidade] = useState("");
@@ -301,6 +309,7 @@ function VistoriasAdminPage() {
   const getSlotsUnidade = useServerFn(getSlotsUnidadeDisponiveisFn);
   const getUnidades = useServerFn(getUnidadesDisponiveisFn);
   const criarAgendamento = useServerFn(criarAgendamentoVistoriaFn);
+  const remarcarAgendamento = useServerFn(remarcarAgendamentoVistoriaFn);
   const getUnidadesCadastro = useServerFn(getUnidadesCadastroFn);
   const getVistoriadoresCadastro = useServerFn(getVistoriadoresCadastroFn);
   const salvarUnidadeCadastro = useServerFn(salvarUnidadeCadastroFn);
@@ -490,6 +499,7 @@ function VistoriasAdminPage() {
     setSemanaOffset(0);
     setDataVistoria("");
     setHorarioVistoria("");
+    setRemarcacao(null);
   };
 
   useEffect(() => {
@@ -541,9 +551,31 @@ function VistoriasAdminPage() {
     });
   };
 
-  const abrirAgenda = (veiculo: any) => {
+  const abrirAgenda = (veiculo: any, opts?: {
+    modoRemarcacao?: {
+      vistoriaId: string;
+      unidadeId?: unknown;
+      data?: string;
+      horario?: string;
+    };
+  }) => {
     setVeiculoSelecionado(veiculo);
     resetAgendaForm();
+    if (opts?.modoRemarcacao) {
+      const r = opts.modoRemarcacao;
+      const uidNorm = normalizarIdStr(r.unidadeId);
+      if (uidNorm) setUnidadeId(uidNorm);
+      const dataAtual = String(r.data || "").slice(0, 10);
+      if (dataAtual) setDataVistoria(dataAtual);
+      const horaAtual = String(r.horario || "").slice(0, 5);
+      if (horaAtual) setHorarioVistoria(horaAtual);
+      setRemarcacao({
+        vistoriaId: r.vistoriaId,
+        dataOriginal: dataAtual,
+        horarioOriginal: horaAtual,
+        unidadeIdOriginal: uidNorm,
+      });
+    }
     setAgendaOpen(true);
   };
 
@@ -751,34 +783,61 @@ function VistoriasAdminPage() {
       }
     }
 
-    const toastId = toast.loading("Criando agendamento...");
+    const toastId = toast.loading(
+      remarcacao ? "Remarcando agendamento..." : "Criando agendamento..."
+    );
     try {
-      const response = await criarAgendamento({
-        data: {
-          veiculo_id: normalizarIdStr(veiculoSelecionado.id),
-          vendedor_id: normalizarIdStr(veiculoSelecionado.vendedor_id),
-          unidade_id: normalizarIdStr(unidadeSelecionada.id),
-          unidade_nome: String(unidadeSelecionada.nome || "").trim() || null,
-          unidade_cidade: String(unidadeSelecionada.cidade || "").trim() || null,
-          vistoriador_id: null,
-          data_vistoria: dataVistoria,
-          horario_vistoria: horarioVistoria,
-          usuario_id: normalizarIdStr(user.id),
-        },
-      });
+      const unidadeIdNorm = normalizarIdStr(unidadeSelecionada.id);
+      const unidadeNome = String(unidadeSelecionada.nome || "").trim() || null;
+      const unidadeCidade = String(unidadeSelecionada.cidade || "").trim() || null;
 
-      if (!response?.ok) {
-        toast.error(response?.message || "Não foi possível criar o agendamento.", { id: toastId });
-        return;
+      if (remarcacao) {
+        const response = await remarcarAgendamento({
+          data: {
+            vistoriaId: normalizarIdStr(remarcacao.vistoriaId),
+            novaUnidadeId: unidadeIdNorm,
+            novaData: dataVistoria,
+            novoHorario: horarioVistoria,
+            usuarioId: normalizarIdStr(user.id),
+            permissaoAdmin: true,
+            unidade_nome: unidadeNome,
+            unidade_cidade: unidadeCidade,
+          },
+        });
+
+        if (!response?.ok) {
+          toast.error(response?.message || "Não foi possível remarcar o agendamento.", { id: toastId });
+          return;
+        }
+        toast.success("Agendamento remarcado com sucesso.", { id: toastId });
+      } else {
+        const response = await criarAgendamento({
+          data: {
+            veiculo_id: normalizarIdStr(veiculoSelecionado.id),
+            vendedor_id: normalizarIdStr(veiculoSelecionado.vendedor_id),
+            unidade_id: unidadeIdNorm,
+            unidade_nome: unidadeNome,
+            unidade_cidade: unidadeCidade,
+            vistoriador_id: null,
+            data_vistoria: dataVistoria,
+            horario_vistoria: horarioVistoria,
+            usuario_id: normalizarIdStr(user.id),
+          },
+        });
+
+        if (!response?.ok) {
+          toast.error(response?.message || "Não foi possível criar o agendamento.", { id: toastId });
+          return;
+        }
+        toast.success("Vistoria agendada com sucesso.", { id: toastId });
       }
 
-      toast.success("Vistoria agendada com sucesso.", { id: toastId });
       await queryClient.invalidateQueries({ queryKey: ["admin-veiculos-aguardando-vistoria"] });
       await queryClient.invalidateQueries({ queryKey: ["admin-vistorias"] });
       fecharAgenda();
       updateSearch({ tab: "agendamentos", status: "AGUARDANDO_CONFIRMACAO", veiculoId: undefined });
     } catch (e: any) {
-      toast.error(e?.message || "Erro técnico ao criar agendamento.", { id: toastId });
+      toast.error(e?.message || "Erro técnico ao salvar agendamento.", { id: toastId });
     }
   };
 
@@ -966,6 +1025,7 @@ function VistoriasAdminPage() {
                         label: String(v.status || "Sem status").replaceAll("_", " "),
                         className: "bg-slate-100 text-slate-700 hover:bg-slate-100",
                       };
+                      const podeRemarcar = ["AGUARDANDO_CONFIRMACAO", "CONFIRMADA"].includes(String(v.status || ""));
 
                       return (
                         <tr key={v.id} className="hover:bg-slate-50/50 transition-colors">
@@ -1006,11 +1066,44 @@ function VistoriasAdminPage() {
                             </Badge>
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <Button asChild size="sm" variant="outline" className="font-bold">
-                              <Link to="/admin/veiculo/$id" params={{ id: v.veiculo_id }}>
-                                Ver veículo
-                              </Link>
-                            </Button>
+                            <div className="flex gap-2 justify-end">
+                              {podeRemarcar && (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  className="font-bold h-9 bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200"
+                                  onClick={() => {
+                                    abrirAgenda(
+                                      {
+                                        id: v.veiculo_id,
+                                        marca: v.marca,
+                                        modelo: v.modelo,
+                                        placa: v.placa,
+                                        vendedor_id: v.vendedor_id,
+                                        vendedor_nome: v.vendedor_nome,
+                                        cidade: v.vendedor_cidade || "",
+                                      },
+                                      {
+                                        modoRemarcacao: {
+                                          vistoriaId: v.id,
+                                          unidadeId: v.unidade_id,
+                                          data: v.data_vistoria,
+                                          horario: v.horario_vistoria,
+                                        },
+                                      }
+                                    );
+                                  }}
+                                >
+                                  <CalendarClock className="h-4 w-4 mr-1" />
+                                  Reagendar
+                                </Button>
+                              )}
+                              <Button asChild size="sm" variant="outline" className="font-bold">
+                                <Link to="/admin/veiculo/$id" params={{ id: v.veiculo_id }}>
+                                  Ver veículo
+                                </Link>
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1586,9 +1679,11 @@ function VistoriasAdminPage() {
       <Dialog open={agendaOpen} onOpenChange={(open) => (open ? setAgendaOpen(true) : fecharAgenda())}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Agendar vistoria</DialogTitle>
+            <DialogTitle>{remarcacao ? "Remarcar vistoria" : "Agendar vistoria"}</DialogTitle>
             <DialogDescription>
-              Defina a unidade, a data e escolha um horário disponível. O vistoriador será alocado automaticamente a partir da equipe da unidade.
+              {remarcacao
+                ? `Remarcação de ${remarcacao.dataOriginal ?? "-"} às ${remarcacao.horarioOriginal ?? "-"}. Selecione nova unidade, data e horário. Mínimo 1 hora de antecedência.`
+                : "Defina a unidade, a data e escolha um horário disponível. O vistoriador será alocado automaticamente a partir da equipe da unidade."}
             </DialogDescription>
           </DialogHeader>
 

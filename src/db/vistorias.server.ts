@@ -1108,6 +1108,129 @@ export async function confirmarVistoriaVendedor(vistoriaId: string, vendedorId: 
   return { ok: true };
 }
 
+export async function remarcarAgendamentoVistoria(args: {
+  vistoriaId: string;
+  novaUnidadeId: unknown;
+  novaData: string;
+  novoHorario: string;
+  usuarioId?: string | null;
+  vendedorId?: string | null;
+  permissaoAdmin?: boolean;
+  unidade_nome?: string | null;
+  unidade_cidade?: string | null;
+}) {
+  const d = requireDb();
+  await ensureVistoriaSchema();
+
+  const vistoriaIdTxt = normalizarUuid(args.vistoriaId);
+  if (!vistoriaIdTxt) throw new Error("Agendamento inválido para remarcar.");
+  const usuarioIdNormalizado = normalizarUuid(args.usuarioId);
+  const vendedorIdNormalizado = normalizarUuid(args.vendedorId);
+
+  if (!args.permissaoAdmin && !vendedorIdNormalizado) {
+    throw new Error("Você não tem permissão para remarcar esse agendamento.");
+  }
+
+  const vistoriaRes = await d.execute(sql`
+    SELECT
+      id::text as id,
+      data_vistoria,
+      horario_vistoria,
+      status,
+      veiculo_id::text as veiculo_id,
+      vendedor_id::text as vendedor_id,
+      unidade_id::text as unidade_id
+    FROM vistorias
+    WHERE id = ${vistoriaIdTxt}::uuid
+    LIMIT 1
+  `);
+  const linhas = (vistoriaRes as any).rows || [];
+  const vistoria = linhas[0];
+  if (!vistoria) throw new Error("Agendamento de vistoria não encontrado.");
+
+  if (!args.permissaoAdmin && String(vistoria.vendedor_id || "").toLowerCase() !== String(vendedorIdNormalizado || "").toLowerCase()) {
+    throw new Error("Você só pode remarcar suas próprias vistorias.");
+  }
+
+  if (["CANCELADA", "CONCLUIDA", "REPROVADA", "CONCLUIDA_COM_RESTRICOES", "REJEITADA", "EM_VISTORIA"].includes(String(vistoria.status || ""))) {
+    throw new Error(`Não é possível remarcar uma vistoria com status "${vistoria.status}".`);
+  }
+
+  const dataAtualStr = String(vistoria.data_vistoria || "").slice(0, 10);
+  const horarioAtualStr = String(vistoria.horario_vistoria || "").slice(0, 5);
+  const minsAtual = toMinutes(horarioAtualStr);
+  const agoraSPData = dataFormatadaSP(0);
+  const agoraSPMin = minutosAgoraSP();
+  const antecedenciaMinimaMinutos = 60;
+
+  if (dataAtualStr === agoraSPData) {
+    if (minsAtual - agoraSPMin < antecedenciaMinimaMinutos) {
+      throw new Error(
+        `Só é permitido remarcar com no mínimo ${antecedenciaMinimaMinutos / 60} hora de antecedência. O horário está muito próximo.`
+      );
+    }
+  } else if (dataAtualStr < agoraSPData) {
+    throw new Error("O horário atual da vistoria já passou. Contate o suporte.");
+  }
+
+  if (dataEstaNoPassado(args.novaData)) {
+    throw new Error("A nova data selecionada está no passado.");
+  }
+  if (ehHojeSP(args.novaData)) {
+    const mins = toMinutes(args.novoHorario);
+    if (mins <= agoraSPMin) {
+      throw new Error("O novo horário selecionado já passou. Escolha outro.");
+    }
+  }
+
+  const unidade = await encontrarUnidadeRobusta({
+    unidadeId: args.novaUnidadeId,
+    nomeUnidade: args.unidade_nome || null,
+    cidadeUnidade: args.unidade_cidade || null,
+  });
+  if (!unidade) throw new Error("Unidade de vistoria não encontrada para remarcar.");
+  if (!unidade.ativo) throw new Error("A nova unidade selecionada está inativa.");
+  const novaUnidadeIdTxt = normalizarUuid(unidade.id);
+  if (!novaUnidadeIdTxt) throw new Error("A nova unidade encontrada não tem id válido.");
+
+  const slots = await listarSlotsDisponiveisUnidade(novaUnidadeIdTxt, args.novaData, null);
+  const disponivel = slots.slots.some((s: any) => s.value === String(args.novoHorario).slice(0, 5));
+  if (!disponivel) {
+    throw new Error("O horário selecionado já não está mais disponível para essa unidade. Escolha outro.");
+  }
+
+  await d.execute(sql`
+    UPDATE vistorias SET
+      unidade_id = ${novaUnidadeIdTxt}::uuid,
+      data_vistoria = ${args.novaData},
+      horario_vistoria = ${args.novoHorario},
+      atualizado_em = now(),
+      status = CASE WHEN status = 'CONFIRMADA' THEN 'AGUARDANDO_CONFIRMACAO' ELSE status END
+    WHERE id = ${vistoriaIdTxt}::uuid
+  `);
+
+  const detalhe = `Agendamento remarcado: ${dataAtualStr} às ${horarioAtualStr} → ${args.novaData} às ${args.novoHorario}` +
+    (unidade?.nome ? ` (unidade: ${unidade.nome})` : "");
+
+  try {
+    await d.execute(sql`
+      INSERT INTO vistorias_historico (vistoria_id, acao, detalhe, usuario_id)
+      VALUES (
+        ${vistoriaIdTxt}::uuid,
+        'Agendamento remarcado',
+        ${detalhe},
+        ${
+          args.permissaoAdmin
+            ? sql`${usuarioIdNormalizado}::uuid`
+            : sql`${vendedorIdNormalizado}::uuid`
+        }
+      )
+    `);
+  } catch { /* ignore histórico */ }
+
+  return { ok: true as const, id: vistoriaIdTxt, novo_status: "AGUARDANDO_CONFIRMACAO" };
+}
+
 // App Vistoriador
 
 export async function listarVistoriasHojeVistoriador(usuarioId: string) {
