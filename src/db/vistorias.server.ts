@@ -572,34 +572,58 @@ export async function salvarUnidadeVistoria(data: {
 export async function listarSlotsDisponiveisUnidade(unidadeId: string, data: string, vistoriadorId?: string | null) {
   const d = requireDb();
   await ensureVistoriaSchema();
-  const unidadeIdNormalizado = normalizarUuid(unidadeId);
+
+  // Garante que temos um UUID cru (em qualquer formato que vier) e também a versão
+  // lowercase. Usamos múltiplas estratégias sem depender do regex funcionar.
+  const rawId = String(unidadeId ?? "").trim();
+  const uuidMatch = rawId.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
+  const unidadeIdLower = (uuidMatch?.[0] ?? rawId).toLowerCase();
   const vistoriadorIdNormalizado = normalizarUuid(vistoriadorId);
 
-  if (!unidadeIdNormalizado) {
+  if (!rawId || !uuidMatch || !unidadeIdLower) {
     return { ok: false as const, message: "Selecione uma unidade de vistoria válida.", slots: [] as any[] };
   }
 
-  let unidadeRes = await d.execute(sql`
-    SELECT horario_atendimento, duracao_padrao_minutos, intervalo_entre_vistorias_minutos
-    FROM unidades_vistoria
-    WHERE lower(id::text) = ${unidadeIdNormalizado}
-      AND ativo = true
+  // Busca a unidade com 3 estratégias diferentes, classificadas por prioridade.
+  // Estratégia 1: lower(id::text) = lower(string)
+  // Estratégia 2: id = (string::uuid (caso a string seja um uuid formatado direto)
+  // Estratégia 3: lower(id::text) LIKE lower(string)% (cobertura extra)
+  const buscaUnidade = await d.execute(sql`
+    WITH candidatas AS (
+      SELECT 1 as ordem, id, horario_atendimento, duracao_padrao_minutos, intervalo_entre_vistorias_minutos, ativo
+      FROM unidades_vistoria
+      WHERE lower(id::text) = ${unidadeIdLower}
+      UNION ALL
+      SELECT 2 as ordem, id, horario_atendimento, duracao_padrao_minutos, intervalo_entre_vistorias_minutos, ativo
+      FROM unidades_vistoria
+      WHERE id = ${unidadeIdLower}::uuid
+      UNION ALL
+      SELECT 3 as ordem, id, horario_atendimento, duracao_padrao_minutos, intervalo_entre_vistorias_minutos, ativo
+      FROM unidades_vistoria
+      WHERE starts_with(lower(id::text), ${unidadeIdLower})
+      LIMIT 3
+    )
+    SELECT DISTINCT ON (id::text)
+      id::text as id,
+      horario_atendimento,
+      duracao_padrao_minutos,
+      intervalo_entre_vistorias_minutos,
+      ativo
+    FROM candidatas
+    ORDER BY id::text, (MIN(ordem) OVER (PARTITION BY id::text))
     LIMIT 1
   `);
 
-  let unidade = (unidadeRes as any).rows?.[0];
-  if (!unidade) {
-    const fallbackRes = await d.execute(sql`
-      SELECT horario_atendimento, duracao_padrao_minutos, intervalo_entre_vistorias_minutos
-      FROM unidades_vistoria
-      WHERE id = ${unidadeIdNormalizado}::uuid
-        AND ativo = true
-      LIMIT 1
-    `);
-    unidade = (fallbackRes as any).rows?.[0];
-  }
+  let unidade = (buscaUnidade as any).rows?.[0];
   if (!unidade) {
     return { ok: false as const, message: "Unidade de vistoria não encontrada.", slots: [] as any[] };
+  }
+  if (!unidade.ativo) {
+    return {
+      ok: false as const,
+      message: "Esta unidade está inativa no cadastro. Edite para mudar o status para ATIVA.",
+      slots: [] as any[]
+    };
   }
 
   const horarioAtendimento = normalizarHorarioAtendimento(unidade.horario_atendimento);
@@ -621,7 +645,7 @@ export async function listarSlotsDisponiveisUnidade(unidadeId: string, data: str
   const agendamentosRes = await d.execute(sql`
     SELECT horario_vistoria, vistoriador_id
     FROM vistorias
-    WHERE unidade_id = ${unidadeIdNormalizado}::uuid
+    WHERE unidade_id = ${unidadeIdLower}::uuid
       AND data_vistoria = ${data}
       AND status NOT IN ('CANCELADA')
   `);

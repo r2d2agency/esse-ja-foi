@@ -157,6 +157,8 @@ export const Route = createFileRoute("/admin/vistorias")({
 function normalizarIdStr(value: unknown): string {
   if (value == null) return "";
   const raw = typeof value === "string" ? value : (value as any)?.toString?.() ?? String(value);
+  const apenasUuid = raw.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
+  if (apenasUuid?.[0]) return apenasUuid[0].toLowerCase();
   return raw.trim().toLowerCase();
 }
 
@@ -348,15 +350,15 @@ function VistoriasAdminPage() {
   });
 
   const { data: slotsRes, isLoading: loadingSlots } = useQuery({
-    queryKey: ["slots-unidade-vistoria", unidadeId, dataVistoria],
+    queryKey: ["slots-unidade-vistoria", normalizarIdStr(unidadeId), dataVistoria],
     queryFn: () => getSlotsUnidade({
       data: {
-        unidadeId,
+        unidadeId: normalizarIdStr(unidadeId),
         data: dataVistoria,
         vistoriadorId: null,
       },
     }),
-    enabled: agendaOpen && !!unidadeId && !!dataVistoria && !!(unidadesRes?.data || []).some((unidade: any) => idsIguais(unidade.id, unidadeId)),
+    enabled: agendaOpen && !!normalizarIdStr(unidadeId) && !!dataVistoria,
   });
 
   const { data: unidadesCadastroRes, isLoading: loadingUnidadesCadastro } = useQuery({
@@ -734,13 +736,13 @@ function VistoriasAdminPage() {
     try {
       const response = await criarAgendamento({
         data: {
-          veiculo_id: veiculoSelecionado.id,
-          vendedor_id: veiculoSelecionado.vendedor_id,
-          unidade_id: unidadeSelecionada.id,
+          veiculo_id: normalizarIdStr(veiculoSelecionado.id),
+          vendedor_id: normalizarIdStr(veiculoSelecionado.vendedor_id),
+          unidade_id: normalizarIdStr(unidadeSelecionada.id),
           vistoriador_id: null,
           data_vistoria: dataVistoria,
           horario_vistoria: horarioVistoria,
-          usuario_id: user.id,
+          usuario_id: normalizarIdStr(user.id),
         },
       });
 
