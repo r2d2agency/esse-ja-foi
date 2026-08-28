@@ -82,7 +82,9 @@ function DetalheVeiculoAdminPage() {
   });
 
   if (isLoading) return <div className="p-8">Carregando detalhes...</div>;
-  if (!res?.ok || !res.data) return <div className="p-8 text-red-500">Erro: {res?.message || "Veículo não encontrado"}</div>;
+  if (!res?.ok || !res.data) {
+    return <div className="p-8 text-red-500">Erro: {res?.message || "Não foi possível carregar os detalhes do veículo."}</div>;
+  }
 
   const v = res.data;
   console.log("[DetalheVeiculoAdminPage] Veículo:", v);

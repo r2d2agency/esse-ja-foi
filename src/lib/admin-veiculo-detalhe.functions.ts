@@ -1,8 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+function normalizarUuid(value: unknown) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  const match = raw.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+  return match?.[0]?.toLowerCase() || null;
+}
+
 export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
-  .validator(z.object({ id: z.string().uuid() }))
+  .validator(z.object({ id: z.string().min(1) }))
   .handler(async ({ data }) => {
     const { db } = await import("@/db/index");
     const { sql } = await import("drizzle-orm");
@@ -13,9 +20,14 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
     // Garantir que a tabela tenha todas as colunas necessárias (perfil_id, status_analise, etc)
     await ensureVeiculosAdminSchema();
 
-    console.log(`[getVeiculoDetalheAdminFn] Buscando veículo ID: ${data.id}`);
+    const veiculoId = normalizarUuid(data.id);
+    if (!veiculoId) {
+      console.warn(`[getVeiculoDetalheAdminFn] ID inválido recebido: ${data.id}`);
+      return { ok: false as const, message: "ID do veículo inválido." };
+    }
+
+    console.log(`[getVeiculoDetalheAdminFn] Buscando veículo ID: ${veiculoId}`);
     
-    // Tentar buscar por ID diretamente
     let rows = await db.execute(sql`
       SELECT 
         v.*, 
@@ -31,18 +43,18 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
       FROM veiculos v
       LEFT JOIN profiles p ON p.id = v.perfil_id OR p.id = v.vendedor_id
       LEFT JOIN profiles resp ON resp.id = v.responsavel_analise_id
-      WHERE v.id = ${data.id}::uuid
+      WHERE lower(v.id::text) = ${veiculoId}
       LIMIT 1
     `);
     
     let veiculo = (rows as any).rows?.[0] || (rows as any)[0];
 
     // LOG DE DIAGNÓSTICO
-    console.log(`[getVeiculoDetalheAdminFn] Resultado da busca para ${data.id}:`, veiculo ? "ENCONTRADO" : "NÃO ENCONTRADO");
+    console.log(`[getVeiculoDetalheAdminFn] Resultado da busca para ${veiculoId}:`, veiculo ? "ENCONTRADO" : "NÃO ENCONTRADO");
 
     if (!veiculo) {
-      console.warn(`[getVeiculoDetalheAdminFn] Veículo ${data.id} não encontrado.`);
-      return { ok: false as const, message: `Veículo não encontrado (ID: ${data.id}).` };
+      console.warn(`[getVeiculoDetalheAdminFn] Veículo ${veiculoId} não encontrado.`);
+      return { ok: false as const, message: `Veículo não encontrado (ID: ${veiculoId}).` };
     }
 
 
@@ -50,7 +62,7 @@ export const getVeiculoDetalheAdminFn = createServerFn({ method: "GET" })
 
     const logsRows = await db.execute(sql`
       SELECT * FROM logs 
-      WHERE entidade = 'veiculo' AND entidade_id = ${data.id}::uuid
+      WHERE entidade = 'veiculo' AND entidade_id = ${veiculoId}::uuid
       ORDER BY criado_em DESC
     `);
 
