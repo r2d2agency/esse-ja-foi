@@ -1,15 +1,15 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { 
-  ArrowLeft, CheckCircle2, Camera, AlertTriangle, 
+import {
+  ArrowLeft, CheckCircle2, Camera, AlertTriangle,
   MapPin, ChevronRight, ChevronLeft, ShieldCheck,
   Check, X, AlertCircle, Plus, Info, Image as ImageIcon,
   RefreshCw, Loader2, Trash2,
 } from "lucide-react";
 import { useAuthStore } from "@/hooks/use-auth";
-import { 
-  getVistoriaDetalheVistoriadorFn, 
+import {
+  getVistoriaDetalheVistoriadorFn,
   iniciarCheckinFn,
   salvarItemChecklistFn,
   concluirVistoriaAppFn,
@@ -19,8 +19,6 @@ import {
 } from "@/lib/vistoriador.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { compressImage, extensaoPorMime } from "@/components/vistoria/ImageCompressor";
-import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +32,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
+import { compressImage, extensaoPorMime } from "@/components/vistoria/ImageCompressor";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/vistoriador/execucao/$id")({
   component: VistoriaExecucaoPage,
