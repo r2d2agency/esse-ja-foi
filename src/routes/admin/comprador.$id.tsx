@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { obterDetalheCompradorFn, aprovarCompradorFn, solicitarPendenciaCompradorFn } from "@/lib/admin-compradores.functions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,9 +35,10 @@ function DetalheCompradorPage() {
   const aprovar = useServerFn(aprovarCompradorFn);
   const solicitarPendencia = useServerFn(solicitarPendenciaCompradorFn);
 
-  const { data: res, refetch } = useSuspenseQuery({
+  const { data: res, refetch } = useQuery({
     queryKey: ["admin-comprador", id],
-    queryFn: () => loadComprador({ data: { id } })
+    queryFn: () => loadComprador({ data: { id } }),
+    initialData: { ok: false, message: "Carregando...", data: null } as any,
   });
 
   if (!res.ok) return <div className="p-8 text-red-500">Erro: {res.message}</div>;

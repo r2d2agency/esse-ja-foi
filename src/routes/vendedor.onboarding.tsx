@@ -30,7 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FileUpload, type UploadStatus } from "@/components/onboarding/FileUpload";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { ComboboxSearch } from "@/components/ui/combobox-search";
 import { maskCep, maskCpf } from "@/utils/masks";
 import { buscarCep } from "@/lib/viacep";
@@ -73,9 +73,10 @@ function VendedorOnboardingPage() {
   const getDetalhe = useServerFn(obterDetalheVendedorFn);
   const getOnboardingStatus = useServerFn(getOnboardingStatusFn);
   
-  const { data: perfilRes, refetch } = useSuspenseQuery({
+  const { data: perfilRes, refetch } = useQuery({
     queryKey: ["meu-perfil"],
-    queryFn: () => getProfile({ data: { perfilId: user?.id || "" } })
+    queryFn: () => getProfile({ data: { perfilId: user?.id || "" } }),
+    initialData: { ok: false, perfil: null } as any,
   });
   
   const [perfil, setPerfil] = useState<any>(perfilRes.ok ? perfilRes.perfil : {});

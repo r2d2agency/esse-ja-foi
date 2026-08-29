@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 const BackofficeLayout = ({ children }: { children: React.ReactNode }) => <>{children}</>;
-import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { 
   obterDetalheVendedorFn, 
@@ -90,9 +90,10 @@ function DetalheVendedorPage() {
   const aprovar = useServerFn(aprovarVendedorComplianceFn);
   const solicitarPendencia = useServerFn(solicitarPendenciaComplianceFn);
 
-  const { data: res, refetch } = useSuspenseQuery({
+  const { data: res, refetch } = useQuery({
     queryKey: ["admin-vendedor", id],
-    queryFn: () => loadVendedor({ data: { id } })
+    queryFn: () => loadVendedor({ data: { id } }),
+    initialData: { ok: false, message: "Carregando...", data: null } as any,
   });
 
   if (!res.ok) return <div className="p-8 text-destructive">Erro: {res.message}</div>;

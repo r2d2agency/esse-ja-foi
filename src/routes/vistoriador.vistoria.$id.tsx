@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Car, Clock, MapPin, User, ShieldCheck } from "lucide-react";
 import { useAuthStore } from "@/hooks/use-auth";
 import { getVistoriaDetalheVistoriadorFn } from "@/lib/vistoriador.functions";
@@ -15,9 +15,10 @@ function DetalheVistoriaPage() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
 
-  const { data: res } = useSuspenseQuery({
+  const { data: res } = useQuery({
     queryKey: ["vistoria-detalhe", id, user?.id],
     queryFn: () => getVistoriaDetalheVistoriadorFn({ data: { vistoriaId: id, usuarioId: user?.id || "" } }),
+    initialData: { ok: false, data: null } as any,
   });
 
   if (!res?.ok || !res.data) {

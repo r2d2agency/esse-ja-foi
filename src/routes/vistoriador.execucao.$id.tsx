@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, CheckCircle2, Camera, AlertTriangle,
   MapPin, ChevronRight, ChevronLeft, ShieldCheck,
@@ -62,16 +62,18 @@ function VistoriaExecucaoPage() {
 
   const [respostasEmMemoria, setRespostasEmMemoria] = useState<Record<string, any>>({});
 
-  const { data: res } = useSuspenseQuery({
+  const { data: res } = useQuery({
     queryKey: ["vistoria-detalhe", vistoriaId, user?.id],
     queryFn: () => getVistoriaDetalheVistoriadorFn({ data: { vistoriaId, usuarioId: user?.id || "" } }),
+    initialData: { ok: false, data: null } as any,
   });
 
   const v = res?.data;
 
-  const { data: checklistRes } = useSuspenseQuery({
+  const { data: checklistRes } = useQuery({
     queryKey: ["checklist-config"],
     queryFn: () => getChecklistConfigFn(),
+    initialData: { ok: false, data: [] } as any,
   });
   const categoriasConfig = checklistRes?.ok ? (checklistRes.data as any[]) : [];
 
@@ -99,10 +101,11 @@ function VistoriaExecucaoPage() {
     }
   }, [v]);
 
-  useSuspenseQuery({
+  useQuery({
     queryKey: ["respostas-checklist", laudoId],
     queryFn: () => laudoId ? getRespostasChecklistFn({ data: { laudoId } }) : Promise.resolve({ ok: true, data: [] }),
     enabled: !!laudoId,
+    initialData: { ok: true, data: [] } as any,
   });
 
   // Depois que carrega respostas, preenche o estado em memoria
