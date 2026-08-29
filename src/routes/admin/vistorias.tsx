@@ -1,7 +1,7 @@
 // CACHE_BUSTER_20260829_193100: marker unico para forçar Vite gerar hash chunk DIFERENTE do build antigo (vistorias-CKJ-QtoS.js). Apos deploy: chunk TEM QUE TER hash DIFERENTE. Se continuar CKJ-QtoS = CDN/browser cache stale.
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   criarAgendamentoVistoriaFn,
