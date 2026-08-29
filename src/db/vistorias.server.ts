@@ -1563,123 +1563,232 @@ export async function ensureChecklistSchema() {
   try {
     await d.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_laudo_respostas_unq_laudo_item ON laudo_vistoria_respostas(laudo_id, item_id)`);
   } catch { /* ignore */ }
+
+  // ================================================================
+  // ÍNDICES ÚNICOS EXIGIDOS PELO SEED SMART (listarChecklistConfig ON CONFLICT)
+  // Sem esses índices, ON CONFLICT (nome) / (categoria_id, titulo) dá erro.
+  // ================================================================
+  try {
+    await d.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_vistorias_checklist_cats_nome_unq ON vistorias_checklist_categorias(nome)`);
+  } catch { /* ignore */ }
+  try {
+    await d.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_vistorias_checklist_itens_cat_titulo_unq ON vistorias_checklist_itens(categoria_id, titulo)`);
+  } catch { /* ignore */ }
 }
 
 export async function listarChecklistConfig() {
   const d = requireDb();
   await ensureChecklistSchema();
 
-  // Garante seed básico se não houver nenhuma categoria
-  const qtd = await d.execute(sql`SELECT COUNT(*)::int AS total FROM vistorias_checklist_categorias`);
-  const totalCats = Number((qtd as any).rows?.[0]?.total || 0);
+  // ================================================================
+  // SEED INTELIGENTE: NUNCA COMEÇA DO ZERO.
+  // Cria/faz upsert APENAS das 8 CATEGORIAS PADRÃO (baseado em NOME ÚNICO).
+  // - Se o admin EXCLUIU uma categoria CUSTOM (ex: "Suspensão"): NÃO recriamos.
+  // - Se o admin EXCLUIU ACIDENTALMENTE uma categoria PADRÃO (ex: "Pneus e Rodas"):
+  //   ela é RECRIADA automaticamente na próxima chamada.
+  // - Itens PADRÃO: fazem UPSERT por (categoria_nome + titulo_do_item).
+  //   Se o admin EDITAR um item (ex: mudar "Coluna A" foto_obrigatoria=false),
+  //   o upsert NÃO SOBRESCREVE a edição dele (não alteramos campos que ele mudou).
+  // ================================================================
+  try {
+    const seedSmart = sql`
+    DO $$
+    DECLARE
+      cat_nome text;
+      cat_desc text;
+      cat_ordem int;
+      nova_cat_id uuid;
+      item_titulo text;
+      item_desc text;
+      item_tipo text;
+      item_opcoes jsonb;
+      item_obrig boolean;
+      item_foto boolean;
+      item_obs boolean;
+      item_ordem int;
+      arr_json jsonb;
+      idx int;
+      item_idx int;
+    BEGIN
 
-  if (totalCats === 0) {
-    // Seed inicial (idêntico ao migration 0001)
-    try {
-      const seedSql = sql`
-      DO $$
-      DECLARE
-        cat_id uuid;
-      BEGIN
-        -- 1) Identificação
-        INSERT INTO vistorias_checklist_categorias (nome, descricao, ordem) VALUES
-          ('Identificação', 'Dados de identificação do veículo (KM, chassi, placa)', 1) RETURNING id INTO cat_id;
-        INSERT INTO vistorias_checklist_itens (categoria_id, titulo, descricao_ajuda, tipo_item, obrigatorio, foto_obrigatoria, permite_observacao, ordem) VALUES
-          (cat_id, 'Quilometragem', 'Registre a quilometragem atual exibida no painel', 'NUMERO', true, false, true, 1),
-          (cat_id, 'Foto do Painel (KM)', 'Foto nítida do painel mostrando o KM', 'CONFORMIDADE', true, true, false, 2),
-          (cat_id, 'Número do Chassi', 'Localize e digite o número do chassi', 'TEXTO_LIVRE', true, false, true, 3),
-          (cat_id, 'Foto Chassi', 'Foto nítida do número gravado no chassi', 'CONFORMIDADE', true, true, false, 4),
-          (cat_id, 'Placa', 'Verifique se a placa confere e está em bom estado', 'CONFORMIDADE', true, false, true, 5);
+      -- ------------------------------------------------------------------
+      -- CATALOGO DE SEEDS: categorias padrao + seus itens (chave natural por nome)
+      -- ------------------------------------------------------------------
+      arr_json := $JSON_CATALOGO$
+      [
+        {
+          "nome":"Identificação",
+          "descricao":"Dados de identificação do veículo (KM, chassi, placa)",
+          "ordem":1,
+          "itens":[
+            {"titulo":"Quilometragem","descricao_ajuda":"Registre a quilometragem atual exibida no painel","tipo_item":"NUMERO","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":1},
+            {"titulo":"Foto do Painel (KM)","descricao_ajuda":"Foto nítida do painel mostrando o KM","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":false,"ordem":2},
+            {"titulo":"Número do Chassi","descricao_ajuda":"Localize e digite o número do chassi","tipo_item":"TEXTO_LIVRE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":3},
+            {"titulo":"Foto Chassi","descricao_ajuda":"Foto nítida do número gravado no chassi","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":false,"ordem":4},
+            {"titulo":"Placa","descricao_ajuda":"Verifique se a placa confere e está em bom estado","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":5}
+          ]
+        },
+        {
+          "nome":"Estrutura",
+          "descricao":"Estrutura, lataria, colunas, assoalho",
+          "ordem":2,
+          "itens":[
+            {"titulo":"Coluna A","descricao_ajuda":"Verificar amassados, pintura, solda aparente","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":1},
+            {"titulo":"Coluna B","descricao_ajuda":"Verificar amassados, pintura, solda aparente","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":2},
+            {"titulo":"Coluna C","descricao_ajuda":"Verificar amassados, pintura, solda aparente","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":3},
+            {"titulo":"Assoalho","descricao_ajuda":"Integridade do assoalho, caixa de roda","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":4},
+            {"titulo":"Longarinas","descricao_ajuda":"Estrutura principal (longarinas dianteiras e traseiras)","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":5},
+            {"titulo":"Teto","descricao_ajuda":"Amassados, pintura, vazamento","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":6}
+          ]
+        },
+        {
+          "nome":"Exterior",
+          "descricao":"Lataria, pintura, vidros, para-choques, retrovisores",
+          "ordem":3,
+          "itens":[
+            {"titulo":"Capô","descricao_ajuda":"Riscos, amassados, pintura","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":1},
+            {"titulo":"Porta Dianteira Esq.","descricao_ajuda":"Verificar estado geral, maçaneta, vidro","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":2},
+            {"titulo":"Porta Dianteira Dir.","descricao_ajuda":"Verificar estado geral, maçaneta, vidro","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":3},
+            {"titulo":"Porta Traseira Esq.","descricao_ajuda":"Verificar estado geral, maçaneta, vidro","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":4},
+            {"titulo":"Porta Traseira Dir.","descricao_ajuda":"Verificar estado geral, maçaneta, vidro","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":5},
+            {"titulo":"Mala/Tampa Traseira","descricao_ajuda":"Vedações, amassados, fecho","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":6},
+            {"titulo":"Para-choque Dianteiro","descricao_ajuda":"Amassados, arranhões, grade","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":7},
+            {"titulo":"Para-choque Traseiro","descricao_ajuda":"Amassados, arranhões, luzes ré","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":8},
+            {"titulo":"Vidros e Lanternas","descricao_ajuda":"Rachaduras, trincos, embaçados","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":9}
+          ]
+        },
+        {
+          "nome":"Interior",
+          "descricao":"Bancos, forração, painel, tetos, carpete",
+          "ordem":4,
+          "itens":[
+            {"titulo":"Banco Motorista","descricao_ajuda":"Desgaste, rasgos, sujeira","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":1},
+            {"titulo":"Banco Passageiro","descricao_ajuda":"Desgaste, rasgos, sujeira","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":2},
+            {"titulo":"Bancos Traseiros","descricao_ajuda":"Estado geral, encostos, cintos","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":3},
+            {"titulo":"Painel","descricao_ajuda":"Riscos, rachaduras, itens do painel","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":4},
+            {"titulo":"Forração/Teto","descricao_ajuda":"Manchas, rasgos, soltos","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":5},
+            {"titulo":"Carpete/Forro de porta","descricao_ajuda":"Desgaste, umidade, odores","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":6},
+            {"titulo":"Odor geral","descricao_ajuda":"Cheiro de cigarro, mofo, combustível","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":7}
+          ]
+        },
+        {
+          "nome":"Mecânica Básica",
+          "descricao":"Motor, bateria, fluidos, funcionamento",
+          "ordem":5,
+          "itens":[
+            {"titulo":"Partida do Motor","descricao_ajuda":"Barulhos estranhos, dificuldade no arranque","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":1},
+            {"titulo":"Ruídos do Motor","descricao_ajuda":"Batidas de biela, tucho, sopros","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":2},
+            {"titulo":"Fumaça no Escapamento","descricao_ajuda":"Cor anormal (azul, branca, preta)","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":3},
+            {"titulo":"Nível de Óleo","descricao_ajuda":"Verificar vareta de óleo do motor","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":4},
+            {"titulo":"Água do Radiador","descricao_ajuda":"Nível e integridade do reservatório","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":5},
+            {"titulo":"Bateria","descricao_ajuda":"Estado geral, corrosão nos bornes","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":6},
+            {"titulo":"Freios","descricao_ajuda":"Teste em baixa velocidade, ruídos","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":7},
+            {"titulo":"Direção e Suspensão","descricao_ajuda":"Trepidação, folgas, ruídos","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":8},
+            {"titulo":"Ar Condicionado","descricao_ajuda":"Refrigeração, ruídos no compressor","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":9},
+            {"titulo":"Itens Elétricos (Luzes, Vidros, Travas)","descricao_ajuda":"Farol, seta, alerta, travas elétricas, vidros","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":10}
+          ]
+        },
+        {
+          "nome":"Pneus e Rodas",
+          "descricao":"Sulcos, desgaste, balanceamento, rodas",
+          "ordem":6,
+          "itens":[
+            {"titulo":"Pneu Dianteiro Esq.","descricao_ajuda":"Profundidade do sulco, bolhas, cortes","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":1},
+            {"titulo":"Pneu Dianteiro Dir.","descricao_ajuda":"Profundidade do sulco, bolhas, cortes","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":2},
+            {"titulo":"Pneu Traseiro Esq.","descricao_ajuda":"Profundidade do sulco, bolhas, cortes","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":3},
+            {"titulo":"Pneu Traseiro Dir.","descricao_ajuda":"Profundidade do sulco, bolhas, cortes","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":4},
+            {"titulo":"Estepe","descricao_ajuda":"Existência e estado geral (calibragem)","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":5},
+            {"titulo":"Rodas / Liga-leve","descricao_ajuda":"Amassados, arranhões, parafusos","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":6}
+          ]
+        },
+        {
+          "nome":"Equipamentos",
+          "descricao":"Acessórios, multimídia, segurança, extras",
+          "ordem":7,
+          "itens":[
+            {"titulo":"Quais equipamentos estão presentes?","descricao_ajuda":"Marcar todos que existem no veículo","tipo_item":"CHECKBOX_MULTIPLO","opcoes_json":"[{\"valor\":\"AIRBAG_DUPLOS\",\"label\":\"Airbag duplo\"},{\"valor\":\"ABS\",\"label\":\"Freios ABS\"},{\"valor\":\"AR_QUENTE\",\"label\":\"Ar quente\"},{\"valor\":\"AR_CONDICIONADO\",\"label\":\"Ar condicionado\"},{\"valor\":\"DIRECAO_HIDRAULICA\",\"label\":\"Direção hidráulica\"},{\"valor\":\"DIRECAO_ELETRICA\",\"label\":\"Direção elétrica\"},{\"valor\":\"TRAVA_ELETRICA\",\"label\":\"Travas elétricas\"},{\"valor\":\"VIDROS_ELETRICOS\",\"label\":\"Vidros elétricos\"},{\"valor\":\"MULTIMIDIA\",\"label\":\"Multimídia / rádio\"},{\"valor\":\"CAMERA_RE\",\"label\":\"Câmera de ré\"},{\"valor\":\"SENSOR_RE\",\"label\":\"Sensor de ré\"},{\"valor\":\"RODAS_LIGA\",\"label\":\"Rodas liga-leve\"},{\"valor\":\"TETO_SOLAR\",\"label\":\"Teto solar\"},{\"valor\":\"BANCOS_COURO\",\"label\":\"Bancos de couro\"}]","obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":1},
+            {"titulo":"Chave Reserva","descricao_ajuda":"Possui segunda cópia da chave?","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":2},
+            {"titulo":"Manual do Proprietário","descricao_ajuda":"Documentação do veículo","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":false,"foto_obrigatoria":false,"permite_observacao":true,"ordem":3},
+            {"titulo":"Extintor","descricao_ajuda":"Prazo de validade e lacre","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":4},
+            {"titulo":"Triângulo + Macaco","descricao_ajuda":"Itens de segurança obrigatórios","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":5}
+          ]
+        },
+        {
+          "nome":"Documentos",
+          "descricao":"CRLV, documentos, multas, sinistro",
+          "ordem":8,
+          "itens":[
+            {"titulo":"CRLV (Certificado Registro)","descricao_ajuda":"Documento do veículo válido","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":1},
+            {"titulo":"Documento Pessoal Vendedor","descricao_ajuda":"RG/CNH válido do vendedor","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":true,"permite_observacao":true,"ordem":2},
+            {"titulo":"Multas Pendentes","descricao_ajuda":"Verificar se existem multas pendentes no sistema","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":3},
+            {"titulo":"Restrições / Gravames","descricao_ajuda":"Financiamento, alienação, leilão anterior","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":4},
+            {"titulo":"Sinistro / Roubo","descricao_ajuda":"Veículo já foi sinistrado ou recuperado?","tipo_item":"CONFORMIDADE","opcoes":null,"obrigatorio":true,"foto_obrigatoria":false,"permite_observacao":true,"ordem":5}
+          ]
+        }
+      ]
+      $JSON_CATALOGO$::jsonb;
 
-        -- 2) Estrutura
-        INSERT INTO vistorias_checklist_categorias (nome, descricao, ordem) VALUES
-          ('Estrutura', 'Estrutura, lataria, colunas, assoalho', 2) RETURNING id INTO cat_id;
-        INSERT INTO vistorias_checklist_itens (categoria_id, titulo, descricao_ajuda, tipo_item, obrigatorio, foto_obrigatoria, permite_observacao, ordem) VALUES
-          (cat_id, 'Coluna A', 'Verificar amassados, pintura, solda aparente', 'CONFORMIDADE', true, true, true, 1),
-          (cat_id, 'Coluna B', 'Verificar amassados, pintura, solda aparente', 'CONFORMIDADE', true, true, true, 2),
-          (cat_id, 'Coluna C', 'Verificar amassados, pintura, solda aparente', 'CONFORMIDADE', true, true, true, 3),
-          (cat_id, 'Assoalho', 'Integridade do assoalho, caixa de roda', 'CONFORMIDADE', true, true, true, 4),
-          (cat_id, 'Longarinas', 'Estrutura principal (longarinas dianteiras e traseiras)', 'CONFORMIDADE', true, true, true, 5),
-          (cat_id, 'Teto', 'Amassados, pintura, vazamento', 'CONFORMIDADE', true, false, true, 6);
+      -- ------------------------------------------------------------------
+      -- 1) ITERA POR TODAS AS CATEGORIAS PADRÃO (por NOME ÚNICO)
+      -- ------------------------------------------------------------------
+      FOR idx IN 0 .. jsonb_array_length(arr_json) - 1 LOOP
+        cat_nome := arr_json->idx->>'nome';
+        cat_desc := arr_json->idx->>'descricao';
+        cat_ordem := (arr_json->idx->'ordem')::int;
 
-        -- 3) Exterior
-        INSERT INTO vistorias_checklist_categorias (nome, descricao, ordem) VALUES
-          ('Exterior', 'Lataria, pintura, vidros, para-choques, retrovisores', 3) RETURNING id INTO cat_id;
-        INSERT INTO vistorias_checklist_itens (categoria_id, titulo, descricao_ajuda, tipo_item, obrigatorio, foto_obrigatoria, permite_observacao, ordem) VALUES
-          (cat_id, 'Capô', 'Riscos, amassados, pintura', 'CONFORMIDADE', true, true, true, 1),
-          (cat_id, 'Porta Dianteira Esq.', 'Verificar estado geral, maçaneta, vidro', 'CONFORMIDADE', true, true, true, 2),
-          (cat_id, 'Porta Dianteira Dir.', 'Verificar estado geral, maçaneta, vidro', 'CONFORMIDADE', true, true, true, 3),
-          (cat_id, 'Porta Traseira Esq.', 'Verificar estado geral, maçaneta, vidro', 'CONFORMIDADE', true, true, true, 4),
-          (cat_id, 'Porta Traseira Dir.', 'Verificar estado geral, maçaneta, vidro', 'CONFORMIDADE', true, true, true, 5),
-          (cat_id, 'Mala/Tampa Traseira', 'Vedações, amassados, fecho', 'CONFORMIDADE', true, true, true, 6),
-          (cat_id, 'Para-choque Dianteiro', 'Amassados, arranhões, grade', 'CONFORMIDADE', true, false, true, 7),
-          (cat_id, 'Para-choque Traseiro', 'Amassados, arranhões, luzes ré', 'CONFORMIDADE', true, false, true, 8),
-          (cat_id, 'Vidros e Lanternas', 'Rachaduras, trincos, embaçados', 'CONFORMIDADE', true, true, true, 9);
+        -- UPSERT categoria (insere se NAO EXISTIR por nome; ATUALIZA descricao/ordem se foi criada sem; NÃO altera ativo se admin desativou)
+        INSERT INTO vistorias_checklist_categorias (nome, descricao, ordem)
+        VALUES (cat_nome, cat_desc, cat_ordem)
+        ON CONFLICT (nome) DO UPDATE
+          SET descricao = COALESCE(EXCLUDED.descricao, vistorias_checklist_categorias.descricao),
+              ordem     = COALESCE(EXCLUDED.ordem, vistorias_checklist_categorias.ordem),
+              ativo     = CASE WHEN vistorias_checklist_categorias.ativo = FALSE THEN FALSE ELSE TRUE END
+        RETURNING id INTO nova_cat_id;
 
-        -- 4) Interior
-        INSERT INTO vistorias_checklist_categorias (nome, descricao, ordem) VALUES
-          ('Interior', 'Bancos, forração, painel, tetos, carpete', 4) RETURNING id INTO cat_id;
-        INSERT INTO vistorias_checklist_itens (categoria_id, titulo, descricao_ajuda, tipo_item, obrigatorio, foto_obrigatoria, permite_observacao, ordem) VALUES
-          (cat_id, 'Banco Motorista', 'Desgaste, rasgos, sujeira', 'CONFORMIDADE', true, true, true, 1),
-          (cat_id, 'Banco Passageiro', 'Desgaste, rasgos, sujeira', 'CONFORMIDADE', true, true, true, 2),
-          (cat_id, 'Bancos Traseiros', 'Estado geral, encostos, cintos', 'CONFORMIDADE', true, false, true, 3),
-          (cat_id, 'Painel', 'Riscos, rachaduras, itens do painel', 'CONFORMIDADE', true, true, true, 4),
-          (cat_id, 'Forração/Teto', 'Manchas, rasgos, soltos', 'CONFORMIDADE', true, false, true, 5),
-          (cat_id, 'Carpete/Forro de porta', 'Desgaste, umidade, odores', 'CONFORMIDADE', true, false, true, 6),
-          (cat_id, 'Odor geral', 'Cheiro de cigarro, mofo, combustível', 'CONFORMIDADE', true, false, true, 7);
+        -- ----------------------------------------------------------------
+        -- 2) ITERA POR TODOS OS ITENS DA CATEGORIA PADRÃO (chave: categoria_id + titulo)
+        -- ----------------------------------------------------------------
+        FOR item_idx IN 0 .. jsonb_array_length(arr_json->idx->'itens') - 1 LOOP
+          item_titulo := (arr_json->idx->'itens'->item_idx->>'titulo');
+          item_desc   := (arr_json->idx->'itens'->item_idx->>'descricao_ajuda');
+          item_tipo   := COALESCE(arr_json->idx->'itens'->item_idx->>'tipo_item', 'CONFORMIDADE');
+          item_obrig  := COALESCE((arr_json->idx->'itens'->item_idx->>'obrigatorio')::boolean, TRUE);
+          item_foto   := COALESCE((arr_json->idx->'itens'->item_idx->>'foto_obrigatoria')::boolean, FALSE);
+          item_obs    := COALESCE((arr_json->idx->'itens'->item_idx->>'permite_observacao')::boolean, TRUE);
+          item_ordem  := COALESCE((arr_json->idx->'itens'->item_idx->>'ordem')::int, 0);
 
-        -- 5) Mecânica Básica
-        INSERT INTO vistorias_checklist_categorias (nome, descricao, ordem) VALUES
-          ('Mecânica Básica', 'Motor, bateria, fluidos, funcionamento', 5) RETURNING id INTO cat_id;
-        INSERT INTO vistorias_checklist_itens (categoria_id, titulo, descricao_ajuda, tipo_item, obrigatorio, foto_obrigatoria, permite_observacao, ordem) VALUES
-          (cat_id, 'Partida do Motor', 'Barulhos estranhos, dificuldade no arranque', 'CONFORMIDADE', true, false, true, 1),
-          (cat_id, 'Ruídos do Motor', 'Batidas de biela, tucho, sopros', 'CONFORMIDADE', true, false, true, 2),
-          (cat_id, 'Fumaça no Escapamento', 'Cor anormal (azul, branca, preta)', 'CONFORMIDADE', true, true, true, 3),
-          (cat_id, 'Nível de Óleo', 'Verificar vareta de óleo do motor', 'CONFORMIDADE', true, true, true, 4),
-          (cat_id, 'Água do Radiador', 'Nível e integridade do reservatório', 'CONFORMIDADE', true, true, true, 5),
-          (cat_id, 'Bateria', 'Estado geral, corrosão nos bornes', 'CONFORMIDADE', true, true, true, 6),
-          (cat_id, 'Freios', 'Teste em baixa velocidade, ruídos', 'CONFORMIDADE', true, false, true, 7),
-          (cat_id, 'Direção e Suspensão', 'Trepidação, folgas, ruídos', 'CONFORMIDADE', true, false, true, 8),
-          (cat_id, 'Ar Condicionado', 'Refrigeração, ruídos no compressor', 'CONFORMIDADE', true, false, true, 9),
-          (cat_id, 'Itens Elétricos (Luzes, Vidros, Travas)', 'Farol, seta, alerta, travas elétricas, vidros', 'CONFORMIDADE', true, false, true, 10);
+          -- Campo JSON opcoes (CHECKBOX_MULTIPLO/SELECT_UNICO) - aceita tanto "opcoes_json" string quanto "opcoes" objeto
+          item_opcoes := NULL;
+          IF arr_json->idx->'itens'->item_idx ? 'opcoes' AND jsonb_typeof(arr_json->idx->'itens'->item_idx->'opcoes') IS NOT NULL THEN
+            item_opcoes := arr_json->idx->'itens'->item_idx->'opcoes';
+          ELSIF arr_json->idx->'itens'->item_idx ? 'opcoes_json' AND arr_json->idx->'itens'->item_idx->>'opcoes_json' IS NOT NULL THEN
+            item_opcoes := (arr_json->idx->'itens'->item_idx->>'opcoes_json')::jsonb;
+          END IF;
 
-        -- 6) Pneus e Rodas
-        INSERT INTO vistorias_checklist_categorias (nome, descricao, ordem) VALUES
-          ('Pneus e Rodas', 'Sulcos, desgaste, balanceamento, rodas', 6) RETURNING id INTO cat_id;
-        INSERT INTO vistorias_checklist_itens (categoria_id, titulo, descricao_ajuda, tipo_item, obrigatorio, foto_obrigatoria, permite_observacao, ordem) VALUES
-          (cat_id, 'Pneu Dianteiro Esq.', 'Profundidade do sulco, bolhas, cortes', 'CONFORMIDADE', true, true, true, 1),
-          (cat_id, 'Pneu Dianteiro Dir.', 'Profundidade do sulco, bolhas, cortes', 'CONFORMIDADE', true, true, true, 2),
-          (cat_id, 'Pneu Traseiro Esq.', 'Profundidade do sulco, bolhas, cortes', 'CONFORMIDADE', true, true, true, 3),
-          (cat_id, 'Pneu Traseiro Dir.', 'Profundidade do sulco, bolhas, cortes', 'CONFORMIDADE', true, true, true, 4),
-          (cat_id, 'Estepe', 'Existência e estado geral (calibragem)', 'CONFORMIDADE', true, true, true, 5),
-          (cat_id, 'Rodas / Liga-leve', 'Amassados, arranhões, parafusos', 'CONFORMIDADE', true, true, true, 6);
+          -- UPSERT item POR (categoria_id, titulo) → NÃO SOBRESCREVE campos se o admin JÁ EDITOU (ex: foto_obrigatoria desativada manualmente).
+          -- Estratégia: só definimos colunas EXCLUÍDAS (valor default) se a existente for IGUAL ao default seed (significa que admin NÃO tocou).
+          -- Implementação simples (bom o suficiente): INSERT ... ON CONFLICT DO NOTHING → se já existir item com esse titulo NA categoria, deixa quieto.
+          INSERT INTO vistorias_checklist_itens (
+            categoria_id, titulo, descricao_ajuda, tipo_item, opcoes,
+            obrigatorio, foto_obrigatoria, permite_observacao, ordem
+          ) VALUES (
+            nova_cat_id,
+            item_titulo,
+            item_desc,
+            item_tipo,
+            item_opcoes,
+            item_obrig,
+            item_foto,
+            item_obs,
+            item_ordem
+          ) ON CONFLICT (categoria_id, titulo) DO NOTHING;
 
-        -- 7) Equipamentos e Acessórios
-        INSERT INTO vistorias_checklist_categorias (nome, descricao, ordem) VALUES
-          ('Equipamentos', 'Acessórios, multimídia, segurança, extras', 7) RETURNING id INTO cat_id;
-        INSERT INTO vistorias_checklist_itens (categoria_id, titulo, descricao_ajuda, tipo_item, opcoes, obrigatorio, foto_obrigatoria, permite_observacao, ordem) VALUES
-          (cat_id, 'Quais equipamentos estão presentes?', 'Marcar todos que existem no veículo', 'CHECKBOX_MULTIPLO',
-            '[{"valor":"AIRBAG_DUPLOS","label":"Airbag duplo"},{"valor":"ABS","label":"Freios ABS"},{"valor":"AR_QUENTE","label":"Ar quente"},{"valor":"AR_CONDICIONADO","label":"Ar condicionado"},{"valor":"DIRECAO_HIDRAULICA","label":"Direção hidráulica"},{"valor":"DIRECAO_ELETRICA","label":"Direção elétrica"},{"valor":"TRAVA_ELETRICA","label":"Travas elétricas"},{"valor":"VIDROS_ELETRICOS","label":"Vidros elétricos"},{"valor":"MULTIMIDIA","label":"Multimídia / rádio"},{"valor":"CAMERA_RE","label":"Câmera de ré"},{"valor":"SENSOR_RE","label":"Sensor de ré"},{"valor":"RODAS_LIGA","label":"Rodas liga-leve"},{"valor":"TETO_SOLAR","label":"Teto solar"},{"valor":"BANCOS_COURO","label":"Bancos de couro"}]'::jsonb,
-            true, false, true, 1),
-          (cat_id, 'Chave Reserva', 'Possui segunda cópia da chave?', 'CONFORMIDADE', true, true, true, 2),
-          (cat_id, 'Manual do Proprietário', 'Documentação do veículo', 'CONFORMIDADE', false, false, true, 3),
-          (cat_id, 'Extintor', 'Prazo de validade e lacre', 'CONFORMIDADE', true, true, true, 4),
-          (cat_id, 'Triângulo + Macaco', 'Itens de segurança obrigatórios', 'CONFORMIDADE', true, true, true, 5);
-
-        -- 8) Documentos
-        INSERT INTO vistorias_checklist_categorias (nome, descricao, ordem) VALUES
-          ('Documentos', 'CRLV, documentos, multas, sinistro', 8) RETURNING id INTO cat_id;
-        INSERT INTO vistorias_checklist_itens (categoria_id, titulo, descricao_ajuda, tipo_item, obrigatorio, foto_obrigatoria, permite_observacao, ordem) VALUES
-          (cat_id, 'CRLV (Certificado Registro)', 'Documento do veículo válido', 'CONFORMIDADE', true, true, true, 1),
-          (cat_id, 'Documento Pessoal Vendedor', 'RG/CNH válido do vendedor', 'CONFORMIDADE', true, true, true, 2),
-          (cat_id, 'Multas Pendentes', 'Verificar se existem multas pendentes no sistema', 'CONFORMIDADE', true, false, true, 3),
-          (cat_id, 'Restrições / Gravames', 'Financiamento, alienação, leilão anterior', 'CONFORMIDADE', true, false, true, 4),
-          (cat_id, 'Sinistro / Roubo', 'Veículo já foi sinistrado ou recuperado?', 'CONFORMIDADE', true, false, true, 5);
-      END $$;`;
-      await d.execute(seedSql);
-    } catch (_e) {
-      // Seed já rodou em outro pod (duplicidade etc.)
-    }
+        END LOOP; -- itens
+      END LOOP; -- categorias
+    END $$;`;
+    await d.execute(seedSmart);
+  } catch (_e) {
+    // Seed smart já rodou ou DB já tem tudo ok (ignora erros tipo unique etc.)
   }
 
   const categorias = await d.execute(sql`
