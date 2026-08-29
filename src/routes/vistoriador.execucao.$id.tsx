@@ -34,7 +34,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/vistoriador/execucao/$id")({
   component: VistoriaExecucaoPage,
