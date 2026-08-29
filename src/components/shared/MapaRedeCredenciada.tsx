@@ -36,18 +36,35 @@ function latLngValida(u: UnidadeMapa) {
   );
 }
 
-function criarIcone(L: any, ativo: boolean, destacado: boolean) {
-  const corFundo = ativo ? (destacado ? "#0f766e" : "#0ea5e9") : "#94a3b8";
-  const corBorda = ativo ? (destacado ? "#134e4a" : "#0369a1") : "#475569";
-  const tamanho = destacado ? 24 : 20;
-  const sombra = destacado ? "0 0 0 4px rgba(20,184,166,.25), 0 2px 8px rgba(0,0,0,.35)" : "0 2px 6px rgba(0,0,0,.35)";
-  const html = `<div style="width:${tamanho}px;height:${tamanho}px;border-radius:9999px;background:${corFundo};border:3px solid ${corBorda};box-shadow:${sombra};transition:all .15s ease"></div>`;
-  return L.divIcon({
-    className: "",
-    html,
-    iconSize: [tamanho, tamanho],
-    iconAnchor: [tamanho / 2, tamanho / 2],
-  });
+/** Cria icone custom DIV com fallback para o icone padrao azul do Leaflet se falhar (evita _initIcon appendChild undefined). */
+function criarIconeSeguro(L: any, ativo: boolean, destacado: boolean) {
+  try {
+    const corFundo = ativo ? (destacado ? "#0f766e" : "#0ea5e9") : "#94a3b8";
+    const corBorda = ativo ? (destacado ? "#134e4a" : "#0369a1") : "#475569";
+    const tamanho = destacado ? 24 : 20;
+    const sombra = destacado
+      ? "0 0 0 4px rgba(20,184,166,.25), 0 2px 8px rgba(0,0,0,.35)"
+      : "0 2px 6px rgba(0,0,0,.35)";
+    const html = `<div style="width:${tamanho}px;height:${tamanho}px;border-radius:9999px;background:${corFundo};border:3px solid ${corBorda};box-shadow:${sombra};transition:all .15s ease"></div>`;
+    const icon = L.divIcon({
+      className: "rede-credenciada-icon",
+      html,
+      iconSize: [tamanho, tamanho],
+      iconAnchor: [tamanho / 2, tamanho / 2],
+    });
+    return icon;
+  } catch {
+    try {
+      return new L.Icon.Default();
+    } catch {
+      return null;
+    }
+  }
+}
+
+/** Garante que o mapa ainda esta vivo (nao sofreu map.remove() de um cleanup Strict Mode). */
+function mapaVivo(map: any): boolean {
+  return !!(map && map._container && !map._removed);
 }
 
 export default function MapaRedeCredenciada({
@@ -61,136 +78,226 @@ export default function MapaRedeCredenciada({
   const markersRef = useRef<Record<string, any>>({});
   const idsNoMapaRef = useRef<Set<string>>(new Set());
   const unidadeAnteriorRef = useRef<string | null>(null);
+  const mountIdRef = useRef(0);
 
+  // ============================================================
+  // Efeito 1: Inicializacao do mapa (com protecao Strict Mode 2x mount)
+  // ============================================================
   useEffect(() => {
-    if (!containerRef.current || mapRef.current || typeof window === "undefined") return;
+    if (!containerRef.current || typeof window === "undefined") return;
+    if (mapRef.current && mapaVivo(mapRef.current)) return;
 
-    let active = true;
-    let map: any;
+    mountIdRef.current += 1;
+    const meuMountId = mountIdRef.current;
+    let meuMapa: any = null;
 
     const iniciar = async () => {
-      const leaflet = await import("leaflet");
-      await import("leaflet/dist/leaflet.css");
-      if (!active || !containerRef.current) return;
+      try {
+        const leaflet = await import("leaflet");
+        await import("leaflet/dist/leaflet.css");
 
-      const L = leaflet.default;
-      map = L.map(containerRef.current, {
-        scrollWheelZoom: false,
-      }).setView([BRASIL_CENTRO.lat, BRASIL_CENTRO.lng], ZOOM_BRASIL);
+        // Outra montagem/subsequente substituiu o meu id — aborta (Strict Mode)
+        if (meuMountId !== mountIdRef.current) return;
+        if (!containerRef.current) return;
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "&copy; OpenStreetMap",
-        maxZoom: 19,
-      }).addTo(map);
+        const L = leaflet.default;
 
-      mapRef.current = map;
-      setTimeout(() => map.invalidateSize(), 200);
+        // Limpa qualquer mapa anterior que tenha ficado órfão (Strict Mode 1ª montagem)
+        try {
+          if (mapRef.current && mapRef.current !== meuMapa) {
+            mapRef.current.remove();
+            mapRef.current = null;
+          }
+        } catch {}
+
+        meuMapa = L.map(containerRef.current, {
+          scrollWheelZoom: false,
+          zoomControl: true,
+        }).setView([BRASIL_CENTRO.lat, BRASIL_CENTRO.lng], ZOOM_BRASIL);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "&copy; OpenStreetMap",
+          maxZoom: 19,
+        }).addTo(meuMapa);
+
+        // Só grava no mapRef se EU ainda sou a montagem atual
+        if (meuMountId === mountIdRef.current && containerRef.current) {
+          mapRef.current = meuMapa;
+          try {
+            setTimeout(() => {
+              if (mapaVivo(mapRef.current)) mapRef.current.invalidateSize();
+            }, 250);
+          } catch {}
+        } else {
+          // Eu não sou mais a montagem atual — removo meu mapa imediatamente
+          try { meuMapa.remove(); } catch {}
+        }
+      } catch (err) {
+        try { if (meuMapa) meuMapa.remove(); } catch {}
+        if (meuMountId === mountIdRef.current) mapRef.current = null;
+        console.warn("[MapaRedeCredenciada] inicializacao falhou:", err);
+      }
     };
 
     void iniciar();
 
     return () => {
-      active = false;
-      if (map) map.remove();
-      mapRef.current = null;
-      markersRef.current = {};
-      idsNoMapaRef.current = new Set();
-      unidadeAnteriorRef.current = null;
+      // Cleanup: só removo SE o mapRef.current ainda é o MEU mapa (o que eu criei)
+      if (meuMountId === mountIdRef.current) {
+        try { if (meuMapa) meuMapa.remove(); } catch {}
+        if (mapRef.current === meuMapa) {
+          mapRef.current = null;
+        }
+        markersRef.current = {};
+        idsNoMapaRef.current = new Set();
+        unidadeAnteriorRef.current = null;
+      }
     };
   }, []);
 
-  // Quando a lista de unidades mudar: add/remove marcadores e ajusta bounds
+  // ============================================================
+  // Efeito 2: Add / remove marcadores e ajusta bounds
+  // ============================================================
   useEffect(() => {
-    const map = mapRef.current as any;
-    if (!map || typeof window === "undefined") return;
+    let cancelado = false;
 
     void (async () => {
-      const leaflet = await import("leaflet");
-      const L = leaflet.default;
-      const selecionadoId = unidadeSelecionadaId;
+      try {
+        const map = mapRef.current as any;
+        if (!mapaVivo(map)) return;
 
-      // Remove marcadores de unidades que não existem mais na lista
-      const idsAtuais = new Set(unidades.map((u) => u.id));
-      for (const idExistente of Array.from(idsNoMapaRef.current)) {
-        if (!idsAtuais.has(idExistente)) {
-          const markerVelho = markersRef.current[idExistente];
-          if (markerVelho) map.removeLayer(markerVelho);
-          delete markersRef.current[idExistente];
-          idsNoMapaRef.current.delete(idExistente);
+        const leaflet = await import("leaflet");
+        const L = leaflet.default;
+
+        if (cancelado || !mapaVivo(map)) return;
+        const selecionadoId = unidadeSelecionadaId;
+
+        // Remove marcadores de unidades que nao existem mais
+        const idsAtuais = new Set(unidades.map((u) => u.id));
+        for (const idExistente of Array.from(idsNoMapaRef.current)) {
+          if (!idsAtuais.has(idExistente)) {
+            const markerVelho = markersRef.current[idExistente];
+            if (markerVelho) {
+              try { map.removeLayer(markerVelho); } catch {}
+            }
+            delete markersRef.current[idExistente];
+            idsNoMapaRef.current.delete(idExistente);
+          }
         }
-      }
 
-      const pontos: Array<[number, number]> = [];
-      for (const unidade of unidades) {
-        if (!latLngValida(unidade)) continue;
-        const lat = Number(unidade.latitude);
-        const lng = Number(unidade.longitude);
-        pontos.push([lat, lng]);
+        const pontos: Array<[number, number]> = [];
+        for (const unidade of unidades) {
+          if (!latLngValida(unidade)) continue;
+          if (cancelado || !mapaVivo(map)) return;
 
-        const destacado = idsIguais(unidade.id, selecionadoId);
-        const icon = criarIcone(L, !!unidade.ativo, destacado);
+          const lat = Number(unidade.latitude);
+          const lng = Number(unidade.longitude);
+          pontos.push([lat, lng]);
 
-        const popupHtml = criarPopupHtml(unidade);
-        let marker = markersRef.current[unidade.id];
-        if (!marker) {
-          marker = L.marker([lat, lng], { icon }).addTo(map);
-          marker.on("click", () => {
-            onSelecionarUnidade?.(unidade.id);
-          });
-          markersRef.current[unidade.id] = marker;
-          idsNoMapaRef.current.add(unidade.id);
-        } else {
-          marker.setLatLng([lat, lng]);
-          marker.setIcon(icon);
-        }
-        const popup = L.popup({ maxWidth: 320, className: "cred-map-popup" }).setContent(popupHtml);
-        marker.bindPopup(popup);
-      }
+          const destacado = idsIguais(unidade.id, selecionadoId);
+          const icon = criarIconeSeguro(L, !!unidade.ativo, destacado);
+          const popupHtml = criarPopupHtml(unidade);
 
-      if (selecionadoId && markersRef.current[selecionadoId]) {
-        // Se tem selecionado, centraliza nele
-        const sel = unidades.find((u) => idsIguais(u.id, selecionadoId));
-        if (sel && latLngValida(sel)) {
-          map.setView([Number(sel.latitude), Number(sel.longitude)], ZOOM_UNICO, { animate: true });
+          let marker = markersRef.current[unidade.id];
           try {
-            markersRef.current[selecionadoId].openPopup();
+            if (!marker) {
+              const markerOpts: any = icon ? { icon, draggable: false } : { draggable: false };
+              marker = L.marker([lat, lng], markerOpts).addTo(map);
+              marker.on("click", () => {
+                if (!cancelado) onSelecionarUnidade?.(unidade.id);
+              });
+              markersRef.current[unidade.id] = marker;
+              idsNoMapaRef.current.add(unidade.id);
+            } else {
+              try { marker.setLatLng([lat, lng]); } catch {}
+              if (icon) {
+                try { marker.setIcon(icon); } catch {}
+              }
+            }
+            const popup = L.popup({ maxWidth: 320, className: "cred-map-popup" }).setContent(popupHtml);
+            try { marker.bindPopup(popup); } catch {}
+          } catch (err) {
+            console.warn("[MapaRedeCredenciada] marker falhou:", err);
+          }
+        }
+
+        if (cancelado || !mapaVivo(map)) return;
+
+        if (selecionadoId && markersRef.current[selecionadoId]) {
+          const sel = unidades.find((u) => idsIguais(u.id, selecionadoId));
+          if (sel && latLngValida(sel)) {
+            try {
+              map.setView([Number(sel.latitude), Number(sel.longitude)], ZOOM_UNICO, { animate: true });
+            } catch {}
+            try {
+              setTimeout(() => {
+                if (!cancelado && mapaVivo(map) && markersRef.current[selecionadoId]) {
+                  try { markersRef.current[selecionadoId].openPopup(); } catch {}
+                }
+              }, 80);
+            } catch {}
+          }
+          if (
+            unidadeAnteriorRef.current &&
+            unidadeAnteriorRef.current !== selecionadoId &&
+            markersRef.current[unidadeAnteriorRef.current]
+          ) {
+            const uAnterior = unidades.find((u) => idsIguais(u.id, unidadeAnteriorRef.current));
+            if (uAnterior) {
+              try {
+                const iconeAnterior = criarIconeSeguro(L, !!uAnterior.ativo, false);
+                if (iconeAnterior) markersRef.current[unidadeAnteriorRef.current].setIcon(iconeAnterior);
+              } catch {}
+            }
+          }
+        } else if (pontos.length > 0) {
+          try {
+            if (pontos.length === 1) {
+              map.setView(pontos[0], ZOOM_CIDADE, { animate: true });
+            } else {
+              const bounds = L.latLngBounds(pontos);
+              map.fitBounds(bounds, { padding: [48, 48], maxZoom: ZOOM_CIDADE, animate: true });
+            }
+          } catch {}
+        } else {
+          try {
+            map.setView([BRASIL_CENTRO.lat, BRASIL_CENTRO.lng], ZOOM_BRASIL, { animate: true });
           } catch {}
         }
-        // Redesenha ícone da anterior (perde destaque)
-        if (unidadeAnteriorRef.current && unidadeAnteriorRef.current !== selecionadoId && markersRef.current[unidadeAnteriorRef.current]) {
-          const uAnterior = unidades.find((u) => idsIguais(u.id, unidadeAnteriorRef.current));
-          if (uAnterior) markersRef.current[unidadeAnteriorRef.current].setIcon(criarIcone(L, !!uAnterior.ativo, false));
-        }
-      } else if (pontos.length > 0) {
-        // Se múltiplas unidades: encaixa no bounds
-        if (pontos.length === 1) {
-          map.setView(pontos[0], ZOOM_CIDADE, { animate: true });
-        } else {
-          const bounds = L.latLngBounds(pontos);
-          map.fitBounds(bounds, { padding: [48, 48], maxZoom: ZOOM_CIDADE, animate: true });
-        }
-      } else {
-        // Nenhuma unidade com coordenada: volta para o Brasil
-        map.setView([BRASIL_CENTRO.lat, BRASIL_CENTRO.lng], ZOOM_BRASIL, { animate: true });
-      }
 
-      // Update dos ícones de todos (para refletir ativo/inativo e destaque corretamente)
-      for (const u of unidades) {
-        const marker = markersRef.current[u.id];
-        if (!marker) continue;
-        const destacado = idsIguais(u.id, selecionadoId);
-        marker.setIcon(criarIcone(L, !!u.ativo, destacado));
-      }
+        // Atualiza icones de todos (reflete ativo/inativo e destaque corretamente)
+        for (const u of unidades) {
+          const marker = markersRef.current[u.id];
+          if (!marker) continue;
+          const destacado = idsIguais(u.id, selecionadoId);
+          const iconeAtualizado = criarIconeSeguro(L, !!u.ativo, destacado);
+          if (iconeAtualizado) {
+            try { marker.setIcon(iconeAtualizado); } catch {}
+          }
+        }
 
-      unidadeAnteriorRef.current = selecionadoId;
+        unidadeAnteriorRef.current = selecionadoId;
+      } catch (err) {
+        console.warn("[MapaRedeCredenciada] useEffect marcadores falhou:", err);
+      }
     })();
+
+    return () => {
+      cancelado = true;
+    };
   }, [unidades, unidadeSelecionadaId, onSelecionarUnidade]);
 
-  // InvalidateSize ao reabas / resize para tiles não ficarem faltando
+  // ============================================================
+  // Efeito 3: InvalidateSize ao trocar unidades / altura
+  // ============================================================
   useEffect(() => {
     const map = mapRef.current as any;
-    if (!map) return;
-    const t = setTimeout(() => map.invalidateSize(), 350);
+    if (!mapaVivo(map)) return;
+    const t = setTimeout(() => {
+      if (mapaVivo(map)) {
+        try { map.invalidateSize(); } catch {}
+      }
+    }, 350);
     return () => clearTimeout(t);
   }, [unidades.length, height]);
 
@@ -242,7 +349,9 @@ function criarPopupHtml(u: UnidadeMapa) {
     : "background:#e2e8f0;color:#475569;border:1px solid #cbd5e1";
   const statusLabel = u.ativo ? "ATIVA" : "INATIVA";
   const enderecoLinha = u.endereco ? `${escapeHtml(u.endereco)} · ` : "";
-  const responsavelLinha = u.responsavel ? `<p style="margin:0;font-size:12px;color:#334155"><strong style="color:#0f172a">Resp.:</strong> ${escapeHtml(u.responsavel)}</p>` : "";
+  const responsavelLinha = u.responsavel
+    ? `<p style="margin:0;font-size:12px;color:#334155"><strong style="color:#0f172a">Resp.:</strong> ${escapeHtml(u.responsavel)}</p>`
+    : "";
   const contatos = [u.whatsapp, u.telefone].filter(Boolean) as string[];
   const contatoLinha = contatos.length
     ? `<p style="margin:4px 0 0;font-size:12px;color:#334155"><strong style="color:#0f172a">Contato:</strong> ${escapeHtml(contatos.join(" / "))}</p>`
