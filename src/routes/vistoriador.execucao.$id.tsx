@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   ArrowLeft, CheckCircle2, Camera, AlertTriangle, 
   MapPin, ChevronRight, ChevronLeft, ShieldCheck,
-  Check, X, AlertCircle, Plus, Info, Image as ImageIcon
+  Check, X, AlertCircle, Plus, Info, Image as ImageIcon,
+  RefreshCw, Loader2, Trash2,
 } from "lucide-react";
 import { useAuthStore } from "@/hooks/use-auth";
 import { 
@@ -18,6 +19,8 @@ import {
 } from "@/lib/vistoriador.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { compressImage, extensaoPorMime } from "@/components/vistoria/ImageCompressor";
+import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -401,6 +404,160 @@ function VistoriaExecucaoPage() {
 }
 
 // ============================================================================
+// Sub-componente: upload REAL de foto por item do checklist
+// (câmera nativa mobile + compressao WebP automatica + upload endpoint)
+// ============================================================================
+function UploadFotoItemChecklist({
+  item,
+  fotoUrlAtual,
+  onFotoSalva,
+}: {
+  item: any;
+  fotoUrlAtual?: string | null;
+  onFotoSalva: (url: string | null) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [carregando, setCarregando] = useState(false);
+
+  const abrirCameraOuGaleria = () => inputRef.current?.click();
+  const limparFoto = () => onFotoSalva(null);
+
+  const handleArquivoSelecionado = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const arquivo = e.target.files?.[0];
+    if (!arquivo) return;
+    if (inputRef.current) inputRef.current.value = "";
+
+    setCarregando(true);
+    try {
+      // 1) Comprime automaticamente: TENTA WEBP PRIMEIRO, fallback JPEG se iOS antigo
+      const blobComprimido = await compressImage(
+        arquivo,
+        1600,      // largura max px (reduz se foto for 4k enorme)
+        0.75,      // qualidade WEBP: equilibra tamanho/qualidade p/ vistoria
+        0.82       // fallback qualidade JPEG (caso device nao suporte webp)
+      );
+
+      // 2) Nomeia arquivo com ID do item + extensao dinâmica (webp ou jpg)
+      const extensao = extensaoPorMime(blobComprimido.type || "image/jpeg");
+      const nomeArquivo = `checklist-item-${String(item.id || "item").slice(0, 8)}-${Date.now()}.${extensao}`;
+
+      // 3) Envia via FormData pro endpoint /api/public/upload
+      const formData = new FormData();
+      formData.append("file", blobComprimido, nomeArquivo);
+
+      const resposta = await fetch("/api/public/upload", {
+        method: "POST",
+        body: formData,
+      });
+      if (!resposta.ok) throw new Error(`HTTP ${resposta.status} no upload`);
+
+      const dados = await resposta.json();
+      if (!dados.url) throw new Error("Servidor não retornou URL da foto");
+
+      // 4) Devolve a URL pro estado (data: URL real do storage/base64)
+      onFotoSalva(dados.url);
+      toast.success("Foto enviada", {
+        description: `${blobComprimido.type.toUpperCase()} · ~${Math.round(blobComprimido.size / 1024)} KB`,
+        duration: 2200,
+      });
+    } catch (erro: any) {
+      console.error("Erro foto item:", erro);
+      toast.error("Não foi possível enviar a foto", {
+        description: erro?.message || "Tente novamente.",
+      });
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  return (
+    <div className="mt-3 pt-3 border-t">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleArquivoSelecionado}
+        disabled={carregando}
+      />
+
+      <div className="grid grid-cols-5 gap-3">
+        {/* Preview / área de slot */}
+        <div className="col-span-3">
+          <div
+            onClick={!carregando && !fotoUrlAtual ? abrirCameraOuGaleria : undefined}
+            className={`relative flex aspect-[4/3] w-full flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-all ${
+              fotoUrlAtual
+                ? "border-emerald-300 bg-emerald-50"
+                : carregando
+                ? "border-amber-300 bg-amber-50 animate-pulse cursor-wait"
+                : "border-slate-200 bg-slate-50 hover:border-teal-400 hover:bg-teal-50/40 cursor-pointer"
+            }`}
+          >
+            {fotoUrlAtual ? (
+              <>
+                <img
+                  src={fotoUrlAtual}
+                  alt={item.titulo || "foto item"}
+                  className="h-full w-full object-cover"
+                />
+                <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                  <CheckCircle2 className="h-3 w-3" /> Enviada
+                </span>
+              </>
+            ) : carregando ? (
+              <div className="flex flex-col items-center gap-2 text-amber-700">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                <span className="text-[11px] font-bold uppercase">Comprimindo &amp; Enviando...</span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-1 p-3 text-center text-slate-500">
+                <Camera className="h-7 w-7 text-slate-400" />
+                <span className="text-[11px] font-bold uppercase tracking-wide">
+                  {item.foto_obrigatoria ? "Adicionar Foto *" : "Adicionar Foto"}
+                </span>
+                <span className="text-[10px] text-slate-400">WebP automático</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Ações */}
+        <div className="col-span-2 flex flex-col gap-2 justify-center">
+          <Button
+            variant="outline"
+            className="h-auto min-h-[48px] rounded-xl border-teal-200 text-xs font-black uppercase !text-teal-800 hover:bg-teal-50"
+            onClick={abrirCameraOuGaleria}
+            disabled={carregando}
+          >
+            {carregando ? (
+              <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> Processando</>
+            ) : fotoUrlAtual ? (
+              <><RefreshCw className="h-4 w-4 mr-1.5" /> Substituir</>
+            ) : (
+              <><Camera className="h-4 w-4 mr-1.5" /> Câmera / Galeria</>
+            )}
+          </Button>
+          {fotoUrlAtual && !carregando && (
+            <Button
+              variant="outline"
+              className="h-auto min-h-[40px] rounded-xl border-rose-200 text-xs font-bold uppercase !text-rose-700 hover:bg-rose-50"
+              onClick={limparFoto}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Remover
+            </Button>
+          )}
+          <div className="mt-1 text-center text-[10px] leading-snug text-slate-400">
+            Salva automaticamente após upload
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // Sub-componente: renderiza uma CATEGORIA DINAMICA com seus itens
 // ============================================================================
 function ChecklistCategoriaDinamica({ categoria, respostasEmMemoria, onMudarResposta, onSetKm, kmAtual }: {
@@ -573,37 +730,13 @@ function ChecklistCategoriaDinamica({ categoria, respostasEmMemoria, onMudarResp
                 </div>
               )}
 
-              {/* Upload de foto placeholder */}
+              {/* Upload REAL de foto: câmera nativa mobile + WebP + upload automático */}
               {item.foto_obrigatoria || item.foto_obrigatoria === false ? (
-                <div className="mt-3 pt-3 border-t">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div
-                      className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-4 ${r.foto_url ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}
-                    >
-                      {r.foto_url ? (
-                        <>
-                          <ImageIcon className="h-6 w-6 text-emerald-600" />
-                          <span className="mt-1 text-[10px] font-bold text-emerald-700 uppercase">Foto Salva</span>
-                        </>
-                      ) : (
-                        <>
-                          <Camera className="h-6 w-6 text-slate-400" />
-                          <span className="mt-1 text-[10px] font-bold text-slate-500 uppercase">
-                            {item.foto_obrigatoria ? "Adicionar Foto *" : "Adicionar Foto"}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    <Button
-                      variant="outline"
-                      className="h-auto min-h-[56px] rounded-xl border-slate-200 text-xs font-bold uppercase"
-                      onClick={() => onMudarResposta(item, { foto_url: `placeholder-${item.id}-${Date.now()}` })}
-                    >
-                      <Plus className="h-4 w-4 mr-1.5" />
-                      Capturar / Escolher
-                    </Button>
-                  </div>
-                </div>
+                <UploadFotoItemChecklist
+                  item={item}
+                  fotoUrlAtual={r.foto_url || null}
+                  onFotoSalva={(url) => onMudarResposta(item, { foto_url: url })}
+                />
               ) : null}
             </Card>
           );

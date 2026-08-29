@@ -48,7 +48,8 @@ export function RoteiroFotos({
 
     setCarregando(true);
     try {
-      const comprimida = await compressImage(file);
+      // WebP primeiro, fallback JPEG. Qualidade boa para anuncios (1600px max)
+      const comprimida = await compressImage(file, 1600, 0.8, 0.85);
       await onUpload(etapaAtual.id, comprimida);
     } catch (err) {
       console.error(err);

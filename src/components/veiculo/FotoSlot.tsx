@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Camera, Check, Trash2, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { compressImage } from "@/components/vistoria/ImageCompressor";
+import { compressImage, extensaoPorMime } from "@/components/vistoria/ImageCompressor";
 import { toast } from "sonner";
 
 interface FotoSlotProps {
@@ -22,9 +22,11 @@ export function FotoSlot({ label, dica, value, onChange }: FotoSlotProps) {
     setCarregando(true);
     
     try {
-      const comprimida = await compressImage(file, 1280, 0.65);
+      const comprimida = await compressImage(file, 1280, 0.72, 0.78);
+      const extensao = extensaoPorMime(comprimida.type || "image/jpeg");
+      const nomeArquivo = `${label.toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "")}.${extensao}`;
       const formData = new FormData();
-      formData.append("file", comprimida, `${label.toLowerCase().replace(/\s+/g, "-")}.jpg`);
+      formData.append("file", comprimida, nomeArquivo);
 
       const response = await fetch("/api/public/upload", {
         method: "POST",
