@@ -1701,6 +1701,8 @@ function VistoriasAdminPage() {
           </div>
         </TabsContent>
 
+        <AbaChecklistConfigDinamico />
+
       </Tabs>
 
       <Dialog open={agendaOpen} onOpenChange={(open) => (open ? setAgendaOpen(true) : fecharAgenda())}>
@@ -2365,12 +2367,6 @@ function VistoriasAdminPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ============================================================ */}
-      {/* ABA CHECKLIST CONFIG (DINAMICO / NAO ENGESSADO)              */}
-      {/* ============================================================ */}
-      <AbaChecklistConfigDinamico
-        visible={activeTab === "checklist_config"}
-      />
     </div>
   );
 }
@@ -2378,7 +2374,7 @@ function VistoriasAdminPage() {
 // ============================================================================
 // ABA CHECKLIST DINAMICO (separado para não poluir o componente principal)
 // ============================================================================
-function AbaChecklistConfigDinamico({ visible }: { visible: boolean }) {
+function AbaChecklistConfigDinamico() {
   const queryClient = useQueryClient();
   const [catSelecionadaId, setCatSelecionadaId] = useState<string | null>(null);
   const [novaCatNome, setNovaCatNome] = useState("");
@@ -2408,15 +2404,13 @@ function AbaChecklistConfigDinamico({ visible }: { visible: boolean }) {
   const { data: checklistRes } = useQuery({
     queryKey: ["admin-checklist-config"],
     queryFn: () => import("@/lib/admin-checklist.functions").then((m) => m.getChecklistConfigAdminFn()),
-    enabled: visible,
   });
   const categorias = (checklistRes as any)?.ok ? ((checklistRes as any).data as any[]) : [];
 
   // Mantém selecionada a primeira categoria quando abrir a aba
   useEffect(() => {
-    if (!visible) return;
     if (!catSelecionadaId && categorias?.[0]) setCatSelecionadaId(categorias[0].id);
-  }, [visible, categorias, catSelecionadaId]);
+  }, [categorias, catSelecionadaId]);
 
   const refetch = () => queryClient.invalidateQueries({ queryKey: ["admin-checklist-config"] });
 
@@ -2507,8 +2501,6 @@ function AbaChecklistConfigDinamico({ visible }: { visible: boolean }) {
       ordem: Number(formItem.ordem || 0),
     });
   };
-
-  if (!visible) return null;
 
   return (
     <TabsContent value="checklist_config" className="mt-0">
