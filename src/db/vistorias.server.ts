@@ -1508,3 +1508,428 @@ export async function concluirVistoriaApp(data: { laudoId: string; quilometragem
 
   return { ok: true };
 }
+
+// ============================================================================
+// CHECKLIST DINAMICO (Configuracao)
+// ============================================================================
+
+export async function ensureChecklistSchema() {
+  const d = requireDb();
+  try {
+    await d.execute(sql`CREATE TABLE IF NOT EXISTS "vistorias_checklist_categorias" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+      "nome" text NOT NULL,
+      "descricao" text,
+      "ordem" integer NOT NULL DEFAULT 0,
+      "ativo" boolean NOT NULL DEFAULT true,
+      "criado_em" timestamp with time zone DEFAULT now() NOT NULL,
+      "atualizado_em" timestamp with time zone DEFAULT now() NOT NULL
+    )`);
+  } catch { /* ignore */ }
+  try {
+    await d.execute(sql`CREATE TABLE IF NOT EXISTS "vistorias_checklist_itens" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+      "categoria_id" uuid NOT NULL REFERENCES vistorias_checklist_categorias(id) ON DELETE CASCADE,
+      "titulo" text NOT NULL,
+      "descricao_ajuda" text,
+      "tipo_item" text NOT NULL DEFAULT 'CONFORMIDADE',
+      "opcoes" jsonb,
+      "obrigatorio" boolean NOT NULL DEFAULT true,
+      "foto_obrigatoria" boolean NOT NULL DEFAULT false,
+      "permite_observacao" boolean NOT NULL DEFAULT true,
+      "ordem" integer NOT NULL DEFAULT 0,
+      "ativo" boolean NOT NULL DEFAULT true,
+      "criado_em" timestamp with time zone DEFAULT now() NOT NULL,
+      "atualizado_em" timestamp with time zone DEFAULT now() NOT NULL
+    )`);
+  } catch { /* ignore */ }
+  try {
+    await d.execute(sql`CREATE TABLE IF NOT EXISTS "laudo_vistoria_respostas" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+      "laudo_id" uuid NOT NULL,
+      "vistoria_id" uuid NOT NULL,
+      "categoria_id" uuid NOT NULL REFERENCES vistorias_checklist_categorias(id) ON DELETE RESTRICT,
+      "item_id" uuid NOT NULL REFERENCES vistorias_checklist_itens(id) ON DELETE RESTRICT,
+      "resposta_conformidade" text,
+      "resposta_texto" text,
+      "resposta_numero" numeric(14,2),
+      "resposta_opcoes" jsonb,
+      "observacao" text,
+      "foto_url" text,
+      "respondido_em" timestamp with time zone DEFAULT now() NOT NULL,
+      "respondido_por" uuid
+    )`);
+  } catch { /* ignore */ }
+  try {
+    await d.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_laudo_respostas_unq_laudo_item ON laudo_vistoria_respostas(laudo_id, item_id)`);
+  } catch { /* ignore */ }
+}
+
+export async function listarChecklistConfig() {
+  const d = requireDb();
+  await ensureChecklistSchema();
+
+  // Garante seed básico se não houver nenhuma categoria
+  const qtd = await d.execute(sql`SELECT COUNT(*)::int AS total FROM vistorias_checklist_categorias`);
+  const totalCats = Number((qtd as any).rows?.[0]?.total || 0);
+
+  if (totalCats === 0) {
+    // Seed inicial (idêntico ao migration 0001)
+    try {
+      const seedSql = sql`
+      DO $$
+      DECLARE
+        cat_id uuid;
+      BEGIN
+        -- 1) Identificação
+        INSERT INTO vistorias_checklist_categorias (nome, descricao, ordem) VALUES
+          ('Identificação', 'Dados de identificação do veículo (KM, chassi, placa)', 1) RETURNING id INTO cat_id;
+        INSERT INTO vistorias_checklist_itens (categoria_id, titulo, descricao_ajuda, tipo_item, obrigatorio, foto_obrigatoria, permite_observacao, ordem) VALUES
+          (cat_id, 'Quilometragem', 'Registre a quilometragem atual exibida no painel', 'NUMERO', true, false, true, 1),
+          (cat_id, 'Foto do Painel (KM)', 'Foto nítida do painel mostrando o KM', 'CONFORMIDADE', true, true, false, 2),
+          (cat_id, 'Número do Chassi', 'Localize e digite o número do chassi', 'TEXTO_LIVRE', true, false, true, 3),
+          (cat_id, 'Foto Chassi', 'Foto nítida do número gravado no chassi', 'CONFORMIDADE', true, true, false, 4),
+          (cat_id, 'Placa', 'Verifique se a placa confere e está em bom estado', 'CONFORMIDADE', true, false, true, 5);
+
+        -- 2) Estrutura
+        INSERT INTO vistorias_checklist_categorias (nome, descricao, ordem) VALUES
+          ('Estrutura', 'Estrutura, lataria, colunas, assoalho', 2) RETURNING id INTO cat_id;
+        INSERT INTO vistorias_checklist_itens (categoria_id, titulo, descricao_ajuda, tipo_item, obrigatorio, foto_obrigatoria, permite_observacao, ordem) VALUES
+          (cat_id, 'Coluna A', 'Verificar amassados, pintura, solda aparente', 'CONFORMIDADE', true, true, true, 1),
+          (cat_id, 'Coluna B', 'Verificar amassados, pintura, solda aparente', 'CONFORMIDADE', true, true, true, 2),
+          (cat_id, 'Coluna C', 'Verificar amassados, pintura, solda aparente', 'CONFORMIDADE', true, true, true, 3),
+          (cat_id, 'Assoalho', 'Integridade do assoalho, caixa de roda', 'CONFORMIDADE', true, true, true, 4),
+          (cat_id, 'Longarinas', 'Estrutura principal (longarinas dianteiras e traseiras)', 'CONFORMIDADE', true, true, true, 5),
+          (cat_id, 'Teto', 'Amassados, pintura, vazamento', 'CONFORMIDADE', true, false, true, 6);
+
+        -- 3) Exterior
+        INSERT INTO vistorias_checklist_categorias (nome, descricao, ordem) VALUES
+          ('Exterior', 'Lataria, pintura, vidros, para-choques, retrovisores', 3) RETURNING id INTO cat_id;
+        INSERT INTO vistorias_checklist_itens (categoria_id, titulo, descricao_ajuda, tipo_item, obrigatorio, foto_obrigatoria, permite_observacao, ordem) VALUES
+          (cat_id, 'Capô', 'Riscos, amassados, pintura', 'CONFORMIDADE', true, true, true, 1),
+          (cat_id, 'Porta Dianteira Esq.', 'Verificar estado geral, maçaneta, vidro', 'CONFORMIDADE', true, true, true, 2),
+          (cat_id, 'Porta Dianteira Dir.', 'Verificar estado geral, maçaneta, vidro', 'CONFORMIDADE', true, true, true, 3),
+          (cat_id, 'Porta Traseira Esq.', 'Verificar estado geral, maçaneta, vidro', 'CONFORMIDADE', true, true, true, 4),
+          (cat_id, 'Porta Traseira Dir.', 'Verificar estado geral, maçaneta, vidro', 'CONFORMIDADE', true, true, true, 5),
+          (cat_id, 'Mala/Tampa Traseira', 'Vedações, amassados, fecho', 'CONFORMIDADE', true, true, true, 6),
+          (cat_id, 'Para-choque Dianteiro', 'Amassados, arranhões, grade', 'CONFORMIDADE', true, false, true, 7),
+          (cat_id, 'Para-choque Traseiro', 'Amassados, arranhões, luzes ré', 'CONFORMIDADE', true, false, true, 8),
+          (cat_id, 'Vidros e Lanternas', 'Rachaduras, trincos, embaçados', 'CONFORMIDADE', true, true, true, 9);
+
+        -- 4) Interior
+        INSERT INTO vistorias_checklist_categorias (nome, descricao, ordem) VALUES
+          ('Interior', 'Bancos, forração, painel, tetos, carpete', 4) RETURNING id INTO cat_id;
+        INSERT INTO vistorias_checklist_itens (categoria_id, titulo, descricao_ajuda, tipo_item, obrigatorio, foto_obrigatoria, permite_observacao, ordem) VALUES
+          (cat_id, 'Banco Motorista', 'Desgaste, rasgos, sujeira', 'CONFORMIDADE', true, true, true, 1),
+          (cat_id, 'Banco Passageiro', 'Desgaste, rasgos, sujeira', 'CONFORMIDADE', true, true, true, 2),
+          (cat_id, 'Bancos Traseiros', 'Estado geral, encostos, cintos', 'CONFORMIDADE', true, false, true, 3),
+          (cat_id, 'Painel', 'Riscos, rachaduras, itens do painel', 'CONFORMIDADE', true, true, true, 4),
+          (cat_id, 'Forração/Teto', 'Manchas, rasgos, soltos', 'CONFORMIDADE', true, false, true, 5),
+          (cat_id, 'Carpete/Forro de porta', 'Desgaste, umidade, odores', 'CONFORMIDADE', true, false, true, 6),
+          (cat_id, 'Odor geral', 'Cheiro de cigarro, mofo, combustível', 'CONFORMIDADE', true, false, true, 7);
+
+        -- 5) Mecânica Básica
+        INSERT INTO vistorias_checklist_categorias (nome, descricao, ordem) VALUES
+          ('Mecânica Básica', 'Motor, bateria, fluidos, funcionamento', 5) RETURNING id INTO cat_id;
+        INSERT INTO vistorias_checklist_itens (categoria_id, titulo, descricao_ajuda, tipo_item, obrigatorio, foto_obrigatoria, permite_observacao, ordem) VALUES
+          (cat_id, 'Partida do Motor', 'Barulhos estranhos, dificuldade no arranque', 'CONFORMIDADE', true, false, true, 1),
+          (cat_id, 'Ruídos do Motor', 'Batidas de biela, tucho, sopros', 'CONFORMIDADE', true, false, true, 2),
+          (cat_id, 'Fumaça no Escapamento', 'Cor anormal (azul, branca, preta)', 'CONFORMIDADE', true, true, true, 3),
+          (cat_id, 'Nível de Óleo', 'Verificar vareta de óleo do motor', 'CONFORMIDADE', true, true, true, 4),
+          (cat_id, 'Água do Radiador', 'Nível e integridade do reservatório', 'CONFORMIDADE', true, true, true, 5),
+          (cat_id, 'Bateria', 'Estado geral, corrosão nos bornes', 'CONFORMIDADE', true, true, true, 6),
+          (cat_id, 'Freios', 'Teste em baixa velocidade, ruídos', 'CONFORMIDADE', true, false, true, 7),
+          (cat_id, 'Direção e Suspensão', 'Trepidação, folgas, ruídos', 'CONFORMIDADE', true, false, true, 8),
+          (cat_id, 'Ar Condicionado', 'Refrigeração, ruídos no compressor', 'CONFORMIDADE', true, false, true, 9),
+          (cat_id, 'Itens Elétricos (Luzes, Vidros, Travas)', 'Farol, seta, alerta, travas elétricas, vidros', 'CONFORMIDADE', true, false, true, 10);
+
+        -- 6) Pneus e Rodas
+        INSERT INTO vistorias_checklist_categorias (nome, descricao, ordem) VALUES
+          ('Pneus e Rodas', 'Sulcos, desgaste, balanceamento, rodas', 6) RETURNING id INTO cat_id;
+        INSERT INTO vistorias_checklist_itens (categoria_id, titulo, descricao_ajuda, tipo_item, obrigatorio, foto_obrigatoria, permite_observacao, ordem) VALUES
+          (cat_id, 'Pneu Dianteiro Esq.', 'Profundidade do sulco, bolhas, cortes', 'CONFORMIDADE', true, true, true, 1),
+          (cat_id, 'Pneu Dianteiro Dir.', 'Profundidade do sulco, bolhas, cortes', 'CONFORMIDADE', true, true, true, 2),
+          (cat_id, 'Pneu Traseiro Esq.', 'Profundidade do sulco, bolhas, cortes', 'CONFORMIDADE', true, true, true, 3),
+          (cat_id, 'Pneu Traseiro Dir.', 'Profundidade do sulco, bolhas, cortes', 'CONFORMIDADE', true, true, true, 4),
+          (cat_id, 'Estepe', 'Existência e estado geral (calibragem)', 'CONFORMIDADE', true, true, true, 5),
+          (cat_id, 'Rodas / Liga-leve', 'Amassados, arranhões, parafusos', 'CONFORMIDADE', true, true, true, 6);
+
+        -- 7) Equipamentos e Acessórios
+        INSERT INTO vistorias_checklist_categorias (nome, descricao, ordem) VALUES
+          ('Equipamentos', 'Acessórios, multimídia, segurança, extras', 7) RETURNING id INTO cat_id;
+        INSERT INTO vistorias_checklist_itens (categoria_id, titulo, descricao_ajuda, tipo_item, opcoes, obrigatorio, foto_obrigatoria, permite_observacao, ordem) VALUES
+          (cat_id, 'Quais equipamentos estão presentes?', 'Marcar todos que existem no veículo', 'CHECKBOX_MULTIPLO',
+            '[{"valor":"AIRBAG_DUPLOS","label":"Airbag duplo"},{"valor":"ABS","label":"Freios ABS"},{"valor":"AR_QUENTE","label":"Ar quente"},{"valor":"AR_CONDICIONADO","label":"Ar condicionado"},{"valor":"DIRECAO_HIDRAULICA","label":"Direção hidráulica"},{"valor":"DIRECAO_ELETRICA","label":"Direção elétrica"},{"valor":"TRAVA_ELETRICA","label":"Travas elétricas"},{"valor":"VIDROS_ELETRICOS","label":"Vidros elétricos"},{"valor":"MULTIMIDIA","label":"Multimídia / rádio"},{"valor":"CAMERA_RE","label":"Câmera de ré"},{"valor":"SENSOR_RE","label":"Sensor de ré"},{"valor":"RODAS_LIGA","label":"Rodas liga-leve"},{"valor":"TETO_SOLAR","label":"Teto solar"},{"valor":"BANCOS_COURO","label":"Bancos de couro"}]'::jsonb,
+            true, false, true, 1),
+          (cat_id, 'Chave Reserva', 'Possui segunda cópia da chave?', 'CONFORMIDADE', true, true, true, 2),
+          (cat_id, 'Manual do Proprietário', 'Documentação do veículo', 'CONFORMIDADE', false, false, true, 3),
+          (cat_id, 'Extintor', 'Prazo de validade e lacre', 'CONFORMIDADE', true, true, true, 4),
+          (cat_id, 'Triângulo + Macaco', 'Itens de segurança obrigatórios', 'CONFORMIDADE', true, true, true, 5);
+
+        -- 8) Documentos
+        INSERT INTO vistorias_checklist_categorias (nome, descricao, ordem) VALUES
+          ('Documentos', 'CRLV, documentos, multas, sinistro', 8) RETURNING id INTO cat_id;
+        INSERT INTO vistorias_checklist_itens (categoria_id, titulo, descricao_ajuda, tipo_item, obrigatorio, foto_obrigatoria, permite_observacao, ordem) VALUES
+          (cat_id, 'CRLV (Certificado Registro)', 'Documento do veículo válido', 'CONFORMIDADE', true, true, true, 1),
+          (cat_id, 'Documento Pessoal Vendedor', 'RG/CNH válido do vendedor', 'CONFORMIDADE', true, true, true, 2),
+          (cat_id, 'Multas Pendentes', 'Verificar se existem multas pendentes no sistema', 'CONFORMIDADE', true, false, true, 3),
+          (cat_id, 'Restrições / Gravames', 'Financiamento, alienação, leilão anterior', 'CONFORMIDADE', true, false, true, 4),
+          (cat_id, 'Sinistro / Roubo', 'Veículo já foi sinistrado ou recuperado?', 'CONFORMIDADE', true, false, true, 5);
+      END $$;`;
+      await d.execute(seedSql);
+    } catch (_e) {
+      // Seed já rodou em outro pod (duplicidade etc.)
+    }
+  }
+
+  const categorias = await d.execute(sql`
+    SELECT
+      c.id::text as id,
+      c.nome,
+      c.descricao,
+      c.ordem,
+      c.ativo,
+      COALESCE((
+        SELECT json_agg(json_build_object(
+          'id', i.id::text,
+          'categoria_id', i.categoria_id::text,
+          'titulo', i.titulo,
+          'descricao_ajuda', i.descricao_ajuda,
+          'tipo_item', i.tipo_item,
+          'opcoes', i.opcoes,
+          'obrigatorio', i.obrigatorio,
+          'foto_obrigatoria', i.foto_obrigatoria,
+          'permite_observacao', i.permite_observacao,
+          'ordem', i.ordem,
+          'ativo', i.ativo
+        ) ORDER BY i.ordem, i.criado_em)
+        FROM vistorias_checklist_itens i
+        WHERE i.categoria_id = c.id AND i.ativo = true
+      ), '[]'::json) AS itens
+    FROM vistorias_checklist_categorias c
+    WHERE c.ativo = true
+    ORDER BY c.ordem, c.criado_em
+  `);
+
+  return (categorias as any).rows || [];
+}
+
+// Admin: criar categoria
+export async function adminCriarCategoriaChecklist(data: { nome: string; descricao?: string; ordem?: number }) {
+  const d = requireDb();
+  await ensureChecklistSchema();
+  const ordemVal = data.ordem && data.ordem > 0 ? data.ordem : 0;
+  const r = await d.execute(sql`
+    INSERT INTO vistorias_checklist_categorias (nome, descricao, ordem)
+    VALUES (${data.nome}, ${data.descricao || null}, ${ordemVal})
+    RETURNING id::text as id
+  `);
+  return { ok: true, id: (r as any).rows?.[0]?.id };
+}
+
+// Admin: atualizar categoria
+export async function adminAtualizarCategoriaChecklist(data: { id: string; nome?: string; descricao?: string; ordem?: number; ativo?: boolean }) {
+  const d = requireDb();
+  await ensureChecklistSchema();
+  const idNorm = normalizarUuid(data.id);
+  if (!idNorm) throw new Error("Id categoria inválido.");
+  await d.execute(sql`
+    UPDATE vistorias_checklist_categorias SET
+      nome = COALESCE(${data.nome || null}, nome),
+      descricao = COALESCE(${data.descricao ?? null}, descricao),
+      ordem = COALESCE(${data.ordem ?? null}, ordem),
+      ativo = COALESCE(${data.ativo ?? null}, ativo),
+      atualizado_em = now()
+    WHERE id = ${idNorm}::uuid
+  `);
+  return { ok: true };
+}
+
+// Admin: excluir categoria
+export async function adminExcluirCategoriaChecklist(idCategoria: string) {
+  const d = requireDb();
+  await ensureChecklistSchema();
+  const idNorm = normalizarUuid(idCategoria);
+  if (!idNorm) throw new Error("Id categoria inválido.");
+  await d.execute(sql`DELETE FROM vistorias_checklist_categorias WHERE id = ${idNorm}::uuid`);
+  return { ok: true };
+}
+
+// Admin: criar item
+export async function adminCriarItemChecklist(data: {
+  categoria_id: string;
+  titulo: string;
+  descricao_ajuda?: string;
+  tipo_item?: string;
+  opcoes?: any;
+  obrigatorio?: boolean;
+  foto_obrigatoria?: boolean;
+  permite_observacao?: boolean;
+  ordem?: number;
+}) {
+  const d = requireDb();
+  await ensureChecklistSchema();
+  const catId = normalizarUuid(data.categoria_id);
+  if (!catId) throw new Error("Categoria inválida.");
+
+  const tipo = data.tipo_item || "CONFORMIDADE";
+  const opcoesJson = data.opcoes ? JSON.stringify(data.opcoes) : null;
+  const ordemVal = data.ordem && data.ordem > 0 ? data.ordem : 0;
+
+  const r = await d.execute(sql`
+    INSERT INTO vistorias_checklist_itens (
+      categoria_id, titulo, descricao_ajuda, tipo_item, opcoes,
+      obrigatorio, foto_obrigatoria, permite_observacao, ordem
+    ) VALUES (
+      ${catId}::uuid,
+      ${data.titulo},
+      ${data.descricao_ajuda || null},
+      ${tipo},
+      ${opcoesJson}::jsonb,
+      ${data.obrigatorio === false ? false : true},
+      ${data.foto_obrigatoria === true ? true : false},
+      ${data.permite_observacao === false ? false : true},
+      ${ordemVal}
+    ) RETURNING id::text as id
+  `);
+  return { ok: true, id: (r as any).rows?.[0]?.id };
+}
+
+// Admin: atualizar item
+export async function adminAtualizarItemChecklist(data: {
+  id: string;
+  categoria_id?: string;
+  titulo?: string;
+  descricao_ajuda?: string;
+  tipo_item?: string;
+  opcoes?: any;
+  obrigatorio?: boolean;
+  foto_obrigatoria?: boolean;
+  permite_observacao?: boolean;
+  ordem?: number;
+  ativo?: boolean;
+}) {
+  const d = requireDb();
+  await ensureChecklistSchema();
+  const idNorm = normalizarUuid(data.id);
+  if (!idNorm) throw new Error("Item inválido.");
+  const catIdNorm = data.categoria_id ? normalizarUuid(data.categoria_id) : null;
+  const opcoesJson = data.opcoes ? JSON.stringify(data.opcoes) : null;
+
+  await d.execute(sql`
+    UPDATE vistorias_checklist_itens SET
+      categoria_id = COALESCE(${catIdNorm}::uuid, categoria_id),
+      titulo = COALESCE(${data.titulo || null}, titulo),
+      descricao_ajuda = COALESCE(${data.descricao_ajuda ?? null}, descricao_ajuda),
+      tipo_item = COALESCE(${data.tipo_item || null}, tipo_item),
+      opcoes = COALESCE(${opcoesJson}::jsonb, opcoes),
+      obrigatorio = COALESCE(${data.obrigatorio ?? null}, obrigatorio),
+      foto_obrigatoria = COALESCE(${data.foto_obrigatoria ?? null}, foto_obrigatoria),
+      permite_observacao = COALESCE(${data.permite_observacao ?? null}, permite_observacao),
+      ordem = COALESCE(${data.ordem ?? null}, ordem),
+      ativo = COALESCE(${data.ativo ?? null}, ativo),
+      atualizado_em = now()
+    WHERE id = ${idNorm}::uuid
+  `);
+  return { ok: true };
+}
+
+// Admin: excluir item
+export async function adminExcluirItemChecklist(idItem: string) {
+  const d = requireDb();
+  await ensureChecklistSchema();
+  const idNorm = normalizarUuid(idItem);
+  if (!idNorm) throw new Error("Item inválido.");
+  await d.execute(sql`DELETE FROM vistorias_checklist_itens WHERE id = ${idNorm}::uuid`);
+  return { ok: true };
+}
+
+// =============================================================
+// Respostas do Checklist dinâmico (salvar / listar por laudo)
+// =============================================================
+export async function salvarRespostaChecklistDinamico(data: {
+  laudoId: string;
+  vistoriaId: string;
+  item_id: string;
+  categoria_id: string;
+  resposta_conformidade?: string | null;
+  resposta_texto?: string | null;
+  resposta_numero?: number | null;
+  resposta_opcoes?: any;
+  observacao?: string | null;
+  foto_url?: string | null;
+  respondido_por?: string | null;
+}) {
+  const d = requireDb();
+  await ensureChecklistSchema();
+
+  const laudoIdNorm = normalizarUuid(data.laudoId);
+  if (!laudoIdNorm) throw new Error("Laudo inválido.");
+  const vistoriaIdNorm = normalizarUuid(data.vistoriaId);
+  if (!vistoriaIdNorm) throw new Error("Vistoria inválida.");
+  const itemIdNorm = normalizarUuid(data.item_id);
+  if (!itemIdNorm) throw new Error("Item inválido.");
+  const catIdNorm = normalizarUuid(data.categoria_id);
+  if (!catIdNorm) throw new Error("Categoria inválida.");
+
+  const userIdNorm = data.respondido_por ? normalizarUuid(data.respondido_por) : null;
+  const opcoesJson = data.resposta_opcoes ? JSON.stringify(data.resposta_opcoes) : null;
+
+  await d.execute(sql`
+    INSERT INTO laudo_vistoria_respostas (
+      laudo_id, vistoria_id, categoria_id, item_id,
+      resposta_conformidade, resposta_texto, resposta_numero, resposta_opcoes,
+      observacao, foto_url, respondido_por
+    ) VALUES (
+      ${laudoIdNorm}::uuid,
+      ${vistoriaIdNorm}::uuid,
+      ${catIdNorm}::uuid,
+      ${itemIdNorm}::uuid,
+      ${data.resposta_conformidade || null},
+      ${data.resposta_texto || null},
+      ${data.resposta_numero ?? null},
+      ${opcoesJson}::jsonb,
+      ${data.observacao || null},
+      ${data.foto_url || null},
+      ${userIdNorm}::uuid
+    )
+    ON CONFLICT (laudo_id, item_id) DO UPDATE SET
+      resposta_conformidade = EXCLUDED.resposta_conformidade,
+      resposta_texto = EXCLUDED.resposta_texto,
+      resposta_numero = EXCLUDED.resposta_numero,
+      resposta_opcoes = EXCLUDED.resposta_opcoes,
+      observacao = EXCLUDED.observacao,
+      foto_url = EXCLUDED.foto_url,
+      respondido_em = now(),
+      respondido_por = EXCLUDED.respondido_por
+  `);
+
+  return { ok: true };
+}
+
+export async function listarRespostasChecklistPorLaudo(laudoId: string) {
+  const d = requireDb();
+  await ensureChecklistSchema();
+  const idNorm = normalizarUuid(laudoId);
+  if (!idNorm) return [];
+
+  const r = await d.execute(sql`
+    SELECT
+      id::text as id,
+      laudo_id::text as laudo_id,
+      vistoria_id::text as vistoria_id,
+      categoria_id::text as categoria_id,
+      item_id::text as item_id,
+      resposta_conformidade,
+      resposta_texto,
+      resposta_numero,
+      resposta_opcoes,
+      observacao,
+      foto_url,
+      respondido_em
+    FROM laudo_vistoria_respostas
+    WHERE laudo_id = ${idNorm}::uuid
+    ORDER BY respondido_em
+  `);
+  return (r as any).rows || [];
+}

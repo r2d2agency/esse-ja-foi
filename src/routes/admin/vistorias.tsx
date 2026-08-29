@@ -37,6 +37,11 @@ import {
   Users,
   Phone,
   CalendarClock,
+  ClipboardCheck,
+  ListChecks,
+  Pencil,
+  Sparkles,
+  Info,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -979,6 +984,7 @@ function VistoriasAdminPage() {
             { id: "aguardando_analise", label: "Aguardando análise" },
             { id: "aguardando", label: "Aguardando agendamento" },
             { id: "cadastros", label: "Cadastros" },
+            { id: "checklist_config", label: "Checklist" },
           ].map((tab) => (
             <TabsTrigger
               key={tab.id}
@@ -2355,6 +2361,442 @@ function VistoriasAdminPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ============================================================ */}
+      {/* ABA CHECKLIST CONFIG (DINAMICO / NAO ENGESSADO)              */}
+      {/* ============================================================ */}
+      <AbaChecklistConfigDinamico
+        visible={activeTab === "checklist_config"}
+      />
     </div>
   );
 }
+
+// ============================================================================
+// ABA CHECKLIST DINAMICO (separado para não poluir o componente principal)
+// ============================================================================
+function AbaChecklistConfigDinamico({ visible }: { visible: boolean }) {
+  const queryClient = useQueryClient();
+  const [catSelecionadaId, setCatSelecionadaId] = useState<string | null>(null);
+  const [novaCatNome, setNovaCatNome] = useState("");
+  const [novaCatDesc, setNovaCatDesc] = useState("");
+  const [itemModalAberto, setItemModalAberto] = useState(false);
+  const [editandoItem, setEditandoItem] = useState<any | null>(null);
+  const [formItem, setFormItem] = useState<{
+    titulo: string;
+    descricao_ajuda: string;
+    tipo_item: "CONFORMIDADE" | "TEXTO_LIVRE" | "NUMERO" | "CHECKBOX_MULTIPLO" | "SELECT_UNICO";
+    opcoesStr: string;
+    obrigatorio: boolean;
+    foto_obrigatoria: boolean;
+    permite_observacao: boolean;
+    ordem: number;
+  }>({
+    titulo: "",
+    descricao_ajuda: "",
+    tipo_item: "CONFORMIDADE",
+    opcoesStr: "",
+    obrigatorio: true,
+    foto_obrigatoria: false,
+    permite_observacao: true,
+    ordem: 10,
+  });
+
+  const { data: checklistRes } = useSuspenseQuery({
+    queryKey: ["admin-checklist-config"],
+    queryFn: () => import("@/lib/admin-checklist.functions").then((m) => m.getChecklistConfigAdminFn()),
+    enabled: visible,
+  });
+  const categorias = (checklistRes as any)?.ok ? ((checklistRes as any).data as any[]) : [];
+
+  // Mantém selecionada a primeira categoria quando abrir a aba
+  useEffect(() => {
+    if (!visible) return;
+    if (!catSelecionadaId && categorias?.[0]) setCatSelecionadaId(categorias[0].id);
+  }, [visible, categorias, catSelecionadaId]);
+
+  const refetch = () => queryClient.invalidateQueries({ queryKey: ["admin-checklist-config"] });
+
+  const catSelecionada = categorias.find((c: any) => c.id === catSelecionadaId) || null;
+
+  // ========= Mutações ================
+  const criarCategoriaMut = useMutation({
+    mutationFn: () => import("@/lib/admin-checklist.functions").then((m) => m.adminCriarCategoriaFn({
+      data: { nome: novaCatNome, descricao: novaCatDesc || null, ordem: (categorias.length + 1) * 10 },
+    })),
+    onSuccess: (r) => {
+      if ((r as any).ok) {
+        setNovaCatNome("");
+        setNovaCatDesc("");
+        setCatSelecionadaId((r as any).id || null);
+        refetch();
+        toast.success("Categoria criada.");
+      } else toast.error((r as any).message || "Erro.");
+    },
+  });
+
+  const excluirCategoriaMut = useMutation({
+    mutationFn: (id: string) => import("@/lib/admin-checklist.functions").then((m) => m.adminExcluirCategoriaFn({ data: { id } })),
+    onSuccess: () => { refetch(); setCatSelecionadaId(null); toast.success("Categoria removida."); },
+  });
+
+  const salvarItemMut = useMutation({
+    mutationFn: (payload: any) => {
+      return editandoItem
+        ? import("@/lib/admin-checklist.functions").then((m) => m.adminAtualizarItemFn({ data: { id: editandoItem.id, ...payload } }))
+        : import("@/lib/admin-checklist.functions").then((m) => m.adminCriarItemFn({ data: { categoria_id: catSelecionadaId!, ...payload } }));
+    },
+    onSuccess: () => { setItemModalAberto(false); setEditandoItem(null); refetch(); toast.success(editandoItem ? "Item atualizado." : "Item criado."); },
+  });
+
+  const excluirItemMut = useMutation({
+    mutationFn: (id: string) => import("@/lib/admin-checklist.functions").then((m) => m.adminExcluirItemFn({ data: { id } })),
+    onSuccess: () => { refetch(); toast.success("Item removido."); },
+  });
+
+  const abrirNovoItem = () => {
+    setEditandoItem(null);
+    const ultimaOrdem = Math.max(0, ...((catSelecionada?.itens || []).map((i: any) => Number(i.ordem || 0)))) + 10;
+    setFormItem({
+      titulo: "", descricao_ajuda: "", tipo_item: "CONFORMIDADE",
+      opcoesStr: "", obrigatorio: true, foto_obrigatoria: false, permite_observacao: true, ordem: ultimaOrdem,
+    });
+    setItemModalAberto(true);
+  };
+
+  const abrirEditarItem = (item: any) => {
+    setEditandoItem(item);
+    const opStr = item.opcoes ? JSON.stringify(item.opcoes, null, 2) : "";
+    setFormItem({
+      titulo: item.titulo || "",
+      descricao_ajuda: item.descricao_ajuda || "",
+      tipo_item: item.tipo_item || "CONFORMIDADE",
+      opcoesStr: opStr,
+      obrigatorio: item.obrigatorio !== false,
+      foto_obrigatoria: item.foto_obrigatoria === true,
+      permite_observacao: item.permite_observacao !== false,
+      ordem: Number(item.ordem || 10),
+    });
+    setItemModalAberto(true);
+  };
+
+  const handleSalvarItem = () => {
+    if (!formItem.titulo.trim()) { toast.error("Título é obrigatório."); return; }
+    if (!catSelecionadaId && !editandoItem) { toast.error("Selecione uma categoria primeiro."); return; }
+    let opcoes: any = undefined;
+    if (formItem.opcoesStr.trim()) {
+      try { opcoes = JSON.parse(formItem.opcoesStr); }
+      catch { toast.error("Opções JSON inválido."); return; }
+    }
+    if ((formItem.tipo_item === "CHECKBOX_MULTIPLO" || formItem.tipo_item === "SELECT_UNICO") &&
+      (!opcoes || !Array.isArray(opcoes) || opcoes.length === 0)) {
+      toast.error(`Para tipo ${formItem.tipo_item} informe opções (array JSON com {valor,label}).`);
+      return;
+    }
+    salvarItemMut.mutate({
+      titulo: formItem.titulo.trim(),
+      descricao_ajuda: formItem.descricao_ajuda.trim() || null,
+      tipo_item: formItem.tipo_item,
+      opcoes,
+      obrigatorio: formItem.obrigatorio,
+      foto_obrigatoria: formItem.foto_obrigatoria,
+      permite_observacao: formItem.permite_observacao,
+      ordem: Number(formItem.ordem || 0),
+    });
+  };
+
+  if (!visible) return null;
+
+  return (
+    <TabsContent value="checklist_config" className="mt-0">
+      <div className="space-y-6">
+        <Card className="border-slate-200 shadow-none">
+          <CardContent className="p-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                <ClipboardCheck className="h-5 w-5 text-teal-600" />
+                Checklist de Vistoria — Configuração Dinâmica
+              </h2>
+              <p className="text-sm text-slate-500 mt-1">
+                Crie <strong>categorias</strong> (grupos) e seus <strong>itens</strong> (perguntas). Cada categoria vira automaticamente UMA ETAPA no wizard do vistoriador.
+                Categorias e ordens são refletidas <strong>em tempo real</strong> no app. Totalmente não engessado.
+              </p>
+            </div>
+            <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200 self-start md:self-center">
+              {categorias.reduce((acc: number, c: any) => acc + (c.itens?.length || 0), 0)} itens · {categorias.length} categorias
+            </Badge>
+          </CardContent>
+        </Card>
+
+        <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
+          {/* Coluna esquerda: lista categorias + criar */}
+          <div className="space-y-4">
+            <Card className="border-slate-200 shadow-none">
+              <CardContent className="p-4 space-y-3">
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Nova categoria</h3>
+                <Input placeholder="Nome da categoria (ex: Elétrica)" value={novaCatNome} onChange={(e) => setNovaCatNome(e.target.value)} />
+                <Input placeholder="Descrição (opcional)" value={novaCatDesc} onChange={(e) => setNovaCatDesc(e.target.value)} />
+                <Button
+                  onClick={() => criarCategoriaMut.mutate()}
+                  disabled={!novaCatNome.trim() || criarCategoriaMut.isPending}
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Criar Categoria
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="border-slate-200 shadow-none">
+              <CardContent className="p-3">
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 px-2 pt-1">Categorias</h3>
+                <div className="space-y-1 max-h-[60vh] overflow-y-auto pr-1">
+                  {categorias.length === 0 && (
+                    <p className="text-xs text-slate-400 px-2 py-3">Nenhuma categoria ainda. Crie a primeira acima.</p>
+                  )}
+                  {categorias.map((c: any) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setCatSelecionadaId(c.id)}
+                      className={cn(
+                        "w-full flex items-start justify-between gap-2 rounded-xl px-3 py-3 text-left transition-colors",
+                        catSelecionadaId === c.id
+                          ? "bg-teal-50 ring-1 ring-inset ring-teal-200"
+                          : "hover:bg-slate-50"
+                      )}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className={cn(
+                          "font-bold truncate",
+                          catSelecionadaId === c.id ? "text-teal-900" : "text-slate-800"
+                        )}>{c.nome}</p>
+                        <p className="text-[11px] text-slate-500 truncate mt-0.5">{c.descricao || "Sem descrição"}</p>
+                        <p className="text-[10px] font-black uppercase tracking-wider mt-1.5 text-slate-400">{c.itens?.length || 0} itens</p>
+                      </div>
+                      <Trash2
+                        className="h-4 w-4 mt-1 text-slate-300 hover:text-rose-500 cursor-pointer flex-shrink-0"
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          if (window.confirm(`Remover categoria "${c.nome}" e seus ${c.itens?.length || 0} itens?`)) {
+                            excluirCategoriaMut.mutate(c.id);
+                          }
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Coluna direita: itens da categoria */}
+          <div className="space-y-4">
+            {!catSelecionada ? (
+              <Card className="border-dashed border-slate-300 shadow-none bg-slate-50/40">
+                <CardContent className="p-10 text-center">
+                  <ClipboardCheck className="mx-auto h-10 w-10 text-slate-300" />
+                  <h3 className="mt-3 font-bold text-slate-700">Selecione uma categoria</h3>
+                  <p className="text-xs text-slate-500 mt-1">Clique em uma categoria à esquerda para gerenciar seus itens.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                <Card className="border-slate-200 shadow-none">
+                  <CardContent className="p-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-lg font-black text-slate-900">{catSelecionada.nome}</h2>
+                        <Badge variant="outline">Ordem {catSelecionada.ordem}</Badge>
+                      </div>
+                      <p className="text-sm text-slate-500 mt-1">{catSelecionada.descricao || "Sem descrição"}</p>
+                    </div>
+                    <Button onClick={abrirNovoItem} className="bg-teal-600 hover:bg-teal-700 text-white">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Novo Item
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <div className="space-y-3">
+                  {(catSelecionada.itens || []).length === 0 ? (
+                    <Card className="border-dashed border-slate-300 bg-slate-50/40 shadow-none">
+                      <CardContent className="p-10 text-center">
+                        <ListChecks className="mx-auto h-8 w-8 text-slate-300" />
+                        <p className="mt-3 text-sm font-bold text-slate-700">Nenhum item nesta categoria ainda.</p>
+                        <p className="text-xs text-slate-500 mt-1">Clique em "Novo Item" para criar a primeira pergunta.</p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    (catSelecionada.itens || [])
+                      .slice()
+                      .sort((a: any, b: any) => Number(a.ordem || 0) - Number(b.ordem || 0))
+                      .map((item: any) => (
+                        <Card key={item.id} className="border-slate-200 shadow-none">
+                          <CardContent className="p-5 space-y-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h4 className="font-black text-slate-900">{item.titulo}</h4>
+                                  {item.obrigatorio !== false && <Badge className="bg-rose-50 text-rose-700 border-rose-200 border">Obrigatório</Badge>}
+                                  {item.foto_obrigatoria && <Badge className="bg-sky-50 text-sky-700 border-sky-200 border">Foto Obrigatória</Badge>}
+                                  <Badge variant="outline" className="text-slate-500">{TIPO_ITEM_LABEL[item.tipo_item] || item.tipo_item}</Badge>
+                                  <Badge variant="outline" className="text-slate-400 bg-slate-50">Ordem {item.ordem}</Badge>
+                                </div>
+                                {item.descricao_ajuda && (
+                                  <p className="text-xs text-slate-500 mt-2 flex items-start gap-1.5">
+                                    <Info className="h-3.5 w-3.5 mt-0.5 text-slate-400 flex-shrink-0" />
+                                    <span>{item.descricao_ajuda}</span>
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex gap-2 shrink-0">
+                                <Button variant="outline" size="sm" onClick={() => abrirEditarItem(item)}>
+                                  <Pencil className="h-3.5 w-3.5 mr-1.5" /> Editar
+                                </Button>
+                                <Button variant="outline" size="sm" className="text-rose-600 hover:text-rose-700" onClick={() => {
+                                  if (window.confirm(`Remover item "${item.titulo}"?`)) excluirItemMut.mutate(item.id);
+                                }}>
+                                  <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Remover
+                                </Button>
+                              </div>
+                            </div>
+                            {(item.tipo_item === "CHECKBOX_MULTIPLO" || item.tipo_item === "SELECT_UNICO") && Array.isArray(item.opcoes) && item.opcoes.length > 0 && (
+                              <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+                                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Opções</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {item.opcoes.map((op: any, idx: number) => (
+                                    <Badge key={`${op.valor}-${idx}`} variant="outline" className="bg-white">
+                                      {op.label} <span className="text-slate-400 ml-1.5">({op.valor})</span>
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {item.permite_observacao === false && (
+                              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Campo de observação DESABILITADO para este item.</p>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Dialog Novo/Editar Item */}
+        <Dialog open={itemModalAberto} onOpenChange={setItemModalAberto}>
+          <DialogContent className="sm:max-w-xl">
+            <DialogHeader>
+              <DialogTitle>{editandoItem ? "Editar Item do Checklist" : "Novo Item do Checklist"}</DialogTitle>
+              <DialogDescription>
+                Defina o tipo e as regras do item. Estes campos aparecem no app do vistoriador durante a execução da vistoria.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-[2fr_80px_1fr]">
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Título / Pergunta</Label>
+                  <Input placeholder="Ex: Coluna A do veículo" value={formItem.titulo}
+                    onChange={(e) => setFormItem((c) => ({ ...c, titulo: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Ordem</Label>
+                  <Input type="number" value={formItem.ordem}
+                    onChange={(e) => setFormItem((c) => ({ ...c, ordem: Number(e.target.value || 0) }))} />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Descrição / Dica para o vistoriador (opcional)</Label>
+                <Textarea rows={2} placeholder="Ex: Verificar amassados, pintura, solda aparente"
+                  value={formItem.descricao_ajuda}
+                  onChange={(e) => setFormItem((c) => ({ ...c, descricao_ajuda: e.target.value }))} />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Tipo do Item</Label>
+                  <Select value={formItem.tipo_item} onValueChange={(v: any) => setFormItem((c) => ({ ...c, tipo_item: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CONFORMIDADE">Conformidade (Conforme/Não Conforme/N/A)</SelectItem>
+                      <SelectItem value="TEXTO_LIVRE">Texto Livre</SelectItem>
+                      <SelectItem value="NUMERO">Número</SelectItem>
+                      <SelectItem value="CHECKBOX_MULTIPLO">Múltipla Escolha (Checkbox)</SelectItem>
+                      <SelectItem value="SELECT_UNICO">Escolha Única (Select)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2 flex-col flex justify-end">
+                  <div className="flex items-center gap-4 pt-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="obrigatorio" checked={formItem.obrigatorio} onCheckedChange={(v) => setFormItem((c) => ({ ...c, obrigatorio: !!v }))} />
+                      <Label htmlFor="obrigatorio">Obrigatório *</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="foto-obrig" checked={formItem.foto_obrigatoria} onCheckedChange={(v) => setFormItem((c) => ({ ...c, foto_obrigatoria: !!v }))} />
+                      <Label htmlFor="foto-obrig">Foto obrigatória</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="permite-obs" checked={formItem.permite_observacao} onCheckedChange={(v) => setFormItem((c) => ({ ...c, permite_observacao: !!v }))} />
+                      <Label htmlFor="permite-obs">Permite observação</Label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {(formItem.tipo_item === "CHECKBOX_MULTIPLO" || formItem.tipo_item === "SELECT_UNICO") && (
+                <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between">
+                    <Label>Opções (Array JSON de objetos {"{valor, label}"})</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setFormItem((c) => ({
+                        ...c, opcoesStr: JSON.stringify([
+                          { valor: "OP1", label: "Opção 1" },
+                          { valor: "OP2", label: "Opção 2" },
+                        ], null, 2),
+                      }))}
+                    >
+                      <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                      Preencher exemplo
+                    </Button>
+                  </div>
+                  <Textarea
+                    rows={6}
+                    className="font-mono text-xs"
+                    placeholder={`[\n  { "valor": "OP1", "label": "Opção 1" },\n  { "valor": "OP2", "label": "Opção 2" }\n]`}
+                    value={formItem.opcoesStr}
+                    onChange={(e) => setFormItem((c) => ({ ...c, opcoesStr: e.target.value }))}
+                  />
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setItemModalAberto(false)}>Cancelar</Button>
+              <Button className="bg-teal-600 hover:bg-teal-700 text-white" onClick={handleSalvarItem}>
+                {editandoItem ? "Salvar alterações" : "Criar Item"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </TabsContent>
+  );
+}
+
+const TIPO_ITEM_LABEL: Record<string, string> = {
+  CONFORMIDADE: "Conforme / Não Conforme",
+  TEXTO_LIVRE: "Texto Livre",
+  NUMERO: "Número",
+  CHECKBOX_MULTIPLO: "Múltipla Escolha",
+  SELECT_UNICO: "Escolha Única",
+};

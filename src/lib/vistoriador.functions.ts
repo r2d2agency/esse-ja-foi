@@ -92,3 +92,49 @@ export const concluirVistoriaAppFn = createServerFn({ method: "POST" })
       return { ok: false as const, message: err.message };
     }
   });
+
+export const getChecklistConfigFn = createServerFn({ method: "GET" })
+  .handler(async () => {
+    const { listarChecklistConfig } = await import("@/db/vistorias.server");
+    try {
+      const categorias = await listarChecklistConfig();
+      return { ok: true, data: categorias };
+    } catch (err: any) {
+      return { ok: false, message: err.message };
+    }
+  });
+
+export const getRespostasChecklistFn = createServerFn({ method: "GET" })
+  .validator((d) => z.object({ laudoId: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    const { listarRespostasChecklistPorLaudo } = await import("@/db/vistorias.server");
+    try {
+      const arr = await listarRespostasChecklistPorLaudo(data.laudoId);
+      return { ok: true, data: arr };
+    } catch (err: any) {
+      return { ok: false, message: err.message };
+    }
+  });
+
+export const salvarRespostaChecklistFn = createServerFn({ method: "POST" })
+  .validator((d) => z.object({
+    laudoId: z.string(),
+    vistoriaId: z.string(),
+    item_id: z.string(),
+    categoria_id: z.string(),
+    resposta_conformidade: z.string().optional().nullable(),
+    resposta_texto: z.string().optional().nullable(),
+    resposta_numero: z.number().optional().nullable(),
+    resposta_opcoes: z.any().optional(),
+    observacao: z.string().optional().nullable(),
+    foto_url: z.string().optional().nullable(),
+    respondido_por: z.string().optional().nullable(),
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const { salvarRespostaChecklistDinamico } = await import("@/db/vistorias.server");
+    try {
+      return await salvarRespostaChecklistDinamico(data as any);
+    } catch (err: any) {
+      return { ok: false, message: err.message };
+    }
+  });

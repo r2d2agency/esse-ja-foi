@@ -1,42 +1,47 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   ArrowLeft, CheckCircle2, Camera, AlertTriangle, 
   MapPin, ChevronRight, ChevronLeft, ShieldCheck,
-  Check, X, AlertCircle
+  Check, X, AlertCircle, Plus, Info, Image as ImageIcon
 } from "lucide-react";
 import { useAuthStore } from "@/hooks/use-auth";
 import { 
   getVistoriaDetalheVistoriadorFn, 
   iniciarCheckinFn,
   salvarItemChecklistFn,
-  concluirVistoriaAppFn
+  concluirVistoriaAppFn,
+  getChecklistConfigFn,
+  salvarRespostaChecklistFn,
+  getRespostasChecklistFn,
 } from "@/lib/vistoriador.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/vistoriador/execucao/$id")({
   component: VistoriaExecucaoPage,
 });
 
-const ETAPAS = [
-  "Check-in",
-  "Identificação",
-  "Estrutura",
-  "Exterior",
-  "Interior",
-  "Mecânica básica",
-  "Pneus e rodas",
-  "Equipamentos",
-  "Documentos",
-  "Fotos do anúncio",
-  "Revisão final"
-];
+function buildEtapas(categorias: any[]) {
+  const base = ["Check-in"];
+  const meio = (categorias || []).map((c) => c.nome);
+  return [...base, ...meio, "Fotos do anúncio", "Revisão final"];
+}
 
 function VistoriaExecucaoPage() {
   const { id: vistoriaId } = Route.useParams();
@@ -49,10 +54,11 @@ function VistoriaExecucaoPage() {
   const [checkinRealizado, setCheckinRealizado] = useState(false);
   const [laudoId, setLaudoId] = useState<string | null>(null);
   
-  // Estados do checklist
   const [km, setKm] = useState("");
   const [observacaoGeral, setObservacaoGeral] = useState("");
   const [declaracao, setDeclaracao] = useState(false);
+
+  const [respostasEmMemoria, setRespostasEmMemoria] = useState<Record<string, any>>({});
 
   const { data: res } = useSuspenseQuery({
     queryKey: ["vistoria-detalhe", vistoriaId, user?.id],
@@ -61,6 +67,28 @@ function VistoriaExecucaoPage() {
 
   const v = res?.data;
 
+  const { data: checklistRes } = useSuspenseQuery({
+    queryKey: ["checklist-config"],
+    queryFn: () => getChecklistConfigFn(),
+  });
+  const categoriasConfig = checklistRes?.ok ? (checklistRes.data as any[]) : [];
+
+  const ETAPAS = useMemo(() => buildEtapas(categoriasConfig), [categoriasConfig]);
+
+  // Índice relativo às categorias do checklist config
+  // etapaAtual = 0 → Check-in
+  // etapaAtual de 1..categoriasConfig.length → CATEGORIAS (índice = etapaAtual-1)
+  // etapaAtual = categoriasConfig.length + 1 → Fotos
+  // etapaAtual = categoriasConfig.length + 2 → Revisão
+
+  const categoriaDaEtapaAtual = useMemo(() => {
+    if (etapaAtual >= 1 && etapaAtual <= categoriasConfig.length) {
+      return categoriasConfig[etapaAtual - 1];
+    }
+    return null;
+  }, [etapaAtual, categoriasConfig]);
+
+  // Carrega respostas já salvas se tiver laudo
   useEffect(() => {
     if (v?.laudo_id) {
       setLaudoId(v.laudo_id);
@@ -69,17 +97,37 @@ function VistoriaExecucaoPage() {
     }
   }, [v]);
 
+  useSuspenseQuery({
+    queryKey: ["respostas-checklist", laudoId],
+    queryFn: () => laudoId ? getRespostasChecklistFn({ data: { laudoId } }) : Promise.resolve({ ok: true, data: [] }),
+    enabled: !!laudoId,
+  });
+
+  // Depois que carrega respostas, preenche o estado em memoria
+  useEffect(() => {
+    if (!laudoId) return;
+    queryClient.ensureQueryData({
+      queryKey: ["respostas-checklist", laudoId],
+      queryFn: () => getRespostasChecklistFn({ data: { laudoId } }),
+    }).then((rr: any) => {
+      const arr = (rr as any)?.data || [];
+      const map: Record<string, any> = {};
+      arr.forEach((r: any) => { map[r.item_id] = r; });
+      setRespostasEmMemoria((prev) => ({ ...prev, ...map }));
+    }).catch(() => { /* ignore */ });
+  }, [laudoId, queryClient]);
+
   const iniciarCheckinMutation = useMutation({
     mutationFn: (data: { placa: string; localizacao: any }) => 
       iniciarCheckinFn({ data: { vistoriaId, usuarioId: user?.id || "", ...data } }),
     onSuccess: (res) => {
       if (res.ok) {
-        setLaudoId(res.laudoId);
+        setLaudoId((res as any).laudoId);
         setCheckinRealizado(true);
         setEtapaAtual(1);
         toast.success("Check-in realizado com sucesso!");
       } else {
-        toast.error('message' in res ? res.message : "Erro ao realizar check-in");
+        toast.error('message' in res ? (res as any).message : "Erro ao realizar check-in");
       }
     }
   });
@@ -88,7 +136,7 @@ function VistoriaExecucaoPage() {
     mutationFn: () => concluirVistoriaAppFn({ 
       data: { 
         laudoId: laudoId!, 
-        quilometragem: parseInt(km), 
+        quilometragem: parseInt(km || "0"), 
         observacao_geral: observacaoGeral,
         declaracao 
       } 
@@ -98,7 +146,7 @@ function VistoriaExecucaoPage() {
         toast.success("Vistoria concluída e enviada para análise!");
         navigate({ to: "/vistoriador" });
       } else {
-        toast.error('message' in res ? res.message : "Erro ao concluir vistoria");
+        toast.error('message' in res ? (res as any).message : "Erro ao concluir vistoria");
       }
     }
   });
@@ -137,9 +185,63 @@ function VistoriaExecucaoPage() {
     }
   };
 
-  const progress = (etapaAtual / (ETAPAS.length - 1)) * 100;
+  const salvarRespostaLocal = (itemId: string, patch: any) => {
+    setRespostasEmMemoria((prev) => {
+      const curr = prev[itemId] || { item_id: itemId };
+      return { ...prev, [itemId]: { ...curr, ...patch } };
+    });
+  };
+
+  const persistirRespostaMutation = useMutation({
+    mutationFn: (payload: any) => salvarRespostaChecklistFn({ data: payload }),
+    onSuccess: (rr: any) => {
+      if (!rr.ok) toast.error((rr as any).message || "Erro ao salvar resposta");
+    },
+  });
+
+  const handleSalvarResposta = (item: any, patch: any) => {
+    if (!laudoId) return;
+    salvarRespostaLocal(item.id, patch);
+    persistirRespostaMutation.mutate({
+      laudoId,
+      vistoriaId,
+      item_id: item.id,
+      categoria_id: item.categoria_id,
+      respondido_por: user?.id || null,
+      ...patch,
+    });
+  };
+
+  const progress = Math.round((etapaAtual / Math.max(1, ETAPAS.length - 1)) * 100);
 
   if (!v) return null;
+
+  // Qual etapa permite continuar?
+  const permiteContinuar = () => {
+    if (etapaAtual === 0) return checkinRealizado;
+    // Categorias: itens obrigatórios sem resposta valida → trava
+    if (categoriaDaEtapaAtual) {
+      const itens = categoriaDaEtapaAtual.itens || [];
+      for (const item of itens) {
+        if (!item.obrigatorio) continue;
+        const r = respostasEmMemoria[item.id];
+        if (item.tipo_item === "CONFORMIDADE") {
+          if (!r?.resposta_conformidade) return false;
+          if (item.foto_obrigatoria && !r?.foto_url) return false;
+        } else if (item.tipo_item === "TEXTO_LIVRE") {
+          if (!String(r?.resposta_texto || "").trim()) return false;
+        } else if (item.tipo_item === "NUMERO") {
+          if (r?.resposta_numero === undefined || r?.resposta_numero === null || Number.isNaN(Number(r?.resposta_numero))) return false;
+        } else if (item.tipo_item === "CHECKBOX_MULTIPLO" || item.tipo_item === "SELECT_UNICO") {
+          if (!r?.resposta_opcoes || (Array.isArray(r.resposta_opcoes) && r.resposta_opcoes.length === 0) || (typeof r.resposta_opcoes === "string" && !r.resposta_opcoes)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+    return true;
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 lg:ml-64">
@@ -158,10 +260,10 @@ function VistoriaExecucaoPage() {
         <div className="space-y-1">
           <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
             <span>Etapa {etapaAtual + 1} de {ETAPAS.length}</span>
-            <span>{Math.round(progress)}%</span>
+            <span>{progress}%</span>
           </div>
           <Progress value={progress} className="h-1.5 bg-slate-100" />
-          <p className="mt-2 text-center text-xs font-black text-teal-700 uppercase">{ETAPAS[etapaAtual]}</p>
+          <p className="mt-2 text-center text-xs font-black text-teal-700 uppercase">{ETAPAS[etapaAtual] || ""}</p>
         </div>
       </header>
 
@@ -193,72 +295,25 @@ function VistoriaExecucaoPage() {
           </div>
         )}
 
-        {etapaAtual === 1 && (
-          <div className="space-y-6">
-            <div className="rounded-2xl border bg-white p-6">
-              <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Dados de Identificação</h3>
-              <div className="mt-6 space-y-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-600">Quilometragem atual (KM)</label>
-                  <Input 
-                    type="number"
-                    placeholder="Ex: 45000"
-                    className="h-14 rounded-xl text-lg font-bold"
-                    value={km}
-                    onChange={(e) => setKm(e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-4">
-                  <label className="text-xs font-bold text-slate-600">Foto do Painel</label>
-                  <div className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50">
-                    <Camera className="h-8 w-8 text-slate-400" />
-                    <span className="mt-2 text-xs font-bold text-slate-500">Tirar foto do painel</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* ETAPAS DINAMICAS: 1..N = categorias */}
+        {categoriaDaEtapaAtual && (
+          <ChecklistCategoriaDinamica
+            categoria={categoriaDaEtapaAtual}
+            respostasEmMemoria={respostasEmMemoria}
+            onMudarResposta={(item, patch) => handleSalvarResposta(item, patch)}
+            onSetKm={(val) => setKm(val)}
+            kmAtual={km}
+          />
         )}
 
-        {etapaAtual > 1 && etapaAtual < 9 && (
-          <div className="space-y-4">
-            <div className="rounded-2xl border bg-white p-5">
-              <h3 className="mb-4 text-xs font-black uppercase tracking-widest text-slate-400">Itens do Checklist</h3>
-              
-              <div className="space-y-6">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="space-y-3 border-b pb-6 last:border-0 last:pb-0">
-                    <p className="font-bold text-slate-900">Item de Verificação {i}</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button variant="outline" className="h-12 border-slate-200 text-xs font-bold uppercase">
-                        Conforme
-                      </Button>
-                      <Button variant="outline" className="h-12 border-slate-200 text-xs font-bold uppercase">
-                        Não Conforme
-                      </Button>
-                      <Button variant="outline" className="h-12 border-slate-200 text-xs font-bold uppercase">
-                        Observação
-                      </Button>
-                      <Button variant="outline" className="h-12 border-slate-200 text-xs font-bold uppercase text-slate-400">
-                        N/A
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {etapaAtual === 9 && (
+        {etapaAtual === ETAPAS.length - 2 && (
           <div className="space-y-6">
             <div className="rounded-2xl border bg-white p-5">
               <h3 className="mb-2 text-xs font-black uppercase tracking-widest text-slate-400">Fotos do Anúncio</h3>
               <p className="text-xs font-medium text-slate-500">Siga os ângulos indicados para manter o padrão.</p>
               
               <div className="mt-6 grid grid-cols-2 gap-4">
-                {["Frente 45°", "Frente", "Lateral", "Traseira", "Interior", "Motor"].map((f) => (
+                {["Frente 45°", "Frente", "Lateral Esq", "Lateral Dir", "Traseira 45°", "Traseira", "Interior (dianteiro)", "Interior (traseiro)", "Painel", "Motor", "Porta-malas", "Estepe"].map((f) => (
                   <div key={f} className="flex aspect-square flex-col items-center justify-center rounded-2xl border bg-slate-50 p-2 text-center">
                     <Camera className="h-6 w-6 text-slate-400" />
                     <span className="mt-2 text-[10px] font-bold uppercase tracking-tight text-slate-600">{f}</span>
@@ -269,7 +324,7 @@ function VistoriaExecucaoPage() {
           </div>
         )}
 
-        {etapaAtual === 10 && (
+        {etapaAtual === ETAPAS.length - 1 && (
           <div className="space-y-6">
             <div className="rounded-2xl border bg-white p-6">
               <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Revisão Final</h3>
@@ -312,7 +367,7 @@ function VistoriaExecucaoPage() {
       </main>
 
       {/* Navegação de Etapas */}
-      {checkinRealizado && etapaAtual < 10 && (
+      {checkinRealizado && etapaAtual < ETAPAS.length - 1 && (
         <footer className="fixed bottom-0 left-0 right-0 z-40 border-t bg-white p-4 lg:left-64">
           <div className="flex gap-4">
             <Button 
@@ -325,15 +380,236 @@ function VistoriaExecucaoPage() {
               Voltar
             </Button>
             <Button 
-              className="h-14 flex-2 rounded-xl bg-slate-900 font-bold"
+              className="h-14 flex-2 rounded-xl bg-slate-900 font-bold disabled:opacity-50"
               onClick={() => setEtapaAtual(etapaAtual + 1)}
+              disabled={!permiteContinuar()}
+              title={!permiteContinuar() ? "Preencha todos os itens obrigatórios para continuar." : undefined}
             >
               Continuar
               <ChevronRight className="ml-2 h-5 w-5" />
             </Button>
           </div>
+          {!permiteContinuar() && etapaAtual !== 0 && (
+            <p className="mt-2 text-[10px] font-bold text-amber-700 text-center uppercase tracking-wider">
+              Preencha todos os itens obrigatórios marcados com * para continuar.
+            </p>
+          )}
         </footer>
       )}
     </div>
   );
 }
+
+// ============================================================================
+// Sub-componente: renderiza uma CATEGORIA DINAMICA com seus itens
+// ============================================================================
+function ChecklistCategoriaDinamica({ categoria, respostasEmMemoria, onMudarResposta, onSetKm, kmAtual }: {
+  categoria: any;
+  respostasEmMemoria: Record<string, any>;
+  onMudarResposta: (item: any, patch: any) => void;
+  onSetKm?: (v: string) => void;
+  kmAtual?: string;
+}) {
+  const itens = (categoria?.itens || []) as any[];
+  return (
+    <div className="space-y-4">
+      <Card className="rounded-2xl border border-teal-100 p-5 bg-gradient-to-br from-teal-50/40 to-white">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-xs font-black uppercase tracking-widest text-teal-700">{categoria.nome}</h3>
+            {categoria.descricao && <p className="mt-1 text-xs font-medium text-slate-600">{categoria.descricao}</p>}
+          </div>
+          <Badge variant="outline" className="bg-white text-teal-700 border-teal-200">
+            {itens.length} itens
+          </Badge>
+        </div>
+      </Card>
+
+      <div className="space-y-5">
+        {itens.map((item) => {
+          const r = respostasEmMemoria[item.id] || {};
+          return (
+            <Card key={item.id} className={`rounded-2xl p-5 ${r._respondido ? "border-emerald-200 bg-emerald-50/30" : "border bg-white"}`}>
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div>
+                  <h4 className="font-bold text-slate-900 flex items-center gap-2">
+                    {item.titulo}
+                    {item.obrigatorio && <span className="text-rose-500">*</span>}
+                  </h4>
+                  {item.descricao_ajuda && (
+                    <div className="mt-1 flex items-start gap-2 text-[11px] text-slate-500">
+                      <Info className="h-3.5 w-3.5 mt-0.5 text-slate-400 flex-shrink-0" />
+                      <span>{item.descricao_ajuda}</span>
+                    </div>
+                  )}
+                </div>
+                {(item.foto_obrigatoria || item.foto_obrigatoria === false) && (
+                  <Badge variant="outline" className={`text-[10px] ${item.foto_obrigatoria ? "border-rose-200 text-rose-700 bg-rose-50" : "border-slate-200 text-slate-500 bg-slate-50"}`}>
+                    Foto {item.foto_obrigatoria ? "Obrigatória" : "Opcional"}
+                  </Badge>
+                )}
+              </div>
+
+              {item.tipo_item === "CONFORMIDADE" && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { key: "CONFORME", label: "Conforme", icon: Check, cor: "emerald" },
+                      { key: "NAO_CONFORME", label: "Não Conforme", icon: X, cor: "rose" },
+                      { key: "NA", label: "N/A", icon: AlertCircle, cor: "slate" },
+                    ].map((op) => {
+                      const selecionado = r.resposta_conformidade === op.key;
+                      return (
+                        <Button
+                          key={op.key}
+                          variant="outline"
+                          onClick={() => onMudarResposta(item, { resposta_conformidade: op.key })}
+                          className={`h-14 flex-col !py-2 text-[11px] font-black uppercase ${
+                            selecionado
+                              ? op.cor === "emerald" ? "!bg-emerald-500 !text-white border-emerald-500" :
+                                op.cor === "rose" ? "!bg-rose-500 !text-white border-rose-500" :
+                                "!bg-slate-700 !text-white border-slate-700"
+                              : "border-slate-200 text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          <op.icon className="h-4 w-4 mb-0.5" />
+                          {op.label}
+                        </Button>
+                      );
+                    })}
+                  </div>
+
+                  {/* KM no item QUILOMETRAGEM? */}
+                  {(item.titulo || "").toLowerCase().includes("quilometragem") && onSetKm && (
+                    <div className="pt-2 border-t">
+                      <Label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Valor em KM</Label>
+                      <Input
+                        type="number"
+                        placeholder="Ex: 45000"
+                        className="h-12 rounded-xl mt-1 text-lg font-bold"
+                        value={kmAtual || r.resposta_numero || ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          onSetKm(val);
+                          onMudarResposta(item, { resposta_numero: val ? Number(val) : null });
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {item.tipo_item === "TEXTO_LIVRE" && (
+                <div className="space-y-2">
+                  <Textarea
+                    placeholder="Digite aqui..."
+                    className="min-h-[80px] rounded-xl text-sm"
+                    value={r.resposta_texto || ""}
+                    onChange={(e) => onMudarResposta(item, { resposta_texto: e.target.value })}
+                  />
+                </div>
+              )}
+
+              {item.tipo_item === "NUMERO" && !(item.titulo || "").toLowerCase().includes("quilometragem") && (
+                <div className="space-y-2">
+                  <Input
+                    type="number"
+                    placeholder="Digite o número..."
+                    className="h-12 rounded-xl text-base font-bold"
+                    value={r.resposta_numero ?? ""}
+                    onChange={(e) => onMudarResposta(item, { resposta_numero: e.target.value ? Number(e.target.value) : null })}
+                  />
+                </div>
+              )}
+
+              {item.tipo_item === "CHECKBOX_MULTIPLO" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {(item.opcoes || []).map((op: any) => {
+                    const escolhidos = Array.isArray(r.resposta_opcoes) ? r.resposta_opcoes : [];
+                    const marcado = escolhidos.includes(op.valor);
+                    return (
+                      <div key={op.valor} className="flex items-center gap-2 rounded-xl border p-3">
+                        <Checkbox
+                          checked={marcado}
+                          onCheckedChange={(v) => {
+                            const next = new Set(escolhidos);
+                            if (v) next.add(op.valor); else next.delete(op.valor);
+                            onMudarResposta(item, { resposta_opcoes: Array.from(next) });
+                          }}
+                        />
+                        <span className="text-xs font-bold text-slate-700">{op.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {item.tipo_item === "SELECT_UNICO" && (
+                <Select
+                  value={r.resposta_opcoes || ""}
+                  onValueChange={(val) => onMudarResposta(item, { resposta_opcoes: val })}
+                >
+                  <SelectTrigger className="h-12 rounded-xl">
+                    <SelectValue placeholder="Selecione uma opção..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(item.opcoes || []).map((op: any) => (
+                      <SelectItem key={op.valor} value={op.valor}>{op.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* Campo de observação (se permite_observacao) */}
+              {item.permite_observacao !== false && (
+                <div className="mt-3 pt-3 border-t">
+                  <Label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Observação</Label>
+                  <Textarea
+                    placeholder="Campo opcional — detalhe o que você observou..."
+                    className="mt-1 min-h-[64px] rounded-xl text-xs"
+                    value={r.observacao || ""}
+                    onChange={(e) => onMudarResposta(item, { observacao: e.target.value })}
+                  />
+                </div>
+              )}
+
+              {/* Upload de foto placeholder */}
+              {item.foto_obrigatoria || item.foto_obrigatoria === false ? (
+                <div className="mt-3 pt-3 border-t">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div
+                      className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-4 ${r.foto_url ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}
+                    >
+                      {r.foto_url ? (
+                        <>
+                          <ImageIcon className="h-6 w-6 text-emerald-600" />
+                          <span className="mt-1 text-[10px] font-bold text-emerald-700 uppercase">Foto Salva</span>
+                        </>
+                      ) : (
+                        <>
+                          <Camera className="h-6 w-6 text-slate-400" />
+                          <span className="mt-1 text-[10px] font-bold text-slate-500 uppercase">
+                            {item.foto_obrigatoria ? "Adicionar Foto *" : "Adicionar Foto"}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="h-auto min-h-[56px] rounded-xl border-slate-200 text-xs font-bold uppercase"
+                      onClick={() => onMudarResposta(item, { foto_url: `placeholder-${item.id}-${Date.now()}` })}
+                    >
+                      <Plus className="h-4 w-4 mr-1.5" />
+                      Capturar / Escolher
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
