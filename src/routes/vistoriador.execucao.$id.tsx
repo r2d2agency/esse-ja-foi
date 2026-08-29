@@ -1,3 +1,4 @@
+// CACHE_BUSTER_20260829_193100_VISTORIADOR: marker unico para forçar novo hash chunk em prod.
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
