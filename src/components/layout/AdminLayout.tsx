@@ -123,6 +123,13 @@ const MENU_SECTIONS: MenuSection[] = [
         activeIncludes: ["/admin/vistorias"],
         description: "Credenciados e vistoriadores",
       },
+      {
+        label: "App Vistoriador",
+        icon: ClipboardCheck,
+        to: "/vistoriador",
+        activePrefixes: ["/vistoriador"],
+        description: "Atalho para execução de vistorias",
+      },
     ],
   },
   {
@@ -333,6 +340,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 <DropdownMenuItem asChild>
                   <Link to="/admin/usuarios" className="flex items-center gap-2 cursor-pointer">
                     <User className="h-4 w-4" /> Meu perfil
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/vistoriador" className="flex items-center gap-2 cursor-pointer">
+                    <ClipboardCheck className="h-4 w-4" /> App Vistoriador
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
